@@ -573,6 +573,10 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
     - failed: SPA, on ESLint (a literal BOM in `e2e/support.ts`, fixed in `3b038b5`);
     - failed: both CodeQL jobs. Probable cause: a private repository without GitHub Code Security has no code scanning, so uploading the SARIF fails. The workflow now runs the analysis with `upload: never`, keeps the SARIF as an artifact and fails on high-severity results (level `error` or `security-severity` ≥ 7);
     - skipped: images and infrastructure, because the job depends on the SPA job.
+  - Second run (commit `8e4639c`):
+    - passed: Backend .NET, SPA, secret scanning and OSV-Scanner.
+    - Images and infrastructure ran for the first time. Both images built and both Trivy steps passed, but Checkov failed on CKV_DOCKER_2. That run still had the old Dockerfiles; the fix in `a68d2bc` reached CI later.
+    - Both CodeQL jobs analyzed every file (145 C#; 35 TypeScript, 3 JavaScript, 2 HTML, 1 Actions workflow) and saved the SARIF. `analyze` still failed with "Resource not accessible by integration" on the "get a workflow run" API: in a private repository the action reads the workflow run even when it does not upload. Fixed by adding `actions: read` to the job permissions.
   - Locally we ran tests, ESLint, `dotnet list package --vulnerable`, `npm audit` and a locked-mode restore.
   - **Local Docker verification (2026-09-15)**, with the same tool versions as CI:
     - Gitleaks v8.30.1 over the full history: no leaks (4 commits).

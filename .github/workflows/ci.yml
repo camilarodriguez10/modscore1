@@ -143,8 +143,12 @@ jobs:
   codeql:
     name: CodeQL (${{ matrix.language }})
     runs-on: ubuntu-24.04
+    # En repositorios privados la accion lee la corrida del workflow por el API de Actions
+    # aunque no suba resultados: sin actions: read, analyze falla con "Resource not
+    # accessible by integration".
     permissions:
       contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix:

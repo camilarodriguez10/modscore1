@@ -251,6 +251,10 @@ La simulación depende mucho de la carga de la máquina: con la máquina ocupada
 - Fijar una acción por SHA no fija la herramienta que instala: `trivy-action` v0.36.0 baja
   Trivy v0.70.0, que tiene avisos de seguridad posteriores. Hay que fijar también su
   `version`.
+- En un repositorio privado, la acción de CodeQL necesita `actions: read` aunque no suba
+  resultados. Sin ese permiso, `analyze` falla con "Resource not accessible by integration".
+- Una captura de Actions puede ser de una corrida anterior al último push. Antes de corregir,
+  comparar las líneas que muestra el log con el archivo del commit.
 
 **.NET y analizadores:**
 

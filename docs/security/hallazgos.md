@@ -417,7 +417,9 @@ código con hallazgos de código limpio.
 
 - **Corrección:** análisis con `upload: never`, SARIF como artefacto, y el job falla con
   hallazgos de nivel `error` o `security-severity` de 7 o más. El job ya no pide
-  `security-events: write`.
+  `security-events: write`. La segunda corrida (`8e4639c`) mostró que en un repositorio
+  privado la acción igual lee la corrida del workflow: el job pide `actions: read`, que es
+  solo lectura.
 - **Evidencia:** el paso se probó con SARIF de ejemplo: sin hallazgos altos, con dos y sin
   archivo (`tools/sesiones/test-codeql-gate.mjs`).
 

@@ -146,8 +146,8 @@ powershell -ExecutionPolicy Bypass -File tools/portable/build-portable.ps1
 ```
 
 Genera en `artifacts/` un `.zip` con las dos capas como ejecutables de un solo archivo y la
-SPA dentro, más su SHA-256. En el otro equipo se descomprime y se ejecuta `start.cmd`. Ver
-[tools/portable/README.md](tools/portable/README.md).
+SPA dentro, más su SHA-256. El último `.zip` se versiona en el repositorio. En el otro equipo
+se descomprime y se ejecuta `start.cmd`. Ver [tools/portable/README.md](tools/portable/README.md).
 
 **No es un despliegue:** usa la autenticación de desarrollo, y por eso escucha solo en
 `127.0.0.1`.
@@ -158,8 +158,9 @@ SPA dentro, más su SHA-256. En el otro equipo se descomprime y se ejecuta `star
 powershell -ExecutionPolicy Bypass -File tools/git/backup.ps1 -Message "Descripción del cambio" -Verify
 ```
 
-Corre las pruebas y los escaneos, se niega a subir las capturas del BRD, llaves o `.env`, y
-nunca fuerza el push. Ver [docs/runbooks/respaldo-en-git.md](docs/runbooks/respaldo-en-git.md).
+Corre las pruebas y los escaneos; se niega a subir capturas del BRD, imágenes, llaves, `.env`
+o archivos de más de 100 MB, y nunca fuerza el push. El repositorio es privado y guarda todo
+lo creado salvo capturas e imágenes. Ver [docs/runbooks/respaldo-en-git.md](docs/runbooks/respaldo-en-git.md).
 
 ## Prueba de carga
 

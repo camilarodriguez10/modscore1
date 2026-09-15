@@ -1,0 +1,17 @@
+{
+  "id": "20260911-155413-f3d2",
+  "label": "Verificacion fase 8",
+  "capturedAt": "2026-09-11T15:54:13.4038455+00:00",
+  "applicationCount": 250,
+  "files": [
+    "eai_master.csv",
+    "architectural_value_by_eai.csv",
+    "product_strategy.csv",
+    "tech_debt.csv",
+    "veracode_sca_open_flaws.csv",
+    "oss_score_by_eai.csv",
+    "monitoreo.csv",
+    "apim_onboarded_eais.csv"
+  ],
+  "uploadedBy": "dev-user"
+}

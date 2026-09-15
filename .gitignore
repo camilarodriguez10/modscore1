@@ -7,39 +7,39 @@ node_modules/
 dist/
 *.tsbuildinfo
 
-# Estado de ejecucion: las cargas publicadas no van al repositorio.
-data/history/
-
-# Versiones de reglas publicadas en local (proveedor File).
-data/.rules/
-
-# Bases locales del adaptador de datos: son estado, no fuente.
-*.db
-*.db-shm
-*.db-wal
-
-# Configuracion local de herramientas y del asistente.
-.claude/
-.vscode/
-.idea/
-
-# Resultados de pruebas de la SPA.
+# Resultados de pruebas de la SPA: se regeneran en cada corrida.
 src/web/test-results/
 src/web/playwright-report/
 src/web/blob-report/
 src/web/coverage/
 
-# Paquete portable: se genera con tools/portable/build-portable.ps1.
-artifacts/
+# Paquete portable: el .zip se versiona; la carpeta descomprimida que deja el build, no.
+# GitHub rechaza archivos de mas de 100 MB (los scripts de tools/git lo revisan).
+artifacts/*/
 
-# Capturas del BRD y del dashboard: documentacion interna. Quedan fuera del
-# repositorio por defecto; ver docs/brd/README.md para incluirlas.
+# Configuracion personal de herramientas. .claude/launch.json si se versiona.
+.claude/settings.local.json
+.vscode/
+.idea/
+
+# Capturas del BRD y del dashboard, e imagenes en general: documentacion interna.
+# Quedan fuera del repositorio; ver docs/brd/README.md.
 docs/brd/capturas/
-*.JPG
-*.jpg
+*.[jJ][pP][gG]
+*.[jJ][pP][eE][gG]
+*.[pP][nN][gG]
+*.[gG][iI][fF]
+*.[wW][eE][bB][pP]
+*.[bB][mM][pP]
+*.[hH][eE][iI][cC]
+*.[tT][iI][fF]
+*.[tT][iI][fF][fF]
+*.[iI][cC][oO]
 
 # Secretos locales: nunca al repositorio.
 *.pfx
+*.p12
 *.key
+*.pem
 .env
 .env.*

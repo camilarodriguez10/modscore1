@@ -864,19 +864,21 @@ en inglés y con el máximo detalle.
 
 **Respaldo y distribución:**
 
-- **Repositorio git** con remoto `origin`, commit base local y `.gitignore`. Las capturas del
-  BRD quedan fuera del repositorio.
+- **Repositorio git** privado en GitHub (`main`, primer push el 2026-09-15). Guarda todo lo
+  creado —incluidos el paquete portable, el estado local de `data/`, los scripts de las
+  sesiones y la copia del plan— salvo las capturas del BRD y las imágenes.
 - **Scripts de respaldo** (`tools/git/`): corren las verificaciones y se niegan a subir
-  capturas, llaves o `.env`. Runbook en [docs/runbooks/respaldo-en-git.md](docs/runbooks/respaldo-en-git.md).
+  capturas, imágenes, llaves, `.env` o archivos de más de 100 MB. Runbook en
+  [docs/runbooks/respaldo-en-git.md](docs/runbooks/respaldo-en-git.md).
 - **Paquete portable** (`tools/portable/`): ejecutables de un solo archivo con la SPA
   dentro. Escucha solo en `127.0.0.1`, con un token de servicio aleatorio por arranque.
   **No es un despliegue**: usa la autenticación de desarrollo.
 
 **Qué no se pudo verificar en local:**
 
-- **Push al remoto:** requiere confirmar la visibilidad del repositorio y la política sobre
-  las capturas (SEC-21, OP-04).
 - **Primera corrida del pipeline**, con sus gates de CodeQL, Gitleaks, Trivy, Checkov y ZAP.
+  El push la dispara, pero este equipo no tiene la CLI de GitHub: el resultado se revisa en
+  la pestaña Actions (SEC-20).
 - **Reautenticación contra un IdP real.**
 - **Rendimiento en hardware de destino:** la misma simulación dio p50 204 ms con la máquina
   ocupada y 47 ms en reposo. Hay que medirla con la concurrencia real (TD-06).
@@ -1102,10 +1104,13 @@ modernization-score/
 ├─ Directory.Build.props             # warnings como errores, todas las reglas de seguridad, lock files
 ├─ .github/workflows/ci.yml          # tests, vulnerabilidades, CodeQL, Gitleaks, OSV, Trivy, Checkov, SBOM
 ├─ renovate.json · .gitleaks.toml
-├─ .gitignore · .gitattributes          # capturas del BRD, estado y secretos fuera del repositorio
+├─ .gitignore · .gitattributes          # capturas, imágenes, salidas de build y secretos fuera del repositorio
+├─ .claude/launch.json               # servidor de desarrollo para la vista previa de Claude Code
 ├─ HANDOFF.md                        # traspaso completo del contexto
+├─ artifacts/                        # último paquete portable (.zip)
 ├─ docs/
 │  ├─ PENDING-ITEMS.md               # pendientes para revisar con el equipo, en inglés
+│  ├─ plan/                          # copia del plan publicado como artefacto
 │  ├─ adr/                           # decisiones de arquitectura (0001–0020)
 │  ├─ brd/                           # índice de las capturas del BRD; las imágenes no se versionan
 │  ├─ security/                      # modelo de amenazas, ASVS L2, hallazgos
@@ -1114,7 +1119,7 @@ modernization-score/
 │  ├─ ruleset-v1.3.json              # pesos, bandas, estrategias
 │  ├─ roadmap-v1.json                # modelo MAPS
 │  └─ sources/source-schemas.json    # contratos de columnas por fuente
-├─ data/dummy/                       # CSV generados
+├─ data/                             # dummy/ (CSV generados) · history/ y modernization.db (estado local de prueba)
 ├─ src/
 │  ├─ shared/
 │  │  ├─ Modernization.Domain/          # modelo canónico + puertos
@@ -1137,7 +1142,8 @@ modernization-score/
 │  ├─ Modernization.DummyData/       # generador determinista
 │  ├─ Modernization.LoadTest/        # prueba de carga sin dependencias
 │  ├─ git/                           # respaldo con verificaciones y archivos bloqueados
-│  └─ portable/                      # paquete portable de prueba para otros equipos
+│  ├─ portable/                      # paquete portable de prueba para otros equipos
+│  └─ sesiones/                      # scripts históricos de las sesiones de trabajo
 └─ deploy/
    ├─ docker/                        # imágenes chiseled, no root
    └─ k8s/                           # kustomize, PSA restricted, NetworkPolicy, mesh
@@ -1164,6 +1170,6 @@ modernization-score/
 15. **RFC-17** — Filas con `EAI Code = 0` en OSS: ¿reportarlas como huérfanas en el linaje?
 16. **Autenticación** — OIDC se reemplazará por OAuth mediante APIM: elegir la opción A, B o C del [ADR 0020](docs/adr/0020-camino-de-oidc-a-oauth-con-apim.md).
 17. **Notificaciones** — ¿A quién y por qué canal se avisa cuando se publican reglas? Hoy hay un aviso dentro del sitio.
-18. **Repositorio** — Visibilidad de `camilarodriguez10/modscore1` y si las capturas del BRD pueden guardarse en él. Nada se ha subido todavía.
+18. **Repositorio** — Resuelto el 2026-09-15: `camilarodriguez10/modscore1` es privado; guarda todo lo creado salvo las capturas del BRD y las imágenes; los commits usan el correo de la cuenta.
 
 Cada punto, con contexto, opciones, recomendación y criterio de aceptación, está en [docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md).

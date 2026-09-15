@@ -51,11 +51,25 @@ git add -A
 if git diff --cached --quiet; then
   echo "No hay cambios que confirmar."
 else
-  blocked="$(git diff --cached --name-only | grep -E '^docs/brd/capturas/|\.(jpe?g|png|heic|pfx|p12|key|pem)$|(^|/)\.env(\.|$)' || true)"
+  blocked="$(git diff --cached --name-only | grep -iE '^docs/brd/capturas/|\.(jpe?g|png|gif|webp|bmp|heic|tiff?|ico|pfx|p12|key|pem)$|(^|/)\.env(\.|$)' || true)"
   if [ -n "$blocked" ]; then
     git reset -q
     echo "Estos archivos no se respaldan sin una decision explicita:" >&2
     echo "$blocked" >&2
+    exit 1
+  fi
+
+  # GitHub rechaza archivos de mas de 100 MB: mejor saberlo antes de confirmar.
+  too_large=""
+  while IFS= read -r file; do
+    if [ -f "$file" ] && [ "$(wc -c < "$file")" -gt 104857600 ]; then
+      too_large="$too_large$file"$'\n'
+    fi
+  done < <(git diff --cached --name-only)
+  if [ -n "$too_large" ]; then
+    git reset -q
+    echo "GitHub rechaza archivos de mas de 100 MB (ver docs/runbooks/respaldo-en-git.md):" >&2
+    echo "$too_large" >&2
     exit 1
   fi
 

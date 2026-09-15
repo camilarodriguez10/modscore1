@@ -1,0 +1,189 @@
+EAI,Country,Application Short Name,Application Name,API Type
+14982,Chile,14982-AC,Chile - Agent Commissions,APIM
+10685,Mexico,10685-BDA,Mexico - Bank Deposit Administration,SOAP
+14056,Chile,14056-GBE,Chile - Group Benefits Enrollment,APIM
+5659,Chile,5659-ASPM,Chile - Annuities Sales Process Manager,DataPower/SOAP Libraries
+7934,Chile,7934-DAH,Chile - Data Analytics Hub,APIC
+2363,Brazil,2363-ASPM,Brazil - Annuities Sales Process Manager,APIM
+1335,Brazil,1335-PWP,Brazil - Partner Web Portal,APIM
+5367,Mexico,5367-BDA,Mexico - Bank Deposit Administration,APIC
+8192,Chile,8192-AR,Chile - Actuarial Reporting,APIC
+12897,Mexico,12897-DM,Mexico - Document Management,APIM
+10585,Chile,10585-UW,Chile - Underwriting Workbench,APIC
+3331,Brazil,3331-UW,Brazil - Underwriting Workbench,APIC
+2125,Brazil,2125-BDA,Brazil - Bank Deposit Administration,SOAP
+11386,Mexico,11386-CNH,Mexico - Customer Notification Hub,DataPower/SOAP Libraries
+6672,Chile,6672-HPN,Chile - Health Provider Network,APIM
+10710,Mexico,10710-DO,Mexico - Digital Onboarding,APIM
+7471,Brazil,7471-UCD,Brazil - Unified Customer Database,DataPower/SOAP Libraries
+6709,Brazil,6709-BP,Brazil - Broker Portal,APIM
+2877,Chile,2877-CS,Chile - Customer Self-Service,APIM
+3298,Mexico,3298-AC,Mexico - Agent Commissions,SOAP
+4945,Mexico,4945-PA,Mexico - Policy Administration,APIC
+1686,Mexico,1686-PA,Mexico - Policy Administration,SOAP
+4427,Chile,4427-QE,Chile - Quotation Engine,SOAP
+11248,Chile,11248-BDA,Chile - Bank Deposit Administration,APIC
+2383,Chile,2383-QE,Chile - Quotation Engine,APIM
+14449,Mexico,14449-UW,Mexico - Underwriting Workbench,SOAP
+10076,Chile,10076-HPN,Chile - Health Provider Network,APIC
+4215,Chile,4215-CI,Chile - Claims Intake,APIM
+3625,Brazil,3625-CCD,Brazil - Contact Center Desktop,APIM
+14148,Brazil,14148-AC,Brazil - Agent Commissions,SOAP
+7268,Mexico,7268-RL,Mexico - Reinsurance Ledger,DataPower/SOAP Libraries
+7274,Brazil,7274-QE,Brazil - Quotation Engine,APIM
+7744,Mexico,7744-PA,Mexico - Policy Administration,APIM
+14502,Chile,14502-PA,Chile - Policy Administration,APIM
+14347,Brazil,14347-HPN,Brazil - Health Provider Network,SOAP
+4424,Brazil,4424-GBE,Brazil - Group Benefits Enrollment,APIM
+13793,Mexico,13793-FD,Mexico - Fraud Detection,APIC
+5705,Chile,5705-ASPM,Chile - Annuities Sales Process Manager,APIM
+8664,Chile,8664-UW,Chile - Underwriting Workbench,SOAP
+10950,Mexico,10950-FD,Mexico - Fraud Detection,APIM
+13269,Brazil,13269-CS,Brazil - Customer Self-Service,SOAP
+5646,Chile,5646-RL,Chile - Reinsurance Ledger,APIM
+9003,Chile,9003-FD,Chile - Fraud Detection,APIM
+5180,Chile,5180-BA,Chile - Beneficiaries Administration,SOAP
+4322,Brazil,4322-UCD,Brazil - Unified Customer Database,DataPower/SOAP Libraries
+4367,Chile,4367-UCD,Chile - Unified Customer Database,APIM
+9957,Mexico,9957-DO,Mexico - Digital Onboarding,APIM
+6037,Chile,6037-DO,Chile - Digital Onboarding,APIM
+11251,Mexico,11251-CS,Mexico - Customer Self-Service,APIM
+10639,Chile,10639-CNH,Chile - Customer Notification Hub,APIC
+12627,Chile,12627-DO,Chile - Digital Onboarding,APIC
+8441,Chile,8441-HPN,Chile - Health Provider Network,APIC
+14860,Mexico,14860-BDA,Mexico - Bank Deposit Administration,SOAP
+4381,Chile,4381-BA,Chile - Beneficiaries Administration,SOAP
+4711,Brazil,4711-BP,Brazil - Broker Portal,APIC
+13801,Brazil,13801-PA,Brazil - Policy Administration,APIM
+4765,Mexico,4765-DO,Mexico - Digital Onboarding,SOAP
+8753,Chile,8753-DM,Chile - Document Management,APIM
+13241,Mexico,13241-AR,Mexico - Actuarial Reporting,DataPower/SOAP Libraries
+3339,Brazil,3339-DAH,Brazil - Data Analytics Hub,APIM
+14754,Chile,14754-UCD,Chile - Unified Customer Database,DataPower/SOAP Libraries
+5162,Mexico,5162-DM,Mexico - Document Management,APIM
+14267,Brazil,14267-UCD,Brazil - Unified Customer Database,SOAP
+13195,Chile,13195-FD,Chile - Fraud Detection,SOAP
+2474,Chile,2474-BAC,Chile - Billing and Collections,APIM
+7932,Brazil,7932-BP,Brazil - Broker Portal,APIC
+8678,Chile,8678-PA,Chile - Policy Administration,DataPower/SOAP Libraries
+3156,Brazil,3156-UCD,Brazil - Unified Customer Database,DataPower/SOAP Libraries
+5809,Mexico,5809-BD,Mexico - BackOffice Digital,DataPower/SOAP Libraries
+9401,Chile,9401-GBE,Chile - Group Benefits Enrollment,SOAP
+11267,Mexico,11267-GBE,Mexico - Group Benefits Enrollment,APIC
+7000,Brazil,7000-PWP,Brazil - Partner Web Portal,APIM
+10536,Chile,10536-BAC,Chile - Billing and Collections,APIM
+7176,Mexico,7176-CCD,Mexico - Contact Center Desktop,SOAP
+2080,Chile,2080-CS,Chile - Customer Self-Service,APIM
+12275,Chile,12275-HPN,Chile - Health Provider Network,APIM
+10148,Mexico,10148-RL,Mexico - Reinsurance Ledger,APIC
+1139,Mexico,1139-GBE,Mexico - Group Benefits Enrollment,APIM
+1461,Brazil,1461-CNH,Brazil - Customer Notification Hub,SOAP
+5914,Brazil,5914-DO,Brazil - Digital Onboarding,SOAP
+4672,Brazil,4672-BAC,Brazil - Billing and Collections,APIC
+9872,Chile,9872-RR,Chile - Regulatory Reporting,DataPower/SOAP Libraries
+1775,Chile,1775-BAC,Chile - Billing and Collections,APIM
+1393,Chile,1393-CNH,Chile - Customer Notification Hub,DataPower/SOAP Libraries
+11716,Brazil,11716-PA,Brazil - Policy Administration,APIM
+8963,Brazil,8963-CNH,Brazil - Customer Notification Hub,APIM
+6385,Brazil,6385-CS,Brazil - Customer Self-Service,APIC
+12640,Mexico,12640-DO,Mexico - Digital Onboarding,DataPower/SOAP Libraries
+11780,Mexico,11780-DO,Mexico - Digital Onboarding,DataPower/SOAP Libraries
+4949,Chile,4949-QE,Chile - Quotation Engine,APIM
+7278,Brazil,7278-BD,Brazil - BackOffice Digital,APIM
+8153,Mexico,8153-CI,Mexico - Claims Intake,DataPower/SOAP Libraries
+10963,Brazil,10963-HPN,Brazil - Health Provider Network,APIM
+10348,Brazil,10348-GBE,Brazil - Group Benefits Enrollment,APIM
+3083,Chile,3083-CS,Chile - Customer Self-Service,APIM
+9108,Mexico,9108-GBE,Mexico - Group Benefits Enrollment,DataPower/SOAP Libraries
+11478,Mexico,11478-PA,Mexico - Policy Administration,SOAP
+7508,Chile,7508-AC,Chile - Agent Commissions,APIC
+11148,Chile,11148-AR,Chile - Actuarial Reporting,APIM
+13413,Mexico,13413-UCD,Mexico - Unified Customer Database,APIM
+6363,Chile,6363-RL,Chile - Reinsurance Ledger,APIM
+12651,Chile,12651-DAH,Chile - Data Analytics Hub,SOAP
+8826,Chile,8826-CNH,Chile - Customer Notification Hub,DataPower/SOAP Libraries
+13005,Mexico,13005-DAH,Mexico - Data Analytics Hub,APIM
+11269,Mexico,11269-CCD,Mexico - Contact Center Desktop,APIC
+6777,Mexico,6777-BDA,Mexico - Bank Deposit Administration,APIM
+4144,Mexico,4144-DM,Mexico - Document Management,DataPower/SOAP Libraries
+7151,Chile,7151-BP,Chile - Broker Portal,SOAP
+11648,Mexico,11648-PG,Mexico - Payments Gateway,SOAP
+2680,Mexico,2680-PWP,Mexico - Partner Web Portal,APIM
+12693,Chile,12693-GBE,Chile - Group Benefits Enrollment,SOAP
+5866,Chile,5866-FD,Chile - Fraud Detection,DataPower/SOAP Libraries
+8913,Mexico,8913-CS,Mexico - Customer Self-Service,DataPower/SOAP Libraries
+10009,Mexico,10009-RL,Mexico - Reinsurance Ledger,DataPower/SOAP Libraries
+10086,Brazil,10086-CI,Brazil - Claims Intake,DataPower/SOAP Libraries
+9186,Chile,9186-PWP,Chile - Partner Web Portal,DataPower/SOAP Libraries
+6430,Brazil,6430-BDA,Brazil - Bank Deposit Administration,APIC
+7492,Brazil,7492-CS,Brazil - Customer Self-Service,DataPower/SOAP Libraries
+4546,Chile,4546-RL,Chile - Reinsurance Ledger,APIC
+12477,Chile,12477-BP,Chile - Broker Portal,APIM
+13713,Chile,13713-BDA,Chile - Bank Deposit Administration,APIM
+13467,Chile,13467-CI,Chile - Claims Intake,DataPower/SOAP Libraries
+9958,Chile,9958-GBE,Chile - Group Benefits Enrollment,APIM
+13212,Brazil,13212-DAH,Brazil - Data Analytics Hub,APIM
+10986,Chile,10986-AC,Chile - Agent Commissions,APIM
+12506,Mexico,12506-CNH,Mexico - Customer Notification Hub,APIM
+10167,Mexico,10167-UCD,Mexico - Unified Customer Database,SOAP
+6667,Chile,6667-BAC,Chile - Billing and Collections,DataPower/SOAP Libraries
+9797,Mexico,9797-BDA,Mexico - Bank Deposit Administration,APIM
+14735,Brazil,14735-DAH,Brazil - Data Analytics Hub,APIM
+5074,Brazil,5074-CI,Brazil - Claims Intake,APIM
+11791,Brazil,11791-CNH,Brazil - Customer Notification Hub,SOAP
+13219,Chile,13219-BAC,Chile - Billing and Collections,APIM
+12974,Chile,12974-QE,Chile - Quotation Engine,APIC
+13518,Mexico,13518-DAH,Mexico - Data Analytics Hub,DataPower/SOAP Libraries
+3335,Chile,3335-UCD,Chile - Unified Customer Database,APIM
+5143,Mexico,5143-CCD,Mexico - Contact Center Desktop,APIM
+9579,Mexico,9579-BD,Mexico - BackOffice Digital,APIM
+8967,Mexico,8967-DO,Mexico - Digital Onboarding,DataPower/SOAP Libraries
+11714,Mexico,11714-RL,Mexico - Reinsurance Ledger,APIM
+10335,Chile,10335-BAC,Chile - Billing and Collections,SOAP
+9672,Mexico,9672-DM,Mexico - Document Management,APIC
+4569,Chile,4569-HPN,Chile - Health Provider Network,SOAP
+6522,Brazil,6522-CCD,Brazil - Contact Center Desktop,APIM
+13387,Chile,13387-CS,Chile - Customer Self-Service,APIM
+7868,Chile,7868-ASPM,Chile - Annuities Sales Process Manager,SOAP
+11721,Brazil,11721-DM,Brazil - Document Management,DataPower/SOAP Libraries
+9642,Chile,9642-GBE,Chile - Group Benefits Enrollment,APIM
+10694,Brazil,10694-BDA,Brazil - Bank Deposit Administration,APIM
+7919,Mexico,7919-FD,Mexico - Fraud Detection,SOAP
+4380,Chile,4380-UCD,Chile - Unified Customer Database,APIM
+9789,Brazil,9789-GBE,Brazil - Group Benefits Enrollment,SOAP
+14570,Mexico,14570-UCD,Mexico - Unified Customer Database,APIM
+2968,Chile,2968-QE,Chile - Quotation Engine,APIC
+13659,Chile,13659-HPN,Chile - Health Provider Network,DataPower/SOAP Libraries
+10470,Brazil,10470-CCD,Brazil - Contact Center Desktop,APIM
+8512,Mexico,8512-HPN,Mexico - Health Provider Network,SOAP
+11493,Brazil,11493-DO,Brazil - Digital Onboarding,APIM
+10465,Brazil,10465-FD,Brazil - Fraud Detection,DataPower/SOAP Libraries
+1301,Chile,1301-DAH,Chile - Data Analytics Hub,SOAP
+5857,Mexico,5857-UCD,Mexico - Unified Customer Database,APIM
+7912,Mexico,7912-CNH,Mexico - Customer Notification Hub,APIM
+10492,Brazil,10492-AC,Brazil - Agent Commissions,APIM
+13988,Brazil,13988-AC,Brazil - Agent Commissions,APIM
+1457,Brazil,1457-DO,Brazil - Digital Onboarding,SOAP
+7283,Chile,7283-PWP,Chile - Partner Web Portal,DataPower/SOAP Libraries
+11987,Mexico,11987-CNH,Mexico - Customer Notification Hub,DataPower/SOAP Libraries
+5896,Chile,5896-DM,Chile - Document Management,DataPower/SOAP Libraries
+14939,Brazil,14939-PWP,Brazil - Partner Web Portal,SOAP
+9853,Brazil,9853-RR,Brazil - Regulatory Reporting,DataPower/SOAP Libraries
+9382,Mexico,9382-PG,Mexico - Payments Gateway,APIM
+13117,Brazil,13117-PG,Brazil - Payments Gateway,DataPower/SOAP Libraries
+10103,Brazil,10103-GBE,Brazil - Group Benefits Enrollment,SOAP
+7261,Chile,7261-PWP,Chile - Partner Web Portal,APIM
+7668,Mexico,7668-UW,Mexico - Underwriting Workbench,APIM
+12741,Chile,12741-ASPM,Chile - Annuities Sales Process Manager,SOAP
+7886,Brazil,7886-DM,Brazil - Document Management,APIM
+11509,Brazil,11509-AC,Brazil - Agent Commissions,APIM
+5245,Brazil,5245-DO,Brazil - Digital Onboarding,SOAP
+9155,Chile,9155-CI,Chile - Claims Intake,APIC
+3516,Brazil,3516-PWP,Brazil - Partner Web Portal,APIM
+9869,Brazil,9869-AC,Brazil - Agent Commissions,APIM
+11028,Chile,11028-DM,Chile - Document Management,APIM
+7304,Mexico,7304-DAH,Mexico - Data Analytics Hub,SOAP
+11475,Chile,11475-GBE,Chile - Group Benefits Enrollment,APIM
+11867,Brazil,11867-BA,Brazil - Beneficiaries Administration,SOAP
+3217,Chile,3217-CS,Chile - Customer Self-Service,APIM
+5791,Mexico,5791-ASPM,Mexico - Annuities Sales Process Manager,SOAP

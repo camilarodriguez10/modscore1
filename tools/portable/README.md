@@ -63,4 +63,6 @@ pwsh tools/portable/build-portable.ps1
 pwsh tools/portable/build-portable.ps1 -Variant FrameworkDependent
 ```
 
-El `.zip` y su SHA-256 quedan en `artifacts/` (fuera del repositorio).
+El `.zip` y su SHA-256 quedan en `artifacts/`. El último `.zip` se versiona en el repositorio;
+la carpeta descomprimida no. Antes de confirmar uno nuevo, borrar el anterior: cada paquete
+queda para siempre en la historia y GitHub rechaza archivos de más de 100 MB.

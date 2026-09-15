@@ -1,0 +1,1357 @@
+<title>Modernization Score Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+:root{
+  --ground:#eef1f2;
+  --surface:#ffffff;
+  --surface-2:#f7f9f9;
+  --ink:#151d22;
+  --ink-2:#455158;
+  --ink-3:#6d7a81;
+  --rule:#d3dadd;
+  --rule-2:#e4e9eb;
+  --accent:#0d5f6b;
+  --accent-2:#0a7c8c;
+  --accent-wash:#e2eef0;
+  --good:#2c6b4f;
+  --good-wash:#e2eee8;
+  --warn:#8c5c0c;
+  --warn-wash:#f4ebda;
+  --crit:#9a3729;
+  --crit-wash:#f5e5e2;
+  --shadow:0 1px 2px rgba(21,29,34,.05),0 8px 24px -18px rgba(21,29,34,.35);
+  --f-display:"IBM Plex Serif",Georgia,"Times New Roman",serif;
+  --f-body:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0d1418;
+    --surface:#141d22;
+    --surface-2:#18232a;
+    --ink:#e4ebee;
+    --ink-2:#a4b2b8;
+    --ink-3:#7b8a91;
+    --rule:#2a3941;
+    --rule-2:#213038;
+    --accent:#54b6c4;
+    --accent-2:#7bcdd8;
+    --accent-wash:#14313a;
+    --good:#67b98f;
+    --good-wash:#152d24;
+    --warn:#d6a153;
+    --warn-wash:#2e2415;
+    --crit:#e08573;
+    --crit-wash:#331e1a;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -20px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0d1418;
+  --surface:#141d22;
+  --surface-2:#18232a;
+  --ink:#e4ebee;
+  --ink-2:#a4b2b8;
+  --ink-3:#7b8a91;
+  --rule:#2a3941;
+  --rule-2:#213038;
+  --accent:#54b6c4;
+  --accent-2:#7bcdd8;
+  --accent-wash:#14313a;
+  --good:#67b98f;
+  --good-wash:#152d24;
+  --warn:#d6a153;
+  --warn-wash:#2e2415;
+  --crit:#e08573;
+  --crit-wash:#331e1a;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -20px rgba(0,0,0,.9);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--f-body);
+  font-size:16px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1120px;margin:0 auto;padding:0 28px 96px}
+.prose{max-width:70ch}
+
+/* ---------- masthead ---------- */
+header.mast{
+  border-bottom:1px solid var(--rule);
+  background:var(--surface);
+}
+.mast-in{max-width:1120px;margin:0 auto;padding:44px 28px 38px;display:grid;gap:22px}
+.eyebrow{
+  font-family:var(--f-mono);font-size:11.5px;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--accent);
+}
+h1{
+  font-family:var(--f-display);font-weight:600;
+  font-size:clamp(34px,5.2vw,52px);line-height:1.08;letter-spacing:-.015em;
+  margin:0;text-wrap:balance;
+}
+.mast .sub{max-width:64ch;color:var(--ink-2);font-size:17px;margin:0}
+.mast-meta{
+  display:flex;flex-wrap:wrap;gap:0 28px;row-gap:10px;
+  padding-top:20px;border-top:1px solid var(--rule-2);
+  font-family:var(--f-mono);font-size:12px;color:var(--ink-3);
+}
+.mast-meta b{color:var(--ink-2);font-weight:500}
+
+/* ---------- sections ---------- */
+section{padding-top:56px}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+.sec-num{
+  font-family:var(--f-mono);font-size:12px;font-weight:600;color:var(--accent);
+  letter-spacing:.08em;padding-top:6px;flex:none;
+}
+h2{
+  font-family:var(--f-display);font-weight:600;font-size:clamp(22px,2.7vw,29px);
+  line-height:1.18;letter-spacing:-.01em;margin:0;text-wrap:balance;
+}
+h3{
+  font-family:var(--f-body);font-weight:600;font-size:15.5px;letter-spacing:.005em;
+  margin:34px 0 10px;color:var(--ink);
+}
+h4{
+  font-family:var(--f-mono);font-weight:600;font-size:11.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-3);margin:26px 0 10px;
+}
+p{margin:0 0 14px}
+ul,ol{margin:0 0 14px;padding-left:22px}
+li{margin-bottom:7px}
+li::marker{color:var(--ink-3)}
+strong{font-weight:600}
+a{color:var(--accent);text-underline-offset:2px}
+code{
+  font-family:var(--f-mono);font-size:.87em;
+  background:var(--surface-2);border:1px solid var(--rule-2);
+  padding:.08em .34em;border-radius:3px;color:var(--ink-2);
+}
+hr.div{border:0;border-top:1px solid var(--rule);margin:52px 0 0}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:18px 0 20px;border:1px solid var(--rule);border-radius:5px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+th{
+  font-family:var(--f-mono);font-size:10.5px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);text-align:left;
+  padding:11px 14px;border-bottom:1px solid var(--rule);background:var(--surface-2);
+  white-space:nowrap;vertical-align:bottom;
+}
+td{padding:10px 14px;border-bottom:1px solid var(--rule-2);vertical-align:top;color:var(--ink-2)}
+tbody tr:last-child td{border-bottom:0}
+td:first-child{color:var(--ink);font-weight:500}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+th.num{text-align:right}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:12.5px}
+tr.total td{background:var(--accent-wash);color:var(--ink);font-weight:600;border-bottom:0}
+tr.total td:first-child{color:var(--ink)}
+
+/* weight bar encodes the weight value */
+.wb{display:flex;align-items:center;gap:9px;justify-content:flex-end}
+.wb i{display:block;height:6px;border-radius:1px;background:var(--accent);opacity:.75;flex:none}
+.wb.zero i{background:var(--ink-3);opacity:.3}
+.wb span{font-family:var(--f-mono);font-variant-numeric:tabular-nums;min-width:2.2ch;text-align:right}
+
+/* score chips carry the 20/60/100 band semantics */
+.chip{
+  display:inline-block;font-family:var(--f-mono);font-size:11.5px;font-weight:600;
+  padding:2px 7px;border-radius:3px;font-variant-numeric:tabular-nums;
+  border:1px solid transparent;white-space:nowrap;
+}
+.c100{background:var(--good-wash);color:var(--good);border-color:color-mix(in srgb,var(--good) 26%,transparent)}
+.c60{background:var(--warn-wash);color:var(--warn);border-color:color-mix(in srgb,var(--warn) 26%,transparent)}
+.c20{background:var(--crit-wash);color:var(--crit);border-color:color-mix(in srgb,var(--crit) 26%,transparent)}
+.cnull{background:var(--surface-2);color:var(--ink-3);border-color:var(--rule)}
+
+/* ---------- formula / verification instrument ---------- */
+.formula{
+  background:var(--surface);border:1px solid var(--rule);border-left:3px solid var(--accent);
+  border-radius:4px;padding:20px 22px;margin:20px 0;overflow-x:auto;
+}
+.formula .eq{
+  font-family:var(--f-mono);font-size:clamp(15px,2.2vw,20px);font-weight:500;
+  color:var(--ink);white-space:nowrap;letter-spacing:-.01em;
+}
+.formula .def{display:grid;gap:5px;margin-top:14px;font-family:var(--f-mono);font-size:12.5px;color:var(--ink-2)}
+.formula .def b{color:var(--accent);font-weight:600}
+
+.verify{
+  background:var(--surface);border:1px solid var(--rule);border-radius:5px;
+  box-shadow:var(--shadow);margin:22px 0 8px;overflow:hidden;
+}
+.verify-hd{
+  display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:10px;
+  padding:14px 18px;border-bottom:1px solid var(--rule);background:var(--surface-2);
+}
+.verify-hd .t{font-family:var(--f-mono);font-size:11.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-2)}
+.verify-hd .s{font-family:var(--f-mono);font-size:11.5px;color:var(--good);font-weight:500}
+.verify .tw{margin:0;border:0;border-radius:0}
+.match{color:var(--good);font-weight:600}
+
+/* ---------- callouts ---------- */
+.rfc{
+  border:1px solid var(--rule);border-left:3px solid var(--warn);
+  background:var(--surface);border-radius:4px;padding:15px 18px;margin:18px 0;
+  font-size:14.5px;color:var(--ink-2);
+}
+.rfc b.tag{
+  font-family:var(--f-mono);font-size:11px;letter-spacing:.09em;color:var(--warn);
+  display:block;margin-bottom:5px;text-transform:uppercase;
+}
+.note{
+  border-top:1px solid var(--rule);padding-top:14px;margin:20px 0;
+  font-size:14px;color:var(--ink-3);max-width:70ch;
+}
+
+/* ---------- pipeline (3 data-source phases) ---------- */
+.phases{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:20px 0}
+.phase{
+  background:var(--surface);border:1px solid var(--rule);border-radius:5px;
+  padding:16px 17px;display:grid;gap:8px;align-content:start;
+}
+.phase .n{font-family:var(--f-mono);font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.phase .h{font-family:var(--f-mono);font-size:14px;font-weight:600;color:var(--ink)}
+.phase p{margin:0;font-size:13.5px;color:var(--ink-2);line-height:1.5}
+.phase.now{border-color:var(--accent);background:var(--accent-wash)}
+
+/* ---------- capas API-led ---------- */
+.stack{display:grid;gap:0;margin:22px 0}
+.layer{
+  background:var(--surface);border:1px solid var(--rule);border-radius:6px;
+  padding:18px 20px;display:grid;gap:12px;
+}
+.layer-hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 14px}
+.layer-hd .lk{font-family:var(--f-mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.layer-hd .ln{font-family:var(--f-mono);font-size:15px;font-weight:600;color:var(--ink)}
+.layer-hd .lr{font-family:var(--f-body);font-size:12.5px;color:var(--ink-3);margin-left:auto}
+.layer ul{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink-2);display:grid;gap:5px}
+.layer ul li{margin:0}
+.never{
+  font-family:var(--f-mono);font-size:12px;color:var(--crit);
+  background:var(--crit-wash);border-radius:3px;padding:7px 11px;
+  border:1px solid color-mix(in srgb,var(--crit) 22%,transparent);
+}
+.stack .link{
+  justify-self:center;font-family:var(--f-mono);font-size:11px;color:var(--ink-3);
+  padding:9px 0;letter-spacing:.04em;
+}
+.inner{
+  border:1px dashed var(--rule);border-radius:5px;padding:13px 15px;
+  background:var(--surface-2);display:grid;gap:6px;
+}
+.inner .it{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.inner .iv{font-family:var(--f-mono);font-size:13px;color:var(--ink);font-weight:500}
+.port{font-family:var(--f-mono);font-size:11.5px;color:var(--accent);text-align:center;padding:6px 0}
+
+/* ---------- estado de fase ---------- */
+.done{color:var(--good);font-weight:600;font-family:var(--f-mono);font-size:11px;letter-spacing:.06em}
+tr.shipped td{background:var(--good-wash)}
+.ship{
+  border:1px solid color-mix(in srgb,var(--good) 30%,transparent);border-left:3px solid var(--good);
+  background:var(--good-wash);border-radius:5px;padding:16px 19px;margin:20px 0;
+}
+.ship .h{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--good);font-weight:600;margin-bottom:8px}
+.ship p{margin:0 0 8px;font-size:14.5px;color:var(--ink-2)}
+.ship p:last-child{margin:0}
+
+/* ---------- code block ---------- */
+pre{
+  font-family:var(--f-mono);font-size:12.5px;line-height:1.62;
+  background:var(--surface);border:1px solid var(--rule);border-radius:5px;
+  padding:16px 18px;overflow-x:auto;margin:18px 0;color:var(--ink-2);
+}
+pre b{color:var(--accent);font-weight:500}
+pre em{color:var(--ink-3);font-style:normal}
+
+/* ---------- lever bars ---------- */
+.lb{display:flex;align-items:center;gap:9px;justify-content:flex-end}
+.lb i{display:block;height:7px;border-radius:1px;background:var(--accent);flex:none;opacity:.8}
+.lb span{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600;min-width:5ch;text-align:right;color:var(--ink)}
+
+/* ---------- phase timeline ---------- */
+.dur{display:flex;align-items:center;gap:9px}
+.dur i{display:block;height:7px;border-radius:1px;background:var(--accent);opacity:.65;flex:none}
+.dur span{font-family:var(--f-mono);font-size:12px;color:var(--ink-3);white-space:nowrap}
+
+/* ---------- screens list ---------- */
+.screens{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:5px;overflow:hidden;margin:20px 0}
+.screen{background:var(--surface);padding:14px 17px;display:grid;grid-template-columns:2.4rem 1fr;gap:14px}
+.screen .i{font-family:var(--f-mono);font-size:12px;color:var(--ink-3);font-weight:600;padding-top:2px}
+.screen .t{font-weight:600;font-size:14.5px;margin-bottom:3px}
+.screen .d{font-size:13.5px;color:var(--ink-2);line-height:1.5}
+.screen .req{font-family:var(--f-mono);font-size:10.5px;color:var(--accent);letter-spacing:.06em;margin-left:8px;font-weight:600}
+.screen.key{background:var(--accent-wash)}
+
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:620px){
+  .mast-in{padding:32px 20px 28px}
+  .wrap{padding:0 20px 64px}
+  .sec-head{gap:10px}
+}
+</style>
+
+<header class="mast">
+  <div class="mast-in">
+    <div class="eyebrow">Plan de diseño e implementación</div>
+    <h1>Modernization Score Platform</h1>
+    <p class="sub">Reconstrucción del cálculo de Modernization Score v1.3 sobre fuentes dummy, con backend .NET 10 en microservicios y SPA React 19 — diseñada para que las fuentes dummy se reemplacen por archivos y luego por bases de datos sin tocar el motor de cálculo.</p>
+    <div class="mast-meta">
+      <span>Base documental · <b>34 capturas: BRD + dashboard Power BI v1.3 + archivos fuente</b></span>
+      <span>Ruleset · <b>v1.3</b></span>
+      <span>Fases 00–13 · <b>entregadas — 640 pruebas .NET, 35 unitarias y 6 e2e en verde</b></span>
+      <span>Duración estimada · <b>16 semanas</b></span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- 0 -->
+<section id="resumen">
+  <div class="sec-head"><span class="sec-num">00</span><h2>Resumen ejecutivo</h2></div>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:22%">Tema</th><th>Decisión</th></tr></thead>
+      <tbody>
+        <tr><td>Fórmula</td><td><span class="mono">Score = 20 + (Numerador ÷ Denominador) × 80</span> — <span class="match">verificada contra dos dashboards reales</span></td></tr>
+        <tr><td>Backend</td><td>.NET 10 LTS · API-led en <strong>dos capas</strong>: <code>channel-api</code> (BFF/orquestador) + <code>system-api</code> (reglas + fuentes)</td></tr>
+        <tr><td>Frontend</td><td>React 19 + Vite + TypeScript, patrón BFF — sin tokens en el navegador</td></tr>
+        <tr><td>Datos</td><td>Puerto <code>ISourceReader</code> con tres adaptadores intercambiables: <span class="match">Dummy → Archivos</span> → Base de datos</td></tr>
+        <tr><td>Historia</td><td>Cada carga publica una <strong>versión inmutable</strong>: el score se lee siempre junto al peso disponible de ese momento</td></tr>
+        <tr><td>Motor de score</td><td>Reglas versionadas en JSON — cambiar un peso no requiere recompilar</td></tr>
+        <tr><td>What-if</td><td>Simulación sobre el mismo motor determinista, con ranking de palancas por puntos ganados</td></tr>
+        <tr><td>Seguridad</td><td>Zero-trust: OIDC + cookie BFF, mTLS entre servicios, SBOM, escaneo SCA/SAST bloqueante</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- 1 -->
+<section id="modelo">
+  <div class="sec-head"><span class="sec-num">01</span><h2>Modelo de scoring reconstruido</h2></div>
+  <div class="prose">
+    <p>Toda la plataforma descansa sobre una única fórmula normalizada, extraída del BRD y confirmada numéricamente contra dos aplicaciones reales del dashboard. La misma fórmula se aplica a cada pilar y al score global.</p>
+  </div>
+
+  <div class="formula">
+    <div class="eq">Score = 20 + ( Numerador ÷ Denominador ) × 80</div>
+    <div class="def">
+      <div><b>Numerador</b>&nbsp;&nbsp;= Σ (peso<sub>i</sub> × valor<sub>i</sub> ÷ 100) &nbsp;para toda métrica <em>con</em> dato</div>
+      <div><b>Denominador</b> = Σ (peso<sub>i</sub>) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;para toda métrica <em>con</em> dato</div>
+    </div>
+  </div>
+
+  <div class="prose">
+    <p>Las reglas transversales del BRD (<em>“ALL Sections”</em>): los valores nulos o cero se excluyen del scoring —el cero, salvo donde la tabla de la métrica lo puntúa, como Tech Debt 0 o SCA sin flaws (ADR 0019)—; las métricas marcadas <em>“No Data Available”</em> salen <strong>del numerador y del denominador</strong>; y todo resultado se normaliza al rango <strong>20–100</strong>, nunca a cero.</p>
+  </div>
+
+  <h3>Verificación de la fórmula</h3>
+  <div class="prose"><p>Este es el control que valida el modelo completo. Si estos cuatro números no cuadran, nada de lo que sigue es confiable.</p></div>
+
+  <div class="verify">
+    <div class="verify-hd">
+      <span class="t">Caso A · EAI 10969 — dashboard v1.3</span>
+      <span class="s">4 / 4 coinciden exactamente</span>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Pilar</th><th class="num">Numerador</th><th class="num">Denom.</th><th>Cálculo</th><th class="num">Dashboard</th></tr></thead>
+        <tbody>
+          <tr><td>Modernization Risk Vectors</td><td class="num">23.20</td><td class="num">40</td><td class="mono">20 + (23.20/40)×80 = 66.40</td><td class="num match">66,40 ✓</td></tr>
+          <tr><td>Architecture &amp; Maturity</td><td class="num">26.41</td><td class="num">30</td><td class="mono">20 + (26.41/30)×80 = 90.42</td><td class="num match">90,42 ✓</td></tr>
+          <tr><td>Stability</td><td class="num">10.00</td><td class="num">10</td><td class="mono">20 + (10.00/10)×80 = 100.00</td><td class="num match">100,00 ✓</td></tr>
+          <tr class="total"><td>Score global</td><td class="num">59.61</td><td class="num">80</td><td class="mono">20 + (59.61/80)×80 = 79.61</td><td class="num match">79,61 ✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="verify">
+    <div class="verify-hd">
+      <span class="t">Caso B · EAI 14381 — ejemplo trabajado del BRD</span>
+      <span class="s">coincide</span>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Pilar</th><th class="num">Numerador</th><th class="num">Denom.</th><th class="num">Score</th></tr></thead>
+        <tbody>
+          <tr><td>Modernization Risk Vectors</td><td class="num">17.00</td><td class="num">25</td><td class="num">74.40</td></tr>
+          <tr><td>Architecture &amp; Maturity</td><td class="num">21.75</td><td class="num">25</td><td class="num">89.60</td></tr>
+          <tr><td>Stability</td><td class="num">6.00</td><td class="num">10</td><td class="num">68.00</td></tr>
+          <tr class="total"><td>Score global</td><td class="num">44.75</td><td class="num">60</td><td class="num match">79.67 ✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="note">El score global se calcula sobre las <strong>métricas planas</strong>, no como promedio ponderado de los tres pilares. Los pilares son vistas agregadas de los mismos términos — por eso los pesos disponibles de cada pilar suman el denominador global.</div>
+
+  <h3>Catálogo de pesos — ruleset v1.3</h3>
+
+  <h4>Modernization Risk Vectors · 50 %</h4>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Métrica</th><th class="num" style="width:130px">Peso</th><th style="width:38%">Fuente</th></tr></thead>
+      <tbody>
+        <tr><td>Kenna Score</td><td><div class="wb"><i style="width:32px"></i><span>8</span></div></td><td>CMT · App Sec Kenna Application Report</td></tr>
+        <tr><td>DR In-Scope</td><td><div class="wb"><i style="width:28px"></i><span>7</span></div></td><td>EAI · Application Security and IT Risk</td></tr>
+        <tr><td>SCA Flaws (Critical)</td><td><div class="wb"><i style="width:40px"></i><span>10</span></div></td><td>SCA Scan · Veracode</td></tr>
+        <tr><td>SCA Flaws (High)</td><td><div class="wb"><i style="width:32px"></i><span>8</span></div></td><td>SCA Scan · Veracode</td></tr>
+        <tr><td>SCA Flaws (Medium)</td><td><div class="wb zero"><i style="width:3px"></i><span>0</span></div></td><td>removida del score</td></tr>
+        <tr><td>SCA Flaws (Low)</td><td><div class="wb zero"><i style="width:3px"></i><span>0</span></div></td><td>removida del score</td></tr>
+        <tr><td>MFA</td><td><div class="wb"><i style="width:28px"></i><span>7</span></div></td><td>EAI · Application Security and IT Risk</td></tr>
+        <tr><td>Open-Source Score</td><td><div class="wb"><i style="width:40px"></i><span>10</span></div></td><td>RPT · Risk Profile Tool</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Architecture &amp; Maturity · 40 %</h4>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Métrica</th><th class="num" style="width:130px">Peso v1.3</th><th>Sub-pesos BRD</th><th style="width:22%">Fuente</th></tr></thead>
+      <tbody>
+        <tr><td>RAW Tech Score</td><td><div class="wb"><i style="width:20px"></i><span>5</span></div></td><td>5</td><td>CMT · Currency Model</td></tr>
+        <tr><td>Native REST APIs / APIM</td><td><div class="wb"><i style="width:20px"></i><span>5</span></div></td><td>5</td><td>API &amp; DataPower</td></tr>
+        <tr><td>Architectural Value <em>(compuesto)</em></td><td><div class="wb"><i style="width:40px"></i><span>10</span></div></td><td>Modern 5 · Obsolete 1 · Heritage 2 · Not Approved 3</td><td>CMT</td></tr>
+        <tr><td>Product Strategy <em>(compuesto)</em></td><td><div class="wb"><i style="width:40px"></i><span>10</span></div></td><td>Invest 4 · Tolerate 1 · Eliminate 2 · Migrate 3</td><td>MTS</td></tr>
+        <tr><td>Tech Debt Score</td><td><div class="wb"><i style="width:40px"></i><span>10</span></div></td><td>5</td><td>EAI</td></tr>
+        <tr><td>Automation DevSecOps</td><td><div class="wb zero"><i style="width:3px"></i><span>0</span></div></td><td>0</td><td>removida</td></tr>
+        <tr><td>Containerized</td><td><div class="wb zero"><i style="width:3px"></i><span>0</span></div></td><td>4 <em>(tachado en el BRD)</em></td><td>OCP — removida</td></tr>
+        <tr><td>Coding Language · Application Disposition</td><td><div class="wb zero"><i style="width:3px"></i><span>—</span></div></td><td>NULL · solo se muestran</td><td>EAI</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Stability · 10 %</h4>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Métrica</th><th class="num" style="width:130px">Peso</th><th style="width:38%">Fuente</th></tr></thead>
+      <tbody>
+        <tr><td>Monitoring</td><td><div class="wb"><i style="width:20px"></i><span>5</span></div></td><td>Elastic Agent · APM · Synthetics</td></tr>
+        <tr><td>Operational Score</td><td><div class="wb"><i style="width:20px"></i><span>5</span></div></td><td>CMT · ServiceNow, ventana 12 meses</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Tablas de mapeo · valor → score</h3>
+  <div class="prose"><p>Cada métrica cruda se traduce a uno de tres niveles antes de ponderarse. El color codifica el nivel, igual que en el dashboard.</p></div>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:24%">Métrica</th><th>Regla aplicada</th></tr></thead>
+      <tbody>
+        <tr><td>Kenna Score</td><td>670–1000 (Critical/High) <span class="chip c20">20</span> · 340–669 (Medium) <span class="chip c60">60</span> · 1–339 (Low) <span class="chip c100">100</span> · 0 <span class="chip cnull">sin dato</span></td></tr>
+        <tr><td>DR In-Scope</td><td>Yes <span class="chip c100">100</span> · No <span class="chip c20">20</span></td></tr>
+        <tr><td>SCA Flaws</td><td>High/Critical <span class="chip c20">20</span> · Medium <span class="chip c20">20</span> · Low <span class="chip c60">60</span> · None <span class="chip c100">100</span></td></tr>
+        <tr><td>MFA</td><td>Yes con usuarios <span class="chip c100">100</span> · Yes sin usuarios <span class="chip c100">100</span> · <strong>No con usuarios</strong> <span class="chip c20">20</span> · No sin usuarios <span class="chip c100">100</span></td></tr>
+        <tr><td>Open-Source Score</td><td>75–100 <span class="chip c100">100</span> · 60–74 <span class="chip c60">60</span> · 0–59 <span class="chip c20">20</span> · 0 exacto <span class="chip cnull">sin dato</span></td></tr>
+        <tr><td>RAW Tech Score</td><td>75–100 <span class="chip c100">100</span> · 60–74 <span class="chip c60">60</span> · 0–59 <span class="chip c20">20</span> · 0 exacto <span class="chip cnull">sin dato</span></td></tr>
+        <tr><td>Native REST APIs</td><td>APIM <span class="chip c100">100</span> · APIC <span class="chip c100">100</span> · SOAP <span class="chip c20">20</span> · DataPower/SOAP Libs <span class="chip c20">20</span></td></tr>
+        <tr><td>Architectural Value <em>por producto</em></td><td>Modern <span class="chip c100">100</span> · Heritage <span class="chip c60">60</span> · Obsolete <span class="chip c20">20</span> · Not Approved <span class="chip c20">20</span></td></tr>
+        <tr><td>Product Strategy <em>por producto</em></td><td>Invest <span class="chip c100">100</span> · Tolerate <span class="chip c60">60</span> · Eliminate <span class="chip c20">20</span> · Migrate <span class="chip c20">20</span></td></tr>
+        <tr><td>Tech Debt Score</td><td>0 <span class="chip c100">100</span> · 0,1–2,4 <span class="chip c60">60</span> · 2,5–5 <span class="chip c20">20</span></td></tr>
+        <tr><td>Operational Score</td><td>80–100 <span class="chip c100">100</span> · 60–79,99 <span class="chip c60">60</span> · 0–59,9 <span class="chip c20">20</span> · 0 exacto <span class="chip cnull">sin dato</span></td></tr>
+        <tr><td>Monitoring</td><td>Elastic <em>o</em> Synthetic <em>o</em> APM habilitado <span class="chip c100">100</span> · ninguno <span class="chip c20">20</span></td></tr>
+        <tr><td>Disposition / Roadmap <em>(se muestra, no puntúa)</em></td><td>Maintain Evolve <span class="chip c100">100</span> · Maintain Patch <span class="chip c60">60</span> · Rehost <span class="chip c60">60</span> · Refactor <span class="chip c20">20</span> · Reimagine <span class="chip c20">20</span> · Retire <span class="chip c20">20</span></td></tr>
+        <tr><td>Automation DevSecOps <em>(removida)</em></td><td>5 <span class="chip c100">100</span> · 4 <span class="chip c60">60</span> · 0/NULL–3 <span class="chip c20">20</span></td></tr>
+        <tr><td>Containerized <em>(removida)</em></td><td>Yes <span class="chip c100">100</span> · No <span class="chip cnull">NULL</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Compuestos</h4>
+  <pre>ArchValue = (100·Modern + 60·Heritage + 20·Obsolete + 20·NotApproved)
+            ÷ (Modern + Heritage + Obsolete + NotApproved)
+
+ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
+            ÷ (Invest + Tolerate + Eliminate + Migrate)</pre>
+
+  <div class="rfc">
+    <b class="tag">RFC-01 · supuesto a validar</b>
+    El BRD asigna peso a cada conteo por separado (Modern 5, Obsolete 1, …) mientras el dashboard v1.3 muestra un único compuesto de peso 10. El promedio ponderado por conteo reproduce los valores observados — 15 productos Modern + 1 Heritage da exactamente 97,50, el valor de EAI 14381. Se implementa como estrategia intercambiable (<code>CountWeightedAverage</code> / <code>PerCountBanded</code>) en el ruleset.
+  </div>
+</section>
+
+<hr class="div">
+
+<!-- 2 -->
+<section id="fuentes">
+  <div class="sec-head"><span class="sec-num">02</span><h2>Fuentes de datos y su evolución</h2></div>
+  <div class="prose">
+    <p>Nueve fuentes distintas alimentan el score. Las capturas permitieron mapear los nombres exactos de columna de cada archivo — ese detalle es lo que hace posible que la Fase 2 se pruebe desde el día uno.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:20%">Fuente lógica</th><th style="width:26%">Archivo observado</th><th>Campos clave</th></tr></thead>
+      <tbody>
+        <tr><td>EAI Master</td><td class="mono">EAI TABLE</td><td>EAI_Code · Application_Name · Application_Status · Application_Disposition · CIO · CRE · LOB · SUB_LOB · Region · Country · Critical Application Indicator · Cloud_Indicator/Type/Vendor · Coding_Language · DR_In_Scope · MFA · Internet_Facing · Kenna_Score · Raw_Tech_Score · Operational_Score · RPO/RTO Range · User Count</td></tr>
+        <tr><td>Architectural Value</td><td class="mono">CMT export</td><td>EAI_CODE · Modern_Count · Heritage_Count · Obsolete_Count · Not_Approved_for_Use_Count</td></tr>
+        <tr><td>Product Strategy</td><td class="mono">0809 PRODUCT STRATEGY</td><td>EAI_CODE · Eliminate_Count · Invest_Count · Migrate_Count · Tolerate_Count</td></tr>
+        <tr><td>Tech Debt</td><td class="mono">0809 tech_debt</td><td>APP_ID · COMBINED_DENIAL_SCORE · COMBINED_ACCEPTED_SCORE · COMBINED_APP_SCORE · LAST_UPDATED_DATE</td></tr>
+        <tr><td>SCA Flaws</td><td class="mono">0809 veracode_sca_open_flaws_6</td><td>FLAW_IDX_NUM · EAI_CD · APP_ID · SVR_DSC (1-Critical / 2-High / 3-Medium) · FND_STT · FND_AGE · CVE_ID · CVSSV3_SCR · LIB_NM · LIB_VND · ACCSBLT</td></tr>
+        <tr><td>OSS Score</td><td class="mono">0809 OSS_Score_by_EAI_3</td><td>EAI Code · OSS Score · OPEN_SRC_SFTWR_HLTH_SCOR_UPDT_TS</td></tr>
+        <tr><td>Monitoring</td><td class="mono">0809 MONITOREO</td><td>EAI · Agent · APM · Monitoring · Synthetics</td></tr>
+        <tr><td>APIM Onboarding</td><td class="mono">0809 APIM_Onboarded_EAIs_LATAM</td><td>EAI · Country · Application Short Name · Application Name</td></tr>
+        <tr><td>Kenna</td><td class="mono">CMT App Sec Kenna Report</td><td>EAI_CODE · Kenna_Score</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Un contrato, tres adaptadores</h3>
+  <div class="prose">
+    <p>Los requisitos 8 y 9 anticipan dos migraciones. El diseño las convierte en un cambio de configuración: <code>"DataSource:Provider"</code> alterna entre los tres adaptadores y el motor de scoring nunca se entera.</p>
+  </div>
+
+  <div class="phases">
+    <div class="phase now">
+      <span class="n">Fase 1 · ahora</span>
+      <span class="h">SeededDummyReader</span>
+      <p>Bogus con seed fijo. ~250 aplicaciones sintéticas sobre LATAM, con casos borde deliberados: sin SCA, sin tech debt, sin monitoreo, conteos en cero, override activo.</p>
+    </div>
+    <div class="phase">
+      <span class="n">Fase 2 · req. 8</span>
+      <span class="h">FileSourceReader</span>
+      <p>CSV y XLSX vía CsvHelper y ClosedXML, validados contra contratos de esquema. Una columna faltante falla con error accionable, no produce un score silenciosamente incorrecto.</p>
+    </div>
+    <div class="phase">
+      <span class="n">Fase 3 · req. 9</span>
+      <span class="h">DatabaseSourceReader</span>
+      <p>EF Core 10 en modo solo lectura, con Dapper para las consultas calientes. Mismos DTOs, misma suite de contract tests.</p>
+    </div>
+  </div>
+
+  <h4>Los cinco puntos que hacen que la migración no duela</h4>
+  <ul class="prose">
+    <li><strong>Un solo modelo canónico.</strong> Los tres adaptadores producen los mismos DTOs, detrás de una capa anticorrupción.</li>
+    <li><strong>Contratos de esquema versionados.</strong> Cada fuente declara columnas, tipos, nullability y alias en <code>contracts/sources/*.schema.json</code>.</li>
+    <li><strong>Procedencia obligatoria.</strong> Cada observación lleva sistema, archivo, columna, timestamp y hash de fila — esto alimenta directamente la pantalla “cómo se calculó”.</li>
+    <li><strong>Contract tests compartidos.</strong> Una única suite corre contra los tres adaptadores; migrar no puede romper el score sin que un test lo detecte.</li>
+    <li><strong>Golden dataset.</strong> Los EAI 10969 y 14381 quedan como fixtures permanentes con sus scores esperados de 79,61 y 79,67.</li>
+  </ul>
+
+  <div class="note">Los datos dummy se emiten <strong>también como CSV</strong> en <code>data/dummy/</code> usando los nombres de columna reales. Así el adaptador de archivos se prueba antes de que llegue el primer archivo productivo.</div>
+
+  <h3>Data histórica: primero archivos, después base de datos</h3>
+  <div class="prose">
+    <p>Un score aislado dice poco. La pregunta que hace un comité de portafolio no es <em>“¿cuánto vale esta aplicación?”</em> sino <em>“¿está mejorando?”</em>. Por eso la versión no es una tabla lateral: <strong>es parte del puerto de fuentes</strong>, y los tres adaptadores la resuelven cada uno a su manera sin que nada aguas arriba lo note.</p>
+  </div>
+
+  <div class="formula">
+    <div class="eq">Task&lt;IReadOnlyList&lt;SnapshotVersion&gt;&gt; GetVersionsAsync(...)</div>
+    <div class="def">
+      <div><b>GetAllAsync(versionId, ...)</b>&nbsp; el portafolio tal como estaba en esa versión</div>
+      <div>Un adaptador sin historia devuelve una sola versión y responde igual. El motor, el what-if y el roadmap no distinguen los dos casos.</div>
+    </div>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:22%">Aspecto</th><th style="width:39%">Fase de archivos <span class="done">ENTREGADA</span></th><th>Fase de base de datos <em>(Fase 09)</em></th></tr></thead>
+      <tbody>
+        <tr><td>Qué es una versión</td><td>Un directorio con los CSV de esa carga y su <code>manifest.json</code></td><td>Una fila de <code>snapshot_version</code>; cada tabla de hechos gana <code>version_id</code> en su clave</td></tr>
+        <tr><td>Publicar</td><td>Staging → validación → ensamblado → <code>Directory.Move</code> atómico</td><td>Una transacción por carga</td></tr>
+        <tr><td>Consulta histórica</td><td>Relee el directorio de esa versión</td><td><code>WHERE version_id = @v</code>, con índice</td></tr>
+        <tr><td>Coste de la serie</td><td>Recorre todas las versiones — aceptable con pocas cargas</td><td>Tabla <code>score_snapshot</code> precalculada</td></tr>
+        <tr><td>Retención</td><td>Manual: el directorio es la unidad de borrado</td><td>Política declarativa: N versiones o M meses</td></tr>
+        <tr><td>Primer arranque</td><td>Las pantallas responden 409 con la salida —ir a Cargas— y la carga sigue habilitada</td><td>El mismo estado: una tabla de snapshots vacía</td></tr>
+        <tr><td>Puerto <code>ISourceReader</code></td><td colspan="2"><strong>No cambia.</strong> Es el punto de todo el diseño: el motor, el what-if, el roadmap y las ocho pantallas siguen exactamente igual</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note"><strong>El score se muestra junto al peso disponible en cada punto.</strong> Un salto con el mismo peso detrás es mejora real; con más peso puede ser solo más evidencia. La gráfica de evolución lleva ambos, porque sin el segundo el primero engaña.</div>
+</section>
+
+<hr class="div">
+
+<!-- 3 -->
+<section id="arquitectura">
+  <div class="sec-head"><span class="sec-num">03</span><h2>Arquitectura API-led en dos capas</h2></div>
+  <div class="prose">
+    <p>Dos capas con responsabilidades excluyentes. Una regla de negocio jamás vive en la capa Channel; una preocupación de canal jamás vive en la capa System. Esa frontera es lo que hace que las tres migraciones previstas —canal nuevo, archivos reales, base de datos— toquen un solo lado cada vez.</p>
+  </div>
+
+  <div class="stack">
+    <div class="layer">
+      <div class="layer-hd">
+        <span class="lk">Capa Channel</span>
+        <span class="ln">channel-api</span>
+        <span class="lr">BFF · orquestador</span>
+      </div>
+      <ul>
+        <li>Termina OIDC; los tokens nunca llegan al navegador</li>
+        <li>Compone la respuesta de cada pantalla en una sola llamada</li>
+        <li>Traduce el modelo canónico a view-models por pantalla</li>
+        <li>Rate limiting, CSRF, cabeceras de seguridad, CSP nonce</li>
+        <li>Fan-out / fan-in y agregación resiliente con Polly</li>
+      </ul>
+      <div class="never">Nunca calcula un score · Nunca lee un archivo ni una tabla</div>
+    </div>
+
+    <div class="link">↓ &nbsp;mTLS · token de servicio · JSON canónico&nbsp; ↓</div>
+
+    <div class="layer">
+      <div class="layer-hd">
+        <span class="lk">Capa System</span>
+        <span class="ln">system-api</span>
+        <span class="lr">reglas de negocio · fuentes de datos</span>
+      </div>
+      <div class="inner">
+        <span class="it">Núcleo de dominio — puro, determinista, sin I/O</span>
+        <span class="iv">Scoring.Engine · WhatIf · Roadmap · Rulesets</span>
+      </div>
+      <div class="port">▲ &nbsp;puerto <code>ISourceReader&lt;T&gt;</code>&nbsp; ▲</div>
+      <div class="inner">
+        <span class="it">Adaptadores de fuente — intercambiables por configuración</span>
+        <span class="iv">Dummy &nbsp;│&nbsp; File (CSV/XLSX) &nbsp;│&nbsp; Database</span>
+      </div>
+      <div class="never">Nunca sabe qué pantalla lo llamó · Nunca compone view-models</div>
+    </div>
+  </div>
+
+  <h3>Por qué dos capas y no seis servicios</h3>
+  <div class="prose">
+    <p>La capa Channel absorbe todo lo que cambia con el canal —una pantalla nueva, un cliente móvil— sin tocar reglas de negocio. La capa System absorbe todo lo que cambia con el negocio o con las fuentes —un peso, un ruleset, la migración a base de datos— sin romper contratos de canal. <strong>Los requisitos 8 y 9 caen enteros del lado System</strong>, detrás de un puerto: migrar de dummy a archivos y luego a base de datos no toca ni una línea del <code>channel-api</code> ni del frontend.</p>
+    <p>El <code>system-api</code> está modularizado internamente en <code>Scoring</code>, <code>WhatIf</code>, <code>Roadmap</code> y <code>Sources</code>, cada uno con su contrato interno. Cuando el volumen lo justifique, cualquiera de esos módulos se extrae como System API independiente sin cambiar el contrato que consume el <code>channel-api</code>. Si aparece orquestación compleja entre varios System APIs, se inserta una capa Process entre ambas — el patrón lo admite sin rediseño.</p>
+  </div>
+
+  <div class="note"><strong>El motor como librería, no como llamada de red.</strong> <code>Modernization.Scoring.Engine</code> se referencia desde el módulo de scoring y desde el de what-if dentro del mismo proceso. Así el score baseline y el simulado se calculan con el mismo código, bit a bit. Un what-if que invocara al scoring por HTTP podría divergir; este diseño lo hace imposible.</div>
+
+  <h3>Stack .NET 10</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:24%">Componente</th><th style="width:26%">Elección</th><th>Justificación</th></tr></thead>
+      <tbody>
+        <tr><td>Framework</td><td>.NET 10 LTS · Minimal APIs</td><td>Menor superficie de ataque que MVC</td></tr>
+        <tr><td>Channel API</td><td>YARP 2.x + Minimal APIs</td><td>Proxy inverso de Microsoft, sin dependencias transitivas de terceros</td></tr>
+        <tr><td>Validación</td><td>FluentValidation</td><td>Whitelist explícita de entradas</td></tr>
+        <tr><td>Persistencia</td><td>EF Core 10 + Dapper</td><td>ORM para escritura, SQL parametrizado para lecturas calientes</td></tr>
+        <tr><td>CSV / XLSX</td><td>CsvHelper · ClosedXML</td><td>Maduros y sin CVE activos; ClosedXML evita el COM de Excel</td></tr>
+        <tr><td>Datos dummy</td><td>Bogus</td><td>Determinista con seed</td></tr>
+        <tr><td>Mensajería</td><td>MassTransit + RabbitMQ</td><td>Eventos de ingestión</td></tr>
+        <tr><td>Observabilidad</td><td>OpenTelemetry → OTLP</td><td>Trazas distribuidas end-to-end</td></tr>
+        <tr><td>Resiliencia</td><td>Polly v8</td><td>Circuit breaker y timeouts</td></tr>
+        <tr><td>Tests</td><td>xUnit v3 · Testcontainers · Verify</td><td>Snapshot testing de los breakdowns completos</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note"><strong>Deliberadamente fuera:</strong> AutoMapper (mapeo explícito), Newtonsoft.Json (<code>System.Text.Json</code> con source generators y opciones estrictas), y cualquier paquete sin release en los últimos 12 meses.</div>
+
+  <h3>Diseño del motor de scoring</h3>
+  <pre><b>public sealed record</b> MetricEvaluation(
+    string   MetricKey,        <em>// "mfa", "kenna", "sca.critical"</em>
+    string   PillarKey,        <em>// "risk" | "architecture" | "stability"</em>
+    object?  RawValue,         <em>// "No", 670, 28.95</em>
+    string   RawValueDisplay,  <em>// "No (with users)"</em>
+    decimal? MappedScore,      <em>// 20 · null = No Data Available</em>
+    decimal  Weight,           <em>// 7</em>
+    decimal? WeightedScore,    <em>// 1.40</em>
+    bool     IsIncluded,
+    string   ExclusionReason,  <em>// "No data available in EAI source"</em>
+    string   RuleApplied,      <em>// "No (with users) =&gt; 20"</em>
+    SourceProvenance Provenance);</pre>
+
+  <ul class="prose">
+    <li><strong>Puro y determinista.</strong> Sin <code>DateTime.Now</code>, sin red, sin disco. Entrada → salida reproducible.</li>
+    <li><strong>Reglas como datos.</strong> <code>ruleset-v1.3.json</code> contiene pesos, bandas y estrategias. Los rulesets son inmutables y versionados; cada score registra con qué versión se calculó.</li>
+    <li><strong><code>decimal</code>, nunca <code>double</code>.</strong> Evita el drift de punto flotante al comparar contra el dashboard.</li>
+    <li><strong>Explicabilidad de primera clase.</strong> El breakdown no es logging: es el contrato de API que alimenta la pantalla del requisito 4.</li>
+  </ul>
+</section>
+
+<hr class="div">
+
+<!-- 4 -->
+<section id="whatif">
+  <div class="sec-head"><span class="sec-num">04</span><h2>Motor de escenarios what-if</h2></div>
+  <div class="prose">
+    <p>Cambiar una métrica altera el numerador y, si la métrica pasa de “sin dato” a “con dato”, también el denominador. Por eso el motor <strong>recalcula desde cero</strong> en lugar de sumar deltas: sumarlos daría el resultado incorrecto en escenarios compuestos.</p>
+  </div>
+
+  <div class="formula">
+    <div class="eq">Δ = 0,8 × peso × (valor′ − valor) ÷ Denominador</div>
+    <div class="def">
+      <div><b>Ejemplo real</b> — habilitar MFA en EAI 10969, peso 7, valor 20 → 100, D = 80</div>
+      <div>Numerador &nbsp;59,61 → 59,61 + 7×(100−20)/100 = <b>65,21</b></div>
+      <div>Score &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;79,61 → 20 + (65,21/80)×80 = <b>85,21</b> &nbsp;&nbsp;<b>+5,60 puntos</b></div>
+    </div>
+  </div>
+
+  <h3>Catálogo de palancas</h3>
+  <div class="prose"><p>Ganancia sobre un denominador de 80. Cada fila está verificada por un test que la comprueba contra la fórmula además de contra el motor.</p></div>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Palanca</th><th style="width:14%">Métrica</th><th style="width:16%">Salto</th><th class="num" style="width:26%">Puntos ganados</th></tr></thead>
+      <tbody>
+        <tr><td>Remediar SCA Critical</td><td class="mono">sca.critical</td><td class="mono">20 → 100</td><td><div class="lb"><i style="width:120px"></i><span>+8,00</span></div></td></tr>
+        <tr><td>Subir OSS Score a ≥ 75</td><td class="mono">oss</td><td class="mono">20 → 100</td><td><div class="lb"><i style="width:120px"></i><span>+8,00</span></div></td></tr>
+        <tr><td>Eliminar tech debt</td><td class="mono">techDebt</td><td class="mono">20 → 100</td><td><div class="lb"><i style="width:120px"></i><span>+8,00</span></div></td></tr>
+        <tr><td>Remediar SCA High</td><td class="mono">sca.high</td><td class="mono">20 → 100</td><td><div class="lb"><i style="width:96px"></i><span>+6,40</span></div></td></tr>
+        <tr><td>Bajar Kenna a rango Low</td><td class="mono">kenna</td><td class="mono">20 → 100</td><td><div class="lb"><i style="width:96px"></i><span>+6,40</span></div></td></tr>
+        <tr><td>Habilitar MFA</td><td class="mono">mfa</td><td class="mono">20 → 100</td><td><div class="lb"><i style="width:84px"></i><span>+5,60</span></div></td></tr>
+        <tr><td>Incluir en plan DR</td><td class="mono">dr.inScope</td><td class="mono">20 → 100</td><td><div class="lb"><i style="width:84px"></i><span>+5,60</span></div></td></tr>
+        <tr><td>Onboarding a APIM / APIC</td><td class="mono">api.native</td><td class="mono">20 → 100</td><td><div class="lb"><i style="width:60px"></i><span>+4,00</span></div></td></tr>
+        <tr><td>Habilitar monitoreo</td><td class="mono">monitoring</td><td class="mono">20 → 100</td><td><div class="lb"><i style="width:60px"></i><span>+4,00</span></div></td></tr>
+        <tr><td>Subir Operational Score a ≥ 80</td><td class="mono">operational</td><td class="mono">20 → 100</td><td><div class="lb"><i style="width:60px"></i><span>+4,00</span></div></td></tr>
+        <tr><td>Modernizar N productos obsoletos</td><td class="mono">archValue</td><td class="mono">recalcula</td><td><div class="lb"><i style="width:34px"></i><span>var.</span></div></td></tr>
+        <tr><td>Reclasificar productos a Invest</td><td class="mono">productStrategy</td><td class="mono">recalcula</td><td><div class="lb"><i style="width:34px"></i><span>var.</span></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Por qué el motor recalcula en lugar de sumar</h3>
+  <div class="prose">
+    <p>La forma barata de simular sería calcular el delta de cada palanca una vez y sumarlos. Con esta fórmula, eso da resultados incorrectos — y el error va en la dirección optimista, que es la peor.</p>
+  </div>
+
+  <div class="verify">
+    <div class="verify-hd">
+      <span class="t">Medido · EAI 14381 con tres palancas que aportan dato nuevo</span>
+      <span class="s">error del 25 %</span>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Cálculo</th><th class="num">Peso disponible</th><th class="num">Score</th><th class="num">Δ</th></tr></thead>
+        <tbody>
+          <tr><td>Línea base</td><td class="num">60</td><td class="num">79,67</td><td class="num">—</td></tr>
+          <tr><td>Sumando los deltas individuales</td><td class="num">60</td><td class="num">96,13</td><td class="num" style="color:var(--crit)">+16,46</td></tr>
+          <tr class="total"><td>Recalculando desde cero</td><td class="num">80</td><td class="num">92,75</td><td class="num match">+13,08</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="note">La razón está en el denominador: una palanca que aporta dato a una métrica que no lo tenía cambia las <strong>dos</strong> partes de la división. El delta de una palanca depende entonces de qué otras se apliquen con ella. La app muestra las tres cifras juntas y explica la diferencia en texto, en vez de dejar al usuario sospechando del cálculo.</div>
+
+  <h3>Capacidades del servicio</h3>
+  <ol class="prose">
+    <li><strong>Escenario simple</strong> — una palanca, delta inmediato.</li>
+    <li><strong>Escenario compuesto</strong> — N palancas con el efecto de interacción correcto sobre el denominador.</li>
+    <li><strong>Ranking de eficiencia</strong> — palancas ordenadas por puntos ganados y cruzadas con esfuerzo estimado; los quick wins primero.</li>
+    <li><strong>Objetivo inverso</strong> — “quiero llegar a 90”: el motor devuelve el subconjunto mínimo de palancas que lo consigue.</li>
+    <li><strong>Techo alcanzable</strong> — score máximo con todo aplicado, para identificar lo que queda estructuralmente limitado.</li>
+    <li><strong>Escenarios guardados</strong> — persistidos, versionados contra el ruleset y compartibles por enlace.</li>
+  </ol>
+
+  <div class="note">Los escenarios nunca mutan datos reales: corren sobre una copia del snapshot y sus resultados se marcan explícitamente como proyección.</div>
+</section>
+
+<hr class="div">
+
+<!-- 5 -->
+<section id="roadmap">
+  <div class="sec-head"><span class="sec-num">05</span><h2>Roadmap y disposition</h2></div>
+  <div class="prose">
+    <p>El modelo MAPS del BRD define tres dispositions y siete roadmaps. Cada roadmap tiene su propio score asociado, lo que permite proyectar el efecto de ejecutar el plan.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:22%">Disposition</th><th style="width:18%">Roadmap</th><th>Descripción</th><th class="num" style="width:9%">Score</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="2"><strong>Tolerate</strong><br><span style="font-weight:400;color:var(--ink-3);font-size:12.5px">Optimizar preservando. Sin cambios requeridos, o la modernización no cabe en el año calendario.</span></td><td>Maintain (Patch)</td><td><em>Retain.</em> Inversión para mantenerlo vigente y seguro.</td><td class="num"><span class="chip c60">60</span></td></tr>
+        <tr><td>Rehost</td><td>Migración a otro hosting o compute (AKS, ASE) sin alterar arquitectura ni funcionalidad. Sin recompilación.</td><td class="num"><span class="chip c60">60</span></td></tr>
+        <tr><td rowspan="3"><strong>Invest</strong><br><span style="font-weight:400;color:var(--ink-3);font-size:12.5px">Apps con encaje funcional al negocio, necesarias para objetivos esenciales.</span></td><td>Maintain (Evolve)</td><td>Nueva funcionalidad o capacidades sobre la aplicación actual.</td><td class="num"><span class="chip c100">100</span></td></tr>
+        <tr><td>Refactor</td><td>Cambios de código o arquitectura preservando funcionalidad. Patrones modernos; incluye rearchitect y re-platform.</td><td class="num"><span class="chip c20">20</span></td></tr>
+        <tr><td>Reimagine</td><td><em>Replace.</em> Nueva versión desde cero con frameworks modernos, o sustitución por COTS/SaaS.</td><td class="num"><span class="chip c20">20</span></td></tr>
+        <tr><td rowspan="2"><strong>Eliminate</strong><br><span style="font-weight:400;color:var(--ink-3);font-size:12.5px">La app sale del portafolio, reduciendo el conteo.</span></td><td>Retire</td><td>Baja de aplicaciones obsoletas, redundantes o sin valor de negocio.</td><td class="num"><span class="chip c20">20</span></td></tr>
+        <tr><td>Consolidate</td><td>La funcionalidad se consolida dentro de otra aplicación.</td><td class="num"><span class="chip c20">20</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Lo que gana cada camino, medido</h3>
+  <div class="prose">
+    <p>Cada roadmap declara qué palancas del what-if entrega su ejecución, con la justificación de por qué esas. El score proyectado sale de aplicarlas al mismo motor que calcula el actual — no de una tabla escrita a mano que se desincronizaría al primer cambio de peso.</p>
+  </div>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:14%">Disposition</th><th style="width:20%">Roadmap</th><th class="num">Apps</th><th class="num">Hoy</th><th class="num">Al terminar</th><th class="num">Δ</th><th class="num">Duración</th></tr></thead>
+      <tbody>
+        <tr><td rowspan="3">Invest</td><td>Refactor</td><td class="num">37</td><td class="num">67,94</td><td class="num">82,15</td><td class="num" style="color:var(--good)">+14,21</td><td class="num">42 sem</td></tr>
+        <tr><td>Maintain (Evolve)</td><td class="num">33</td><td class="num">73,07</td><td class="num">89,52</td><td class="num" style="color:var(--good)">+16,45</td><td class="num">28 sem</td></tr>
+        <tr><td>Reimagine</td><td class="num">32</td><td class="num">70,57</td><td class="num">96,26</td><td class="num" style="color:var(--good)">+25,69</td><td class="num">60 sem</td></tr>
+        <tr><td rowspan="2">Tolerate</td><td>Maintain (Patch)</td><td class="num">35</td><td class="num">67,65</td><td class="num">82,78</td><td class="num" style="color:var(--good)">+15,13</td><td class="num">14 sem</td></tr>
+        <tr><td>Rehost</td><td class="num">35</td><td class="num">72,09</td><td class="num">74,71</td><td class="num" style="color:var(--good)">+2,62</td><td class="num">17 sem</td></tr>
+        <tr><td rowspan="2">Eliminate</td><td>Consolidate</td><td class="num">41</td><td class="num">70,37</td><td class="num">—</td><td class="num">sale</td><td class="num">34 sem</td></tr>
+        <tr><td>Retire</td><td class="num">37</td><td class="num">72,18</td><td class="num">—</td><td class="num">sale</td><td class="num">18 sem</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">Dos lecturas que solo aparecen al poner las columnas juntas. <strong>Maintain (Patch) es el mejor retorno del portafolio</strong>: +15,13 puntos en 14 semanas. <strong>Reimagine cuesta cuatro veces más tiempo por menos del doble de ganancia</strong> — sigue pudiendo ser la decisión correcta, pero por razones funcionales, no por el score. Y <strong>Rehost apenas mueve la aguja</strong> (+2,62), coherente con el BRD: sin recompilación, la arquitectura y la deuda quedan igual.</div>
+
+  <h3>Vista “plan futuro” por aplicación</h3>
+  <ul class="prose">
+    <li><strong>Estado actual</strong> — disposition, roadmap, score, desglose por pilar y frescura de cada fuente.</li>
+    <li><strong>Estado objetivo</strong> — score proyectado tras ejecutar el roadmap, calculado con el motor what-if. No es un número escrito a mano.</li>
+    <li><strong>Plan de ejecución</strong> — hitos derivados del roadmap (Rehost → evaluación AKS → contenedorización → cutover), fechas objetivo, owner (CIO / CRE / AD Director) y dependencias entre aplicaciones.</li>
+    <li><strong>Alertas de coherencia</strong> — ocho reglas que contrastan el plan declarado contra los datos. En el portafolio dummy disparan 196 veces: 35 aplicaciones <em>Tolerate</em> con vulnerabilidades críticas abiertas, 14 aplicaciones críticas fuera del plan de DR, 67 marcadas para salir del portafolio pero con productos en Invest. Cada alerta lleva la evidencia que la sostiene y enlaza a las aplicaciones concretas.</li>
+    <li><strong>Vista portafolio</strong> — matriz Disposition × Roadmap con conteo de aplicaciones y score promedio, con drill-down a la lista.</li>
+  </ul>
+</section>
+
+<hr class="div">
+
+<!-- 6 -->
+<section id="frontend">
+  <div class="sec-head"><span class="sec-num">06</span><h2>SPA React 19</h2></div>
+  <div class="prose">
+    <p>Vite 7 y TypeScript 5.9 en modo estricto, React Router 7 con los filtros en la URL, TanStack Query v5 para el estado del servidor, gráficos en SVG propio y Tailwind 4 con componentes propios. Sin librerías de formularios ni de estado: el servidor valida y es la fuente de verdad. Los tipos del API se escriben a mano y una prueba de contrato impide que se separen de lo que serializa la capa Channel.</p>
+    <p>Se había prometido usar Actions con <code>useActionState</code>, <code>use()</code> con Suspense y el compilador de React 19. <strong>No se usan</strong>: las mutaciones de TanStack Query cubren los estados pendientes y no hubo tablas con costo de render medible. Sí se usa <code>lazy</code> con Suspense para cargar las pantallas de administración bajo demanda. Las pruebas son Vitest para la lógica pura y Playwright con el Edge instalado para los flujos completos.</p>
+  </div>
+
+  <div class="screens">
+    <div class="screen"><span class="i">01</span><div><div class="t">Portfolio</div><div class="d">Grid de aplicaciones con los mismos filtros del dashboard: CIO, CRE/AD Director, Region, Country, EAI Code, Application Status, L1 Business Capability, Critical App, LOB/Sub-LOB. Distribución de scores y heatmap por LOB.</div></div></div>
+    <div class="screen"><span class="i">02</span><div><div class="t">Score Overview <span class="req">req. 4</span></div><div class="d">Gauge del score global y tres tarjetas de pilar que replican el layout v1.3 — valor crudo, × peso, ponderado — con badges de peso disponible frente al total.</div></div></div>
+    <div class="screen key"><span class="i">03</span><div><div class="t">Cómo se calculó <span class="req">req. 4</span></div><div class="d">La pantalla central. Waterfall de contribución por métrica; tabla completa <em>crudo → regla aplicada → score mapeado → peso → ponderado</em>; la fórmula renderizada con los números reales sustituidos; las métricas excluidas con su motivo; y un panel de procedencia por métrica con archivo, columna, fila y timestamp.</div></div></div>
+    <div class="screen key"><span class="i">04</span><div><div class="t">What-If Lab <span class="req">req. 5</span></div><div class="d">Panel de palancas con toggles y sliders, recálculo en vivo con delta por métrica, comparación lado a lado baseline contra escenario, ranking de quick wins, modo objetivo (ingresar score meta y obtener el set mínimo de acciones) y escenarios guardados y compartibles.</div></div></div>
+    <div class="screen"><span class="i">05</span><div><div class="t">Roadmap y plan futuro <span class="req">req. 6</span></div><div class="d">Ficha MAPS de la aplicación, timeline de hitos, score proyectado tras el roadmap, dependencias y alertas de incoherencia.</div></div></div>
+    <div class="screen"><span class="i">06</span><div><div class="t">Portfolio Roadmap <span class="req">req. 6</span></div><div class="d">Matriz Disposition × Roadmap, capacidad por trimestre y agregados por LOB.</div></div></div>
+    <div class="screen"><span class="i">07</span><div><div class="t">Data Lineage <span class="req">req. 8 · 9</span></div><div class="d">Estado de cada fuente: última carga, filas leídas, filas rechazadas con motivo y cobertura por métrica — qué porcentaje de aplicaciones tiene dato.</div></div></div>
+    <div class="screen"><span class="i">08</span><div><div class="t">Cargas <span class="req">req. 8 · 9</span></div><div class="d">Subir los archivos del período y recalcular el portafolio, con el veredicto de cada archivo — filas leídas, filas rechazadas y el motivo — el historial de versiones publicadas y la evolución del score del portafolio a lo largo de las cargas. Desde la Fase 10, Cargas y Linaje son las dos pestañas de la pantalla Datos, con un selector de carga compartido.</div></div></div>
+    <div class="screen"><span class="i">09</span><div><div class="t">Admin · Rulesets</div><div class="d">Comparación de versiones de ruleset, simulación del impacto en todo el portafolio antes de publicar, e historial de overrides con su justificación.</div></div></div>
+  </div>
+
+  <h4>Seguridad del frontend</h4>
+  <ul class="prose">
+    <li><strong>Patrón BFF</strong> — cero tokens en el navegador. El <code>channel-api</code> mantiene la sesión y emite cookie <code>httpOnly</code> + <code>Secure</code> + <code>SameSite=Strict</code>, eliminando de raíz el robo de tokens por XSS.</li>
+    <li><strong>CSP estricta, sin nonce</strong> — sin <code>unsafe-inline</code>, sin <code>unsafe-eval</code> y sin orígenes de terceros. El build no tiene un solo script ni estilo en línea, así que <code>'self'</code> es más estricto que un nonce. Verificado en navegador con cero violaciones; las fuentes se sirven desde el mismo origen.</li>
+    <li>Nada de <code>dangerouslySetInnerHTML</code>, con regla de ESLint que lo prohíbe.</li>
+    <li>Doble envío de token CSRF en todas las mutaciones y <code>Permissions-Policy</code> restrictiva. SRI no aplica: todos los recursos son del mismo origen.</li>
+  </ul>
+</section>
+
+<hr class="div">
+
+<!-- 7 -->
+<section id="seguridad">
+  <div class="sec-head"><span class="sec-num">07</span><h2>Seguridad</h2></div>
+
+  <h3>Superficie de librerías — cero vulnerabilidades conocidas</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:24%">Control</th><th>Implementación</th></tr></thead>
+      <tbody>
+        <tr><td>Inventario</td><td>Central Package Management (<code>Directory.Packages.props</code>) — una sola versión por paquete en toda la solución</td></tr>
+        <tr><td>Bloqueo</td><td><code>packages.lock.json</code> commiteado y <code>--locked-mode</code> en CI: el build falla si alguien altera el árbol de dependencias</td></tr>
+        <tr><td>Escaneo .NET</td><td><code>dotnet list package --vulnerable --include-transitive</code> — <strong>falla el build ante cualquier severidad ≥ Moderate</strong></td></tr>
+        <tr><td>Escaneo npm</td><td><code>npm audit --audit-level=moderate</code> + OSV-Scanner + <code>npm ci --ignore-scripts</code> para bloquear postinstall maliciosos</td></tr>
+        <tr><td>SBOM</td><td>CycloneDX generado en cada build y archivado como artefacto</td></tr>
+        <tr><td>Actualizaciones</td><td>Renovate con auto-merge solo de parches y con la suite en verde</td></tr>
+        <tr><td>Cadena de suministro</td><td>Firma de imágenes con cosign y verificación de atestación SLSA en la admisión al clúster</td></tr>
+        <tr><td>Criterio de adopción</td><td>Ninguna dependencia sin release en 12 meses, sin mantenedor activo o sin política de seguridad publicada</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">Nota de coherencia: la plataforma <strong>mide</strong> postura de seguridad — SCA, OSS Score, Kenna. Su propio pipeline aplica los mismos umbrales. La herramienta debe aprobar su propio scoring.</div>
+
+  <h3>Defensa en profundidad</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:20%">Capa</th><th>Controles</th></tr></thead>
+      <tbody>
+        <tr><td>Identidad y acceso</td><td>OIDC contra el IdP corporativo · Authorization Code + PKCE, sin flujo implícito · autorización por política de LOB/CIO filtrada <strong>en la query, no en la UI</strong> · re-autenticación step-up para overrides y publicación de rulesets, con log de auditoría inmutable</td></tr>
+        <tr><td>Servicio a servicio</td><td>mTLS obligatorio vía service mesh (Linkerd) — sin tráfico en claro dentro del clúster · tokens de servicio de vida corta · ningún servicio confía en headers del cliente · NetworkPolicies <em>default-deny</em></td></tr>
+        <tr><td>Aplicación</td><td>Validación whitelist en el borde y en cada servicio · rate limiting por usuario e IP · DTOs explícitos, nunca entidades de dominio · sin SQL dinámico · HSTS con preload, <code>X-Content-Type-Options</code>, <code>Referrer-Policy: no-referrer</code>, COOP</td></tr>
+        <tr><td>Runtime</td><td>Imágenes distroless/chiseled, non-root, filesystem read-only, todas las capabilities dropeadas · secretos en Key Vault vía CSI driver, nunca en variables de entorno · Trivy bloqueante</td></tr>
+        <tr><td>Datos</td><td>TLS 1.3 en tránsito y cifrado en reposo · el inventario de aplicaciones es información sensible: acceso mínimo necesario, logs de acceso y retención definida · sin PII en logs, con redacción estructurada</td></tr>
+        <tr><td>Pipeline</td><td>SAST (CodeQL) · escaneo de secretos (Gitleaks) · IaC scanning (Checkov) · DAST (OWASP ZAP en staging) · rama protegida, revisión obligatoria, commits firmados</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">Objetivo de conformidad: <strong>OWASP ASVS Nivel 2</strong>, con verificación explícita del Top 10.</div>
+
+  <h3>El módulo de carga y su superficie de ataque</h3>
+  <div class="prose">
+    <p>Subir archivos es el endpoint más peligroso de cualquier aplicación, y aquí además <strong>reemplaza el portafolio completo</strong>: un abuso no sería solo una intrusión, sería corromper la base sobre la que se deciden inversiones. Cada control de esta tabla tiene su test.</p>
+  </div>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:34%">Control</th><th style="width:22%">Dónde</th><th>Qué impide</th></tr></thead>
+      <tbody>
+        <tr><td>Autenticación + CSRF de doble envío</td><td class="mono">channel-api</td><td>Que un formulario alojado en otro sitio reemplace el portafolio de la organización</td></tr>
+        <tr><td>Límite de tamaño de cuerpo</td><td class="mono">ambas capas</td><td>Agotamiento de memoria y disco — se aplica antes de leer un byte</td></tr>
+        <tr><td>Extensión y content-type en lista blanca</td><td class="mono">IngestionService</td><td>Ejecutables y contenido activo disfrazados de datos</td></tr>
+        <tr><td>Tope de archivos por carga</td><td class="mono">IngestionService</td><td>Que una petición con cientos de partes agote el proceso</td></tr>
+        <tr><td><strong>El nombre del cliente nunca es una ruta</strong></td><td class="mono">UploadService</td><td>Path traversal: <code>../../appsettings.json</code> no puede tocar nada</td></tr>
+        <tr><td>Identificación por encabezado; la asignación manual, por lista blanca</td><td class="mono">SourceFileMatcher</td><td>Que un nombre controlado por el cliente decida qué fuente es un archivo, o que una asignación inventada se vuelva una ruta</td></tr>
+        <tr><td>Validación de esquema antes de aceptar</td><td class="mono">CsvSourceReader</td><td>Datos que producirían scores incorrectos sin que nadie lo note</td></tr>
+        <tr><td>Staging + publicación atómica</td><td class="mono">UploadService</td><td>Que una carga a medias deje el portafolio inconsistente</td></tr>
+        <tr><td>Rechazo de la carga vacía</td><td class="mono">UploadService</td><td>Reemplazar 250 aplicaciones por ninguna — peor que no cargar nada</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">Lo que se escribe en disco es <strong>el nombre canónico del contrato</strong>, nunca el que envió el cliente. Desde la Fase 10 el nombre entrante tampoco decide qué fuente es: eso lo resuelve el encabezado, y el nombre solo desempata entre dos contratos que encajan igual.</div>
+  <h3>Fase 08 — lo que encontró el endurecimiento</h3>
+  <div class="ship">
+    <div class="h">Criterio de aceptación cumplido</div>
+    <p><strong>Ningún hallazgo High ni Critical abierto.</strong> La revisión encontró 23 hallazgos; las tres Altas aparecieron en esta fase y se cerraron con pruebas que las reproducen. 84 pruebas nuevas, y el build compila con <strong>todas</strong> las reglas de seguridad del analizador como errores.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:18%">Severidad</th><th class="num" style="width:13%">Encontrados</th><th class="num" style="width:11%">Cerrados</th><th>Abiertos</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Alta</strong></td><td class="num">3</td><td class="num">3</td><td>—</td></tr>
+        <tr><td>Media</td><td class="num">10</td><td class="num">8</td><td>H-16 parcial: token de servicio estático · H-17: firma de imágenes y logs inmutables, infraestructura</td></tr>
+        <tr><td>Baja</td><td class="num">8</td><td class="num">6</td><td>H-20: ver y cerrar sesiones activas · H-21: antivirus en cargas</td></tr>
+        <tr><td>Informativa</td><td class="num">2</td><td class="num">2</td><td>—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Las tres Altas</h4>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:30%">Hallazgo</th><th>Qué pasaba</th><th style="width:32%">Corrección</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Cualquier sesión podía publicar una carga</strong></td><td>Reemplazar el portafolio de toda la organización solo exigía estar autenticado</td><td>Rol <code>ingestion.write</code> y alcance completo, verificados en las dos capas</td></tr>
+        <tr><td><strong>La autorización por LOB/CIO del plan no existía</strong></td><td>Todo usuario veía el portafolio completo, incluidas las listas de CVEs por aplicación: un mapa de qué atacar primero</td><td>Alcance aplicado en la capa System; ninguna lectura compila sin él; por defecto no se ve nada</td></tr>
+        <tr><td><strong>El rate limiter corría antes de autenticar</strong></td><td>Nadie tenía balde propio: todos compartían el de la IP del ingress, y uno solo agotaba el servicio</td><td>Autenticar antes de limitar, partición por usuario y políticas propias para simulaciones y cargas</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Medido antes y después</h4>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Con 30 versiones en la historia</th><th class="num" style="width:20%">Antes</th><th class="num" style="width:26%">Después</th></tr></thead>
+      <tbody>
+        <tr><td>Historia del portafolio</td><td class="num">1,0 s</td><td class="num">0,006 s</td></tr>
+        <tr><td>Historia de una aplicación</td><td class="num">0,8 s</td><td class="num">0,005 s</td></tr>
+        <tr><td>Pantalla Cargas, 16 usuarios concurrentes</td><td class="num">—</td><td class="num">4 241 req/s · p95 5,5 ms</td></tr>
+        <tr><td>JSON de 2 MB contra cualquier endpoint</td><td class="num">aceptado</td><td class="num">413</td></tr>
+        <tr><td>Carga de 40 MB</td><td class="num">cortada a 30 MB</td><td class="num">aceptada en 3,3 s</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>ASVS 4.0.3 · nivel 2</h4>
+  <div class="prose"><p>Cada requisito aplicable con su estado y su evidencia: <strong>103 cumple</strong>; 14 parciales, verificables solo en un despliegue real —mTLS, TLS del ingress, gestor de secretos, SIEM—; 3 pendientes, de severidad baja o de infraestructura; y 10 a cargo del IdP o sin funcionalidad a la que aplicar.</p></div>
+
+  <div class="note"><strong>Lo que no se ejecutó en local, y por qué.</strong> DAST con OWASP ZAP, Trivy y la construcción de las imágenes requieren descargar imágenes de contenedor. Están en el pipeline de CI.</div>
+</section>
+
+<hr class="div">
+
+<!-- 8 -->
+<section id="entrega">
+  <div class="sec-head"><span class="sec-num">08</span><h2>Plan de entrega</h2></div>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:6%">Fase</th><th style="width:19%">Nombre</th><th style="width:14%">Duración</th><th>Criterio de aceptación</th></tr></thead>
+      <tbody>
+        <tr class="shipped"><td class="mono">00</td><td>Fundaciones</td><td><span class="done">ENTREGADA</span></td><td>Solución .NET 10, Central Package Management, analizadores como errores, escaneo de vulnerabilidades limpio</td></tr>
+        <tr class="shipped"><td class="mono">01</td><td>Motor de scoring</td><td><span class="done">ENTREGADA</span></td><td><strong>102 tests en verde. Golden exactos: EAI 10969 = 79,61 · EAI 14381 = 79,67</strong></td></tr>
+        <tr><td class="mono">02</td><td>Datos dummy</td><td><div class="dur"><i style="width:16px"></i><span>1 sem</span></div></td><td>Contract tests verdes y casos borde cubiertos</td></tr>
+        <tr class="shipped"><td class="mono">03</td><td>Capas Channel y System</td><td><span class="done">ENTREGADA</span></td><td>E2E autenticado devuelve el breakdown completo atravesando ambas capas · 41 tests de API y seguridad</td></tr>
+        <tr class="shipped"><td class="mono">04</td><td>SPA base</td><td><span class="done">ENTREGADA</span></td><td>React 19 + Vite + Tailwind 4 · cuatro pantallas · <code>npm audit</code> en cero · paleta de datos validada</td></tr>
+        <tr class="shipped"><td class="mono">05</td><td>What-If</td><td><span class="done">ENTREGADA</span></td><td><strong>Δ MFA = +5,60 pts verificado contra el cálculo manual</strong> · 13 palancas · escenarios compuestos · objetivo inverso · techo alcanzable</td></tr>
+        <tr class="shipped"><td class="mono">06</td><td>Roadmap</td><td><span class="done">ENTREGADA</span></td><td><strong>Las 7 combinaciones disposition/roadmap modeladas</strong> · hitos con fechas y owners · proyección desde el motor de what-if · 8 reglas de coherencia</td></tr>
+        <tr class="shipped"><td class="mono">07</td><td>Adaptador de archivos</td><td><span class="done">ENTREGADA</span></td><td><strong>Mismo score leyendo dummy que leyendo sus CSV exportados</strong> · módulo de carga en la UI · data histórica por versiones</td></tr>
+        <tr class="shipped"><td class="mono">08</td><td>Endurecimiento</td><td><span class="done">ENTREGADA</span></td><td><strong>Ningún hallazgo High ni Critical abierto</strong> · 23 hallazgos, las 3 Altas cerradas · ASVS L2 · modelo de amenazas · runbooks · prueba de carga</td></tr>
+        <tr class="shipped"><td class="mono">09</td><td>Adaptador de BD</td><td><span class="done">ENTREGADA</span></td><td><strong>El golden 79,67 leído desde una base real</strong> · publicación transaccional · migraciones · retención declarativa</td></tr>
+        <tr class="shipped"><td class="mono">10</td><td>Experiencia de consulta</td><td><span class="done">ENTREGADA</span></td><td><strong>Un clic en Mexico filtra todo y sobrevive a la navegación</strong> · roadmap por país, CIO o LOB · Datos con linaje por carga · exports sin renombrar</td></tr>
+        <tr class="shipped"><td class="mono">11</td><td>Sitio en inglés</td><td><span class="done">ENTREGADA</span></td><td><strong>Ninguna respuesta de la capa Channel trae texto en español</strong> · el backend envía códigos y la interfaz redacta · errores con <code>type</code> estable · los enlaces anteriores redirigen</td></tr>
+        <tr class="shipped"><td class="mono">12</td><td>Administración de reglas</td><td><span class="done">ENTREGADA</span></td><td><strong>Un peso cambiado desde el portal mueve el portafolio, queda auditado y lo toman las réplicas sin desplegar</strong> · borrador, simulación sobre todo el portafolio y versiones inmutables · reautenticación</td></tr>
+        <tr class="shipped"><td class="mono">13</td><td>Revisión y remediación</td><td><span class="done">ENTREGADA</span></td><td><strong>Reglas revisadas contra las capturas del BRD</strong> · comparación de reglas · descargas según filtros · pruebas de la SPA · git y paquete portable</td></tr>
+        <tr><td class="mono">14</td><td>Verificación de seguridad</td><td><div class="dur"><i style="width:48px"></i><span>3 sem</span></div></td><td>Primera corrida del pipeline con todos los gates y los 14 parciales de ASVS L2 verificados en un entorno de prueba</td></tr>
+        <tr><td class="mono">15</td><td>Autenticación con APIM</td><td><div class="dur"><i style="width:48px"></i><span>3 sem</span></div></td><td>OAuth mediante Azure API Management, claim de alcance y sin secreto estático entre capas</td></tr>
+        <tr><td class="mono">16</td><td>Escala y operación</td><td><div class="dur"><i style="width:48px"></i><span>3 sem</span></div></td><td>Destino y motor de base, Redis, dos réplicas por capa, respaldos, SIEM y notificaciones de reglas</td></tr>
+        <tr><td class="mono">17</td><td>Hallazgos de infraestructura</td><td><div class="dur"><i style="width:32px"></i><span>2 sem</span></div></td><td>Al final, por decisión: identidad de carga de trabajo (H-16), firma de imágenes y logs inmutables (H-17), sesiones activas (H-20) y antivirus en cargas (H-21)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">La fase 09 fue corta por la misma razón que lo fue la 07: el trabajo de aislamiento se hizo en la fase 02, no cuando llegaron los archivos reales. Las fases 10 a 12 son la <strong>ampliación pedida el 12 de septiembre</strong>: experiencia de consulta, idioma y administración de reglas.</div>
+
+  <h3>Fases 00–13 — entregadas</h3>
+
+  <div class="ship">
+    <div class="h">Criterio de aceptación cumplido</div>
+    <p><strong>640 pruebas .NET en verde</strong> en quince proyectos, más 35 unitarias y 6 de punta a punta en la SPA, cero paquetes vulnerables —ya con EF Core y SQLite dentro—, y el build compila con todas las reglas de seguridad del analizador como errores. El motor reproduce exactamente los dos casos documentados: <span class="mono">EAI 14381 = 79,67</span> y <span class="mono">EAI 10969 = 79,61</span>, métrica por métrica.</p>
+    <p>El 14381 se reproduce <strong>extremo a extremo</strong>: generador → puerto <code>ISourceReader</code> → ensamblado → motor → <code>system-api</code> → <code>channel-api</code> → SPA. Cada eslabón de esa cadena está cubierto por tests, y el último se ve en pantalla.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:34%">Entregable</th><th>Qué contiene</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">Modernization.Domain</td><td><code>ApplicationSnapshot</code> canónico con las 9 fuentes mapeadas, <code>ScoreBreakdown</code> explicable con procedencia por métrica, y los enums MAPS de disposition y roadmap</td></tr>
+        <tr><td class="mono">Modernization.Scoring.Engine</td><td>Motor puro y determinista, extractores tipados, mapeador dirigido por datos y catálogo de rulesets embebidos</td></tr>
+        <tr><td class="mono">contracts/ruleset-v1.3.json</td><td>18 métricas con pesos, bandas, casos, compuestos, la regla del cero, procedencia y nota de trazabilidad al BRD o al dashboard</td></tr>
+        <tr><td class="mono">Golden tests</td><td>Score global, los tres pilares, cada métrica ponderada, exclusiones por falta de dato, peso nominal contra disponible, determinismo y override</td></tr>
+        <tr><td class="mono">Tabla de casos</td><td>Todos los límites de banda del BRD, la matriz MFA completa, la distinción entre cero flaws y sin dato, compuestos desde conteos y precedencia del valor provisto</td></tr>
+        <tr><td class="mono">Casos borde</td><td>Snapshot vacío puntúa el piso 20 · aplicación perfecta puntúa 100 · valor fuera de banda falla con error accionable en vez de puntuar mal</td></tr>
+        <tr><td class="mono">Modernization.Sources</td><td>Puerto <code>ISourceReader&lt;T&gt;</code>, ocho registros con la forma de los archivos reales, ensamblador anticorrupción y adaptador Dummy</td></tr>
+        <tr><td class="mono">DummyPortfolio</td><td>250 aplicaciones LATAM deterministas por semilla, con vocabulario curado de las capturas: nombres de aplicación, capacidades de negocio, CVEs y librerías reales</td></tr>
+        <tr><td class="mono">data/dummy/*.csv</td><td>Ocho archivos con los nombres de columna exactos — <code>COMBINED_APP_SCORE</code>, <code>Not_Approved_for_Use_Count</code>, <code>OPEN_SRC_SFTWR_HLTH_SCOR_UPDT_TS</code>, <code>SVR_DSC</code></td></tr>
+        <tr><td class="mono">SnapshotProviderContract</td><td>Suite abstracta que hereda cada adaptador: identidad, unicidad, estado por fuente, rango del score, casos borde y el golden extremo a extremo</td></tr>
+        <tr><td class="mono">tools/Modernization.DummyData</td><td>CLI que regenera los CSV y reporta cobertura por fuente; devuelve código de error si el EAI de referencia deja de dar 79,67</td></tr>
+        <tr><td class="mono">Modernization.SystemApi</td><td>Minimal APIs con contratos explícitos, token de servicio en tiempo constante, caché de scores, OpenAPI y un único punto de decisión para el adaptador de datos</td></tr>
+        <tr><td class="mono">Modernization.ChannelApi</td><td>BFF con OIDC (Authorization Code + PKCE), sesión en cookie <code>__Host-</code> httpOnly, CSRF de doble envío, rate limiting por usuario y cliente tipado con Polly</td></tr>
+        <tr><td class="mono">ScreenComposer</td><td>Un modelo de vista por pantalla: portafolio con agregados, tarjetas de pilar del dashboard v1.3, y la pantalla de explicabilidad con fórmula, waterfall y procedencia</td></tr>
+        <tr><td class="mono">Modernization.Security</td><td>Cabeceras de seguridad compartidas, validación de entrada por lista blanca y autenticación servicio a servicio</td></tr>
+        <tr><td class="mono">Tests de API</td><td>E2E a través de ambas capas con tráfico HTTP real entre ellas, más 24 tests de seguridad: 401 en cada endpoint, atributos de la cookie, CSRF, CSP, y la guarda del esquema de desarrollo</td></tr>
+        <tr><td class="mono">src/web</td><td>React 19 + Vite 7 + TypeScript estricto + Tailwind 4 · React Router 7 · TanStack Query 5 · cliente sin token en memoria, solo cookie de sesión</td></tr>
+        <tr><td class="mono">Pantallas 01 · 02 · 03 · 07</td><td>Portafolio con filtros y agregados, resumen del score con las tarjetas de pilar del dashboard v1.3, <strong>cómo se calculó</strong>, y linaje de fuentes</td></tr>
+        <tr><td class="mono">Paleta de datos</td><td>3 hues categóricos para los pilares, validados contra las superficies reales de la app: PASS en los cinco gates, en claro y en oscuro, con la lista de pares completa</td></tr>
+        <tr><td class="mono">Modernization.WhatIf</td><td>13 palancas expresadas como transformaciones puras del snapshot, motor de escenarios compuestos, objetivo inverso con poda, y techo alcanzable</td></tr>
+        <tr><td class="mono">Pantalla 04 · What-If Lab</td><td>Palancas con su ganancia y la acción real que representan, recálculo en vivo, comparación base → escenario → techo, y búsqueda por score objetivo</td></tr>
+        <tr><td class="mono">Modernization.Roadmap</td><td>Modelo MAPS como contrato versionado: 3 dispositions, 7 roadmaps con sus hitos y owners, 8 reglas de coherencia, y el planificador que proyecta el score futuro</td></tr>
+        <tr><td class="mono">Pantallas 05 · 06</td><td>Plan futuro por aplicación con timeline y alertas, y el portafolio agrupado por disposition con lo que gana cada camino</td></tr>
+        <tr><td class="mono">Modernization.Sources.Files</td><td>Lector CSV validado contra contratos de columna, adaptador de archivos con versiones, y servicio de carga con staging y publicación atómica</td></tr>
+        <tr><td class="mono">contracts/sources/source-schemas.json</td><td>Las 8 fuentes con sus columnas, tipos, alias y clave — el mismo contrato que valida la carga y guía la lectura</td></tr>
+        <tr><td class="mono">Pantalla 08 · Cargas</td><td>Subir los archivos y recalcular, veredicto archivo por archivo con filas leídas y rechazadas, historial de versiones y evolución del score del portafolio</td></tr>
+        <tr><td class="mono">docs/security</td><td>Modelo de amenazas STRIDE por frontera, matriz ASVS L2 con evidencia por requisito y registro de 23 hallazgos</td></tr>
+        <tr><td class="mono">docs/runbooks</td><td>Rotación de secretos sin corte, carga defectuosa, recuperación ante desastres e incidente de seguridad</td></tr>
+        <tr><td class="mono">.github/workflows/ci.yml</td><td>Tests, vulnerabilidades, CodeQL, Gitleaks sobre todo el historial, OSV, Trivy, Checkov y SBOM, con cada acción fijada por SHA</td></tr>
+        <tr><td class="mono">deploy/</td><td>Imágenes chiseled no root · manifiestos con PSA restricted, filesystem de solo lectura, NetworkPolicy default-deny y mTLS</td></tr>
+        <tr><td class="mono">tools/Modernization.LoadTest</td><td>Prueba de carga sin dependencias, con la que se midió cada corrección de rendimiento antes y después</td></tr>
+        <tr><td class="mono">Modernization.Sources.Database</td><td>Contexto EF Core con el esquema de las fuentes, proveedor, publicador transaccional, retención y migraciones</td></tr>
+        <tr><td class="mono">ISnapshotPublisher</td><td>Puerto de publicación: el adaptador de archivos y el de base de datos lo implementan, y la capa System no distingue</td></tr>
+        <tr><td class="mono">ApplicationFilter · SourceFileMatcher</td><td>Fase 10: un solo conjunto de filtros aplicado sobre lo que el alcance ya recortó, y la identificación de cada archivo por su encabezado</td></tr>
+        <tr><td class="mono">Notice · ApiProblem · notices.ts</td><td>Fase 11: el aviso como código y datos, el error de API con <code>type</code> estable y el único catálogo de frases del sitio, vigilado por una prueba</td></tr>
+        <tr><td class="mono">Modernization.Rules · IRulesStore</td><td>Fase 12: el editor que valida un borrador con códigos, la simulación del impacto sobre todo el portafolio y las versiones de reglas en memoria, archivos o base de datos</td></tr>
+        <tr><td class="mono">ADR 0001 – 0020</td><td>Se suman la sesión en el servidor, el alcance aplicado sobre los datos, los límites por usuario, la base que guarda la forma de las fuentes, el archivo que se reconoce por su encabezado, el filtro que vive en la URL y solo acota, el backend que no redacta frases, las reglas que se publican desde el portal como versiones, el cero que se excluye salvo que la tabla del BRD lo puntúe y el camino de OIDC a OAuth con APIM</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>La pantalla que responde el requisito 4</h4>
+  <div class="prose">
+    <p>“Cómo se calculó” es la razón por la que el motor produce un desglose completo en lugar de solo un número. Todo lo que aparece ahí se puede reproducir a mano con la fórmula del BRD.</p>
+  </div>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:30%">Bloque</th><th>Qué muestra</th></tr></thead>
+      <tbody>
+        <tr><td>La fórmula</td><td>La expresión del BRD con los números de esta aplicación ya sustituidos, más los cinco pasos intermedios: numerador, denominador, métricas excluidas, cociente y normalización</td></tr>
+        <tr><td>Composición del numerador</td><td>Una barra donde cada segmento es una métrica, coloreado por pilar. El ancho total es el peso disponible, así que <strong>el hueco al final es exactamente lo que la aplicación no ganó</strong></td></tr>
+        <tr><td>Peso que entra al cálculo</td><td>60 de 100 en el caso de referencia. Un score alto con poco peso detrás dice menos que uno igual con el peso completo</td></tr>
+        <tr><td>Aporte por métrica</td><td>Ordenado de mayor a menor, con el ponderado y cuántos puntos del score final aporta cada uno</td></tr>
+        <tr><td>Métricas incluidas</td><td>Valor crudo → regla aplicada → puntaje → peso → ponderado → procedencia (sistema, reporte, campo y adaptador que lo entregó)</td></tr>
+        <tr><td>Métricas excluidas</td><td>Cada una con su peso perdido y el motivo textual: “El scan SCA no reportó severidad Critical”</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h4>Superficie de API entregada</h4>
+  <div class="prose"><p>La capa System expone recursos canónicos completos; la Channel expone un endpoint por pantalla que devuelve todo lo que esa pantalla necesita en una sola llamada.</p></div>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:12%">Capa</th><th style="width:34%">Endpoint</th><th>Devuelve</th></tr></thead>
+      <tbody>
+        <tr><td>System</td><td class="mono">GET /system/applications</td><td>Inventario paginado, filtrable por LOB, país, CIO, disposition, roadmap, tramo de score y criticidad</td></tr>
+        <tr><td>System</td><td class="mono">GET /system/applications/{eai}/score</td><td>Desglose completo: numerador, denominador, tres pilares, cada métrica con su regla y su procedencia</td></tr>
+        <tr><td>System</td><td class="mono">GET /system/scores</td><td>Scores del portafolio, para agregados</td></tr>
+        <tr><td>System</td><td class="mono">GET /system/sources?version=</td><td>Estado, cobertura y rechazos por fuente, en la carga pedida</td></tr>
+        <tr><td>System</td><td class="mono">GET /system/roadmap/portfolio?groupBy=</td><td>El plan del portafolio filtrado, agrupado por país, CIO, LOB, disposition, roadmap o aplicación</td></tr>
+        <tr><td>System</td><td class="mono">GET /system/ruleset</td><td>Pesos, bandas y procedencia del ruleset activo</td></tr>
+        <tr><td>Channel</td><td class="mono">GET /api/portfolio</td><td>Pantalla 01: filas, distribución por tramo, agregados por LOB, país, CIO, disposition y roadmap; cada clave es también un filtro</td></tr>
+        <tr><td>Channel</td><td class="mono">GET /api/applications/{eai}/overview</td><td>Pantalla 02: score, tramo y tarjetas de pilar con peso nominal y disponible</td></tr>
+        <tr><td>Channel</td><td class="mono">GET /api/applications/{eai}/explain</td><td>Pantalla 03: fórmula sustituida, waterfall acumulado, métricas incluidas, excluidas con motivo, e informativas</td></tr>
+        <tr><td>Channel</td><td class="mono">GET /api/lineage?version=</td><td>Pestaña Linaje de Datos: cobertura y rechazos por fuente en la carga elegida</td></tr>
+        <tr><td>Channel</td><td class="mono">GET /api/roadmap?groupBy=</td><td>Roadmap del portafolio con los mismos filtros, agrupado por la dimensión elegida</td></tr>
+        <tr><td>Channel</td><td class="mono">GET /api/ingestion</td><td>Pantalla 08: versiones publicadas, archivos esperados con su contrato, y la serie del portafolio</td></tr>
+        <tr><td>Channel</td><td class="mono">POST /api/ingestion/upload</td><td>Publica una carga nueva y devuelve el veredicto por archivo. Requiere sesión y token CSRF</td></tr>
+        <tr><td>Channel</td><td class="mono">GET /api/applications/{eai}/history</td><td>Evolución del score de una aplicación, con el peso disponible en cada punto</td></tr>
+        <tr><td>Channel</td><td class="mono">GET /api/session · POST /api/logout</td><td>Identidad, token CSRF y cierre de sesión del lado servidor</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="formula">
+    <div class="eq">GET /api/applications/14381/explain</div>
+    <div class="def">
+      <div><b>formula.expression</b>&nbsp; "20 + (44.75 / 60) x 80 = 79.67"</div>
+      <div><b>waterfall[0]</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Architectural Value · ponderado 9.75 · acumulado 9.75 · +13.0 pts del score final</div>
+      <div><b>excluded[1]</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; SCA Flaws (Critical) · peso 10 · "El scan SCA no reporto severidad Critical"</div>
+      <div><b>included[].provenance</b> { system: "CMT", report: "...", field: "...", provider: "Dummy" }</div>
+    </div>
+  </div>
+
+  <h4>Cobertura de las fuentes en el portafolio dummy</h4>
+  <div class="prose"><p>Ninguna fuente secundaria cubre el 100 %, a propósito: un portafolio sin huecos no ejercitaría la exclusión de métricas sin dato, que es la parte más delicada de la fórmula. El peso disponible promedio queda en <strong>88,6 de 100</strong>.</p></div>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:30%">Archivo</th><th class="num" style="width:12%">Filas</th><th class="num" style="width:26%">Cobertura</th><th class="num" style="width:14%">Rechazos</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">eai_master.csv</td><td class="num">250</td><td><div class="lb"><i style="width:120px"></i><span>100,0%</span></div></td><td class="num">0</td></tr>
+        <tr><td class="mono">architectural_value_by_eai.csv</td><td class="num">236</td><td><div class="lb"><i style="width:113px"></i><span>94,4%</span></div></td><td class="num">0</td></tr>
+        <tr><td class="mono">product_strategy.csv</td><td class="num">232</td><td><div class="lb"><i style="width:111px"></i><span>92,8%</span></div></td><td class="num">0</td></tr>
+        <tr><td class="mono">oss_score_by_eai.csv</td><td class="num">228</td><td><div class="lb"><i style="width:108px"></i><span>90,4%</span></div></td><td class="num">2</td></tr>
+        <tr><td class="mono">veracode_sca_open_flaws.csv</td><td class="num">2088</td><td><div class="lb"><i style="width:102px"></i><span>84,8%</span></div></td><td class="num">0</td></tr>
+        <tr><td class="mono">monitoreo.csv</td><td class="num">210</td><td><div class="lb"><i style="width:100px"></i><span>83,6%</span></div></td><td class="num">1</td></tr>
+        <tr><td class="mono">tech_debt.csv</td><td class="num">201</td><td><div class="lb"><i style="width:96px"></i><span>80,4%</span></div></td><td class="num">0</td></tr>
+        <tr><td class="mono">apim_onboarded_eais.csv</td><td class="num">188</td><td><div class="lb"><i style="width:90px"></i><span>75,2%</span></div></td><td class="num">0</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">Los tres rechazos son deliberados: filas cuyo EAI no existe en el maestro. Un archivo desalineado con el inventario es un problema real de datos y tiene que verse en la pantalla de linaje, no perderse en silencio.</div>
+
+  <h4>Decisiones de implementación que vale la pena señalar</h4>
+  <ul class="prose">
+    <li><strong>Cero flaws no es lo mismo que sin dato.</strong> Un conteo de 0 significa <em>None</em> y puntúa 100; solo la ausencia de dato excluye la métrica. Confundirlas invertiría el resultado, así que hay un test dedicado a esa distinción.</li>
+    <li><strong>Determinismo por construcción.</strong> El motor no llama al reloj: la marca de tiempo entra como parámetro. Sin esto, ni el what-if ni la auditoría serían reproducibles.</li>
+    <li><strong>Un valor fuera de banda lanza excepción.</strong> Falla por aplicación, no por lote, y el error nombra la métrica y el valor. Un score silenciosamente incorrecto es el peor modo de falla de este sistema.</li>
+    <li><strong>El ruleset se valida al cargarse.</strong> Pesos que no suman su pilar, métricas que apuntan a un pilar inexistente o inputs desconocidos fallan de inmediato, no en producción.</li>
+    <li><strong>Un override no borra el cálculo.</strong> Conviven: <code>Score</code> mantiene el valor calculado y <code>EffectiveScore</code> devuelve el override, con quién, cuándo y por qué.</li>
+    <li><strong>Ausencia de dato no es cero.</strong> Una aplicación presente en el archivo SCA se considera escaneada y sus severidades sin hallazgos puntúan 100; una ausente queda sin dato. Tratar la ausencia como cero flaws le daría la mejor nota justamente a lo que nadie revisó (ADR 0003).</li>
+    <li><strong>Los datos dummy se exportan con los nombres de columna reales.</strong> El adaptador de archivos de la Fase 07 se desarrolla contra estos CSV antes de que llegue el primer archivo productivo.</li>
+    <li><strong>Sin generador de datos falsos genérico.</strong> El vocabulario está curado de las capturas — nombres de aplicación LATAM, CVEs y librerías reales, rangos RTO/RPO observados. Da datos más parecidos a los reales y evita una dependencia más en el árbol.</li>
+    <li><strong>El gate de seguridad se disparó solo.</strong> <code>Microsoft.AspNetCore.OpenApi</code> arrastra <code>Microsoft.OpenApi</code> 2.0.0 con una vulnerabilidad alta conocida (GHSA-v5pm-xwqc-g5wc) y el build falló. Se resolvió con un pin transitivo a 2.12.2. El control del plan funcionando en su primer encuentro real.</li>
+    <li><strong>El token CSRF va en hexadecimal, no en Base64.</strong> ASP.NET Core codifica en URL el valor de la cookie al escribirla, así que un valor con <code>+</code>, <code>/</code> o <code>=</code> nunca coincidiría con lo que el cliente lee de <code>document.cookie</code>. Lo detectó un test antes de que llegara al frontend.</li>
+    <li><strong>Los errores no hacen eco de la entrada.</strong> Un EAI code se valida por lista blanca en las dos capas y se rechaza con 400 si no es una secuencia de hasta 10 dígitos. Devolver entrada del usuario dentro de un mensaje de error es como nacen los XSS reflejados.</li>
+    <li><strong>Los agregados del portafolio cubren el conjunto filtrado, no la página.</strong> Calcularlos sobre la página daría un promedio distinto en cada scroll — un bug sutil que solo aparece al paginar.</li>
+    <li><strong>El backend omitía las propiedades nulas y eso reventaba el front.</strong> Con <code>WhenWritingNull</code>, el cliente recibía <code>undefined</code> donde su tipo decía <code>null</code>, y una comprobación <code>=== null</code> dejaba la página en blanco. El modelo de vista es el contrato del front: ahora los nulos se serializan explícitos, el cliente usa <code>== null</code>, y un error boundary convierte cualquier crash de render en un mensaje con salida.</li>
+    <li><strong>Un puntaje de 97,5 no puede mostrarse como 98.</strong> Contradecía la regla que aparecía a su lado en la misma fila. Los decimales se muestran solo cuando existen.</li>
+    <li><strong>Sin librería de gráficos.</strong> Las tres visualizaciones que la app necesita no tienen ejes ni escalas continuas. Se dibujan con HTML y CSS: una dependencia menos, y control total sobre los huecos de 2 px entre segmentos y el tramo “sin ganar”.</li>
+    <li><strong>La cifra grande va en tinta, no en color de estado.</strong> En modo claro dos de los cuatro tramos quedan bajo 3:1 contra la superficie: un 79,67 de 64 px en amarillo sería el peor lugar posible para gastar un color de bajo contraste. El chip de al lado carga el color.</li>
+    <li><strong>Cada palanca es una acción, no un movimiento del número.</strong> “Integrar la aplicación al proveedor corporativo de multifactor”, no “subir la métrica MFA”. Un catálogo que optimiza el número en vez del portafolio es peor que no tenerlo.</li>
+    <li><strong>El techo no siempre es 100.</strong> Cuando la fuente entrega el compuesto ya calculado en lugar del detalle por producto, no hay conteos que reclasificar y ninguna palanca puede moverlo. Se reporta el motivo — y es también un argumento para pedirle a CMT el detalle.</li>
+    <li><strong>Simular no puede ser destructivo.</strong> Los escenarios operan sobre copias del snapshot, y hay un test end-to-end que verifica que el score real no cambia después de simular.</li>
+    <li><strong>El score futuro no se escribe a mano.</strong> Una tabla que dijera “Refactor sube 15 puntos” se desincronizaría del modelo la primera vez que alguien cambie un peso, y nadie se enteraría. Cada roadmap declara sus palancas y el número sale del motor.</li>
+    <li><strong>Retire y Consolidate no proyectan mejora.</strong> Su score no sube: deja de existir. Proyectar una ganancia ahí justificaría invertir en algo que se va a apagar, y la interfaz lo dice con esas palabras.</li>
+    <li><strong>Agrupar por disposition, no una matriz 3×7.</strong> MAPS solo define siete pares válidos, así que una matriz tendría catorce celdas vacías. La estructura de la pantalla refleja la del modelo.</li>
+    <li><strong>Dos niveles de fallo, deliberadamente distintos.</strong> Una columna obligatoria que falta invalida el archivo entero: seguir leyendo produciría un portafolio incompleto sin que nadie lo note. Una fila mal formada se rechaza con su motivo y la lectura continúa: un dato malo en la fila 300 no puede dejar sin score a las otras 249.</li>
+    <li><strong>Los identificadores de carga llevan sufijo aleatorio.</strong> Con granularidad de segundos, dos cargas en el mismo segundo generaban el mismo id y la segunda borraba a la primera en silencio. Lo detectó un test antes de que llegara a ningún lado.</li>
+    <li><strong>Los alias de columna vienen del mundo real.</strong> Power BI exporta <code>Suma de Invest_Count</code> donde el sistema origen escribe <code>Invest_Count</code>, y los archivos llegan con prefijo de fecha. El contrato acepta ambas formas. Desde la Fase 10 el archivo se reconoce por su encabezado y no por su nombre, así un export entra sin renombrar, se llame como se llame.</li>
+    <li><strong>Solo CSV.</strong> Los exports observados son CSV — las capturas muestran el aviso de Excel al guardarlos. Aceptar XLSX añadiría una librería de parseo y una superficie de ataque nueva a cambio de comodidad; queda fuera hasta que haya un caso concreto.</li>
+    <li><strong>Validar la entrada antes de mirar si la función está habilitada.</strong> Al revés, un archivo malicioso enviado contra un adaptador que no admite cargas se iba sin ser examinado, y el mismo archivo pasaría el día que sí la admitiera. El orden de las guardas es parte del control.</li>
+    <li><strong>El primer arranque tiene que tener salida.</strong> Con el adaptador de archivos y ninguna carga, todas las pantallas devolvían 500 — y la de Cargas deshabilitaba la subida, porque deducía el adaptador activo leyendo la primera versión, que no existía. El sistema quedaba bloqueado sin salida desde la interfaz. Ahora la falta de datos es un 409 con un mensaje que lleva a Cargas, y el adaptador lo declara la capa System en lugar de inferirse de los datos.</li>
+    <li><strong>Las reglas de seguridad del analizador estaban apagadas sin avisar.</strong> <code>AnalysisModeSecurity=All</code> no tiene efecto cuando <code>AnalysisLevel</code> ya define modo, y el primer escaneo devolvió cero hallazgos. Con <code>AnalysisLevelSecurity=latest-all</code> aparecieron 64: uno real —el sufijo del identificador de carga salía de <code>Random</code>— y 62 deliberados en el generador de datos dummy.</li>
+    <li><strong>El alcance es un parámetro que no se puede omitir.</strong> <code>PortfolioService</code> no tiene ninguna lectura sin <code>PortfolioScope</code>: un endpoint nuevo que olvide el alcance no compila, en lugar de devolver el portafolio completo.</li>
+    <li><strong><code>SameSite=Strict</code> es parte del control de fijación de sesión.</strong> Con la sesión en el servidor, iniciar sesión sobre una cookie existente renueva la misma clave. En producción no ocurre porque el callback de OIDC es cross-site y la cookie no viaja; relajarla a <code>Lax</code> obliga a revisar la decisión.</li>
+    <li><strong>Autenticado no significa inofensivo.</strong> Los límites asumen que el riesgo también está dentro: una cuenta comprometida no puede agotar el servicio, recalcular la historia sin fin ni publicar dos cargas a la vez.</li>
+  </ul>
+
+
+  <h3>Fase 09 — el tercer adaptador</h3>
+  <div class="ship">
+    <div class="h">Criterio de aceptación cumplido</div>
+    <p><strong>La misma suite de contrato que verificó Dummy y File corre contra una base real</strong>, y el EAI de referencia sigue dando <span class="mono">79,67</span> leído desde ella. El proyecto de contratos pasó de 98 a 127 pruebas sin cambiar una línea del motor, del what-if, del roadmap ni de las ocho pantallas.</p>
+  </div>
+
+  <div class="prose">
+    <p>La pregunta de diseño no era cómo hablar con una base, sino <strong>qué guardar en ella</strong>. La tentación es guardar el modelo canónico, que es lo que el motor consume. Sería un error: habría dos traducciones que mantener de acuerdo, y el mismo archivo podría puntuar distinto según por dónde entrara.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:30%">Decisión</th><th>Por qué</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Una tabla por fuente, con sus columnas</strong></td><td><code>EAI_CODE</code>, <code>APP_ID</code>, <code>"1-Critical"</code> tal como llegan. El ensamblador sigue siendo la única traducción del sistema</td></tr>
+        <tr><td>La carga es una <strong>propiedad sombra</strong></td><td>Los registros de fuente son los mismos tipos que usan Dummy y File: ninguno lleva dentro un campo que solo existe por la persistencia</td></tr>
+        <tr><td><strong>Publicar es una transacción</strong></td><td>El equivalente exacto del movimiento atómico del directorio: si algo falla a mitad, no queda una carga a medias</td></tr>
+        <tr><td>Un <strong>puerto de publicación</strong> gemelo al de lectura</td><td>La capa System ya no conoce a ninguno de los dos adaptadores</td></tr>
+        <tr><td>Los <strong>rechazos se guardan</strong></td><td>Con archivos se recalculan al leer; aquí el archivo ya no existe, y sin la tabla el linaje se apagaría en silencio</td></tr>
+        <tr><td><strong>Retención declarativa</strong></td><td>Conserva las N cargas más recientes. Con archivos había que borrar directorios a mano</td></tr>
+        <tr><td>EF Core <strong>no llega a la capa Channel</strong></td><td>Vive en su propio proyecto, con referencia privada: la Channel usa la System solo por sus contratos</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note"><strong>Dos desviaciones deliberadas.</strong> Sin tabla de scores precalculados: la Fase 08 midió que cachear por versión dejó la historia en 0,006 s, y precalcular añadiría una copia que mantener coherente con el ruleset a cambio de milisegundos. Y el motor concreto sigue siendo RFC-07: el modelo es agnóstico y se verifica contra SQLite —una base real, con archivo, transacciones, índices y migraciones—; arrancar contra un motor no verificado falla explícitamente.</div>
+
+
+  <h3>Fase 10 — experiencia de consulta</h3>
+  <div class="ship">
+    <div class="h">Criterio de aceptación cumplido, en la interfaz real</div>
+    <p><strong>Un clic en «Mexico» filtra el portafolio, y el filtro sobrevive a la navegación y se comparte por URL.</strong> Verificado en el navegador: <span class="mono">/?country=Mexico</span> muestra sus 80 aplicaciones, sigue puesto al pasar por Roadmap y Datos, y <span class="mono">/roadmap?country=Mexico&amp;groupBy=cio</span> abierto en una pestaña nueva —sin memoria de sesión— reproduce la misma vista.</p>
+  </div>
+
+  <div class="prose">
+    <p>Hacer clicable una estadística obliga a algo menos visible: <strong>la clave que muestra un agregado tiene que ser exactamente el valor que entiende el filtro</strong>. Una prueba recorre todas las claves de cada agregado y de cada agrupación del roadmap, y exige que, usadas como filtro, devuelvan su conteo exacto. Fue la que encontró que las barras de roadmap emitían «Maintain (Patch)» mientras el filtro esperaba «MaintainPatch».</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:30%">Pedido</th><th>Cómo quedó</th></tr></thead>
+      <tbody>
+        <tr><td><strong>1 · Filtros en todas las vistas</strong></td><td>Siete criterios compartidos con la URL como fuente de verdad. La sesión los recuerda y los restituye cuando un enlace llega sin ellos; el botón atrás los quita</td></tr>
+        <tr><td><strong>2 · Estadísticas clicables</strong></td><td>Tramos, LOB, país, CIO, disposition, roadmap y las celdas de la tabla: cada uno es un botón con nombre legible para lectores de pantalla</td></tr>
+        <tr><td><strong>4 · Roadmap por dimensión</strong></td><td>Por disposition, roadmap, país, CIO, LOB, aplicación o todo junto. El mismo motor de what-if, y abrir un grupo lo deja como filtro</td></tr>
+        <tr><td><strong>5 · Linaje junto a Cargas</strong></td><td>Pantalla Datos con dos pestañas y un selector de carga compartido; el linaje pasa a ser por carga</td></tr>
+        <tr><td><strong>6 · Nombres de archivo libres</strong></td><td>Cada archivo se reconoce por su encabezado; si encaja en dos fuentes, la pantalla muestra lo leído y deja asignarla a mano</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note"><strong>Un filtro solo acota.</strong> Se aplica en la capa System sobre el conjunto que el alcance ya recortó: un usuario limitado a un LOB que filtra por otro ve cero aplicaciones y cero grupos. Y reconocer un archivo por su contenido aprieta el control de la carga en lugar de relajarlo, porque el nombre que envía el cliente ya no decide nada. <strong>520 pruebas en verde</strong>, 22 de 22 verificaciones en vivo sobre 250 aplicaciones, cero paquetes vulnerables, y cuatro defectos encontrados en el camino y cerrados.</div>
+
+  <h3>Fase 11 — sitio en inglés</h3>
+  <div class="ship">
+    <div class="h">Criterio de aceptación cumplido, con una prueba</div>
+    <p><strong>Ninguna respuesta de la capa Channel trae texto en español.</strong> No lo afirma una revisión, lo comprueba una prueba: recorre la sesión, el portafolio, las siete agrupaciones del roadmap, 40 aplicaciones en sus cinco pantallas, escenarios, los tres casos de score objetivo, los errores de validación, una petición sin CSRF y cargas aceptadas y rechazadas. Además, la interfaz pasó la revisión en vivo pantalla por pantalla.</p>
+  </div>
+
+  <div class="prose">
+    <p>Traducir cada cadena donde estaba habría dejado el idioma repartido entre dos capas. <strong>El backend dejó de redactar frases para personas</strong>: devuelve un código estable con sus datos —<span class="mono">{ "code": "csv.missingColumns", "args": { "missing": "EAI_CODE" } }</span>— y la interfaz arma la frase desde un único catálogo. Una prueba recorre los códigos del backend y falla si alguno no tiene frase.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:30%">Tipo de texto</th><th>Dónde vive ahora</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Frase generada desde datos</strong></td><td>El backend envía el código y los datos invariantes, y <code>notices.ts</code> redacta la frase: «3 open Critical flaws», «Required columns are missing: EAI_CODE»</td></tr>
+        <tr><td><strong>Contenido de un contrato</strong></td><td>Definiciones MAPS, hitos, reglas de coherencia y notas del ruleset, traducidos en el propio contrato. Desde la Fase 12 viajan en las versiones de reglas que publica el portal, así que no pueden vivir en el bundle</td></tr>
+        <tr><td><strong>Error de API</strong></td><td><code>ProblemDetails</code> con <code>type</code> estable —<span class="mono">urn:modscore:problem:application-not-found</span>— y <code>title</code> y <code>detail</code> en inglés. El detalle interno de un error de ruleset ya no llega al usuario</td></tr>
+        <tr><td><strong>Texto para quien opera</strong></td><td>Logs, comentarios, resúmenes OpenAPI y errores de arranque siguen en español, igual que la documentación</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note"><strong>No se rompe nada de lo ya compartido.</strong> Los tramos pasan a códigos (<span class="mono">critical</span>, <span class="mono">at-risk</span>, <span class="mono">acceptable</span>, <span class="mono">solid</span>) y los nombres anteriores se siguen aceptando. <span class="mono">/aplicaciones/14381/calculo</span> abre <span class="mono">/applications/14381/calculation</span>. La revisión en vivo encontró dos defectos, ya cerrados: un enlace con <span class="mono">?band=Critico</span> mostraba el chip «Critico», y había conteos sin concordancia como «1 applications». <strong>524 pruebas en verde</strong>, cero paquetes vulnerables y <code>npm audit</code> limpio.</div>
+
+  <h3>Fase 12 — administración de reglas</h3>
+  <div class="ship">
+    <div class="h">Criterio de aceptación cumplido, en vivo y por prueba</div>
+    <p><strong>Cambiar un peso desde el portal mueve el score del portafolio, queda auditado con su impacto y no requiere recompilar ni desplegar.</strong> En vivo, sobre 250 aplicaciones, se pasaron tres puntos de peso de Kenna a MFA. La simulación mostró el efecto antes de publicar: el promedio de 70,52 a 70,68, con 101 aplicaciones que suben y 65 que bajan. Al publicar, v1.4 quedó vigente en el mismo proceso. Restaurar v1.3 publicó v1.5, y el promedio volvió a 70,52.</p>
+  </div>
+
+  <div class="prose">
+    <p>Las reglas dejan de ser un recurso embebido y pasan a ser <strong>versiones publicadas</strong>. Ruleset, palancas y roadmap se publican juntos porque dependen entre sí: los objetivos de las palancas salen de las bandas del ruleset, y la proyección de cada roadmap sale de sus palancas. Nada se edita en su lugar: volver atrás es publicar otra vez lo que había.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:36%">Se edita desde el portal</th><th>Queda en el código, y por qué</th></tr></thead>
+      <tbody>
+        <tr><td>Pesos: el total da 100 y cada pilar suma sus métricas</td><td>Qué métricas existen y de dónde leen su dato: lo decide un extractor</td></tr>
+        <tr><td>Bandas, y puntajes de casos y de categorías</td><td>Las claves de casos y categorías: una nueva nunca coincidiría con el dato</td></tr>
+        <tr><td>Qué palancas ofrece el laboratorio y su cantidad por defecto</td><td>La transformación de cada palanca, que describe una acción real</td></tr>
+        <tr><td>Umbrales del roadmap, palancas por roadmap y semanas por hito</td><td>La normalización 20–100: tramos, score objetivo y umbrales usan esa escala</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:28%">Control</th><th>Cómo quedó</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Rol propio</strong></td><td><code>ruleset.admin</code>, separado de <code>ingestion.write</code>, con alcance completo: quien sube los datos no decide cómo se puntúan</td></tr>
+        <tr><td><strong>Reautenticación</strong></td><td>Publicar exige una autenticación de los últimos 10 minutos. Con OIDC se pide <code>max_age=0</code> y solo cuenta un <code>auth_time</code> reciente. ASVS 3.7.1 pasa a cumple</td></tr>
+        <tr><td><strong>Defensa en profundidad</strong></td><td>La capa System vuelve a exigir alcance completo y los permisos reenviados, y solo los acepta de un llamador con token de servicio</td></tr>
+        <tr><td><strong>Concurrencia optimista</strong></td><td>Un borrador preparado sobre una versión que ya no es la vigente se rechaza, y el almacén repite la comprobación al escribir</td></tr>
+        <tr><td><strong>Entrada</strong></td><td>Cuerpo de 128 KB, JSON estricto, identificadores por lista blanca y sin eco de lo recibido</td></tr>
+        <tr><td><strong>Auditoría</strong></td><td>Cada versión guarda quién la publicó, por qué, qué cambió y su impacto. Eventos 4211, 4212, 4004 y 4104</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note"><strong>Una corrección al plan.</strong> Se había dicho que cada carga conservaría la versión de reglas con que se calculó, pero eso mezclaría en una misma tendencia un cambio de datos con uno de reglas. La historia se puntúa con las reglas vigentes; lo que no se reescribe es el registro de cada versión. <strong>598 pruebas en verde</strong>, cero paquetes vulnerables en quince proyectos y <code>npm audit</code> limpio. La reautenticación contra un IdP real queda por verificar en el primer entorno que lo tenga.</div>
+
+  <h3>Fase 13 — revisión y remediación</h3>
+  <div class="ship">
+    <div class="h">Los trece puntos de la revisión, entregados y probados</div>
+    <p><strong>640 pruebas .NET, 35 unitarias y 6 de punta a punta en verde</strong>, cero paquetes vulnerables y <code>npm audit</code> limpio. Las reglas de cálculo se revisaron contra las 34 capturas del BRD y del dashboard, que mandan ante cualquier contradicción entre documentos.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:30%">Pedido</th><th>Cómo quedó</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Reglas del BRD primero</strong></td><td><em>"Null or zero values are excluded from scoring"</em>: el cero se excluye en Kenna, OSS, RAW Tech y Operational; Tech Debt y SCA lo siguen puntuando porque su tabla lo nombra (ADR 0019). Notas del ruleset corregidas contra las capturas y RFC-13 a RFC-17 nuevos. El ruleset tiene 18 métricas</td></tr>
+        <tr><td><strong>Comparar reglas</strong></td><td>Vista nueva: dos versiones —o el borrador sin publicar— sobre todo el portafolio y sobre una aplicación, métrica por métrica</td></tr>
+        <tr><td><strong>Cambios de reglas en la tendencia</strong></td><td>Una línea punteada donde se publicó cada versión, y un aviso de reglas nuevas para quien consulta</td></tr>
+        <tr><td><strong>Descargas según los filtros</strong></td><td>CSV del portafolio, del roadmap agrupado y de la comparación, sin inyección de fórmulas, con límite propio y auditoría</td></tr>
+        <tr><td><strong>Robustez</strong></td><td>Un almacén de reglas caído ya no deja sin scores; la reautenticación cierra la sesión anterior y queda lista para OAuth con APIM (ADR 0020)</td></tr>
+        <tr><td><strong>Pruebas de la SPA</strong></td><td>Vitest para la lógica y Playwright con el Edge instalado; una prueba impide que los tipos TypeScript se separen del backend</td></tr>
+        <tr><td><strong>Git y paquete portable</strong></td><td>Repositorio con un respaldo que se niega a subir las capturas del BRD; ejecutables de un solo archivo para probar en otro equipo, solo en la interfaz local</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:44%">Medido antes y después</th><th>Antes</th><th>Después</th></tr></thead>
+      <tbody>
+        <tr><td>Historia del portafolio en frío, 30 cargas</td><td class="mono">1.655 ms</td><td class="mono">8–15 ms</td></tr>
+        <tr><td>Simulación de reglas, p50 con 8 clientes, en reposo</td><td class="mono">117 ms</td><td class="mono">47 ms</td></tr>
+        <tr><td>Bundle principal de la SPA</td><td class="mono">429 kB</td><td class="mono">406 kB</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note"><strong>Lo que sigue.</strong> Fase 14, verificación de seguridad con los 14 parciales de ASVS; Fase 15, autenticación con APIM; Fase 16, escala y operación; y al final, por decisión, la Fase 17 con H-16, H-17, H-20 y H-21. Los pendientes para el equipo, en inglés y con el máximo detalle, están en <code>docs/PENDING-ITEMS.md</code>. Nada se subió todavía al repositorio remoto: antes hay que confirmar su visibilidad.</div>
+
+  <h3>Estructura del repositorio</h3>
+  <pre>modernization-score/
+├─ <b>Directory.Packages.props</b>        <em>versiones centralizadas</em>
+├─ Directory.Build.props           <em>warnings as errors, nullable, analyzers</em>
+├─ docs/           adr/ · security/ · runbooks/
+├─ <b>contracts/</b>
+│  ├─ ruleset-v1.3.json            <em>pesos, bandas, estrategias</em>
+│  └─ sources/*.schema.json        <em>contratos de columnas por fuente</em>
+├─ data/dummy/                     <em>CSV generados, listos para la Fase 2</em>
+├─ <b>data/history/&lt;id&gt;/</b>              <em>una carga publicada = una versión ✓</em>
+├─ src/
+│  ├─ shared/
+│  │  ├─ <b>Modernization.Domain/</b>            <em>modelo canónico + puertos ✓</em>
+│  │  ├─ <b>Modernization.Scoring.Engine/</b>    <em>motor puro — el activo crítico ✓</em>
+│  │  └─ Modernization.Security/
+│  ├─ channel/
+│  │  └─ Modernization.ChannelApi/       <em>BFF / orquestador</em>
+│  ├─ system/
+│  │  ├─ Modernization.SystemApi/        <em>host HTTP de la capa System</em>
+│  │  ├─ Modernization.Sources/{<b>Dummy</b>,<b>Files</b>,Export}/  <em>✓</em>
+│  │  └─ <b>Modernization.Sources.Database/</b>     <em>EF Core, migraciones ✓</em>
+│  └─ web/                              <em>React 19 SPA</em>
+├─ tests/
+│  ├─ <b>Scoring.Engine.Tests/</b>        <em>golden tests + tabla de casos ✓</em>
+│  ├─ SourceReader.ContractTests/  <em>una suite, dos adaptadores ✓</em>
+│  ├─ ChannelApi.Tests/            <em>contratos de composición</em>
+│  └─ e2e/
+├─ .github/workflows/ci.yml        <em>gates de seguridad ✓</em>
+└─ deploy/{docker,k8s}             <em>chiseled · PSA restricted · NetworkPolicy · mTLS ✓</em></pre>
+</section>
+
+<hr class="div">
+
+<!-- 9 -->
+<section id="abiertos">
+  <div class="sec-head"><span class="sec-num">09</span><h2>Decisiones pendientes de confirmación</h2></div>
+  <div class="note">Desde la Fase 13 cada decisión abierta —del negocio sobre el score, de plataforma, de seguridad y de operación— tiene su identificador, contexto, opciones, recomendación y criterio de aceptación en <code>docs/PENDING-ITEMS.md</code>, en inglés para revisarla con el equipo. Se suman RFC-13 a RFC-17, la migración a OAuth con APIM y la visibilidad del repositorio.</div>
+  <div class="prose"><p>Los puntos donde las capturas o la infraestructura no alcanzan para cerrar el modelo. Ninguno bloquea el arranque: todos tienen un default implementado y son configurables.</p></div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:10%">Ref.</th><th style="width:30%">Tema</th><th>Default implementado y pregunta abierta</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">RFC-01</td><td>Compuestos Architectural Value y Product Strategy</td><td>Promedio ponderado por conteo, con precedencia del valor entregado por la fuente. El 75,72 del dashboard exigiría del orden de <strong>mil productos</strong> para salir de conteos enteros, así que ese valor se publica agregado o ya calculado desde CMT. ¿Lo confirma el modelo Power BI?</td></tr>
+        <tr><td class="mono">RFC-02</td><td>Definición del <strong>Currency Score</strong></td><td>El dashboard muestra 94,66 pero el BRD capturado no lo define. Se modela como KPI independiente del CMT, <strong>fuera</strong> del Modernization Score. ¿Existe documentación del CMT Currency Model?</td></tr>
+        <tr><td class="mono">RFC-03</td><td>Peso de Tech Debt</td><td>5 en el BRD contra 10 en el dashboard v1.3. Default: <strong>10</strong>, el peso publicado en el dashboard. Ningún caso dorado tiene Tech Debt, así que la elección <strong>no está verificada numéricamente</strong>.</td></tr>
+        <tr><td class="mono">RFC-04</td><td>Semántica del <em>“Override rule”</em></td><td>El dashboard muestra dos valores por pilar. Se modela como <code>ScoreOverride</code> con auditoría de quién, cuándo y por qué.</td></tr>
+        <tr><td class="mono">RFC-05</td><td>Conteo de SCA</td><td>¿Cuenta flaws abiertos o presencia? Default: presencia de al menos un flaw abierto de esa severidad.</td></tr>
+        <tr><td class="mono">RFC-06</td><td>Alcance del score</td><td>El dashboard agrega (“Suma de Kenna_Score”), lo que sugiere ambos niveles. Default: cálculo por aplicación con agregación posterior.</td></tr>
+        <tr><td class="mono">RFC-09</td><td>Mapeo roadmap → palancas del what-if</td><td>El BRD define qué es cada roadmap pero no qué métricas mueve. El mapeo es una interpretación de esas definiciones, documentada en el contrato con su justificación. <strong>Conviene validarlo con los dueños del modelo.</strong></td></tr>
+        <tr><td class="mono">RFC-08</td><td>Huecos entre las bandas del BRD</td><td>Operational Score no define (59,9 · 60) ni (79,99 · 80); Tech Debt no define (0 · 0,1) ni (2,4 · 2,5). El motor falla con error accionable en vez de redondear. ¿El modelo Power BI usa bandas contiguas?</td></tr>
+        <tr><td class="mono">RFC-07</td><td>Infraestructura</td><td>¿Entra ID corporativo o Keycloak self-hosted para el piloto? ¿AKS, coherente con las menciones a AKS/ASE del BRD? Decide también el <strong>motor de base de datos</strong>: el adaptador es agnóstico y hoy se verifica contra SQLite.</td></tr>
+        <tr><td class="mono">RFC-10</td><td>Claim de alcance del IdP</td><td>La autorización por LOB/CIO lee <code>portfolio_scope</code> con valores <code>*</code>, <code>lob:…</code>, <code>country:…</code>, <code>cio:…</code>. El nombre es configurable y, sin claim, no se ve nada. ¿Lo emite el IdP corporativo, o se deriva de grupos?</td></tr>
+        <tr><td class="mono">RFC-11</td><td>Cache compartido de sesiones</td><td>Las sesiones viven en el servidor con cache en memoria: una sola réplica de channel-api hasta registrar Redis.</td></tr>
+        <tr><td class="mono">RFC-12</td><td>Identidad de carga de trabajo</td><td>Token de servicio estático con rotación sin corte y mTLS. ¿Qué identidad de vida corta ofrece la plataforma del cluster?</td></tr>
+        <tr><td class="mono">RFC-13</td><td><em>"Null or zero values are excluded"</em></td><td>El cero se excluye como un nulo en Kenna, OSS, RAW Tech y Operational; donde la tabla del BRD lo puntúa —Tech Debt 0, SCA sin flaws— sigue puntuando (ADR 0019). ¿Un Kenna 0 es "sin riesgo" o "sin escaneo"?</td></tr>
+        <tr><td class="mono">RFC-14</td><td>DevSecOps <span class="mono">0/NULL–3 → 20</span></td><td>El BRD puntúa el nulo. Sin efecto mientras la métrica tenga peso 0.</td></tr>
+        <tr><td class="mono">RFC-15</td><td><code>Consolidate</code> en la disposición</td><td>No figura en la tabla de puntaje del BRD; viene del modelo MAPS y se mapea a 20 por supuesto.</td></tr>
+        <tr><td class="mono">RFC-16</td><td>Containerized <em>"added to product strategy (2 pts) and architecture value (2 pts)"</em></td><td>El dashboard y el ejemplo 14381 usan compuestos de peso 10. ¿Texto obsoleto o bonificación dentro de los compuestos?</td></tr>
+        <tr><td class="mono">RFC-17</td><td>Filas con <span class="mono">EAI Code = 0</span> en OSS</td><td>No son aplicaciones y hoy no cruzan con nada, en silencio. ¿Se reportan como filas huérfanas en el linaje?</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</div>
+

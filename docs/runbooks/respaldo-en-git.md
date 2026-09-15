@@ -5,21 +5,25 @@
 El proyecto se versiona con git desde el 2026-09-14. Este runbook explica cómo respaldar,
 qué queda fuera del repositorio y por qué, y cómo recuperar.
 
-## Antes del primer push
+## Decisiones del repositorio (2026-09-15)
 
-1. **Confirmar la visibilidad del repositorio.** Debe ser **privado**: el código describe el
-   modelo de scoring interno y la arquitectura de seguridad.
-2. **Autenticación.** Git Credential Manager (incluido en Git para Windows) abre el navegador
-   para iniciar sesión en GitHub. No se guarda ningún token en el repositorio ni en scripts.
-3. **Autor de los commits.** Se configura por repositorio, no global:
+1. **Visibilidad: privado.** El código describe el modelo de scoring interno y la
+   arquitectura de seguridad.
+2. **Qué se versiona: todo lo creado, salvo las capturas del BRD y las imágenes.** Incluye el
+   último paquete portable, el estado local de `data/`, los scripts de las sesiones y la
+   copia del plan publicado. Detalle en las tablas de abajo.
+3. **Autor de los commits: el correo de la cuenta**, no la dirección `…@users.noreply.github.com`.
+   Se configura por repositorio, no global:
 
    ```bash
    git config user.name "camilarodriguez10"
    git config user.email "<correo de la cuenta>"
    ```
 
-   El correo queda en los metadatos de cada commit publicado. GitHub permite usar la
-   dirección `…@users.noreply.github.com` si no se quiere exponer el correo real.
+4. **Autenticación.** Git Credential Manager (incluido en Git para Windows) abre el navegador
+   para iniciar sesión en GitHub. No se guarda ningún token en el repositorio ni en scripts.
+
+El primer push de `main` fue el 2026-09-15.
 
 ## Respaldar
 
@@ -39,8 +43,9 @@ tools/git/backup.sh "Fase 13: revisión y remediación" --verify
 El script **nunca** fuerza el push ni reescribe historia, y se niega a confirmar:
 
 - `docs/brd/capturas/` (capturas del BRD y del dashboard: documentación interna);
-- imágenes, certificados y llaves (`.jpg`, `.png`, `.pfx`, `.p12`, `.key`, `.pem`);
-- archivos `.env`.
+- imágenes (`.jpg`, `.jpeg`, `.png`, `.gif`, `.webp`, `.bmp`, `.heic`, `.tif`, `.ico`);
+- certificados y llaves (`.pfx`, `.p12`, `.key`, `.pem`) y archivos `.env`;
+- archivos de más de 100 MB, que GitHub rechaza.
 
 Si `gitleaks` está instalado, escanea lo que se va a confirmar con `.gitleaks.toml`.
 
@@ -55,13 +60,22 @@ git push origin fase-13
 
 | Qué | Por qué | Dónde se respalda |
 |---|---|---|
-| `docs/brd/capturas/` | Documentación interna del negocio | Almacenamiento corporativo. Solo se sube con `git add -f` si el repositorio es privado y el negocio lo autoriza |
-| `data/history/`, `data/.rules/`, `*.db` | Estado de ejecución: cargas y versiones de reglas publicadas | Volumen persistente del despliegue y su propio respaldo ([recuperación ante desastres](recuperacion-ante-desastres.md)) |
-| `artifacts/` | Paquetes portables generados | Se regeneran con `tools/portable/build-portable.ps1` |
-| `node_modules/`, `bin/`, `obj/`, `dist/` | Salidas de build | Se regeneran |
-| `.claude/`, `.vscode/`, `.idea/` | Configuración local de herramientas | No aplica |
+| `docs/brd/capturas/` e imágenes | Documentación interna del negocio | Almacenamiento corporativo |
+| `node_modules/`, `bin/`, `obj/`, `dist/`, `*.tsbuildinfo`, resultados de pruebas | Salidas de build y de pruebas | Se regeneran |
+| `artifacts/*/` | Carpeta descomprimida que deja el build del paquete | Se regenera; el `.zip` sí se versiona |
+| `.claude/settings.local.json`, `.vscode/`, `.idea/` | Configuración personal de herramientas | No aplica |
+| `*.pfx`, `*.p12`, `*.key`, `*.pem`, `.env` | Secretos | Gestor de secretos ([rotación](rotacion-de-secretos.md)) |
 
-Los datos dummy (`data/dummy/`) **sí** se versionan: son sintéticos y las pruebas los usan.
+## Qué se versiona aunque se genere
+
+| Qué | Cuidado |
+|---|---|
+| `artifacts/*.zip` | Último paquete portable, unos 93 MB. Cada paquete queda **para siempre** en la historia: antes de confirmar uno nuevo, borrar el anterior del árbol. Si los builds se vuelven frecuentes, conviene pasar a GitHub Releases o Git LFS (OP-04) |
+| `data/history/`, `data/modernization.db*` | Estado local de prueba, con datos dummy. Cambia al usar la app con los adaptadores de archivos o de base: confirmarlo solo cuando se quiera guardar esa foto. En despliegue el estado vive en su volumen ([recuperación ante desastres](recuperacion-ante-desastres.md)) |
+| `data/dummy/` | Datos sintéticos que usan las pruebas |
+| `tools/sesiones/` | Scripts históricos de las sesiones de trabajo; no se vuelven a ejecutar |
+| `docs/plan/` | Copia del plan publicado como artefacto |
+| `.claude/launch.json` | Servidor de desarrollo para el panel de vista previa de Claude Code |
 
 ## Recuperar
 
@@ -70,6 +84,7 @@ git clone https://github.com/camilarodriguez10/modscore1.git
 cd modscore1
 dotnet test ModernizationScore.slnx
 npm --prefix src/web ci --ignore-scripts
+npm --prefix src/web run lint
 npm --prefix src/web test
 ```
 

@@ -18,6 +18,7 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
    ```bash
    dotnet test ModernizationScore.slnx
    npm --prefix src/web ci --ignore-scripts
+   npm --prefix src/web run lint
    npm --prefix src/web test
    npm --prefix src/web run test:e2e
    ```
@@ -35,13 +36,13 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 |---|---|
 | Fases 00–12 | Entregadas: motor, datos dummy, dos capas, SPA, what-if, roadmap, archivos, endurecimiento, base de datos, experiencia de consulta, sitio en inglés, administración de reglas |
 | Fase 13 — revisión y remediación | Entregada el 2026-09-14/15 (PLAN §8.6) |
-| Pruebas | **640 .NET** (200 motor · 175 contratos · 265 API) · **35 unitarias** de la SPA · **6 de punta a punta** con Playwright y Edge. Todas en verde |
+| Pruebas | **640 .NET** (200 motor · 175 contratos · 265 API) · **35 unitarias** de la SPA · **6 de punta a punta** con Playwright y Edge, contra el stack de desarrollo y contra el paquete portable · ESLint sin errores. Todo repetido en verde el 2026-09-15 |
 | Dependencias | Cero paquetes vulnerables (`dotnet list package --vulnerable`), `npm audit` limpio |
 | ASVS L2 | 103 cumple · 14 parciales · 3 pendientes · 10 IdP o N/A |
 | Hallazgos | Fase 08: 23 (19 cerrados, H-16 parcial, H-17/H-20/H-21 pendientes). Revisión 09–13: 7 (6 cerrados, 1 aceptado) |
-| Git | Repositorio local con remoto `origin` = `https://github.com/camilarodriguez10/modscore1.git`. **Nada subido todavía**: el push requiere confirmación de la dueña del repositorio (visibilidad y capturas del BRD) |
-| Artefacto del plan | <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> (versión 15, con la Fase 13; enlace anterior del mismo artefacto: <https://claude.ai/code/artifact/25507d1f-40a6-4e74-8c43-0337dbb63358>) |
-| Paquete portable | `tools/portable/build-portable.ps1` genera el `.zip` en `artifacts/` (92,8 MB autocontenido). Verificado el 2026-09-15: descomprimido, arrancado con `start.ps1`, las dos capas escuchan solo en `127.0.0.1`, CSP estricta y los 6 escenarios e2e en verde contra él |
+| Git | Repositorio **privado** <https://github.com/camilarodriguez10/modscore1>, rama `main`. Guarda todo lo creado —el `.zip` portable, el estado local de `data/`, los scripts de las sesiones (`tools/sesiones/`) y la copia del plan (`docs/plan/`)— salvo las capturas del BRD y las imágenes. Los commits usan el correo de la cuenta. Cada push se confirma antes |
+| Artefacto del plan | <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> (versión 16, con la Fase 13; copia en `docs/plan/modscore-plan.html`; enlace anterior del mismo artefacto: <https://claude.ai/code/artifact/25507d1f-40a6-4e74-8c43-0337dbb63358>) |
+| Paquete portable | `artifacts/modscore-portable-win-x64-selfcontained-20260915-0819.zip` (92,8 MB autocontenido, SHA-256 `4778b8d9d092c0d71bed0632e90f77528bff6cef761384528affd04dd913df0f`), versionado en el repositorio; se regenera con `tools/portable/build-portable.ps1`. Verificado el 2026-09-15: descomprimido y arrancado con `start.ps1`; las dos capas escuchan solo en `127.0.0.1`, con CSP estricta; los 6 escenarios e2e pasan contra él; al detenerlo no quedan procesos ni secretos |
 
 ---
 
@@ -149,7 +150,8 @@ Pedido del 2026-09-14, trece puntos. Detalle en PLAN §8.6 y en la sección 7 de
 | Punto | Resultado | Dónde mirar |
 |---|---|---|
 | Plan, handoff | PLAN §1, §6.1, §8, §8.6, §8ter, §9 y §10; este documento | `PLAN.md` |
-| Git | Repositorio, remoto, commit base, `.gitignore`, `.gitattributes`, scripts de respaldo, runbook | `tools/git/`, `docs/runbooks/respaldo-en-git.md` |
+| Git | Repositorio privado, `.gitignore`, `.gitattributes`, scripts de respaldo que bloquean capturas, imágenes, llaves, `.env` y archivos de más de 100 MB, runbook | `tools/git/`, `docs/runbooks/respaldo-en-git.md` |
+| Todo en el repositorio | Paquete portable, estado local de prueba, scripts de las sesiones, copia del plan, `.claude/launch.json` | `artifacts/`, `data/`, `tools/sesiones/`, `docs/plan/` |
 | Reglas y documentación | Regla del cero, notas del ruleset, RFC-13 a 17, ADR 0003/0017/0018 corregidos, 18 métricas | ADR 0019, `contracts/ruleset-v1.3.json` |
 | Pendientes en inglés | Un archivo con todo lo abierto | `docs/PENDING-ITEMS.md` |
 | H-16/17/20/21 al final | Fase 17 | PLAN §8ter |
@@ -181,7 +183,8 @@ La simulación depende mucho de la carga de la máquina: con la máquina ocupada
 | Para | Comando |
 |---|---|
 | Pruebas .NET | `dotnet test ModernizationScore.slnx` |
-| Pruebas de la SPA | `npm --prefix src/web test` · `npm --prefix src/web run test:e2e` |
+| Pruebas de la SPA | `npm --prefix src/web run lint` (el CI lo exige) · `npm --prefix src/web test` · `npm --prefix src/web run test:e2e` |
+| Pruebas contra el paquete portable | Con `start.ps1 -NoBrowser` corriendo, desde `src/web`: `MODSCORE_E2E_BASE_URL=http://localhost:5100 npx playwright test` |
 | Tipos de la SPA | `npx --prefix src/web tsc -b` (desde `src/web`: `npx tsc -b`) |
 | Vulnerabilidades | `dotnet list ModernizationScore.slnx package --vulnerable --include-transitive` · `npm --prefix src/web audit --audit-level=moderate` |
 | Prueba de carga | `dotnet run -c Release --project tools/Modernization.LoadTest -- --duration 10 --concurrency 8` (con system-api en Release) |
@@ -239,6 +242,9 @@ La simulación depende mucho de la carga de la máquina: con la máquina ocupada
 - El panel del navegador integrado puede estar oculto: las capturas fallan y hay que usar
   JavaScript o `form_input`. Para pruebas repetibles, Playwright con el Edge instalado no
   descarga navegadores.
+- Para probar `start.ps1` sin intervención: `(sleep 600; echo) | powershell -File start.ps1 -NoBrowser`.
+  El `echo` equivale a presionar Enter y deja que el script detenga las capas y borre los
+  secretos; para terminar antes, matar el `sleep`.
 
 **.NET y analizadores:**
 
@@ -250,8 +256,10 @@ La simulación depende mucho de la carga de la máquina: con la máquina ocupada
 - **NETSDK1152:** la capa Channel referencia la System por sus contratos, y sus
   `appsettings` chocaban al publicar. Se descartan en `DropReferencedSystemSettings`. Nunca
   se había visto porque las imágenes no se habían construido.
-- Publicar con `-r win-x64` puede agregar una sección de runtime a los lock files: revisar el
-  diff.
+- Publicar con `-r win-x64` agrega a los lock files `Microsoft.NET.ILLink.Tasks` y una sección
+  `net10.0/win-x64`; con eso fallaría la restauración del CI en modo bloqueado. Desde el
+  2026-09-15, `build-portable.ps1` guarda los lock files antes de publicar y los devuelve al
+  terminar.
 
 **Pruebas:**
 
@@ -262,6 +270,9 @@ La simulación depende mucho de la carga de la máquina: con la máquina ocupada
   en reposo y repetir.
 - Una prueba de contrato entre C# y TypeScript da la garantía de un cliente generado sin
   sumar herramientas a la cadena de suministro.
+- La verificación local tiene que incluir `npm run lint`, porque el CI lo exige. En la Fase 13
+  no se corrió y se escapó un BOM literal en una expresión regular de `e2e/support.ts`
+  (`no-irregular-whitespace`); se corrigió escribiendo `\uFEFF`.
 
 **Proceso y producto:**
 
@@ -285,8 +296,11 @@ Lo que bloquea producción (P0):
 | PA-01 | Destino de despliegue y motor de base |
 | PA-02 · PA-03 | Autenticación con APIM (opción A, B o C del ADR 0020) y claim de alcance |
 | SEC-19 | Reautenticación verificada contra el proveedor real |
-| SEC-20 | Primera corrida del pipeline con todos los gates |
-| SEC-21 · OP-04 | Visibilidad del repositorio, política de capturas y primer push |
+| SEC-20 | Primera corrida del pipeline con todos los gates: el push ya la disparó; revisar el resultado en la pestaña Actions |
+
+SEC-21 quedó resuelto el 2026-09-15 (repositorio privado, capturas e imágenes fuera, correo
+de la cuenta). OP-04 sigue abierto como P1: protección de la rama `main`, Renovate y
+escaneo de secretos en GitHub.
 
 Orden de las fases siguientes: **14** verificación de seguridad (ASVS) → **15** APIM →
 **16** escala y operación → **17** H-16, H-17, H-20 y H-21, al final por decisión.
@@ -304,13 +318,15 @@ La memoria del proyecto está en
 - prioridades del plan;
 - migración a APIM;
 - política de paquetes desactualizados;
-- repositorio git.
+- repositorio git;
+- estado tras la Fase 13.
 
 Se carga sola en cada sesión.
 
-Preferencias de la dueña del proyecto:
+Preferencias de quien lleva el proyecto:
 
 - conversación y documentación en español, sitio en inglés;
 - nunca librerías con vulnerabilidades;
 - arquitectura de microservicios con la seguridad al extremo;
-- confirmar antes de publicar cualquier cosa fuera del equipo.
+- confirmar antes de publicar cualquier cosa fuera del equipo, incluido cada push;
+- en el repositorio va todo lo creado, salvo las capturas del BRD y las imágenes.

@@ -11,4 +11,6 @@
 *.woff  binary
 *.woff2 binary
 *.db    binary
+*.db-shm binary
+*.db-wal binary
 *.zip   binary

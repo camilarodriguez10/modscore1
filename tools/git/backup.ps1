@@ -75,13 +75,20 @@ try {
     else {
         $blocked = @($staged | Where-Object {
             $_ -match '^docs/brd/capturas/' -or
-            $_ -match '\.(jpe?g|png|heic|pfx|p12|key|pem)$' -or
+            $_ -match '\.(jpe?g|png|gif|webp|bmp|heic|tiff?|ico|pfx|p12|key|pem)$' -or
             $_ -match '(^|/)\.env(\.|$)'
         })
 
         if ($blocked.Count -gt 0) {
             & git reset -q
             throw "Estos archivos no se respaldan sin una decision explicita: $($blocked -join ', '). Ver docs/brd/README.md."
+        }
+
+        # GitHub rechaza archivos de mas de 100 MB: mejor saberlo antes de confirmar.
+        $tooLarge = @($staged | Where-Object { (Test-Path -LiteralPath $_ -PathType Leaf) -and (Get-Item -LiteralPath $_).Length -gt 100MB })
+        if ($tooLarge.Count -gt 0) {
+            & git reset -q
+            throw "GitHub rechaza archivos de mas de 100 MB: $($tooLarge -join ', '). Ver docs/runbooks/respaldo-en-git.md."
         }
 
         if (Get-Command gitleaks -ErrorAction SilentlyContinue) {

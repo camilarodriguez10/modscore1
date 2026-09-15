@@ -92,11 +92,22 @@ $publish = @(
 )
 if ($selfContained) { $publish += '-p:EnableCompressionInSingleFile=true' }
 
-Write-Host "2/4  Capa System ($Variant, $Runtime)"
-Invoke-Checked 'dotnet' (@('publish', (Join-Path $root 'src\system\Modernization.SystemApi\Modernization.SystemApi.csproj'), '-o', (Join-Path $staging 'system')) + $publish)
+# Publicar con -r agrega a los lock files una seccion por runtime y Microsoft.NET.ILLink.Tasks.
+# La restauracion del CI (--locked-mode) fallaria con ellos: se guardan y se devuelven al final.
+$lockFiles = @(Get-ChildItem -Path (Join-Path $root 'src/*/*/packages.lock.json') -File)
+$savedLocks = @{}
+foreach ($lock in $lockFiles) { $savedLocks[$lock.FullName] = [IO.File]::ReadAllBytes($lock.FullName) }
 
-Write-Host "3/4  Capa Channel ($Variant, $Runtime) con la SPA"
-Invoke-Checked 'dotnet' (@('publish', (Join-Path $root 'src\channel\Modernization.ChannelApi\Modernization.ChannelApi.csproj'), '-o', (Join-Path $staging 'channel')) + $publish)
+try {
+    Write-Host "2/4  Capa System ($Variant, $Runtime)"
+    Invoke-Checked 'dotnet' (@('publish', (Join-Path $root 'src\system\Modernization.SystemApi\Modernization.SystemApi.csproj'), '-o', (Join-Path $staging 'system')) + $publish)
+
+    Write-Host "3/4  Capa Channel ($Variant, $Runtime) con la SPA"
+    Invoke-Checked 'dotnet' (@('publish', (Join-Path $root 'src\channel\Modernization.ChannelApi\Modernization.ChannelApi.csproj'), '-o', (Join-Path $staging 'channel')) + $publish)
+}
+finally {
+    foreach ($entry in $savedLocks.GetEnumerator()) { [IO.File]::WriteAllBytes($entry.Key, $entry.Value) }
+}
 
 $wwwroot = Join-Path $staging 'channel\wwwroot'
 New-Item -ItemType Directory -Force -Path $wwwroot | Out-Null

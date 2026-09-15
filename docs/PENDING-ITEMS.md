@@ -63,10 +63,10 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 |---|---|---|
 | Scoring rules (business) | SR-01 … SR-15 | SR-01, SR-03, SR-07 must be confirmed before scores are published to the organization (P0/P1) |
 | Platform and architecture | PA-01 … PA-09 | PA-01 (target and database engine) and PA-02 (authentication through APIM) are P0 |
-| Security | SEC-01 … SEC-24 | SEC-19, SEC-20, SEC-21 are P0; ASVS partials are P1; H-16/H-17/H-20/H-21 deferred to the last phase by decision |
+| Security | SEC-01 … SEC-24 | SEC-19 and SEC-20 are P0 (SEC-21 was decided on 2026-09-15); ASVS partials are P1; H-16/H-17/H-20/H-21 deferred to the last phase by decision |
 | Technical debt | TD-01 … TD-15 | None blocks; TD-06 and TD-09 are P1 |
 | Product follow-ups | PF-01 … PF-06 | No |
-| Operations | OP-01 … OP-05 | OP-04 (repository settings and first push) is P0 for collaboration |
+| Operations | OP-01 … OP-05 | No. The first push was done on 2026-09-15; OP-04 (branch protection and repository settings) is P1 |
 
 ### All items at a glance
 
@@ -103,7 +103,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 | SEC-18 | H-16 static shared service token | Security | P2 | Platform | Deferred (by decision) |
 | SEC-19 | Step-up against a real identity provider not verified | Security | P0 | Identity + development | Open |
 | SEC-20 | Security gates never run outside CI (DAST, Trivy, CodeQL, Checkov, gitleaks, image build) | Security | P0 | DevSecOps | Open |
-| SEC-21 | Repository visibility, BRD captures and commit metadata | Security | P0 | Repository owner | Decision needed |
+| SEC-21 | Repository visibility, BRD captures and commit metadata | Security | P0 | Repository owner | Decided (2026-09-15) |
 | SEC-22 | Portable package uses development authentication | Security | P1 | Everyone who distributes it | Accepted risk (with rules) |
 | SEC-23 | Rules timeline shows the publication reason to every reader | Security / privacy | P3 | Rules administrators | Accepted risk |
 | SEC-24 | CSV exports and data exfiltration | Security | P1 | Security + data owners | Decision needed |
@@ -118,7 +118,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 | TD-09 | Language sweep does not cover the new endpoints | Quality | P1 | Development | Open |
 | TD-10 | CSV of a draft's impact | Product / debt | P3 | Development | Open |
 | TD-11 | Mixed line endings in the repository | Hygiene | P3 | Development | Decision needed |
-| TD-12 | Lock files and runtime-specific publish | Supply chain | P3 | Development | Open |
+| TD-12 | Lock files and runtime-specific publish | Supply chain | P3 | Development | Mitigated |
 | TD-13 | Security review of phases 09–13 by a second person | Security | P1 | Security | Open |
 | TD-14 | Size of the rules editor screen | Maintainability | P3 | Development | Open |
 | TD-15 | Warm-up service and caches with many versions | Performance | P3 | Development | Open |
@@ -131,7 +131,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 | OP-01 | Runbook walkthrough with operations | Operations | P1 | Operations | Open |
 | OP-02 | Backups of the data volume and the rules store | Operations | P1 | Operations | Open |
 | OP-03 | Upload retention policy | Operations / compliance | P1 | Data owners + compliance | Decision needed |
-| OP-04 | GitHub repository settings and first push | Operations | P0 | Repository owner | Decision needed |
+| OP-04 | GitHub repository settings (first push done) | Operations | P1 | Repository owner | Open |
 | OP-05 | Portable package distribution checklist | Operations | P2 | Whoever distributes it | Open |
 
 ---
@@ -568,11 +568,11 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
 - **Priority:** P0 · **Owner:** DevSecOps · **Status:** Open
 - **Context:**
   - `.github/workflows/ci.yml` declares tests, vulnerable packages, CodeQL, Gitleaks, OSV-Scanner, Trivy, Checkov, SBOM (CycloneDX), actions pinned by SHA, and DAST with OWASP ZAP in staging.
-  - None of them has run yet: the repository had no remote until 2026-09-14.
-  - Locally we ran tests, `dotnet list package --vulnerable` and `npm audit`.
+  - `main` was first pushed on 2026-09-15, which triggers the workflow. Its result has not been checked: the development machine has no GitHub CLI.
+  - Locally we ran tests, ESLint, `dotnet list package --vulnerable` and `npm audit`.
   - Container images were never built, because that needs to download base images.
 - **Work:**
-  - First push (OP-04), then first pipeline run.
+  - Review the pipeline run triggered by the push (Actions tab).
   - Fix whatever the scanners find.
   - Build and scan both images.
   - Run ZAP against a staging deployment.
@@ -581,17 +581,23 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
 
 ### SEC-21 — Repository visibility, BRD captures and commit metadata
 
-- **Priority:** P0 · **Owner:** repository owner · **Status:** Decision needed
+- **Priority:** P0 · **Owner:** repository owner · **Status:** Decided (2026-09-15)
 - **Context:**
-  - The GitHub repository `camilarodriguez10/modscore1` will hold the code, the scoring model and the security architecture.
+  - The GitHub repository `camilarodriguez10/modscore1` holds the code, the scoring model and the security architecture.
   - The 34 BRD and dashboard captures (about 121 MB) are **excluded by `.gitignore`** and blocked by the backup scripts, because they are internal business documentation. They live in `docs/brd/capturas/` locally, and `docs/brd/README.md` indexes them without their content.
   - Commits are authored with the repository-local identity; the email becomes public in commit metadata if the repository is public.
-- **Questions:**
-  - Is the repository private?
-  - May the captures be stored there? The alternative is corporate storage.
-  - Should commits use the GitHub no-reply email?
-- **Recommendation:** private repository; captures in corporate storage; no-reply email.
-- **Acceptance criteria:** decisions recorded in [docs/runbooks/respaldo-en-git.md](runbooks/respaldo-en-git.md); repository settings applied (OP-04).
+- **Decisions (2026-09-15):**
+  - The repository is **private**.
+  - The captures and every image stay **out** of the repository; corporate storage keeps them.
+  - Commits keep the account email, not the GitHub no-reply address.
+  - Everything else created during the project **is versioned**:
+    - the latest portable `.zip`, about 93 MB;
+    - the local run state (`data/history/`, `data/modernization.db*`, dummy data only);
+    - the helper scripts of the working sessions (`tools/sesiones/`);
+    - a copy of the published plan (`docs/plan/`);
+    - `.claude/launch.json`.
+  - Build outputs, test results and secrets stay out.
+- **Acceptance criteria:** decisions recorded in [docs/runbooks/respaldo-en-git.md](runbooks/respaldo-en-git.md) (done); repository settings applied (OP-04).
 - **Effort:** S.
 
 ### SEC-22 — The portable package uses development authentication
@@ -765,10 +771,13 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
 
 ### TD-12 — Lock files and runtime-specific publish
 
-- **Priority:** P3 · **Owner:** development · **Status:** Open
-- **Context:** Projects restore with lock files (`packages.lock.json`), and CI uses locked mode. Publishing the portable package with `-r win-x64` could add a runtime-specific target to lock files.
-- **Verified on 2026-09-15:** the first self-contained `win-x64` build left every lock file unchanged. The item stays open only to re-check after package or SDK updates, or when adding `win-arm64`.
-- **Work:** after each portable build, check `git status` for `packages.lock.json`; commit the updated lock files if they changed.
+- **Priority:** P3 · **Owner:** development · **Status:** Mitigated
+- **Context:**
+  - Projects restore with lock files (`packages.lock.json`), and CI uses locked mode (`dotnet restore --locked-mode`).
+  - Publishing the portable package with `-r win-x64` adds `Microsoft.NET.ILLink.Tasks` and a `net10.0/win-x64` section to 10 lock files. Seen on the second build of 2026-09-15.
+  - Committing those changes would make the locked-mode restore in CI fail, because a normal restore does not request them.
+- **Mitigation (2026-09-15):** `tools/portable/build-portable.ps1` saves every `src/*/*/packages.lock.json` before publishing and writes them back afterwards, even if the publish fails.
+- **Work:** after package or SDK updates, or when adding `win-arm64`, confirm that `git status` shows no lock file changes after a portable build.
 - **Effort:** S.
 
 ### TD-13 — Security review of phases 09–13 by a second person
@@ -864,19 +873,18 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
 - **Question:** How long must uploads be kept? Legal or audit requirements?
 - **Effort:** S.
 
-### OP-04 — GitHub repository settings and first push
-- **Priority:** P0 · **Owner:** repository owner · **Status:** Decision needed
+### OP-04 — GitHub repository settings
+- **Priority:** P1 · **Owner:** repository owner · **Status:** Open (first push done on 2026-09-15)
 - **Context:**
-  - The local repository exists with remote `origin` = `https://github.com/camilarodriguez10/modscore1.git`.
-  - The baseline commit and phase 13 commits have been made locally.
-  - **Nothing has been pushed:** pushing publishes content outside the machine and needs explicit confirmation (SEC-21).
+  - Remote `origin` = `https://github.com/camilarodriguez10/modscore1.git`, a **private** repository (SEC-21).
+  - `main` holds the baseline, phase 13 and the full backup of every created file except captures and images.
+  - Every push is still confirmed with the repository owner before it happens.
 - **Work:**
-  1. Confirm private visibility.
-  2. Push `main` with `tools/git/backup.ps1 -Verify`.
-  3. Branch protection on `main`: required reviews, required status checks from the CI gates, no force push. Signed commits per plan §7.2 if the team uses them.
-  4. Enable Renovate and secret scanning.
-  5. Tag phase closes (`fase-13`).
-- **Acceptance criteria:** repository private; branch protection active; first CI run green (SEC-20).
+  1. Branch protection on `main`: required reviews, required status checks from the CI gates, no force push. Signed commits per plan §7.2 if the team uses them.
+  2. Enable Renovate and secret scanning.
+  3. Tag phase closes (`fase-13`).
+  4. Watch repository size. Each portable `.zip` adds about 93 MB to the history for good, and GitHub rejects files over 100 MB. Keep only the latest `.zip` in the tree; move to GitHub Releases or Git LFS if builds become frequent.
+- **Acceptance criteria:** branch protection active; first CI run green (SEC-20).
 - **Effort:** S.
 
 ### OP-05 — Portable package distribution checklist
@@ -938,6 +946,8 @@ Numbers are for comparing changes on the same machine, not for sizing production
 | API end-to-end through both layers and security | 265 | `dotnet test tests/Modernization.Api.Tests` |
 | SPA unit (Vitest) | 35 | `npm --prefix src/web test` |
 | SPA end-to-end (Playwright, Edge) | 6 | `npm --prefix src/web run test:e2e` |
+| SPA end-to-end against the portable package | 6 | With `start.ps1 -NoBrowser` running, from `src/web`: `MODSCORE_E2E_BASE_URL=http://localhost:5100 npx playwright test` |
+| SPA lint (ESLint, required by CI) | 0 errors | `npm --prefix src/web run lint` |
 | Vulnerable packages | 0 | `dotnet list ModernizationScore.slnx package --vulnerable --include-transitive` and `npm --prefix src/web audit --audit-level=moderate` |
 
 ---

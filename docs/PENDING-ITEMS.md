@@ -595,7 +595,10 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
     - Durations: CodeQL C# 8 min 41 s, CodeQL JS/TS 4 min 38 s, Backend 2 min 58 s, images and infrastructure 2 min 45 s, SPA 22 s, OSV 23 s, secrets 14 s.
 - **Work:**
   - Run OWASP ZAP against a staging deployment (needs PA-01).
-  - Check the duration of the next run after the CI speed-up of 2026-09-15. Changes, none of which removes a control:
+  - Done: CI speed-up of 2026-09-15. Run #6 (`148c6ce`) went from 9 min 54 s to **7 min 3 s**, all green.
+    - Job times: CodeQL C# 6 min 58 s (was 8 min 41 s), CodeQL JS/TS 4 min 25 s, Backend 2 min 40 s (was 2 min 58 s), images 2 min 43 s (now in parallel), SPA 24 s.
+    - CodeQL C# still sets the total. Most of it is probably CodeQL itself (setup and queries), since the build takes 13 s locally.
+    - Changes, none of which removes a control:
     - Gitleaks and OSV moved to `seguridad.yml`, which runs on every push without path filters.
     - `ci.yml` skips docs-only changes (`**/*.md`, `docs/`, `tools/sesiones/`, `artifacts/`, `data/history/`, local databases, `.claude/`).
     - CodeQL C# builds only the deployed code: `ChannelApi` pulls in the ten `src/` projects. Tests and tools are left out, and so are the Roslyn analyzers, which the Backend job already enforces. Source generators still run.

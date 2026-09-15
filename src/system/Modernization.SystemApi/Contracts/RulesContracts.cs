@@ -43,8 +43,49 @@ public sealed record RulesStateResponse(
 /// <summary>Una version concreta, para verla o restaurarla.</summary>
 public sealed record RulesVersionDocumentResponse(RulesVersionResponse Version, RulesDocument Document);
 
-/// <summary>Un borrador preparado sobre una version, para validarlo y simularlo.</summary>
-public sealed record RulesSimulationRequest(string BasedOn, RulesDraft Draft);
+/// <summary>
+/// Un borrador preparado sobre una version, para validarlo y simularlo. Con una aplicacion
+/// en foco la respuesta la trae ademas metrica por metrica.
+/// </summary>
+public sealed record RulesSimulationRequest(string BasedOn, RulesDraft Draft, string? EaiCode = null);
+
+/// <summary>Una version en la linea de tiempo que ve quien consulta. No dice quien la publico.</summary>
+public sealed record RulesTimelineEntryResponse(
+    string Id,
+    string? BasedOn,
+    DateTimeOffset? PublishedAt,
+    string Reason,
+    bool IsActive,
+    bool IsBuiltIn,
+    int ChangeCount)
+{
+    public static RulesTimelineEntryResponse From(RulesVersionInfo info, string activeId)
+    {
+        ArgumentNullException.ThrowIfNull(info);
+
+        return new RulesTimelineEntryResponse(
+            info.Id,
+            info.BasedOn,
+            info.PublishedAt,
+            info.Reason,
+            string.Equals(info.Id, activeId, StringComparison.Ordinal),
+            info.IsBuiltIn,
+            info.Changes.Count);
+    }
+}
+
+/// <summary>Cuando cambiaron las reglas: marca la tendencia y avisa de una version nueva.</summary>
+public sealed record RulesTimelineResponse(
+    RulesTimelineEntryResponse Active,
+    IReadOnlyList<RulesTimelineEntryResponse> Versions);
+
+/// <summary>Dos versiones comparadas: que cambio, su impacto y, si se pidio, una aplicacion.</summary>
+public sealed record RulesCompareResponse(
+    RulesVersionResponse From,
+    RulesVersionResponse To,
+    IReadOnlyList<Notice> Changes,
+    RulesImpact Impact,
+    ApplicationComparison? Application);
 
 /// <summary>Un borrador para publicar, con el motivo del cambio.</summary>
 public sealed record RulesPublishRequest(string BasedOn, string Reason, RulesDraft Draft);
@@ -55,7 +96,8 @@ public sealed record RulesSimulationResponse(
     string ActiveVersion,
     IReadOnlyList<Notice> Errors,
     IReadOnlyList<Notice> Changes,
-    RulesImpact? Impact)
+    RulesImpact? Impact,
+    ApplicationComparison? Application)
 {
     public static RulesSimulationResponse From(RulesSimulationOutcome outcome)
     {
@@ -67,7 +109,8 @@ public sealed record RulesSimulationResponse(
             outcome.ActiveVersion,
             outcome.Errors,
             outcome.Changes,
-            outcome.Impact);
+            outcome.Impact,
+            outcome.Application);
     }
 }
 

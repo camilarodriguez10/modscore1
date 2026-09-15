@@ -40,4 +40,16 @@ public sealed class RulesComposer(SystemApiClient system, ChannelPermissions per
 
     public Task<RulesPublishResponse> PublishAsync(RulesPublishRequest request, CancellationToken cancellationToken = default)
         => system.PublishRulesAsync(request, cancellationToken);
+
+    /// <summary>Pantalla 10 — dos versiones comparadas y, si se pide, una aplicacion.</summary>
+    public Task<RulesCompareResponse?> CompareAsync(
+        string from,
+        string to,
+        string? eaiCode,
+        CancellationToken cancellationToken = default)
+        => system.CompareRulesAsync(from, to, eaiCode, cancellationToken);
+
+    /// <summary>Cuando cambiaron las reglas, para quien consulta.</summary>
+    public Task<RulesTimelineResponse> GetTimelineAsync(CancellationToken cancellationToken = default)
+        => system.GetRulesTimelineAsync(cancellationToken);
 }

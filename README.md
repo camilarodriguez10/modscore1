@@ -33,10 +33,23 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-598 tests. Los dos que importan más reproducen los casos documentados:
-**EAI 14381 = 79,67** (ejemplo trabajado del BRD, derivado desde datos crudos por
-el pipeline completo) y **EAI 10969 = 79,61** (dashboard Power BI v1.3, métrica
-por métrica).
+640 pruebas .NET: 200 del motor, 175 de contratos y 265 de API. Las dos que importan más
+reproducen los casos documentados:
+
+- **EAI 14381 = 79,67:** ejemplo trabajado del BRD, derivado desde datos crudos por el
+  pipeline completo.
+- **EAI 10969 = 79,61:** dashboard Power BI v1.3, métrica por métrica.
+
+`ViewModelContractTests` falla si un modelo de vista de la capa Channel y su tipo
+TypeScript difieren.
+
+```bash
+npm --prefix src/web test          # 35 pruebas unitarias (Vitest)
+npm --prefix src/web run test:e2e  # 6 escenarios de punta a punta (Playwright + Edge)
+```
+
+Las de punta a punta usan el Microsoft Edge instalado (no descargan navegadores) y levantan
+las tres piezas con datos dummy, o reutilizan las que ya estén corriendo.
 
 ```bash
 dotnet list ModernizationScore.slnx package --vulnerable --include-transitive
@@ -106,6 +119,48 @@ desarrollo lo trae por defecto.
 Con el adaptador Dummy las reglas viven en memoria; con base de datos, en la tabla
 `rules_version`.
 
+## Comparar reglas y descargar
+
+- **Compare versions** (en Rules) abre `/admin/rules/compare`. Muestra qué cambia entre dos
+  versiones, cuánto se mueve el portafolio y, con un código EAI, qué le pasa a esa aplicación
+  métrica por métrica. Con **Your draft** como destino, simula el borrador de la pestaña
+  antes de publicarlo.
+- **Download CSV** en Portfolio y Roadmap descarga lo que se está viendo, con los mismos
+  filtros y agrupación. En la comparación descarga cada aplicación antes y después.
+- La **tendencia** en Data marca con líneas punteadas cuándo se publicaron reglas. Todos los
+  puntos se calculan con las vigentes.
+- Cuando se publican reglas nuevas, quien consulta ve un aviso durante 14 días.
+
+| Variable | Capa | Por defecto | Para qué |
+|---|---|---|---|
+| `RateLimiting__ExportsPerMinute` | Channel | 10 | Descargas por usuario |
+| `Portfolio__WarmupSeconds` | System | 15 | Cada cuánto se dejan calculados scores e historia; 0 lo apaga |
+
+Los CSV neutralizan textos que una planilla ejecutaría como fórmula, y cada descarga queda
+auditada con el evento 4213.
+
+## Paquete portable para probar en otro equipo
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/portable/build-portable.ps1
+```
+
+Genera en `artifacts/` un `.zip` con las dos capas como ejecutables de un solo archivo y la
+SPA dentro, más su SHA-256. En el otro equipo se descomprime y se ejecuta `start.cmd`. Ver
+[tools/portable/README.md](tools/portable/README.md).
+
+**No es un despliegue:** usa la autenticación de desarrollo, y por eso escucha solo en
+`127.0.0.1`.
+
+## Respaldo en git
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/git/backup.ps1 -Message "Descripción del cambio" -Verify
+```
+
+Corre las pruebas y los escaneos, se niega a subir las capturas del BRD, llaves o `.env`, y
+nunca fuerza el push. Ver [docs/runbooks/respaldo-en-git.md](docs/runbooks/respaldo-en-git.md).
+
 ## Prueba de carga
 
 ```bash
@@ -168,16 +223,17 @@ referencia deja de dar 79,67.
 ## Estructura
 
 ```
-contracts/ruleset-v1.3.json     pesos, bandas y procedencia — reglas como datos
+contracts/ruleset-v1.3.json     18 métricas: pesos, bandas y procedencia — reglas como datos
 data/dummy/                     los ocho CSV generados
-src/shared/                     dominio, motor de scoring, seguridad
+src/shared/                     dominio, motor de scoring, what-if, roadmap, reglas, seguridad
 src/system/                     capa System: reglas de negocio + fuentes
-src/channel/                    capa Channel: BFF y composición por pantalla
-src/web/                        SPA React 19
-tests/                          golden tests, contract tests, E2E y seguridad
-tools/                          generador de datos dummy y prueba de carga
-docs/                           ADR, seguridad y runbooks
+src/channel/                    capa Channel: BFF, composición por pantalla y exportaciones
+src/web/                        SPA React 19 · pruebas unitarias en src/ · e2e/ con Playwright
+tests/                          golden tests, contract tests, E2E por HTTP y seguridad
+tools/                          datos dummy, prueba de carga, respaldo en git y paquete portable
+docs/                           ADR, seguridad, runbooks, índice del BRD y PENDING-ITEMS.md
 deploy/                         imágenes y manifiestos del cluster
+HANDOFF.md                      traspaso completo del contexto
 ```
 
 ## Estado
@@ -197,6 +253,14 @@ deploy/                         imágenes y manifiestos del cluster
 | 10 Experiencia de consulta | entregada |
 | 11 Sitio en inglés | entregada |
 | 12 Administración de reglas | entregada |
+| 13 Revisión y remediación | entregada |
+| 14 Verificación de seguridad (ASVS L2) | planificada |
+| 15 Autenticación con APIM | planificada |
+| 16 Escala y operación | planificada |
+| 17 Hallazgos de infraestructura (H-16, H-17, H-20, H-21) | planificada, al final por decisión |
 
 Los supuestos abiertos están en la sección 10 de [PLAN.md](PLAN.md) como RFC-01 a
-RFC-12. Todos tienen un default implementado y configurable; ninguno bloquea.
+RFC-17; todos tienen un default implementado y configurable. Los pendientes para revisar
+con el equipo, con contexto, opciones y criterio de aceptación, están en
+[docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md). Para retomar el proyecto, empezar por
+[HANDOFF.md](HANDOFF.md).

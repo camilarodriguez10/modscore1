@@ -7,6 +7,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
     "audit": "npm audit --audit-level=moderate"
   },
   "dependencies": {
@@ -19,6 +22,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "^4.1.14",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
@@ -29,6 +33,7 @@
     "tailwindcss": "^4.1.14",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.0",
-    "vite": "^7.1.9"
+    "vite": "^7.1.9",
+    "vitest": "5.0.0"
   }
 }

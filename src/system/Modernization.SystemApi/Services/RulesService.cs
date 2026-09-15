@@ -15,7 +15,15 @@ public sealed record RulesSimulationOutcome(
     string ActiveVersion,
     IReadOnlyList<Notice> Errors,
     IReadOnlyList<Notice> Changes,
-    RulesImpact? Impact);
+    RulesImpact? Impact,
+    ApplicationComparison? Application = null);
+
+/// <summary>Dos versiones comparadas sobre la carga vigente.</summary>
+public sealed record RulesComparisonOutcome(
+    RulesModel From,
+    RulesModel To,
+    IReadOnlyList<Notice> Changes,
+    RulesImpact Impact);
 
 /// <summary>Resultado de publicar: la version nueva, o por que no se publico.</summary>
 public sealed record RulesPublishOutcome(
@@ -85,6 +93,7 @@ public sealed partial class RulesService : IDisposable
     private readonly SemaphoreSlim _publishing = new(1, 1);
 
     private volatile RulesModel _current = RulesModel.BuiltIn;
+    private volatile RulesImpactBaseline? _baseline;
     private long _checkedAtTicks;
 
     public RulesService(
@@ -205,11 +214,24 @@ public sealed partial class RulesService : IDisposable
     /// Valida un borrador contra las reglas vigentes y simula su impacto. Si la
     /// version base ya no es la vigente se simula igual, contra la vigente, y se dice.
     /// </summary>
+    public Task<RulesSimulationOutcome> SimulateAsync(
+        string basedOn,
+        RulesDraft draft,
+        IReadOnlyList<ApplicationSnapshot> applications,
+        DateOnly startDate,
+        CancellationToken cancellationToken = default)
+        => SimulateAsync(basedOn, draft, applications, startDate, focus: null, cancellationToken);
+
+    /// <summary>
+    /// Igual, con una aplicacion en foco: ademas del impacto en el portafolio devuelve esa
+    /// aplicacion metrica por metrica, antes y despues del borrador.
+    /// </summary>
     public async Task<RulesSimulationOutcome> SimulateAsync(
         string basedOn,
         RulesDraft draft,
         IReadOnlyList<ApplicationSnapshot> applications,
         DateOnly startDate,
+        ApplicationSnapshot? focus,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(draft);
@@ -224,9 +246,51 @@ public sealed partial class RulesService : IDisposable
             return new RulesSimulationOutcome(false, stale, current.Id, edit.Errors, [], null);
         }
 
-        var impact = RulesImpactSimulator.Simulate(applications, current, edit.Candidate!, startDate);
+        var impact = await ImpactAsync(applications, current, edit.Candidate!, startDate, cancellationToken)
+            .ConfigureAwait(false);
 
-        return new RulesSimulationOutcome(true, stale, current.Id, [], edit.Changes, impact);
+        var application = focus is null ? null : RulesComparison.Compare(focus, current, edit.Candidate!);
+
+        return new RulesSimulationOutcome(true, stale, current.Id, [], edit.Changes, impact, application);
+    }
+
+    /// <summary>
+    /// Compara dos versiones sobre todo el portafolio. Null si alguna no existe. Si la de
+    /// partida es la vigente, su lado se reutiliza como en la simulacion.
+    /// </summary>
+    /// <exception cref="RulesStoreUnavailableException">El almacen no respondio.</exception>
+    public async Task<RulesComparisonOutcome?> CompareAsync(
+        string fromId,
+        string toId,
+        IReadOnlyList<ApplicationSnapshot> applications,
+        DateOnly startDate,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(applications);
+
+        var current = await GetCurrentAsync(cancellationToken).ConfigureAwait(false);
+        var from = await GetVersionAsync(fromId, cancellationToken).ConfigureAwait(false);
+        var to = await GetVersionAsync(toId, cancellationToken).ConfigureAwait(false);
+
+        if (from is null || to is null)
+        {
+            return null;
+        }
+
+        RulesImpact impact;
+
+        if (ReferenceEquals(from, current))
+        {
+            impact = await ImpactAsync(applications, current, to, startDate, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            var baseline = await RulesImpactBaseline.ComputeAsync(applications, from, startDate, cancellationToken)
+                .ConfigureAwait(false);
+            impact = await RulesImpactSimulator.SimulateAsync(baseline, to, cancellationToken).ConfigureAwait(false);
+        }
+
+        return new RulesComparisonOutcome(from, to, RulesComparison.Changes(from, to), impact);
     }
 
     /// <summary>
@@ -281,7 +345,8 @@ public sealed partial class RulesService : IDisposable
                 return RulesPublishOutcome.Rejected([Notice.Of(NoticeCodes.RulesNoChanges)]);
             }
 
-            var impact = RulesImpactSimulator.Simulate(applications, current, edit.Candidate!, startDate);
+            var impact = await ImpactAsync(applications, current, edit.Candidate!, startDate, cancellationToken)
+                .ConfigureAwait(false);
             var now = _clock.GetUtcNow();
 
             var published = edit.Candidate!.WithInfo(new RulesVersionInfo
@@ -380,6 +445,30 @@ public sealed partial class RulesService : IDisposable
         {
             _refreshing.Release();
         }
+    }
+
+    /// <summary>
+    /// El impacto de un candidato frente a las reglas vigentes. El lado vigente se
+    /// recuerda mientras no cambien ni las reglas ni la carga: simular varias veces el
+    /// mismo borrador solo recalcula el borrador.
+    /// </summary>
+    private async Task<RulesImpact> ImpactAsync(
+        IReadOnlyList<ApplicationSnapshot> applications,
+        RulesModel current,
+        RulesModel candidate,
+        DateOnly startDate,
+        CancellationToken cancellationToken)
+    {
+        var baseline = _baseline;
+
+        if (baseline is null || !baseline.IsFor(current, applications, startDate))
+        {
+            baseline = await RulesImpactBaseline.ComputeAsync(applications, current, startDate, cancellationToken)
+                .ConfigureAwait(false);
+            _baseline = baseline;
+        }
+
+        return await RulesImpactSimulator.SimulateAsync(baseline, candidate, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Construye y recuerda el modelo de una version guardada. Null si no es valida.</summary>

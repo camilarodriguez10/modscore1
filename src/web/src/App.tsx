@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react';
 import { NavLink, Navigate, Outlet, Route, Routes, useLocation, useParams } from 'react-router';
 import { useLogin, useSession } from './api/hooks';
 import { ActiveFilters, FilterBar, useFilterMemory, useFilters } from './filters';
@@ -8,8 +9,15 @@ import { WhatIfPage } from './routes/WhatIfPage';
 import { RoadmapPage } from './routes/RoadmapPage';
 import { PortfolioRoadmapPage } from './routes/PortfolioRoadmapPage';
 import { DataPage } from './routes/DataPage';
-import { RulesPage } from './routes/RulesPage';
 import { Spinner } from './components/primitives';
+import { RulesChangedNotice } from './components/RulesChangedNotice';
+
+// Las pantallas de administracion solo las abre quien administra reglas: se cargan bajo
+// demanda y no pesan en el bundle de quien solo consulta.
+const RulesPage = lazy(() => import('./routes/RulesPage').then((module) => ({ default: module.RulesPage })));
+const RulesComparePage = lazy(() =>
+  import('./routes/RulesComparePage').then((module) => ({ default: module.RulesComparePage })),
+);
 
 /** Las pantallas donde el filtro actua. En el resto se muestra, pero sin controles. */
 const FILTERED_ROUTES = new Set(['/', '/roadmap']);
@@ -25,7 +33,22 @@ export function App() {
         <Route path="applications/:eaiCode/roadmap" element={<RoadmapPage />} />
         <Route path="roadmap" element={<PortfolioRoadmapPage />} />
         <Route path="data" element={<DataPage />} />
-        <Route path="admin/rules" element={<RulesPage />} />
+        <Route
+          path="admin/rules"
+          element={
+            <Suspense fallback={<Spinner label="Loading the rules editor…" />}>
+              <RulesPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="admin/rules/compare"
+          element={
+            <Suspense fallback={<Spinner label="Loading the comparison…" />}>
+              <RulesComparePage />
+            </Suspense>
+          }
+        />
 
         {/* Las rutas en espanol de las fases anteriores siguen resolviendo: un enlace
             guardado o compartido entonces no se rompe (ADR 0017). */}
@@ -167,6 +190,8 @@ function Workspace({ name, canAdministerRules }: { name: string; canAdministerRu
       </header>
 
       <main className="mx-auto flex w-full max-w-[1240px] flex-1 flex-col gap-4 px-6 py-6">
+        <RulesChangedNotice canAdministerRules={canAdministerRules} />
+
         {/* Las reglas son de todo el portafolio: un filtro ahi no acota nada. */}
         {FILTERED_ROUTES.has(pathname) ? (
           <FilterBar />

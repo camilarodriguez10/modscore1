@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
+using Modernization.Domain;
 using Modernization.Domain.Rules;
 using Modernization.Rules;
 using Modernization.Security;
@@ -42,6 +43,135 @@ public static class RulesEndpoints
         group.MapPost("/publish", PostPublish)
             .WithSummary("Publica un borrador como version nueva. Exige reautenticacion reciente.")
             .DisableAntiforgery();
+
+        group.MapGet("/compare", GetCompare)
+            .WithSummary("Dos versiones comparadas: cambios, impacto y, con eai, una aplicacion metrica por metrica.");
+
+        group.MapGet("/compare/applications", GetCompareApplications)
+            .WithSummary("Cada aplicacion antes y despues entre dos versiones, para exportar.");
+
+        // Lo lee quien consulta, no solo quien administra: marca la tendencia y avisa de
+        // una version nueva. No dice quien publico.
+        group.MapGet("/timeline", GetTimeline)
+            .WithSummary("Cuando cambiaron las reglas y por que.");
+    }
+
+    private static async Task<IResult> GetTimeline(RulesService rules, CancellationToken cancellationToken)
+    {
+        var active = await rules.GetCurrentAsync(cancellationToken).ConfigureAwait(false);
+        var versions = await rules.ListAsync(cancellationToken).ConfigureAwait(false);
+
+        return Results.Ok(new RulesTimelineResponse(
+            RulesTimelineEntryResponse.From(active.Info, active.Id),
+            [.. versions.Select(v => RulesTimelineEntryResponse.From(v, active.Id))]));
+    }
+
+    private static async Task<IResult> GetCompare(
+        HttpContext context,
+        PortfolioScope scope,
+        RulesService rules,
+        PortfolioService portfolio,
+        ILoggerFactory loggers,
+        CancellationToken cancellationToken,
+        string? from = null,
+        string? to = null,
+        string? eai = null)
+    {
+        if (Deny(context, scope, loggers, requireReauthentication: false) is { } denied)
+        {
+            return denied;
+        }
+
+        if (!RulesVersionId.IsWellFormed(from) || !RulesVersionId.IsWellFormed(to))
+        {
+            return InvalidVersion();
+        }
+
+        if (eai is not null && !InputValidation.IsValidEaiCode(eai))
+        {
+            return InvalidEaiCode();
+        }
+
+        var snapshot = await portfolio.GetSnapshotAsync(PortfolioScope.Full, cancellationToken).ConfigureAwait(false);
+        ApplicationSnapshot? application = null;
+
+        if (eai is not null && (application = snapshot.Find(eai)) is null)
+        {
+            return ApiProblem.Create(
+                StatusCodes.Status404NotFound,
+                "application-not-found",
+                "Application not found",
+                "There is no application with that EAI code in the loaded portfolio.");
+        }
+
+        RulesComparisonOutcome? outcome;
+
+        try
+        {
+            outcome = await rules.CompareAsync(
+                from!,
+                to!,
+                snapshot.Applications,
+                DateOnly.FromDateTime(snapshot.CapturedAt.UtcDateTime),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (RulesStoreUnavailableException)
+        {
+            return StoreUnavailable();
+        }
+
+        if (outcome is null)
+        {
+            return VersionNotFound();
+        }
+
+        var active = await rules.GetCurrentAsync(cancellationToken).ConfigureAwait(false);
+
+        return Results.Ok(new RulesCompareResponse(
+            RulesVersionResponse.From(outcome.From.Info, active.Id),
+            RulesVersionResponse.From(outcome.To.Info, active.Id),
+            outcome.Changes,
+            outcome.Impact,
+            application is null ? null : RulesComparison.Compare(application, outcome.From, outcome.To)));
+    }
+
+    private static async Task<IResult> GetCompareApplications(
+        HttpContext context,
+        PortfolioScope scope,
+        RulesService rules,
+        PortfolioService portfolio,
+        ILoggerFactory loggers,
+        CancellationToken cancellationToken,
+        string? from = null,
+        string? to = null)
+    {
+        if (Deny(context, scope, loggers, requireReauthentication: false) is { } denied)
+        {
+            return denied;
+        }
+
+        if (!RulesVersionId.IsWellFormed(from) || !RulesVersionId.IsWellFormed(to))
+        {
+            return InvalidVersion();
+        }
+
+        var snapshot = await portfolio.GetSnapshotAsync(PortfolioScope.Full, cancellationToken).ConfigureAwait(false);
+
+        try
+        {
+            var outcome = await rules.CompareAsync(
+                from!,
+                to!,
+                snapshot.Applications,
+                DateOnly.FromDateTime(snapshot.CapturedAt.UtcDateTime),
+                cancellationToken).ConfigureAwait(false);
+
+            return outcome is null ? VersionNotFound() : Results.Ok(outcome.Impact.Shifts);
+        }
+        catch (RulesStoreUnavailableException)
+        {
+            return StoreUnavailable();
+        }
     }
 
     private static async Task<IResult> GetState(
@@ -139,15 +269,25 @@ public static class RulesEndpoints
             return body.Problem;
         }
 
+        if (body.Value!.EaiCode is { } eai && !InputValidation.IsValidEaiCode(eai))
+        {
+            return InvalidEaiCode();
+        }
+
         // El impacto es sobre todo el portafolio: por eso administrar reglas exige
         // alcance completo, y por eso aqui no se recorta nada.
         var snapshot = await portfolio.GetSnapshotAsync(PortfolioScope.Full, cancellationToken).ConfigureAwait(false);
 
+        // Una aplicacion que no esta en la carga no invalida el borrador: la simulacion
+        // sale igual, sin el detalle de esa aplicacion.
+        var focus = body.Value.EaiCode is { } focusCode ? snapshot.Find(focusCode) : null;
+
         var outcome = await rules.SimulateAsync(
-            body.Value!.BasedOn,
+            body.Value.BasedOn,
             body.Value.Draft,
             snapshot.Applications,
             DateOnly.FromDateTime(snapshot.CapturedAt.UtcDateTime),
+            focus,
             cancellationToken).ConfigureAwait(false);
 
         return Results.Ok(RulesSimulationResponse.From(outcome));
@@ -158,6 +298,7 @@ public static class RulesEndpoints
         PortfolioScope scope,
         RulesService rules,
         PortfolioService portfolio,
+        PortfolioWarmup warmup,
         ILoggerFactory loggers,
         CancellationToken cancellationToken)
     {
@@ -190,6 +331,10 @@ public static class RulesEndpoints
 
         if (outcome is { Published: true, Version: { } version, Impact: { } impact })
         {
+            // Las reglas nuevas dejan frios scores e historia: se calculan ya, no cuando
+            // alguien abra la tendencia.
+            warmup.Request();
+
             SecurityAudit.RulesPublished(
                 audit,
                 user,
@@ -207,6 +352,24 @@ public static class RulesEndpoints
 
         return Results.Ok(RulesPublishResponse.From(outcome));
     }
+
+    private static IResult InvalidVersion() => ApiProblem.Create(
+        StatusCodes.Status400BadRequest,
+        "invalid-rules-version",
+        "Invalid rules version",
+        "A rules version looks like v1.4.");
+
+    private static IResult VersionNotFound() => ApiProblem.Create(
+        StatusCodes.Status404NotFound,
+        "rules-version-not-found",
+        "Rules version not found",
+        "There is no published rules version with that identifier.");
+
+    private static IResult InvalidEaiCode() => ApiProblem.Create(
+        StatusCodes.Status400BadRequest,
+        "invalid-eai-code",
+        "Invalid EAI code",
+        "An EAI code is a sequence of up to 10 digits.");
 
     internal static IResult StoreUnavailable() => ApiProblem.Create(
         StatusCodes.Status503ServiceUnavailable,

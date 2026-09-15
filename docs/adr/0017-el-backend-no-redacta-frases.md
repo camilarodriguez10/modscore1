@@ -29,10 +29,18 @@ códigos viven en `NoticeCodes`, y el catálogo de frases de la SPA
 (`src/web/src/i18n/notices.ts`) tiene una por código.
 
 **El contenido redactado no se mueve a la interfaz.** Las definiciones MAPS, los hitos
-y las reglas de coherencia son contenido del modelo: la Fase 12 los hace editables
-desde el portal, y si vivieran en el bundle de la SPA nadie podría editarlos sin
-desplegar. Se tradujeron en `roadmap-v1.json`, `ruleset-v1.3.json` y
-`source-schemas.json`. Los alias de columna no se tocan: "Suma de Kenna_Score" es como
+y las reglas de coherencia son contenido del modelo, versionado junto con las reglas: si
+vivieran en el bundle de la SPA, cambiarlos exigiría desplegar la interfaz aunque el
+modelo no cambiara. Se tradujeron en `roadmap-v1.json`, `ruleset-v1.3.json` y
+`source-schemas.json`.
+
+> *Precisión de la revisión del 2026-09-14.* Una versión anterior de este ADR decía que
+> la Fase 12 haría editables desde el portal las definiciones, los hitos y las reglas de
+> coherencia. No fue así: el portal edita **valores** —pesos, bandas, puntajes, palancas
+> ofrecidas, semanas de cada hito, palancas de cada roadmap y umbrales— y no textos ni
+> estructura ([ADR 0018](0018-las-reglas-se-publican-como-versiones.md), sección 1).
+> Cambiar una definición o el nombre de un hito sigue siendo cambiar el contrato y
+> desplegar. Los alias de columna no se tocan: "Suma de Kenna_Score" es como
 exporta Power BI, no texto de la interfaz.
 
 **Los tramos de score pasan a códigos** (`critical`, `at-risk`, `acceptable`,

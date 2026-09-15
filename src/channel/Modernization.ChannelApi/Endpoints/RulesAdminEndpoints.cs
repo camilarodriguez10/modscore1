@@ -41,6 +41,17 @@ public static class RulesAdminEndpoints
             .RequireRateLimiting(ChannelLimits.RulesPublishPolicy)
             .WithSummary("Publica un borrador como version nueva. Exige reautenticacion reciente.");
 
+        rules.MapGet("/compare", GetCompare)
+            .RequireRateLimiting(ChannelLimits.RulesSimulationPolicy)
+            .WithSummary("Pantalla 10 — dos versiones comparadas, con su impacto y el de una aplicacion.");
+
+        // Cuando cambiaron las reglas: lo ve todo el que consulta, para leer la tendencia y
+        // enterarse de una version nueva. No dice quien publico.
+        app.MapGet("/api/rules/timeline", GetTimeline)
+            .RequireAuthorization(ChannelPermissions.ReadPolicy)
+            .WithTags("Channel")
+            .WithSummary("Versiones de reglas publicadas, para marcar la tendencia y avisar de cambios.");
+
         // Solo exige sesion: quien no administra reglas no llega a la pantalla que
         // enlaza aqui, y reautenticarse no concede nada que no tuviera.
         app.MapGet("/api/login/step-up", StepUpAsync)
@@ -93,6 +104,11 @@ public static class RulesAdminEndpoints
         if (!RulesVersionId.IsWellFormed(body.Value!.BasedOn))
         {
             return InvalidVersion();
+        }
+
+        if (body.Value.EaiCode is { } eai && !InputValidation.IsValidEaiCode(eai))
+        {
+            return InvalidEaiCode();
         }
 
         try
@@ -163,6 +179,43 @@ public static class RulesAdminEndpoints
         IReauthenticationFlow reauthentication,
         string? returnTo = null)
         => reauthentication.StartAsync(context, StepUp.SafeReturnPath(returnTo));
+
+    private static async Task<IResult> GetCompare(
+        RulesComposer composer,
+        CancellationToken cancellationToken,
+        string? from = null,
+        string? to = null,
+        string? eai = null)
+    {
+        if (!RulesVersionId.IsWellFormed(from) || !RulesVersionId.IsWellFormed(to))
+        {
+            return InvalidVersion();
+        }
+
+        if (eai is not null && !InputValidation.IsValidEaiCode(eai))
+        {
+            return InvalidEaiCode();
+        }
+
+        var view = await composer.CompareAsync(from!, to!, eai, cancellationToken).ConfigureAwait(false);
+
+        return view is null
+            ? ApiProblem.Create(
+                StatusCodes.Status404NotFound,
+                "rules-comparison-not-found",
+                "Nothing to compare",
+                "One of the rules versions, or the application, does not exist.")
+            : Results.Ok(view);
+    }
+
+    private static async Task<IResult> GetTimeline(RulesComposer composer, CancellationToken cancellationToken)
+        => Results.Ok(await composer.GetTimelineAsync(cancellationToken).ConfigureAwait(false));
+
+    private static IResult InvalidEaiCode() => ApiProblem.Create(
+        StatusCodes.Status400BadRequest,
+        "invalid-eai-code",
+        "Invalid EAI code",
+        "An EAI code is a sequence of up to 10 digits.");
 
     private static IResult InvalidVersion() => ApiProblem.Create(
         StatusCodes.Status400BadRequest,

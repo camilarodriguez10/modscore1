@@ -152,8 +152,35 @@ export function useRulesVersion() {
 /** Simular no cambia nada, pero lleva cuerpo y va por POST: es una mutacion. */
 export function useSimulateRules() {
   return useMutation({
-    mutationFn: ({ basedOn, draft }: { basedOn: string; draft: RulesDraft }) =>
-      api.simulateRules(basedOn, draft),
+    mutationFn: ({ basedOn, draft, eaiCode }: { basedOn: string; draft: RulesDraft; eaiCode?: string | undefined }) =>
+      api.simulateRules(basedOn, draft, eaiCode),
+  });
+}
+
+/**
+ * Dos versiones comparadas. Una version publicada no cambia nunca, asi que el resultado no
+ * se vuelve a pedir solo: cada consulta recalcula el portafolio y tiene limite de frecuencia.
+ */
+export function useRulesComparison(from: string, to: string, eaiCode: string) {
+  return useQuery({
+    queryKey: ['rules-compare', from, to, eaiCode],
+    queryFn: () => api.compareRules(from, to, eaiCode || undefined),
+    enabled: from.length > 0 && to.length > 0,
+    retry: false,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    placeholderData: (previous) => previous,
+  });
+}
+
+/** Cuando cambiaron las reglas. Cambia poco: se revisa cada cinco minutos. */
+export function useRulesTimeline() {
+  return useQuery({
+    queryKey: ['rules-timeline'],
+    queryFn: api.rulesTimeline,
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
   });
 }
 

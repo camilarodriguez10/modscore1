@@ -14,4 +14,15 @@
     <ProjectReference Include="..\..\system\Modernization.SystemApi\Modernization.SystemApi.csproj" />
     <ProjectReference Include="..\..\shared\Modernization.Security\Modernization.Security.csproj" />
   </ItemGroup>
+
+  <!-- La referencia a la System es solo por sus contratos: su configuracion no viaja con
+       la Channel. Sin esto, sus appsettings*.json llegan a la publicacion y chocan con los
+       propios (NETSDK1152), y la imagen de la Channel no se puede construir (H-28). -->
+  <Target Name="DropReferencedSystemSettings" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <_ReferencedSystemSettings Include="@(ResolvedFileToPublish)"
+        Condition="$([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').StartsWith('appsettings')) And !$([System.String]::Copy('%(ResolvedFileToPublish.FullPath)').StartsWith('$(MSBuildProjectDirectory)'))" />
+      <ResolvedFileToPublish Remove="@(_ReferencedSystemSettings)" />
+    </ItemGroup>
+  </Target>
 </Project>

@@ -2,6 +2,50 @@ import { useState } from 'react';
 import type { HistoryPointView } from '../api/types';
 import { fmt } from './primitives';
 
+/** Un momento a marcar sobre la tendencia, como la publicacion de unas reglas. */
+export interface TrendMarker {
+  id: string;
+  /** Instante ISO 8601. */
+  at: string;
+  /** Texto corto sobre la linea, p. ej. "v1.4". */
+  label: string;
+  /** Lo que se lee debajo del grafico, p. ej. el motivo del cambio. */
+  detail: string;
+}
+
+/**
+ * Donde cae cada marca entre las cargas: el indice de la carga anterior mas la fraccion
+ * del tramo hasta la siguiente, en proporcion al tiempo. Las cargas se dibujan a distancia
+ * fija, asi que el tiempo solo cuenta dentro de cada tramo. Las marcas fuera de la serie no
+ * tienen lugar en el grafico y se omiten.
+ */
+export function markerSlots(
+  capturedAt: readonly string[],
+  markers: readonly TrendMarker[],
+): { marker: TrendMarker; slot: number }[] {
+  const times = capturedAt.map((value) => new Date(value).getTime());
+  if (times.length < 2 || times.some(Number.isNaN)) return [];
+
+  const first = times[0]!;
+  const last = times[times.length - 1]!;
+
+  return markers.flatMap((marker) => {
+    const at = new Date(marker.at).getTime();
+    if (Number.isNaN(at) || at < first || at > last) return [];
+
+    let index = 0;
+    while (index < times.length - 2 && at > times[index + 1]!) index++;
+
+    const start = times[index]!;
+    const end = times[index + 1]!;
+    const fraction = end > start ? (at - start) / (end - start) : 0;
+
+    return [{ marker, slot: index + fraction }];
+  });
+}
+
+const markerDate = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' });
+
 /**
  * Serie temporal del score a lo largo de las cargas.
  *
@@ -12,13 +56,19 @@ import { fmt } from './primitives';
  * Una sola serie, asi que no lleva caja de leyenda: el titulo de la tarjeta la
  * nombra. El peso disponible acompana cada punto porque un salto de score con
  * mas peso detras puede ser solo mas evidencia, no mejora real.
+ *
+ * Las marcas punteadas senalan cuando cambiaron las reglas. Todos los puntos se
+ * calculan con las reglas vigentes (ADR 0018): la marca dice desde cuando rigen, no
+ * que los puntos anteriores usen otras.
  */
 export function ScoreTrend({
   points,
+  markers = [],
   floor = 20,
   ceiling = 100,
 }: {
   points: readonly HistoryPointView[];
+  markers?: readonly TrendMarker[];
   floor?: number;
   ceiling?: number;
 }) {
@@ -57,11 +107,18 @@ export function ScoreTrend({
 
   const area = `${line} L ${xOf(series.length - 1)} ${top + plotHeight} L ${xOf(0)} ${top + plotHeight} Z`;
 
+  const placed = markerSlots(
+    series.map((point) => point.capturedAt),
+    markers,
+  );
+
   // Ticks en valores que la escala alcanza de verdad.
   const ticks = [floor, 40, 60, 80, ceiling];
   const last = series[series.length - 1]!;
   const active = hovered === null ? null : series[hovered]!;
   const shown = active ?? last;
+  const markedText =
+    placed.length === 0 ? '' : `, ${placed.length} rules ${placed.length === 1 ? 'change' : 'changes'} marked`;
 
   return (
     <div className="flex flex-col gap-3">
@@ -70,7 +127,7 @@ export function ScoreTrend({
           viewBox={`0 0 ${width} ${height}`}
           className="h-auto w-full min-w-[520px]"
           role="img"
-          aria-label={`Score trend, from ${fmt(series[0]!.score)} to ${fmt(last.score)}`}
+          aria-label={`Score trend, from ${fmt(series[0]!.score)} to ${fmt(last.score)}${markedText}`}
         >
           {ticks.map((tick) => (
             <g key={tick}>
@@ -95,6 +152,36 @@ export function ScoreTrend({
               </text>
             </g>
           ))}
+
+          {placed.map(({ marker, slot }) => {
+            const x = left + (slot / (series.length - 1)) * plotWidth;
+            const nearRight = x > width - right - 48;
+
+            return (
+              <g key={`marker-${marker.id}`}>
+                <line
+                  x1={x}
+                  x2={x}
+                  y1={top}
+                  y2={top + plotHeight}
+                  stroke="var(--app-ink-3)"
+                  strokeWidth={1}
+                  strokeDasharray="4 3"
+                  fill="none"
+                />
+                <text
+                  x={nearRight ? x - 4 : x + 4}
+                  y={top + 10}
+                  textAnchor={nearRight ? 'end' : 'start'}
+                  fontSize={10}
+                  fontFamily="var(--font-mono)"
+                  fill="var(--app-ink-2)"
+                >
+                  {marker.label}
+                </text>
+              </g>
+            );
+          })}
 
           <path d={area} fill="var(--app-accent)" opacity={0.1} stroke="none" />
           <path d={line} fill="none" stroke="var(--app-accent)" strokeWidth={2} />
@@ -178,6 +265,27 @@ export function ScoreTrend({
 
         <span className="font-mono text-[10.5px] text-ink-3">20–100 scale</span>
       </div>
+
+      {markers.length > 0 && (
+        <ul className="flex flex-col gap-1 border-t border-rule pt-3 text-[12.5px] text-ink-2" aria-label="Rules changes">
+          {markers.map((marker) => {
+            const date = new Date(marker.at);
+
+            return (
+              <li key={marker.id} className="flex flex-wrap items-baseline gap-x-2">
+                <span aria-hidden="true" className="font-mono text-ink-3">
+                  ┆
+                </span>
+                <span className="font-medium text-ink">Rules {marker.label}</span>
+                {!Number.isNaN(date.getTime()) && (
+                  <span className="tnum font-mono text-ink-3">{markerDate.format(date)}</span>
+                )}
+                <span className="min-w-0">{marker.detail}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

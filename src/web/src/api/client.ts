@@ -8,9 +8,11 @@ import type {
   IngestionView,
   PortfolioRoadmapView,
   RulesAdminView,
+  RulesCompareView,
   RulesDraft,
   RulesPublishView,
   RulesSimulationView,
+  RulesTimelineView,
   RulesVersionDocumentView,
   RoadmapPlanView,
   UploadResultView,
@@ -229,11 +231,12 @@ export const api = {
   rulesVersion: (id: string) =>
     request<RulesVersionDocumentView>(`/api/admin/rules/versions/${encodeURIComponent(id)}`),
 
-  simulateRules: (basedOn: string, draft: RulesDraft) =>
+  /** Con `eaiCode` la simulacion trae ademas esa aplicacion metrica por metrica. */
+  simulateRules: (basedOn: string, draft: RulesDraft, eaiCode?: string) =>
     request<RulesSimulationView>('/api/admin/rules/simulate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ basedOn, draft }),
+      body: JSON.stringify(eaiCode ? { basedOn, draft, eaiCode } : { basedOn, draft }),
     }),
 
   publishRules: (basedOn: string, reason: string, draft: RulesDraft) =>
@@ -242,6 +245,37 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ basedOn, reason, draft }),
     }),
+
+  // --------------------------------------- comparacion y linea de tiempo
+
+  compareRules: (from: string, to: string, eaiCode?: string) => {
+    const params = new URLSearchParams({ from, to });
+    if (eaiCode) params.set('eai', eaiCode);
+
+    return request<RulesCompareView>(`/api/admin/rules/compare?${params.toString()}`);
+  },
+
+  rulesTimeline: () => request<RulesTimelineView>('/api/rules/timeline'),
+};
+
+/**
+ * Descargas en CSV. Son enlaces con `download`, no fetch: la cookie de sesion viaja sola
+ * por ser el mismo origen, un GET no lleva token CSRF y el navegador guarda el archivo
+ * con el nombre que da el servidor.
+ */
+export const exportUrls = {
+  portfolio: (filters: PortfolioFilters) =>
+    `/api/portfolio/export.csv${withQuery(buildFilterQuery(filters))}`,
+
+  roadmap: (filters: PortfolioFilters, groupBy: string) => {
+    const params = buildFilterQuery(filters);
+    params.set('groupBy', groupBy);
+
+    return `/api/roadmap/export.csv?${params.toString()}`;
+  },
+
+  rulesComparison: (from: string, to: string) =>
+    `/api/admin/rules/compare/export.csv?${new URLSearchParams({ from, to }).toString()}`,
 };
 
 /**

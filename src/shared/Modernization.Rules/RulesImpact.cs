@@ -66,8 +66,109 @@ public sealed record RulesImpact
 
     public required int AlertsAfter { get; init; }
 
+    /// <summary>
+    /// Todas las aplicaciones, antes y despues, en el orden de la carga. No viaja en la
+    /// simulacion —son cientos de filas—: alimenta la exportacion del impacto.
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public IReadOnlyList<ApplicationShift> Shifts { get; init; } = [];
+
     [System.Text.Json.Serialization.JsonIgnore]
     public RulesImpactSummary Summary => new(Applications, Up, Down, Unchanged, AverageBefore, AverageAfter, AverageDelta);
+}
+
+/// <summary>
+/// Lo que el impacto necesita de unas reglas sobre una carga: el score de cada
+/// aplicacion y el resumen de sus planes.
+/// </summary>
+/// <remarks>
+/// Del lado de las reglas vigentes no cambia mientras no cambien ni las reglas ni la
+/// carga, asi que se calcula una vez y cada simulacion solo calcula el lado del
+/// borrador. En la medicion de la revision era la mitad del costo de simular.
+/// </remarks>
+public sealed class RulesImpactBaseline
+{
+    private readonly decimal?[] _scores;
+
+    private RulesImpactBaseline(
+        IReadOnlyList<ApplicationSnapshot> applications,
+        RulesModel model,
+        DateOnly startDate,
+        decimal?[] scores,
+        decimal? projectedScore,
+        int alerts)
+    {
+        Applications = applications;
+        Model = model;
+        StartDate = startDate;
+        _scores = scores;
+        ProjectedScore = projectedScore;
+        Alerts = alerts;
+    }
+
+    public IReadOnlyList<ApplicationSnapshot> Applications { get; }
+
+    public RulesModel Model { get; }
+
+    public DateOnly StartDate { get; }
+
+    /// <summary>Score promedio al terminar cada plan.</summary>
+    public decimal? ProjectedScore { get; }
+
+    /// <summary>Alertas de coherencia en todo el portafolio.</summary>
+    public int Alerts { get; }
+
+    /// <summary>
+    /// True si sirve para estas reglas, esta carga y esta fecha. Compara instancias, no
+    /// contenido: una carga nueva es otra lista aunque traiga las mismas aplicaciones.
+    /// </summary>
+    public bool IsFor(RulesModel model, IReadOnlyList<ApplicationSnapshot> applications, DateOnly startDate)
+        => ReferenceEquals(Model, model) && ReferenceEquals(Applications, applications) && StartDate == startDate;
+
+    internal decimal? ScoreAt(int index) => _scores[index];
+
+    /// <summary>Calculo secuencial. Es el que usan las pruebas y quien no esta en un servidor.</summary>
+    public static RulesImpactBaseline Compute(
+        IReadOnlyList<ApplicationSnapshot> applications,
+        RulesModel model,
+        DateOnly startDate)
+    {
+        ArgumentNullException.ThrowIfNull(applications);
+        ArgumentNullException.ThrowIfNull(model);
+
+        var scores = new decimal?[applications.Count];
+
+        for (var index = 0; index < applications.Count; index++)
+        {
+            scores[index] = RulesImpactSimulator.Score(model, applications[index]);
+        }
+
+        var plan = model.Analyzer.Summarize(applications, startDate);
+        decimal? projected = plan.Groups.Count == 0 ? null : plan.Groups[0].AverageProjectedScore;
+
+        return new RulesImpactBaseline(applications, model, startDate, scores, projected, plan.Alerts.Sum(a => a.Count));
+    }
+
+    /// <summary>
+    /// Mismo resultado que <see cref="Compute"/>, con los scores en paralelo y el resumen
+    /// de planes a la vez: son independientes entre si.
+    /// </summary>
+    public static async Task<RulesImpactBaseline> ComputeAsync(
+        IReadOnlyList<ApplicationSnapshot> applications,
+        RulesModel model,
+        DateOnly startDate,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(applications);
+        ArgumentNullException.ThrowIfNull(model);
+
+        var planTask = Task.Run(() => model.Analyzer.Summarize(applications, startDate), cancellationToken);
+        var scores = RulesImpactSimulator.ScoreAll(model, applications, cancellationToken);
+        var plan = await planTask.ConfigureAwait(false);
+        decimal? projected = plan.Groups.Count == 0 ? null : plan.Groups[0].AverageProjectedScore;
+
+        return new RulesImpactBaseline(applications, model, startDate, scores, projected, plan.Alerts.Sum(a => a.Count));
+    }
 }
 
 /// <summary>
@@ -89,16 +190,72 @@ public static class RulesImpactSimulator
         RulesModel after,
         DateOnly startDate)
     {
-        ArgumentNullException.ThrowIfNull(applications);
-        ArgumentNullException.ThrowIfNull(before);
         ArgumentNullException.ThrowIfNull(after);
 
+        var baseline = RulesImpactBaseline.Compute(applications, before, startDate);
+        var candidate = RulesImpactBaseline.Compute(applications, after, startDate);
+
+        return Build(baseline, candidate);
+    }
+
+    /// <summary>
+    /// Simula contra un lado vigente ya calculado. Solo calcula el borrador, en paralelo.
+    /// </summary>
+    public static async Task<RulesImpact> SimulateAsync(
+        RulesImpactBaseline baseline,
+        RulesModel after,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(baseline);
+        ArgumentNullException.ThrowIfNull(after);
+
+        var candidate = await RulesImpactBaseline
+            .ComputeAsync(baseline.Applications, after, baseline.StartDate, cancellationToken)
+            .ConfigureAwait(false);
+
+        return Build(baseline, candidate);
+    }
+
+    internal static decimal?[] ScoreAll(
+        RulesModel model,
+        IReadOnlyList<ApplicationSnapshot> applications,
+        CancellationToken cancellationToken)
+    {
+        var scores = new decimal?[applications.Count];
+
+        Parallel.For(
+            0,
+            applications.Count,
+            new ParallelOptions { CancellationToken = cancellationToken },
+            index => scores[index] = Score(model, applications[index]));
+
+        return scores;
+    }
+
+    internal static decimal? Score(RulesModel model, ApplicationSnapshot application)
+    {
+        try
+        {
+            return model.Engine.Calculate(application).EffectiveScore;
+        }
+        catch (RulesetException)
+        {
+            // Su dato no cae en ninguna banda de estas reglas: no tiene score, y el
+            // impacto lo cuenta aparte en lugar de esconderlo.
+            return null;
+        }
+    }
+
+    private static RulesImpact Build(RulesImpactBaseline before, RulesImpactBaseline after)
+    {
+        var applications = before.Applications;
         var shifts = new List<ApplicationShift>(applications.Count);
 
-        foreach (var application in applications)
+        for (var index = 0; index < applications.Count; index++)
         {
-            var old = Score(before, application);
-            var now = Score(after, application);
+            var application = applications[index];
+            var old = before.ScoreAt(index);
+            var now = after.ScoreAt(index);
 
             shifts.Add(new ApplicationShift(
                 application.EaiCode,
@@ -112,9 +269,6 @@ public static class RulesImpactSimulator
 
         var averageBefore = Average(shifts.Where(s => s.Before is not null).Select(s => s.Before!.Value));
         var averageAfter = Average(shifts.Where(s => s.After is not null).Select(s => s.After!.Value));
-
-        var planBefore = before.Analyzer.Summarize(applications, startDate);
-        var planAfter = after.Analyzer.Summarize(applications, startDate);
 
         return new RulesImpact
         {
@@ -137,25 +291,12 @@ public static class RulesImpactSimulator
                 .OrderByDescending(s => s.Delta is { } delta ? Math.Abs(delta) : decimal.MaxValue)
                 .ThenBy(s => s.EaiCode, StringComparer.Ordinal)
                 .Take(MaxMovers)],
-            ProjectedBefore = planBefore.Groups.Count == 0 ? null : planBefore.Groups[0].AverageProjectedScore,
-            ProjectedAfter = planAfter.Groups.Count == 0 ? null : planAfter.Groups[0].AverageProjectedScore,
-            AlertsBefore = planBefore.Alerts.Sum(a => a.Count),
-            AlertsAfter = planAfter.Alerts.Sum(a => a.Count),
+            ProjectedBefore = before.ProjectedScore,
+            ProjectedAfter = after.ProjectedScore,
+            AlertsBefore = before.Alerts,
+            AlertsAfter = after.Alerts,
+            Shifts = shifts,
         };
-    }
-
-    private static decimal? Score(RulesModel model, ApplicationSnapshot application)
-    {
-        try
-        {
-            return model.Engine.Calculate(application).EffectiveScore;
-        }
-        catch (RulesetException)
-        {
-            // Su dato no cae en ninguna banda de estas reglas: no tiene score, y el
-            // impacto lo cuenta aparte en lugar de esconderlo.
-            return null;
-        }
     }
 
     private static decimal? Average(IEnumerable<decimal> values)

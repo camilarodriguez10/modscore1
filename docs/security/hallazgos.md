@@ -1,6 +1,9 @@
-# Registro de hallazgos — Fase 08
+# Registro de hallazgos — Fase 08 y revisión de las fases 09 a 13
 
-**Fecha:** 2026-09-11 · **Criterio de aceptación de la fase:** sin hallazgos High ni Critical abiertos
+**Fecha:** 2026-09-11, ampliado el 2026-09-14 · **Criterio de aceptación de la Fase 08:** sin hallazgos High ni Critical abiertos
+
+> **Decisión del 2026-09-14:** H-16, H-17, H-20 y H-21 se resuelven en la **Fase 17**, al
+> final del plan. La revisión de las fases 09 a 13 está al final de este documento.
 
 ## Resultado
 
@@ -256,3 +259,105 @@ justificación) y **uno real**, el sufijo aleatorio del identificador de carga c
 
 Una cookie `__Host-` solo se borra con los mismos atributos con que se emitió; el
 borrado sin `Secure` era ignorado por el navegador.
+
+---
+
+## Revisión de las fases 09 a 13 (2026-09-14)
+
+Revisión de lo construido después de la Fase 08, hecha por quien lo construyó:
+
+- adaptador de base de datos;
+- archivos reconocidos por su encabezado;
+- avisos con código;
+- administración de reglas con reautenticación;
+- comparación de reglas;
+- exportaciones;
+- línea de tiempo de reglas.
+
+**Falta la de una segunda persona**, que es el punto TD-13 de
+[PENDING-ITEMS.md](../PENDING-ITEMS.md).
+
+| Severidad | Encontrados | Cerrados | Aceptados |
+|---|---:|---:|---:|
+| Crítica | 0 | — | — |
+| Alta | 0 | — | — |
+| Media | 2 | 2 | 0 |
+| Baja | 2 | 2 | 0 |
+| Informativa | 3 | 2 | 1 |
+| **Total** | **7** | **6** | **1** |
+
+### H-24 · Un almacén de reglas caído dejaba sin scores al portafolio · Media · **Cerrado**
+
+Desde la Fase 12 las reglas se leen del almacén. Si fallaba —volumen no montado, base
+caída—, la excepción subía por cada petición de score y todo el portafolio respondía 500.
+Una falla de infraestructura degradaba el servicio para todos.
+
+- **Corrección:** `RulesService` sigue puntuando con las reglas vigentes y registra el
+  evento 5303. Leer una versión anterior responde 503 en lugar de 404, y publicar se
+  rechaza con `rules.storeUnavailable` sin activar nada que no quedó guardado.
+- **Evidencia:** `RulesStoreFailureTests` (4 pruebas)
+
+### H-25 · Exportar en CSV abre inyección de fórmulas y extracción masiva · Media · **Cerrado por diseño**
+
+Las exportaciones de la Fase 13 escriben nombres de aplicación, CIO y otros textos de
+las fuentes. Un texto que empieza con `=`, `+`, `-` o `@` se ejecuta como fórmula al
+abrirse en una planilla. Además, exportar lee el portafolio completo de una vez.
+
+- **Controles:**
+  - los textos se neutralizan con apóstrofo; los números no se tocan;
+  - límite propio de 10 por minuto por usuario;
+  - tope de 50.000 filas;
+  - evento 4213 con el tipo de exportación y las filas;
+  - alcance del usuario aplicado en la capa System;
+  - adjunto con `no-store` y `nosniff`.
+- **Evidencia:** `TextCellsCannotBecomeFormulas` (9 casos) · `TheExportNeverWidensTheUsersScope` ·
+  `ThePortfolioExportFollowsTheFiltersAndIsAudited`
+- **Abierto como decisión:** etiqueta de clasificación o marca en el archivo, y roles sin
+  exportación (SEC-24).
+
+### H-26 · Con OIDC, reautenticarse dejaba viva la sesión anterior · Baja · **Cerrado**
+
+La vuelta desde el IdP es una navegación entre sitios. La cookie `SameSite=Strict` no viaja
+en ella, así que el manejador no veía la sesión anterior y no podía reemplazarla. El ticket
+anterior quedaba en el almacén hasta vencer por inactividad (30 minutos): una copia robada
+de esa cookie seguía sirviendo.
+
+- **Corrección:** `IReauthenticationFlow` cierra la sesión antes de ir al IdP, sea cual sea
+  el proveedor ([ADR 0020](../adr/0020-camino-de-oidc-a-oauth-con-apim.md)).
+- **Evidencia:** `ReauthenticationFlowTests.Oidc_ClosesThePreviousSessionBeforeLeavingForTheIdentityProvider`
+
+### H-27 · El almacén de reglas por archivos acumulaba staging huérfano · Baja · **Cerrado**
+
+Una publicación interrumpida por un reinicio dejaba su directorio `.staging-*`. Nada lo
+borraba.
+
+- **Corrección:** la siguiente publicación borra los de más de 10 minutos, sin tocar ninguna
+  versión ni el staging de una publicación en curso de otra réplica.
+- **Evidencia:** `FileRulesStoreStagingTests`
+
+### H-28 · La capa Channel no se podía publicar: la imagen no se habría construido · Informativa · **Cerrado**
+
+La capa Channel referencia el proyecto de la System por sus contratos. Al publicarla, los
+`appsettings*.json` de la System llegaban a la salida y chocaban con los propios
+(`NETSDK1152`). Nadie lo había visto porque las imágenes nunca se construyeron fuera de CI
+(H-17). Apareció al generar el paquete portable.
+
+- **Corrección:** la Channel descarta de su publicación la configuración que llega de la
+  referencia.
+- **Evidencia:** paquete portable publicado y arrancado.
+
+### H-29 · La SPA no tenía pruebas y sus tipos podían separarse del backend · Informativa · **Cerrado**
+
+- **Corrección:**
+  - 35 pruebas unitarias (Vitest);
+  - 6 escenarios de punta a punta con Playwright y el Edge instalado;
+  - `ViewModelContractTests`, que falla si un modelo de vista C# y su interfaz TypeScript
+    difieren.
+
+### H-30 · La línea de tiempo de reglas muestra el motivo a todos los lectores · Informativa · **Aceptado**
+
+`GET /api/rules/timeline` da a quien consulta la versión, la fecha y el motivo escrito por
+quien publicó, para marcar la tendencia y avisar de reglas nuevas. No dice quién publicó,
+y una prueba lo comprueba.
+
+- **Regla:** los motivos no llevan nombres, scores ni contexto confidencial (SEC-23).

@@ -1,0 +1,14 @@
+# Finales de linea solo donde el interprete los exige. El resto del arbol tiene archivos
+# LF y CRLF desde antes de versionar; renormalizarlo seria un diff enorme sin cambio real.
+*.sh    text eol=lf
+*.ps1   text eol=crlf
+*.cmd   text eol=crlf
+
+# Binarios: nunca se convierten ni se muestran como texto.
+*.png   binary
+*.jpg   binary
+*.JPG   binary
+*.woff  binary
+*.woff2 binary
+*.db    binary
+*.zip   binary

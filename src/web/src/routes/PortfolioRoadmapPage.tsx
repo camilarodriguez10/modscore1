@@ -1,4 +1,5 @@
 import { Link, useSearchParams } from 'react-router';
+import { exportUrls } from '../api/client';
 import { usePortfolioRoadmap } from '../api/hooks';
 import type { DispositionGroupView, RoadmapGroupView } from '../api/types';
 import { toApiFilters, useFilters, type FilterKey } from '../filters';
@@ -68,10 +69,20 @@ export function PortfolioRoadmapPage() {
           </h1>
         </div>
 
-        <dl className="flex gap-6">
-          <Stat label="Leaving the portfolio" value={String(data.leavingPortfolio)} />
-          <Stat label="Without disposition" value={String(data.withoutDisposition)} />
-        </dl>
+        <div className="flex flex-wrap items-end gap-6">
+          <dl className="flex gap-6">
+            <Stat label="Leaving the portfolio" value={String(data.leavingPortfolio)} />
+            <Stat label="Without disposition" value={String(data.withoutDisposition)} />
+          </dl>
+          <a
+            href={exportUrls.roadmap(toApiFilters(filters), groupBy)}
+            download
+            className="rounded-sm border border-rule bg-surface px-3 py-1.5 text-[13px] hover:bg-surface-2"
+            title="One row per group, with the filters and grouping you are looking at"
+          >
+            Download CSV
+          </a>
+        </div>
       </header>
 
       <div className="flex flex-wrap items-center gap-2">

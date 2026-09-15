@@ -1,0 +1,316 @@
+# Traspaso — Modernization Score Platform
+
+**Fecha:** 2026-09-15 · **Estado:** fases 00 a 13 entregadas · **Siguiente:** Fase 14 (verificación de seguridad) y decisiones de negocio en paralelo
+
+Este documento permite que otra persona —o otra sesión— retome el proyecto sin haber
+estado en él. No reemplaza al plan ([PLAN.md](PLAN.md)) ni a los ADR: dice qué hay, dónde
+está, qué se decidió, qué falta y qué se aprendió en el camino.
+
+---
+
+## 1. Retomar en diez minutos
+
+1. Leer la sección 0 y la sección 1 de [PLAN.md](PLAN.md): qué es el score y cómo se calcula.
+2. Leer la sección 0 de [docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md) (en inglés): todo lo
+   abierto, con prioridad y responsable sugerido.
+3. Verificar que el entorno funciona:
+
+   ```bash
+   dotnet test ModernizationScore.slnx
+   npm --prefix src/web ci --ignore-scripts
+   npm --prefix src/web test
+   npm --prefix src/web run test:e2e
+   ```
+
+4. Levantar la aplicación ([README.md](README.md), «Levantar el stack») y abrir
+   <http://localhost:5173>. `Sign in` entra con el usuario de desarrollo, que tiene todos los
+   permisos.
+5. Antes de cambiar una regla de cálculo, leer la sección 4 de este documento.
+
+---
+
+## 2. Estado
+
+| Área | Estado |
+|---|---|
+| Fases 00–12 | Entregadas: motor, datos dummy, dos capas, SPA, what-if, roadmap, archivos, endurecimiento, base de datos, experiencia de consulta, sitio en inglés, administración de reglas |
+| Fase 13 — revisión y remediación | Entregada el 2026-09-14/15 (PLAN §8.6) |
+| Pruebas | **640 .NET** (200 motor · 175 contratos · 265 API) · **35 unitarias** de la SPA · **6 de punta a punta** con Playwright y Edge. Todas en verde |
+| Dependencias | Cero paquetes vulnerables (`dotnet list package --vulnerable`), `npm audit` limpio |
+| ASVS L2 | 103 cumple · 14 parciales · 3 pendientes · 10 IdP o N/A |
+| Hallazgos | Fase 08: 23 (19 cerrados, H-16 parcial, H-17/H-20/H-21 pendientes). Revisión 09–13: 7 (6 cerrados, 1 aceptado) |
+| Git | Repositorio local con remoto `origin` = `https://github.com/camilarodriguez10/modscore1.git`. **Nada subido todavía**: el push requiere confirmación de la dueña del repositorio (visibilidad y capturas del BRD) |
+| Artefacto del plan | <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> (versión 15, con la Fase 13; enlace anterior del mismo artefacto: <https://claude.ai/code/artifact/25507d1f-40a6-4e74-8c43-0337dbb63358>) |
+| Paquete portable | `tools/portable/build-portable.ps1` genera el `.zip` en `artifacts/` (92,8 MB autocontenido). Verificado el 2026-09-15: descomprimido, arrancado con `start.ps1`, las dos capas escuchan solo en `127.0.0.1`, CSP estricta y los 6 escenarios e2e en verde contra él |
+
+---
+
+## 3. El producto en una página
+
+- **Qué calcula.** El Modernization Score v1.3 de cada aplicación, según el BRD "Modernization
+  Scoring Tool" y el dashboard Power BI v1.3.
+- **Fórmula.** `Score = 20 + (Numerador ÷ Denominador) × 80`. El numerador suma
+  `peso × puntaje / 100` y el denominador suma pesos, ambos solo de las métricas **con dato**.
+  El score global se calcula sobre métricas planas, no como promedio de pilares.
+- **Pilares.** Modernization Risk Vectors 50, Architecture & Maturity 40, Stability 10.
+  **18 métricas** en `contracts/ruleset-v1.3.json`; seis tienen peso 0 y solo se muestran.
+- **Casos dorados.** EAI 14381 = **79,67** (ejemplo del BRD, desde datos crudos) y EAI 10969
+  = **79,61** (dashboard). Si alguno cambia, el modelo dejó de coincidir: investigar antes de
+  tocar nada más.
+- **Pantallas** (sitio en inglés):
+  - Portfolio, con filtros en la URL y descarga CSV;
+  - detalle, cálculo, what-if y plan futuro por aplicación;
+  - Roadmap por dimensión, con descarga CSV;
+  - Data (cargas, linaje y tendencia con marcas de reglas);
+  - Rules (editar, simular y publicar);
+  - Compare rules (dos versiones o el borrador, con una aplicación métrica por métrica).
+
+---
+
+## 4. Reglas de cálculo: fuente de verdad y cuidados
+
+**Regla del proyecto (2026-09-14):** ante una contradicción entre documentos, **mandan las
+34 capturas del BRD y del dashboard**. Están en `docs/brd/capturas/`, fuera del repositorio,
+y [docs/brd/README.md](docs/brd/README.md) dice qué regla está en cada una.
+
+| Dónde vive | Qué |
+|---|---|
+| `contracts/ruleset-v1.3.json` | Pesos, bandas, casos, compuestos, `zeroIsNoData` y notas de trazabilidad. Es la versión de fábrica |
+| Almacén de reglas (memoria, `.rules` o tabla `rules_version`) | Versiones publicadas desde el portal. La vigente es la última |
+| `MetricExtractors.cs` | Cómo se lee cada valor crudo del snapshot. Es código: no se edita desde el portal |
+| `MetricMapper.cs` · `ScoringEngine.cs` | Mapeo a puntaje y normalización |
+| PLAN §1 | La explicación, con las tablas de mapeo |
+
+**Decisiones que ya están tomadas y por qué** (no reabrir sin nueva evidencia):
+
+- **Compuestos** con promedio ponderado por conteo, peso 10 cada uno. Lo confirma el ejemplo
+  14381 (RFC-01 pide validarlo con el modelo Power BI).
+- **Tech Debt con peso 10.** Es el peso del dashboard. **No está verificado
+  numéricamente**: ningún caso dorado tiene Tech Debt (RFC-03).
+- **Ausencia frente a cero** ([ADR 0003](docs/adr/0003-ausencia-de-dato-frente-a-valor-cero.md),
+  [ADR 0019](docs/adr/0019-el-cero-se-excluye-salvo-que-la-tabla-lo-puntue.md)):
+  - una fila ausente es sin dato;
+  - un cero se excluye en Kenna, OSS, RAW Tech y Operational;
+  - en Tech Debt y SCA el cero puntúa, porque la tabla del BRD lo nombra.
+- **Huecos entre bandas** ([ADR 0004](docs/adr/0004-huecos-entre-bandas-del-brd.md)): el
+  motor falla por aplicación en lugar de adivinar.
+- **La historia se puntúa con las reglas vigentes**
+  ([ADR 0018](docs/adr/0018-las-reglas-se-publican-como-versiones.md)). La tendencia marca
+  cuándo cambiaron.
+
+**Decisiones abiertas que cambian scores:** SR-01, SR-03 y SR-07, en
+[PENDING-ITEMS.md](docs/PENDING-ITEMS.md). Casi todas se resuelven publicando una versión de
+reglas desde el portal, sin desplegar.
+
+**Antes de cambiar una regla en código:**
+
+1. Encontrar la captura que la respalda.
+2. Correr los casos dorados.
+3. Simular el cambio en Compare rules con el borrador.
+4. Actualizar la nota del ruleset y la sección 1 del plan.
+
+---
+
+## 5. Arquitectura y stack
+
+```
+Navegador ──cookie de sesión──▶ channel-api (BFF)  ──token de servicio + permisos reenviados──▶ system-api
+  SPA React 19                   sesión en servidor, CSRF,                                        reglas, motor, fuentes,
+  (mismo origen)                 rate limit, composición,                                         alcance aplicado sobre
+                                 exportaciones                                                    los datos, almacén de reglas
+```
+
+| Pieza | Tecnología |
+|---|---|
+| Backend | .NET 10, minimal APIs, `TreatWarningsAsErrors` con todas las reglas de seguridad del analizador, lock files |
+| Datos | Adaptadores Dummy · File (CSV por carga) · Database (EF Core 10 + SQLite verificado) |
+| SPA | React 19, Vite 7, TypeScript 5.9 estricto, React Router 7, TanStack Query 5, Tailwind 4, SVG propio |
+| Pruebas | xUnit (motor, contratos, API por HTTP en ambas capas), Vitest, Playwright con Edge |
+| Despliegue previsto | Kubernetes (`deploy/k8s`), imágenes chiseled no root, NetworkPolicy default-deny, mTLS del mesh |
+
+Proyectos clave:
+
+- `src/shared/Modernization.Domain`: modelo canónico y avisos (`NoticeCodes`).
+- `Modernization.Scoring.Engine`, `Modernization.WhatIf`, `Modernization.Roadmap`.
+- `Modernization.Rules`: editor, comparación, impacto y modelo de versión.
+- `Modernization.Security`: alcance, auditoría, cabeceras y JSON acotado.
+- `src/system/Modernization.SystemApi`: servicios `PortfolioService`, `RulesService`,
+  `PortfolioWarmup` y la ingesta.
+- `src/channel/Modernization.ChannelApi`: composers, autenticación, exportaciones.
+- `src/web`: SPA.
+
+---
+
+## 6. Qué se hizo en la Fase 13
+
+Pedido del 2026-09-14, trece puntos. Detalle en PLAN §8.6 y en la sección 7 de
+[PENDING-ITEMS.md](docs/PENDING-ITEMS.md).
+
+| Punto | Resultado | Dónde mirar |
+|---|---|---|
+| Plan, handoff | PLAN §1, §6.1, §8, §8.6, §8ter, §9 y §10; este documento | `PLAN.md` |
+| Git | Repositorio, remoto, commit base, `.gitignore`, `.gitattributes`, scripts de respaldo, runbook | `tools/git/`, `docs/runbooks/respaldo-en-git.md` |
+| Reglas y documentación | Regla del cero, notas del ruleset, RFC-13 a 17, ADR 0003/0017/0018 corregidos, 18 métricas | ADR 0019, `contracts/ruleset-v1.3.json` |
+| Pendientes en inglés | Un archivo con todo lo abierto | `docs/PENDING-ITEMS.md` |
+| H-16/17/20/21 al final | Fase 17 | PLAN §8ter |
+| ASVS al plan | Fase 14 con cada parcial | PLAN §8ter, `docs/security/asvs-l2.md` |
+| Deuda técnica | Listado barato de versiones, limpieza de staging, contrato C#↔TS, carga bajo demanda, lógica del editor extraída, prueba de carga con reglas | `RulesService`, `FileRulesStore`, `ViewModelContractTests`, `src/web/src/rules/draft.ts` |
+| Rendimiento | Historia en paralelo y calentamiento; simulación con lado vigente reutilizado | `PortfolioService`, `PortfolioWarmup`, `RulesImpact.cs` |
+| Robustez y APIM | Almacén de reglas caído no tumba scores; `IReauthenticationFlow` cierra la sesión anterior; ADR 0020 | `RulesStoreFailureTests`, `ReauthenticationFlowTests` |
+| Paquetes desactualizados | Se mantienen si no son vulnerables | PENDING-ITEMS TD-01 |
+| Pruebas de la SPA | Vitest y Playwright | `src/web/src/**/*.test.ts`, `src/web/e2e/` |
+| Sugerencia 4 | Marcas de reglas en la tendencia; `GET /api/rules/timeline` | `ScoreTrend.tsx` |
+| Sugerencia 5 | Vista `/admin/rules/compare` | `RulesComparePage.tsx`, `RulesComparison.cs` |
+| Sugerencia 7 | CSV según filtros y aviso de reglas nuevas | `ExportEndpoints.cs`, `RulesChangedNotice.tsx` |
+| Paquete portable | Ejecutables de un solo archivo con la SPA; lanzador local | `tools/portable/` |
+
+**Medido** (Release, 30 cargas, 8 clientes):
+
+| Escenario | Antes | Después |
+|---|---:|---:|
+| Historia en frío | 1.655 ms | 8–15 ms con calentamiento (584 ms sin él) |
+| Simulación p50, en reposo | 117 ms | 47 ms (p95 66 ms) |
+
+La simulación depende mucho de la carga de la máquina: con la máquina ocupada dio 204 ms
+(TD-06).
+
+---
+
+## 7. Comandos frecuentes
+
+| Para | Comando |
+|---|---|
+| Pruebas .NET | `dotnet test ModernizationScore.slnx` |
+| Pruebas de la SPA | `npm --prefix src/web test` · `npm --prefix src/web run test:e2e` |
+| Tipos de la SPA | `npx --prefix src/web tsc -b` (desde `src/web`: `npx tsc -b`) |
+| Vulnerabilidades | `dotnet list ModernizationScore.slnx package --vulnerable --include-transitive` · `npm --prefix src/web audit --audit-level=moderate` |
+| Prueba de carga | `dotnet run -c Release --project tools/Modernization.LoadTest -- --duration 10 --concurrency 8` (con system-api en Release) |
+| Paquete portable | `powershell -ExecutionPolicy Bypass -File tools/portable/build-portable.ps1` |
+| Respaldo | `powershell -ExecutionPolicy Bypass -File tools/git/backup.ps1 -Message "…" -Verify` |
+| Datos dummy | `dotnet run --project tools/Modernization.DummyData -- data/dummy` |
+
+---
+
+## 8. Seguridad: lo que no hay que romper
+
+- **El navegador nunca recibe tokens** (BFF). La cookie es `__Host-`, `HttpOnly`, `Secure`,
+  `SameSite=Strict`, con sesión en el servidor.
+- **CSRF de doble envío en toda mutación.** En las pruebas de API, un POST necesita
+  `CreateMutatingClientAsync()`.
+- **El alcance se aplica en la capa System, sobre los datos.** Ninguna lectura del portafolio
+  compila sin `PortfolioScope` ([ADR 0012](docs/adr/0012-el-alcance-se-aplica-sobre-los-datos.md)).
+  Un filtro solo acota.
+- **Administrar reglas:**
+  - rol `ruleset.admin` con alcance completo;
+  - publicar exige autenticación de los últimos 10 minutos;
+  - la capa System vuelve a exigir los permisos reenviados;
+  - JSON acotado a 128 KB;
+  - límites de frecuencia;
+  - auditoría 4211 y 4212.
+- **El esquema de desarrollo** solo arranca en `Development`. El paquete portable lo usa, y
+  por eso escucha solo en `127.0.0.1`.
+- **El backend no redacta frases:** devuelve `{ code, args }` y la SPA las arma
+  ([ADR 0017](docs/adr/0017-el-backend-no-redacta-frases.md)). Un código nuevo sin frase en
+  `notices.ts` hace fallar una prueba.
+- **Sin librerías con vulnerabilidades.** Una dependencia nueva debe entrar limpia; las
+  desactualizadas sin vulnerabilidades se mantienen.
+- **Nada del BRD al repositorio** sin decisión explícita. Los scripts de respaldo lo bloquean.
+
+---
+
+## 9. Lecciones aprendidas
+
+**Herramientas y entorno (Windows, Git Bash y PowerShell):**
+
+- Un heredoc de Bash con comillas simples dentro del contenido falla ("unexpected EOF").
+  Conviene escribir el script con la herramienta de archivos y ejecutarlo; los parches de la
+  Fase 11 y 12 se hicieron así.
+- `cd` dentro de un comando de Bash cambia el directorio de trabajo de la sesión. Usar rutas
+  absolutas; la ruta del proyecto tiene espacios.
+- Un `dotnet run` vivo bloquea las DLL. Antes de compilar, detenerlo con
+  `Get-Process Modernization.SystemApi | Stop-Process`.
+- `dotnet test` sale en español en este equipo: el resumen dice `Correctas!` o `Con error!`.
+  Con `-clp:ErrorsOnly` el resumen no se imprime y parece que no pasó nada. Guardar la salida
+  a un archivo y buscar ahí.
+- No compilar en paralelo `dotnet test` y `dotnet publish -r win-x64`: comparten la
+  restauración (`project.assets.json`).
+- PowerShell 5.1 corre sobre .NET Framework: `RandomNumberGenerator.Fill` no existe, hay que
+  usar `RandomNumberGenerator.Create().GetBytes()`.
+- El panel del navegador integrado puede estar oculto: las capturas fallan y hay que usar
+  JavaScript o `form_input`. Para pruebas repetibles, Playwright con el Edge instalado no
+  descarga navegadores.
+
+**.NET y analizadores:**
+
+- **CA1873** (argumento costoso en un log) no reconoce la guarda `IsEnabled` con
+  `LoggerMessage`: calcular el valor en una variable local.
+- **CA1826** pide indexar en lugar de `FirstOrDefault()` sobre listas.
+- **CA1068** exige que el `CancellationToken` sea el último parámetro. Para agregar un
+  parámetro opcional, usar una sobrecarga.
+- **NETSDK1152:** la capa Channel referencia la System por sus contratos, y sus
+  `appsettings` chocaban al publicar. Se descartan en `DropReferencedSystemSettings`. Nunca
+  se había visto porque las imágenes no se habían construido.
+- Publicar con `-r win-x64` puede agregar una sección de runtime a los lock files: revisar el
+  diff.
+
+**Pruebas:**
+
+- En Vitest, un `Response` simulado solo se puede leer una vez: crear uno nuevo por llamada.
+- `exactOptionalPropertyTypes` obliga a escribir `| undefined` en props opcionales que
+  reciben un valor posiblemente indefinido.
+- Una prueba de carga en una máquina ocupada da números que no sirven para comparar. Medir
+  en reposo y repetir.
+- Una prueba de contrato entre C# y TypeScript da la garantía de un cliente generado sin
+  sumar herramientas a la cadena de suministro.
+
+**Proceso y producto:**
+
+- Las capturas del BRD mandan, pero el propio BRD se contradice: la tabla de pesos no
+  coincide con su ejemplo trabajado. El ejemplo trabajado y el dashboard pesan más que una
+  tabla sin números detrás.
+- El cierre de cada fase es: pruebas y escaneo en verde, verificación en vivo, PLAN y README
+  al día, artefacto republicado y decir qué no se pudo correr.
+- El push a GitHub publica fuera del equipo: se confirma antes, siempre.
+
+---
+
+## 10. Pendientes
+
+Todos, con contexto y criterio de aceptación, en [docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md).
+Lo que bloquea producción (P0):
+
+| ID | Qué |
+|---|---|
+| SR-01 · SR-03 · SR-07 | Confirmar compuestos, peso de Tech Debt y la regla del cero con el negocio y el modelo Power BI |
+| PA-01 | Destino de despliegue y motor de base |
+| PA-02 · PA-03 | Autenticación con APIM (opción A, B o C del ADR 0020) y claim de alcance |
+| SEC-19 | Reautenticación verificada contra el proveedor real |
+| SEC-20 | Primera corrida del pipeline con todos los gates |
+| SEC-21 · OP-04 | Visibilidad del repositorio, política de capturas y primer push |
+
+Orden de las fases siguientes: **14** verificación de seguridad (ASVS) → **15** APIM →
+**16** escala y operación → **17** H-16, H-17, H-20 y H-21, al final por decisión.
+
+---
+
+## 11. Contexto para una sesión de Claude Code
+
+La memoria del proyecto está en
+`C:\Users\kmiro\.claude\projects\C--Users-kmiro-Downloads-mod-score\memory\`:
+
+- idioma y reglas del proyecto;
+- cierre de fase;
+- artefacto del plan;
+- prioridades del plan;
+- migración a APIM;
+- política de paquetes desactualizados;
+- repositorio git.
+
+Se carga sola en cada sesión.
+
+Preferencias de la dueña del proyecto:
+
+- conversación y documentación en español, sitio en inglés;
+- nunca librerías con vulnerabilidades;
+- arquitectura de microservicios con la seguridad al extremo;
+- confirmar antes de publicar cualquier cosa fuera del equipo.

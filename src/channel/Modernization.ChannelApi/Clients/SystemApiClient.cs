@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Modernization.Rules;
 using Modernization.SystemApi.Contracts;
 
 namespace Modernization.ChannelApi.Clients;
@@ -195,6 +196,31 @@ public sealed class SystemApiClient(HttpClient http, IHttpClientFactory clients)
         => await PostAsync<RulesPublishRequest, RulesPublishResponse>("/system/rules/publish", request, cancellationToken)
                 .ConfigureAwait(false)
             ?? throw new SystemApiException("The System layer returned no publication result.");
+
+    /// <summary>Cuando cambiaron las reglas. Lo lee cualquiera que consulta.</summary>
+    public Task<RulesTimelineResponse> GetRulesTimelineAsync(CancellationToken cancellationToken = default)
+        => GetRequiredAsync<RulesTimelineResponse>("/system/rules/timeline", cancellationToken);
+
+    /// <remarks>Null cuando alguna de las versiones, o la aplicacion pedida, no existe.</remarks>
+    public Task<RulesCompareResponse?> CompareRulesAsync(
+        string from,
+        string to,
+        string? eaiCode,
+        CancellationToken cancellationToken = default)
+        => GetOrNullAsync<RulesCompareResponse>("/system/rules/compare" + CompareQuery(from, to, eaiCode), cancellationToken);
+
+    /// <remarks>Null cuando alguna de las versiones no existe.</remarks>
+    public Task<IReadOnlyList<ApplicationShift>?> GetRulesComparisonRowsAsync(
+        string from,
+        string to,
+        CancellationToken cancellationToken = default)
+        => GetOrNullAsync<IReadOnlyList<ApplicationShift>>(
+            "/system/rules/compare/applications" + CompareQuery(from, to, null),
+            cancellationToken);
+
+    private static string CompareQuery(string from, string to, string? eaiCode)
+        => $"?from={Uri.EscapeDataString(from)}&to={Uri.EscapeDataString(to)}"
+            + (eaiCode is null ? string.Empty : $"&eai={Uri.EscapeDataString(eaiCode)}");
 
     /// <summary>
     /// Trae todas las aplicaciones que pasan el filtro, paginando.

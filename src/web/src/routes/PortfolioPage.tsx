@@ -1,4 +1,5 @@
 import { Link } from 'react-router';
+import { exportUrls } from '../api/client';
 import { usePortfolio } from '../api/hooks';
 import { BandDistribution, GroupBars } from '../components/charts';
 import { toApiFilters, useFilters, usePage } from '../filters';
@@ -44,10 +45,21 @@ export function PortfolioPage() {
           </h1>
         </div>
 
-        <dl className="flex gap-6">
-          <Stat label="Average" value={fmt(data.averageScore)} />
-          <Stat label="Median" value={fmt(data.medianScore)} />
-        </dl>
+        <div className="flex flex-wrap items-end gap-6">
+          <dl className="flex gap-6">
+            <Stat label="Average" value={fmt(data.averageScore)} />
+            <Stat label="Median" value={fmt(data.medianScore)} />
+          </dl>
+          {/* Todo el conjunto filtrado, no solo la pagina visible. */}
+          <a
+            href={exportUrls.portfolio(toApiFilters(filters))}
+            download
+            className="rounded-sm border border-rule bg-surface px-3 py-1.5 text-[13px] hover:bg-surface-2"
+            title="Every application that matches the filters, with its score and pillars"
+          >
+            Download CSV
+          </a>
+        </div>
       </header>
 
       <div className="grid gap-4 lg:grid-cols-3">

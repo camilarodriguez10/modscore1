@@ -125,6 +125,14 @@ builder.Services.AddSingleton(sp => new RulesService(
     sp.GetRequiredService<ILogger<RulesService>>()));
 
 builder.Services.AddSingleton<PortfolioService>();
+
+// Scores e historia calculados fuera de las peticiones: al arrancar, tras publicar y
+// periodicamente, que es como otra replica toma reglas nuevas ya calientes.
+builder.Services.AddSingleton(new PortfolioWarmupOptions(TimeSpan.FromSeconds(builder.Configuration.GetValue(
+    "Portfolio:WarmupSeconds",
+    (int)PortfolioWarmupOptions.DefaultInterval.TotalSeconds))));
+builder.Services.AddSingleton<PortfolioWarmup>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<PortfolioWarmup>());
 builder.Services.AddSingleton(_ => SourceSchemaCatalog.Default);
 
 // La carga solo existe con el adaptador de archivos. Con Dummy el servicio se

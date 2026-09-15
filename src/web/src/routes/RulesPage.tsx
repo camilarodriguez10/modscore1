@@ -5,8 +5,6 @@ import { usePublishRules, useRules, useRulesVersion, useSimulateRules } from '..
 import type {
   Notice,
   RulesAdminView,
-  RulesDocument,
-  RulesDraft,
   RulesImpact,
   RulesMetric,
   RulesPublishView,
@@ -25,6 +23,17 @@ import {
   pillarName,
 } from '../components/primitives';
 import { bandLabel, countOf, formatNotice } from '../i18n/notices';
+import {
+  countChanges,
+  draftFrom,
+  editorFrom,
+  loadEditor,
+  parse,
+  saveEditor,
+  type BandEdit,
+  type Editor,
+  type MetricEdit,
+} from '../rules/draft';
 
 /**
  * Pantalla 09 — administracion de reglas (Fase 12).
@@ -47,8 +56,6 @@ const TABS: readonly { key: Tab; label: string }[] = [
   { key: 'versions', label: 'Versions' },
 ];
 
-const DRAFT_KEY = 'modscore.rulesDraft';
-
 const CATEGORY_LABELS: Record<string, string> = {
   modern: 'Modern',
   heritage: 'Heritage',
@@ -59,220 +66,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   eliminate: 'Eliminate',
   migrate: 'Migrate',
 };
-
-// ----------------------------------------------------------------- estado
-
-/** Los numeros se editan como texto: un campo a medio escribir no es un numero todavia. */
-interface BandEdit {
-  min: string;
-  max: string;
-  score: string;
-  label: string;
-}
-
-interface MetricEdit {
-  weight: string;
-  bands: BandEdit[] | null;
-  cases: Record<string, string> | null;
-  categories: Record<string, string> | null;
-}
-
-interface LeverEdit {
-  enabled: boolean;
-  defaultParameter: string;
-}
-
-interface PathEdit {
-  levers: string[];
-  weeks: string[];
-}
-
-interface Editor {
-  /** La version sobre la que se preparo. Publicar exige que siga siendo la vigente. */
-  basedOn: string;
-  /** Cuando el contenido viene de restaurar una version anterior. */
-  restoredFrom: string | null;
-  metrics: Record<string, MetricEdit>;
-  levers: Record<string, LeverEdit>;
-  healthyScore: string;
-  userBase: string;
-  paths: Record<string, PathEdit>;
-  reason: string;
-}
-
-const text = (value: number) => String(value);
-
-function mapValues<T, U>(record: Readonly<Record<string, T>>, map: (value: T, key: string) => U): Record<string, U> {
-  return Object.fromEntries(Object.entries(record).map(([key, value]) => [key, map(value, key)]));
-}
-
-function editorFrom(document: RulesDocument, basedOn: string, restoredFrom: string | null = null): Editor {
-  return {
-    basedOn,
-    restoredFrom,
-    metrics: Object.fromEntries(
-      document.metrics.map((metric) => [
-        metric.key,
-        {
-          weight: text(metric.weight),
-          bands: metric.bands
-            ? metric.bands.map((b) => ({ min: text(b.min), max: text(b.max), score: text(b.score), label: b.label }))
-            : null,
-          cases: metric.cases ? mapValues(metric.cases, text) : null,
-          categories: metric.categoryScores ? mapValues(metric.categoryScores, text) : null,
-        },
-      ]),
-    ),
-    levers: Object.fromEntries(
-      document.levers.map((lever) => [
-        lever.key,
-        { enabled: lever.enabled, defaultParameter: lever.defaultParameter === null ? '' : text(lever.defaultParameter) },
-      ]),
-    ),
-    healthyScore: text(document.roadmap.healthyScore),
-    userBase: text(document.roadmap.significantUserBase),
-    paths: Object.fromEntries(
-      document.roadmap.roadmaps.map((path) => [
-        path.key,
-        { levers: [...path.levers], weeks: path.milestones.map((m) => text(m.weeks)) },
-      ]),
-    ),
-    reason: '',
-  };
-}
-
-function parse(value: string): number | null {
-  const trimmed = value.trim();
-  if (trimmed === '') return null;
-  const number = Number(trimmed);
-  return Number.isFinite(number) ? number : null;
-}
-
-/**
- * El borrador que se envia y los campos que no son un numero. La estructura sale del
- * documento vigente, no del estado: un estado guardado de otra version no puede
- * inventar metricas.
- */
-function draftFrom(editor: Editor, document: RulesDocument): { draft: RulesDraft; invalid: Set<string> } {
-  const invalid = new Set<string>();
-
-  const number = (id: string, value: string | undefined) => {
-    const parsed = parse(value ?? '');
-    if (parsed === null) invalid.add(id);
-    return parsed ?? 0;
-  };
-
-  const whole = (id: string, value: string | undefined) => {
-    const parsed = parse(value ?? '');
-    if (parsed === null || !Number.isInteger(parsed)) invalid.add(id);
-    return parsed ?? 0;
-  };
-
-  const draft: RulesDraft = {
-    metrics: document.metrics.map((metric) => {
-      const edit = editor.metrics[metric.key];
-
-      return {
-        key: metric.key,
-        weight: number(`${metric.key}.weight`, edit?.weight),
-        bands: edit?.bands
-          ? edit.bands.map((band, i) => ({
-              min: number(`${metric.key}.band${i}.min`, band.min),
-              max: number(`${metric.key}.band${i}.max`, band.max),
-              score: number(`${metric.key}.band${i}.score`, band.score),
-              label: band.label,
-            }))
-          : null,
-        cases: edit?.cases ? mapValues(edit.cases, (value, key) => number(`${metric.key}.case.${key}`, value)) : null,
-        categoryScores: edit?.categories
-          ? mapValues(edit.categories, (value, key) => number(`${metric.key}.category.${key}`, value))
-          : null,
-      };
-    }),
-    levers: document.levers.map((lever) => {
-      const edit = editor.levers[lever.key];
-
-      return {
-        key: lever.key,
-        enabled: edit?.enabled ?? lever.enabled,
-        defaultParameter: lever.isParameterized ? whole(`${lever.key}.parameter`, edit?.defaultParameter) : null,
-      };
-    }),
-    roadmap: {
-      healthyScore: number('healthyScore', editor.healthyScore),
-      significantUserBase: whole('userBase', editor.userBase),
-      roadmaps: document.roadmap.roadmaps.map((path) => {
-        const edit = editor.paths[path.key];
-
-        return {
-          key: path.key,
-          levers: edit?.levers ?? [...path.levers],
-          milestoneWeeks: path.milestones.map((_, i) => whole(`${path.key}.week${i}`, edit?.weeks[i])),
-        };
-      }),
-    },
-  };
-
-  return { draft, invalid };
-}
-
-/** Cada valor editable del borrador, con una clave estable: contar cambios es comparar esto. */
-function flatten(draft: RulesDraft): Map<string, string> {
-  const values = new Map<string, string>();
-
-  for (const metric of draft.metrics) {
-    values.set(`${metric.key}.weight`, text(metric.weight));
-    if (metric.bands) values.set(`${metric.key}.bands`, JSON.stringify(metric.bands));
-    for (const [key, value] of Object.entries(metric.cases ?? {})) values.set(`${metric.key}.case.${key}`, text(value));
-    for (const [key, value] of Object.entries(metric.categoryScores ?? {})) {
-      values.set(`${metric.key}.category.${key}`, text(value));
-    }
-  }
-
-  for (const lever of draft.levers) {
-    values.set(`${lever.key}.enabled`, String(lever.enabled));
-    values.set(`${lever.key}.parameter`, String(lever.defaultParameter));
-  }
-
-  values.set('healthyScore', text(draft.roadmap.healthyScore));
-  values.set('userBase', text(draft.roadmap.significantUserBase));
-
-  for (const path of draft.roadmap.roadmaps) {
-    values.set(`${path.key}.levers`, [...path.levers].sort().join(','));
-    path.milestoneWeeks.forEach((weeks, i) => values.set(`${path.key}.week${i}`, text(weeks)));
-  }
-
-  return values;
-}
-
-function countChanges(draft: RulesDraft, base: RulesDraft): number {
-  const before = flatten(base);
-  let changes = 0;
-
-  for (const [key, value] of flatten(draft)) {
-    if (before.get(key) !== value) changes++;
-  }
-
-  return changes;
-}
-
-function loadEditor(): Editor | null {
-  try {
-    const raw = sessionStorage.getItem(DRAFT_KEY);
-    return raw ? (JSON.parse(raw) as Editor) : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveEditor(editor: Editor | null) {
-  try {
-    if (editor) sessionStorage.setItem(DRAFT_KEY, JSON.stringify(editor));
-    else sessionStorage.removeItem(DRAFT_KEY);
-  } catch {
-    // Almacenamiento bloqueado: el borrador no sobrevive a recargar, nada mas.
-  }
-}
 
 const round2 = (value: number) => Math.round(value * 100) / 100;
 
@@ -433,20 +226,28 @@ function RulesWorkspace({
           </p>
         </div>
 
-        <dl className="flex gap-6">
-          <div>
-            <dt>
-              <Label>Stored in</Label>
-            </dt>
-            <dd className="mt-0.5 text-[13px]">{view.store}</dd>
-          </div>
-          <div>
-            <dt>
-              <Label>Versions</Label>
-            </dt>
-            <dd className="tnum mt-0.5 text-[13px]">{view.versions.length}</dd>
-          </div>
-        </dl>
+        <div className="flex flex-wrap items-end gap-6">
+          <Link
+            to={changes > 0 ? '/admin/rules/compare?to=draft' : '/admin/rules/compare'}
+            className="rounded-sm border border-rule bg-surface px-3 py-1.5 text-[13px] hover:bg-surface-2"
+          >
+            {changes > 0 ? 'Compare your draft' : 'Compare versions'}
+          </Link>
+          <dl className="flex gap-6">
+            <div>
+              <dt>
+                <Label>Stored in</Label>
+              </dt>
+              <dd className="mt-0.5 text-[13px]">{view.store}</dd>
+            </div>
+            <div>
+              <dt>
+                <Label>Versions</Label>
+              </dt>
+              <dd className="tnum mt-0.5 text-[13px]">{view.versions.length}</dd>
+            </div>
+          </dl>
+        </div>
       </header>
 
       {published?.version && (

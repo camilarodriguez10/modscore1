@@ -42,6 +42,9 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
     /// <summary>Tope de versiones con puntos en memoria. Mas alla se calcula sin cachear.</summary>
     private const int MaxCachedVersions = 256;
 
+    /// <summary>Cargas que se leen y puntuan a la vez cuando la historia esta fria.</summary>
+    private static readonly int MaxParallelVersions = Math.Clamp(Environment.ProcessorCount, 2, 8);
+
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     private readonly ConcurrentDictionary<string, Lazy<Task<IReadOnlyList<VersionPoint>>>> _history =
@@ -64,6 +67,22 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
     {
         Interlocked.Increment(ref _generation);
         _state = null;
+    }
+
+    /// <summary>
+    /// Deja calculados, con las reglas vigentes, los scores de la carga vigente y los
+    /// puntos de toda la historia. Si ya estaban cuesta una lectura de cache por
+    /// aplicacion y por carga.
+    /// </summary>
+    /// <remarks>
+    /// Lo llama <see cref="PortfolioWarmup"/> en segundo plano: sin esto, la primera
+    /// persona que abria la tendencia despues de publicar pagaba el recalculo de todas
+    /// las cargas (1,7 s con 30 cargas en la medicion de la revision del 2026-09-14).
+    /// </remarks>
+    public async Task WarmAsync(CancellationToken cancellationToken = default)
+    {
+        await GetAllScoresAsync(PortfolioScope.Full, cancellationToken).ConfigureAwait(false);
+        await GetPortfolioHistoryAsync(PortfolioScope.Full, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Versiones disponibles, de la mas reciente a la mas antigua.</summary>
@@ -238,11 +257,13 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
 
         var model = await rules.GetCurrentAsync(cancellationToken).ConfigureAwait(false);
         var versions = await OrderedVersionsAsync(model, cancellationToken).ConfigureAwait(false);
+        var all = await PointsOfAllAsync(model, versions, cancellationToken).ConfigureAwait(false);
         var points = new List<ScoreHistoryPoint>(versions.Count);
 
-        foreach (var version in versions)
+        for (var index = 0; index < versions.Count; index++)
         {
-            var computed = await PointsOfAsync(model, version, cancellationToken).ConfigureAwait(false);
+            var version = versions[index];
+            var computed = all[index];
             var match = computed.FirstOrDefault(p => string.Equals(p.EaiCode, eaiCode, StringComparison.Ordinal));
 
             // El alcance se evalua con los atributos de cada version: si la
@@ -271,11 +292,13 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
 
         var model = await rules.GetCurrentAsync(cancellationToken).ConfigureAwait(false);
         var versions = await OrderedVersionsAsync(model, cancellationToken).ConfigureAwait(false);
+        var all = await PointsOfAllAsync(model, versions, cancellationToken).ConfigureAwait(false);
         var points = new List<ScoreHistoryPoint>(versions.Count);
 
-        foreach (var version in versions)
+        for (var index = 0; index < versions.Count; index++)
         {
-            var computed = await PointsOfAsync(model, version, cancellationToken).ConfigureAwait(false);
+            var version = versions[index];
+            var computed = all[index];
             var visible = computed
                 .Where(p => p.Score is not null && scope.Allows(p.Lob, p.Country, p.Cio))
                 .ToList();
@@ -364,6 +387,49 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
         }
 
         return [.. versions.OrderBy(v => v.CapturedAt)];
+    }
+
+    /// <summary>
+    /// Los puntos de todas las cargas, en el orden recibido. Las que ya estan en cache se
+    /// leen de el; las que faltan se calculan en paralelo, porque cada una lee su carga y
+    /// la puntua sin depender de las demas.
+    /// </summary>
+    private async Task<IReadOnlyList<VersionPoint>[]> PointsOfAllAsync(
+        RulesModel model,
+        IReadOnlyList<SnapshotVersion> versions,
+        CancellationToken cancellationToken)
+    {
+        var results = new IReadOnlyList<VersionPoint>[versions.Count];
+        var missing = new List<int>();
+
+        for (var index = 0; index < versions.Count; index++)
+        {
+            if (_history.TryGetValue(HistoryKey(model, versions[index].Id), out var cached)
+                && cached.IsValueCreated
+                && cached.Value.IsCompletedSuccessfully)
+            {
+                results[index] = cached.Value.Result;
+            }
+            else
+            {
+                missing.Add(index);
+            }
+        }
+
+        if (missing.Count == 1)
+        {
+            results[missing[0]] = await PointsOfAsync(model, versions[missing[0]], cancellationToken).ConfigureAwait(false);
+        }
+        else if (missing.Count > 1)
+        {
+            await Parallel.ForEachAsync(
+                missing,
+                new ParallelOptions { MaxDegreeOfParallelism = MaxParallelVersions, CancellationToken = cancellationToken },
+                async (index, token) => results[index] = await PointsOfAsync(model, versions[index], token).ConfigureAwait(false))
+                .ConfigureAwait(false);
+        }
+
+        return results;
     }
 
     private Task<IReadOnlyList<VersionPoint>> PointsOfAsync(

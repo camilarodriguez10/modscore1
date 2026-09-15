@@ -1,6 +1,6 @@
 # OWASP ASVS 4.0.3 — Nivel 2
 
-**Versión:** Fase 12 · **Fecha:** 2026-09-12
+**Versión:** Fase 13 · **Fecha:** 2026-09-14
 
 Requisitos de nivel 2 **aplicables a este sistema**, con su estado y la evidencia.
 No es un certificado: es el registro de qué se verificó, cómo, y qué falta.
@@ -37,6 +37,22 @@ No es un certificado: es el registro de qué se verificó, cómo, y qué falta.
 severidad baja (H-20, H-21) y el tercero —logs en un destino inmutable— es
 infraestructura (H-17). Los parciales dependen de verificarse en un despliegue real:
 mTLS, TLS del ingress, gestor de secretos y reglas del SIEM.
+
+**Plan de resolución (decidido el 2026-09-14).**
+
+- Los **14 parciales** se verifican en la **Fase 14**, en un entorno de prueba, con la
+  primera corrida del pipeline.
+- Los **3 pendientes** (H-17, H-20, H-21) y el parcial de H-16 van en la **Fase 17**, al
+  final del plan.
+- Cada requisito tiene su identificador `SEC-xx` en [PENDING-ITEMS.md](../PENDING-ITEMS.md),
+  con lo que falta y cómo se verifica.
+
+La Fase 13 no cambia los totales y agrega evidencia:
+
+- **4.3.1:** la reautenticación ya no depende del proveedor.
+- **5.1.5:** el retorno de la reautenticación usa una lista blanca.
+- **7.1.3:** las exportaciones quedan auditadas con el evento 4213.
+- **Exportaciones CSV:** protegidas contra inyección de fórmulas, con límite propio y dentro del alcance del usuario (H-25 en [hallazgos.md](hallazgos.md)).
 
 ---
 
@@ -99,7 +115,7 @@ La autenticación de personas se delega en el IdP corporativo por OIDC.
 | 4.1.5 | Falla cerrado | Cumple | `ARequestWithoutScopeSeesAnEmptyPortfolio` · `AMissingScopeGrantsNothing` |
 | 4.2.1 | Protección de referencias directas | Cumple | `AnApplicationOutsideTheScopeIsIndistinguishableFromOneThatDoesNotExist` |
 | 4.2.2 | CSRF | Cumple | `MutationWithoutACsrfTokenIsRejected` |
-| 4.3.1 | MFA en interfaces administrativas | Parcial | Publicar exige `ingestion.write`; exigir MFA a ese rol es política del IdP |
+| 4.3.1 | MFA en interfaces administrativas | Parcial | Cargar exige `ingestion.write`; administrar reglas exige `ruleset.admin` con alcance completo, y publicar, una autenticación de los últimos 10 minutos (`IReauthenticationFlow`, ADR 0020). Exigir MFA a esos dos roles es política del IdP o de APIM (Fase 14, SEC-04) |
 | 4.3.2 | Sin listado de directorios ni metadatos | Cumple | Sin directory browsing; sin source maps en el build |
 | 4.3.3 | Protección adicional en operaciones de alto valor | Cumple | Cargas: rol, alcance completo, frecuencia baja y auditoría. Reglas: además, reautenticación reciente, simulación del impacto antes de publicar y permisos que la System vuelve a exigir ([ADR 0018](../adr/0018-las-reglas-se-publican-como-versiones.md)) |
 
@@ -110,7 +126,7 @@ La autenticación de personas se delega en el IdP corporativo por OIDC.
 | 5.1.1 | Contaminación de parámetros | Cumple | Enlace de minimal APIs a valores únicos y tipados |
 | 5.1.3 | Validación por lista blanca | Cumple | `MalformedEaiCodeIsRejectedAtTheEdge` · `LeverKeysOutsideTheWhitelistAreRejectedAtTheEdge` |
 | 5.1.4 | Datos estructurados con tipos | Cumple | DTOs explícitos, nunca entidades de dominio |
-| 5.1.5 | Redirecciones a destinos permitidos | Cumple | `RedirectUri` fijo; sin parámetro de retorno |
+| 5.1.5 | Redirecciones a destinos permitidos | Cumple | `RedirectUri` fijo en el login. La reautenticación acepta `returnTo` solo de una lista blanca de una ruta (`StepUp.SafeReturnPath`), con tres pruebas de redirección abierta |
 | 5.2.1 | Sanitización de HTML no confiable | Cumple | React escapa; `dangerouslySetInnerHTML` prohibido por lint |
 | 5.2.7 | Sanitización de SVG | N/A | Los SVG se generan desde datos, sin contenido de usuario |
 | 5.3.1 | Codificación según el contexto de salida | Cumple | Serialización JSON; sin HTML construido en el servidor |
@@ -135,7 +151,7 @@ La autenticación de personas se delega en el IdP corporativo por OIDC.
 |---|---|---|---|
 | 7.1.1 | Sin credenciales ni tokens en logs | Cumple | Se registra el subject; nunca cookie, token ni correo |
 | 7.1.2 | Sin otros datos sensibles | Cumple | Sin nombre, correo ni contenido de archivos |
-| 7.1.3 | Eventos de seguridad registrados | Parcial | Sesión, acceso denegado, CSRF, rate limit, cargas y alcance; las validaciones rechazadas (400) no se auditan |
+| 7.1.3 | Eventos de seguridad registrados | Parcial | Sesión, acceso denegado, CSRF, rate limit, cargas, alcance, reglas publicadas y rechazadas (4211, 4212), reautenticación (4004, 4104) y exportaciones con su cantidad de filas (4213); las validaciones rechazadas (400) no se auditan (Fase 14, SEC-06) |
 | 7.1.4 | Información suficiente para investigar | Cumple | EventId, subject, ruta, versión y hora del logger |
 | 7.2.1 | Decisiones de autenticación registradas | Cumple | Eventos 4001–4003 |
 | 7.2.2 | Decisiones de acceso fallidas registradas | Cumple | Eventos 4101 y 4203 |

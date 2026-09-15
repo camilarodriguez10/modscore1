@@ -157,6 +157,18 @@ public static partial class SecurityAudit
         }
     }
 
+    /// <summary>Una exportacion: quien, que y cuantas filas. Exportar es leer mucho de una vez.</summary>
+    public static void DataExported(ILogger logger, string? user, string? export, int rows)
+    {
+        ArgumentNullException.ThrowIfNull(logger);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            var cleanUser = Clean(user);
+            var cleanExport = Clean(export);
+            LogDataExported(logger, cleanUser, cleanExport, rows);
+        }
+    }
+
     public static void StepUpCompleted(ILogger logger, string? user)
     {
         ArgumentNullException.ThrowIfNull(logger);
@@ -264,6 +276,10 @@ public static partial class SecurityAudit
         int up,
         int down,
         decimal? averageDelta);
+
+    [LoggerMessage(EventId = 4213, Level = LogLevel.Information,
+        Message = "Datos exportados. usuario={User} exportacion={Export} filas={Rows}")]
+    private static partial void LogDataExported(ILogger logger, string user, string export, int rows);
 
     [LoggerMessage(EventId = 4212, Level = LogLevel.Warning,
         Message = "Publicacion de reglas rechazada. usuario={User} motivo={Reason}")]

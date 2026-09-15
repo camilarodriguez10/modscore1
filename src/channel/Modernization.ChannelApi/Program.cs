@@ -150,6 +150,17 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0,
             }));
 
+    // Exportar lee el portafolio completo de una vez: pocas por minuto.
+    options.AddPolicy(ChannelLimits.ExportPolicy, context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            PartitionKey(context),
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = rateLimits.ExportsPerMinute,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+
     options.OnRejected = (context, _) =>
     {
         if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
@@ -201,6 +212,7 @@ builder.Services.AddScoped<WhatIfComposer>();
 builder.Services.AddScoped<RoadmapComposer>();
 builder.Services.AddScoped<IngestionComposer>();
 builder.Services.AddScoped<RulesComposer>();
+builder.Services.AddScoped<ExportComposer>();
 
 // Los nulos se serializan explicitamente. El modelo de vista es el contrato del
 // front: omitir una propiedad nula hace que el cliente reciba `undefined` donde su
@@ -302,6 +314,7 @@ if (app.Environment.IsDevelopment())
 app.MapGet("/health", () => Results.Ok(new { status = "healthy" })).AllowAnonymous().ExcludeFromDescription();
 app.MapChannelEndpoints();
 app.MapRulesAdminEndpoints();
+app.MapExportEndpoints();
 
 if (spaHosted)
 {

@@ -1,6 +1,6 @@
 # Modelo de amenazas
 
-**Versión:** Fase 12 · **Fecha:** 2026-09-12 · **Método:** STRIDE por frontera de confianza
+**Versión:** Fase 13 · **Fecha:** 2026-09-15 · **Método:** STRIDE por frontera de confianza
 
 Cada amenaza lleva el control que la mitiga y **la evidencia de que el control
 existe**: un test, un archivo de configuración o una verificación en vivo. Un control
@@ -45,7 +45,7 @@ flowchart LR
 | **T** | Ampliar el alcance o los permisos con un header | La Channel borra y recalcula `X-Portfolio-Scope` y `X-Portfolio-Grants` en cada llamada | `ABrowserCannotWidenItsScopeWithAHeader` · `UserContextHandler.cs` | — |
 | **I** | Ampliar lo visible con un filtro de la URL | El filtro se aplica en la System sobre el conjunto ya recortado por el alcance; nunca ve el portafolio original · [ADR 0016](../adr/0016-el-filtro-vive-en-la-url-y-solo-acota.md) | `FilteringByAnotherLobShowsNothingOfIt` · `GroupingTheRoadmapNeverRevealsGroupsOutsideTheScope` | — |
 | **I** | Un enlace compartido expone datos | La URL lleva criterios, no datos: quien la abre ve lo que su alcance permite | `FilteringByAnotherLobShowsNothingOfIt` | Los valores de filtro quedan en historial y logs de acceso; son nombres de dimensiones, no datos personales |
-| **I** | Filtro o borrador recordado en un equipo compartido | `sessionStorage`: muere al cerrar la pestaña. El borrador de reglas solo tiene valores de reglas, sin datos del portafolio | `filters.tsx` (`useFilterMemory`) · `RulesPage.tsx` | Quien use la misma pestaña ve el filtro o el borrador del anterior |
+| **I** | Filtro o borrador recordado en un equipo compartido | `sessionStorage`: muere al cerrar la pestaña. El borrador de reglas solo tiene valores de reglas, sin datos del portafolio; la pantalla de comparación lo lee, no lo copia | `filters.tsx` (`useFilterMemory`) · `rules/draft.ts` · `draft.test.ts` | Quien use la misma pestaña ve el filtro o el borrador del anterior. El aviso de reglas descartado se recuerda en `localStorage`: solo el identificador de la versión |
 | **I** | Ver aplicaciones fuera del propio LOB | Alcance aplicado en la capa System; fuera de alcance = 404 | `LobScopeTests` (7 pruebas) | El IdP tiene que emitir el claim (RFC-10) |
 | **I** | Errores con detalle interno | Sin excepción en producción · detalle curado de la System · sin eco de la entrada | `ProductionErrorsCarryNoInternalDetail` · `ScenarioErrorsCarryOnlyTheCuratedDetail` · `ErrorMessagesDoNotEchoUserInput` | — |
 | **I** | Mapa del API publicado | OpenAPI solo en Development | `ProductionDoesNotPublishTheApiMap` | — |
@@ -96,6 +96,8 @@ flowchart LR
 | **I** | Retener tokens que no se usan | `SaveTokens = false` | `ChannelAuthentication.cs` | — |
 | **S** | Envenenar la `redirect_uri` con el header Host | `AllowedHosts` explícito obligatorio fuera de Development | `ProductionRefusesToStartWithoutExplicitHosts` | — |
 | **S** | Un IdP que ignora `max_age` concede la reautenticación con un inicio de sesión viejo | Solo cuenta un `auth_time` de menos de 5 minutos; la marca la escribe la Channel y se descarta la que llegue del IdP | `StepUp.cs` (`StampFromIdentityProvider`) | Solo verificable contra el IdP real |
+| **S** | La sesión anterior sigue viva después de reautenticarse (la vuelta del IdP no trae la cookie `Strict`) | `IReauthenticationFlow` cierra la sesión antes de ir al IdP, con cualquier proveedor ([ADR 0020](../adr/0020-camino-de-oidc-a-oauth-con-apim.md)) | `ReauthenticationFlowTests` (H-26) | Quien abandona el IdP queda sin sesión, que es lo esperado |
+| **S** | Cambio de proveedor a OAuth con APIM abre un hueco | Lo específico del proveedor está aislado en `IReauthenticationFlow`, `StepUp` y `ChannelAuthentication`; sesión, CSRF, permisos y alcance no cambian | ADR 0020 | A revisar en la Fase 15 con el flujo real |
 
 ## ⑤ Cadena de suministro
 
@@ -109,6 +111,10 @@ flowchart LR
 | **I** | Secreto en el repositorio | Gitleaks sobre todo el historial · `DeploymentGuards` | `.gitleaks.toml` · `ProductionRefusesTheRepositoryDevelopmentToken` | — |
 | **E** | Imagen con superficie de más | Chiseled, sin shell, no root · filesystem de solo lectura · capabilities fuera · PSA `restricted` | Dockerfiles · manifiestos · Checkov y Trivy en CI | No construidas ni escaneadas localmente (H-17) |
 | **T** | Imagen alterada entre CI y cluster | Firma cosign + atestación SLSA en la admisión | — | **Pendiente** de infraestructura de registro (H-17) |
+| **T** | Herramientas de prueba de la SPA como vía de entrada | Vitest y Playwright solo como dependencias de desarrollo, versiones exactas en el lock, `npm audit` limpio; Playwright usa el Edge instalado y no descarga navegadores | `package.json` · `package-lock.json` · `playwright.config.ts` | Nunca llegan al bundle ni a la imagen |
+| **E** | Un build de la Channel que no se puede publicar empuja a atajos (imagen armada a mano) | La configuración que llega de la referencia a la System se descarta al publicar | `Modernization.ChannelApi.csproj` (`DropReferencedSystemSettings`) · paquete portable publicado (H-28) | Las imágenes siguen sin construirse fuera de CI |
+| **I** | Capturas internas del BRD o secretos subidos al repositorio remoto | `.gitignore` y scripts de respaldo que se niegan a confirmar capturas, imágenes, llaves y `.env`; gitleaks si está instalado | `tools/git/backup.ps1` · `docs/runbooks/respaldo-en-git.md` | Un `git add -f` manual lo salta: es una decisión explícita |
+| **E** | El paquete portable, con autenticación de desarrollo, queda expuesto en una red | Escucha solo en `127.0.0.1`; token de servicio aleatorio por arranque como archivo temporal que se borra al detener; sin símbolos ni source maps; datos dummy por defecto | `tools/portable/start.ps1` · verificación del 2026-09-15 (puertos, CSP y 6 e2e contra el paquete) | Un reenvío de puertos manual lo expondría: regla de uso en su README (SEC-22) |
 
 ## ⑥ Administración de reglas (Fase 12)
 
@@ -125,5 +131,21 @@ alcance del sistema ([ADR 0018](../adr/0018-las-reglas-se-publican-como-versione
 | **T** | Borrador fabricado: campos de más, cuerpo enorme, identificador con ruta | 128 KB · JSON estricto · identificador por lista blanca · sin eco de lo recibido | `TheEdgeRejectsUnknownFieldsOversizedBodiesAndMalformedVersions` · `AnUnknownMetricIsReportedByPositionWithoutEchoingWhatWasSent` · `MalformedIdentifiersAreNeverLookedUpOrWritten` | — |
 | **T** | Editar o borrar una versión publicada | Solo se agrega: volver atrás es publicar otra vez | `RestoringTheBuiltInRulesPublishesThemAgainAsANewVersion` | Acceso directo al volumen o a la base: controles de infraestructura |
 | **T** | Versión guardada alterada a mano | Se valida al leerla. Si no se puede leer, se siguen usando las vigentes (evento 5302), y una copia bajo otro nombre no se sirve | `ACopyUnderAnotherNameIsNotServedAsThatVersion` | Un documento alterado que sí se lea: ver runbook |
+| **D** | El almacén de reglas deja de responder y el portafolio entero cae | Se sigue puntuando con las reglas vigentes (evento 5303); leer una versión anterior responde 503 y publicar se rechaza sin activar nada | `RulesStoreFailureTests` (H-24) | Una réplica que arranca con el almacén caído usa las de fábrica hasta que responda |
+| **D** | Staging huérfano del almacén de reglas llena el volumen | La siguiente publicación borra los de más de 10 minutos, sin tocar versiones ni el staging en curso de otra réplica | `FileRulesStoreStagingTests` (H-27) | — |
 | **R** | "Yo no cambié ese peso" | La versión guarda quién, por qué, qué cambió y el impacto. Evento 4211 | `PublishingAWeightMovesThePortfolioIsAuditedAndNeedsNoRedeploy` · verificación en vivo | Los logs tienen que ir a un destino inmutable (H-17) |
-| **D** | Simulaciones repetidas para agotar CPU | 10 simulaciones por minuto y 5 publicaciones por hora por usuario | `PublishingHasItsOwnLowLimit` | Con portafolios de decenas de miles de aplicaciones, medir |
+| **D** | Simulaciones repetidas para agotar CPU | 10 simulaciones o comparaciones por minuto y 5 publicaciones por hora por usuario; el lado vigente de la simulación se calcula una vez por carga y versión | `PublishingHasItsOwnLowLimit` · medición antes y después (PLAN 8.6) | Con portafolios de decenas de miles de aplicaciones, medir (TD-06) |
+
+## ⑦ Comparación, línea de tiempo y exportaciones (Fase 13)
+
+Tres superficies nuevas de lectura. Ninguna escribe, pero dos entregan mucho de una vez.
+
+| | Amenaza | Control | Evidencia | Riesgo residual |
+|---|---|---|---|---|
+| **I** | Un lector ve cómo cambiarían los scores con reglas no publicadas, o compara versiones | Comparar y simular con una aplicación exige `ruleset.admin` con alcance completo, en la Channel y otra vez en la System | `OnlyRulesAdministratorsCompareOrExportAComparison` | — |
+| **T** | Identificadores de versión o EAI con forma de ruta en la comparación | Lista blanca de forma en las dos capas antes de buscar nada; una versión o aplicación inexistente responde 404 sin eco | `ComparingRejectsWhatDoesNotExistOrIsMalformed` (5 casos) | — |
+| **I** | La línea de tiempo revela quién publicó las reglas | Solo versión, fecha, versión base, cantidad de cambios y motivo; nunca quién | `TheRulesTimelineReachesReadersWithoutSayingWhoPublished` | El motivo lo escribe quien publica: no debe llevar datos sensibles (H-30, SEC-23) |
+| **I** | Exportar amplía lo que el usuario puede ver | Mismos filtros y mismo alcance que la pantalla: la System recorta antes de que la Channel arme el archivo | `TheExportNeverWidensTheUsersScope` · `ThePortfolioExportFollowsTheFiltersAndIsAudited` | — |
+| **T** | Inyección de fórmulas al abrir el CSV en una planilla | Textos que empiezan con `=`, `+`, `-`, `@`, tabulador o retorno —aun detrás de espacios— van con apóstrofo; números sin tocar; caracteres de control reemplazados | `TextCellsCannotBecomeFormulas` (9 casos) · `NumbersKeepTheirSign` | Planillas que interpreten otros prefijos |
+| **I** | Extracción masiva del portafolio por exportaciones repetidas | 10 exportaciones por minuto por usuario, tope de 50 000 filas, evento 4213 con tipo y filas | `ChannelLimits.ExportPolicy` · `CsvDocument.MaxRows` · `ThePortfolioExportFollowsTheFiltersAndIsAudited` | Etiqueta de clasificación y alertas del SIEM sobre 4213 por decidir (SEC-24, PA-08) |
+| **I** | El archivo queda en cachés intermedias o se interpreta en el navegador | Adjunto con `Content-Disposition`, `no-store` y `nosniff` del middleware de cabeceras | `CsvAsync` en `RulesComparisonAndExportTests` (tipo y disposición) | Una vez descargado, el archivo sale del control de la aplicación |

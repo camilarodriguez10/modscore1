@@ -380,17 +380,20 @@ Regla general cuando la métrica **ya tiene dato**: `Δ = 0.8 × w × (v' − v)
 
 | Componente | Elección |
 |---|---|
-| Build | Vite 6 + TypeScript 5.7 (`strict`) |
-| Router | React Router 7 (data APIs) |
-| Datos servidor | TanStack Query v5 |
-| Estado UI | Zustand (mínimo; el servidor es la fuente de verdad) |
-| Formularios | React Hook Form + Zod (mismo esquema que valida el backend) |
-| Gráficos | **Recharts** (waterfall, gauge, barras) + SVG propio para el diagrama de fórmula |
-| Estilos | Tailwind CSS 4 + Radix UI primitives (accesibles, headless) |
-| Cliente API | Generado desde el OpenAPI del `channel-api` — sin drift de tipos |
-| Tests | Vitest + Testing Library + Playwright (E2E) |
+| Componente | Planeado | Implementado (revisión del 2026-09-14) |
+|---|---|---|
+| Build | Vite 6 + TypeScript 5.7 (`strict`) | **Vite 7 + TypeScript 5.9**, `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` |
+| Router | React Router 7 (data APIs) | React Router 7 con rutas declarativas; la URL lleva los filtros ([ADR 0016](docs/adr/0016-el-filtro-vive-en-la-url-y-solo-acota.md)) |
+| Datos servidor | TanStack Query v5 | TanStack Query v5 |
+| Estado UI | Zustand | **Sin librería**: estado local y URL. El borrador de reglas vive en `sessionStorage` |
+| Formularios | React Hook Form + Zod | **Sin librería**: campos controlados; el servidor valida (una sola fuente de verdad) |
+| Gráficos | Recharts + SVG propio | **SVG propio** ([ADR 0006](docs/adr/0006-spa-sin-libreria-de-graficos.md)) |
+| Estilos | Tailwind CSS 4 + Radix UI | Tailwind CSS 4, componentes propios accesibles |
+| Cliente API | Generado desde OpenAPI | **Tipos a mano con prueba de contrato**: `ViewModelContractTests` falla si un modelo de vista C# y su interfaz TypeScript difieren en cualquier sentido |
+| Tests | Vitest + Testing Library + Playwright | **Vitest** (lógica pura, sin DOM) + **Playwright con el Edge instalado** (6 escenarios de punta a punta) |
+| Carga | — | Pantallas de administración cargadas bajo demanda (`lazy` + `Suspense`) |
 
-React 19 se aprovecha en concreto: **Actions + `useActionState`** para los formularios de what-if con estado pendiente sin boilerplate, **`use()`** con Suspense para el streaming del breakdown, y el **compilador** para evitar memoización manual en las tablas grandes del portafolio.
+> *Corrección del plan.* Se prometía usar **Actions + `useActionState`**, **`use()`** con Suspense y el **compilador** de React 19. No se usan: las mutaciones de TanStack Query cubren los estados pendientes y no hubo tablas con costo de render medible. Queda como decisión abierta TD-02 en [docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md).
 
 ### 6.2 Mapa de pantallas
 
@@ -555,8 +558,13 @@ tests corre igual contra el tercer adaptador.
 | **10 — Experiencia de consulta** ✅ | ENTREGADA | Filtros globales en la URL, estadísticas clicables, roadmap por dimensión, pantalla Datos con linaje por carga, archivos reconocidos por su encabezado | **Cumplido:** clic en «Mexico» filtra, el filtro sobrevive a la navegación y el enlace se comparte; verificado en la interfaz real |
 | **11 — Sitio en inglés** ✅ | ENTREGADA | Todo el texto de interfaz en inglés; el backend devuelve códigos y datos y la interfaz redacta la frase | **Cumplido:** ninguna respuesta de la capa Channel trae texto en español —lo comprueba una prueba— y la interfaz pasó la revisión en vivo |
 | **12 — Administración de reglas** ✅ | ENTREGADA | Ruleset, palancas de what-if y parámetros de roadmap editables desde el portal, solo administradores, con borrador, simulación de impacto y publicación auditada | **Cumplido:** cambiar un peso desde el portal mueve el portafolio, queda auditado con su impacto y lo toman las réplicas sin desplegar |
+| **13 — Revisión y remediación** ✅ | ENTREGADA | Reglas contra las capturas del BRD, deuda técnica, rendimiento, robustez, comparación de reglas, exportaciones, pruebas de la SPA, git y paquete portable (ver 8.6) | **Cumplido:** 640 pruebas .NET, 35 unitarias y 6 de punta a punta en verde; la historia en frío pasa de 1,7 s a 8–15 ms con calentamiento y la simulación de 117 a 47 ms |
+| **14 — Verificación de seguridad (ASVS L2)** | 3 sem | Primera corrida del pipeline con todos los gates; los 14 parciales de ASVS verificados en un entorno de prueba; revisión de seguridad de las fases 09–13 por otra persona; e2e y accesibilidad en CI | Pipeline verde; los parciales pasan a cumple o quedan con control compensatorio documentado |
+| **15 — Autenticación con APIM** | 3 sem | OAuth mediante Azure API Management ([ADR 0020](docs/adr/0020-camino-de-oidc-a-oauth-con-apim.md)), claim de alcance, token de servicio reemplazado | Reautenticación verificada contra el IdP real; sin secreto estático entre capas |
+| **16 — Escala y operación** | 3 sem | Destino y motor de base (RFC-07), Redis, réplicas, respaldos, retención, SIEM, notificaciones de reglas | Dos réplicas por capa bajo carga; restauración probada; alertas activas |
+| **17 — Hallazgos de infraestructura** | 2 sem | **Al final por decisión del 2026-09-14:** H-16, H-17, H-20, H-21 | ASVS 2.10.1, 3.3.4, 7.3.3, 12.4.2 y 14.1.5 cumplen |
 
-Total: **~16 semanas** hasta la Fase 9, más **~8 semanas** de la ampliación (fases 10 a 12). Las fases 7 y 9 son deliberadamente cortas — el trabajo de aislamiento se hace en la fase 2, no cuando llegan los archivos reales.
+Total: **~16 semanas** hasta la Fase 9, más **~8 semanas** de la ampliación (fases 10 a 12) y **~1 semana** de la revisión (Fase 13). Las fases 14 a 17 suman **~11 semanas** estimadas y dependen de decisiones del equipo listadas en [docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md). Las fases 7 y 9 son deliberadamente cortas — el trabajo de aislamiento se hace en la fase 2, no cuando llegan los archivos reales.
 
 ### 8.1 Resultado de la Fase 08 — Endurecimiento
 
@@ -580,7 +588,7 @@ Las tres Altas:
 | Entregable | Dónde |
 |---|---|
 | Modelo de amenazas STRIDE por frontera | [docs/security/modelo-de-amenazas.md](docs/security/modelo-de-amenazas.md) |
-| ASVS L2: 100 cumple · 15 parciales · 3 pendientes | [docs/security/asvs-l2.md](docs/security/asvs-l2.md) |
+| ASVS L2 al cierre de la Fase 08: 100 cumple · 15 parciales · 3 pendientes. **Vigente desde la Fase 12: 103 cumple · 14 parciales · 3 pendientes · 10 IdP o N/A** | [docs/security/asvs-l2.md](docs/security/asvs-l2.md) |
 | Runbooks: secretos, carga defectuosa, DR, incidente | [docs/runbooks/](docs/runbooks) |
 | Pipeline con gates de seguridad | `.github/workflows/ci.yml` — acciones fijadas por SHA, CodeQL, Gitleaks, OSV, Trivy, Checkov, SBOM |
 | Contenedores y cluster | `deploy/docker` (chiseled, no root) · `deploy/k8s` (PSA restricted, NetworkPolicy default-deny, mTLS) |
@@ -790,6 +798,98 @@ En vivo, sobre las 250 aplicaciones de la historia local:
 (`max_age=0` y `auth_time`). En local corre el esquema de desarrollo, que la simula; la
 lectura del token está aislada en `StepUp`.
 
+### 8.6 Resultado de la Fase 13 — Revisión y remediación
+
+Trece puntos pedidos el 14 de septiembre de 2026, tras revisar toda la sesión.
+
+**Criterio cumplido.** Todo lo pedido quedó implementado, probado y documentado. Los
+pendientes que requieren al equipo están en [docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md),
+en inglés y con el máximo detalle.
+
+| Evidencia | Resultado |
+|---|---|
+| Pruebas .NET | **640 en verde** (eran 598): 200 motor · 175 contratos · 265 API |
+| Pruebas de la SPA | **35 unitarias** (Vitest) y **6 de punta a punta** (Playwright con Microsoft Edge, sobre las tres piezas reales) |
+| Contrato C# ↔ TypeScript | `ViewModelContractTests`: cada modelo de vista y su interfaz coinciden en los dos sentidos |
+| Seguridad de dependencias | Cero paquetes vulnerables y `npm audit` limpio, con Vitest y Playwright dentro |
+| Historia del portafolio en frío, 30 cargas | 1.655 ms → 584 ms en paralelo → **8–15 ms** con calentamiento en segundo plano |
+| Simulación de reglas con 8 clientes, medida en reposo | p50 117 ms → **47 ms** (p95 66 ms); de 66 a 168 peticiones por segundo |
+| Bundle principal de la SPA | 429 kB → **406 kB**: las pantallas de administración se cargan bajo demanda |
+
+**Reglas de cálculo, primero** (las capturas del BRD mandan):
+
+- *"Null or zero values are excluded from scoring"* ([ADR 0019](docs/adr/0019-el-cero-se-excluye-salvo-que-la-tabla-lo-puntue.md)).
+  El cero se excluye en Kenna, OSS, RAW Tech y Operational. En Tech Debt y SCA la tabla del
+  BRD lo puntúa, así que el cero sigue puntuando. Es la marca `zeroIsNoData` del ruleset,
+  editable sin desplegar.
+- Notas del ruleset corregidas contra las capturas: RFC-03 no está verificado
+  numéricamente, y se agregan RFC-13 a RFC-17.
+- Se corrigen el ADR 0003 (el cero), el ADR 0017 (qué edita el portal) y el ADR 0018 (la
+  historia no guarda versión por punto).
+- El artefacto del plan decía 17 métricas; son **18**.
+
+**Deuda técnica, rendimiento y robustez:**
+
+- **Listar versiones de reglas** ya no reconstruye 50 motores: una versión publicada no
+  cambia, así que se valida una vez por proceso.
+- **La historia en frío** se calcula por carga en paralelo, y **un servicio en segundo
+  plano** la deja caliente al arrancar, tras cada carga o publicación y periódicamente.
+- **La simulación** calcula el lado vigente una vez por carga y versión, y el borrador en
+  paralelo.
+- **Almacén de reglas caído:**
+  - se sigue puntuando con las vigentes (evento 5303);
+  - leer una versión anterior responde 503;
+  - publicar se rechaza con `rules.storeUnavailable`.
+- **Staging huérfano** del almacén de reglas por archivos: se limpia en la siguiente
+  publicación.
+- **Reautenticación independiente del proveedor** (`IReauthenticationFlow`). Con OIDC cierra
+  la sesión anterior antes de ir al IdP; antes quedaba huérfana hasta vencer. Camino a OAuth
+  con APIM en el [ADR 0020](docs/adr/0020-camino-de-oidc-a-oauth-con-apim.md).
+- **Prueba de carga** con escenarios de reglas y latencia de la primera petición.
+- **Lógica pura del editor de reglas** extraída a `src/web/src/rules/draft.ts`, con pruebas.
+
+**Sugerencias de producto:**
+
+- **Cambios de reglas en la tendencia (4).** La tarjeta de la tendencia marca con una línea
+  punteada cuándo se publicó cada versión. `GET /api/rules/timeline` lo ve todo el que
+  consulta, sin decir quién publicó.
+- **Comparar reglas (5).** Pantalla nueva `/admin/rules/compare`. Compara dos versiones, o el
+  borrador de la pestaña contra la vigente, sobre todo el portafolio y sobre una aplicación
+  métrica por métrica.
+- **Contenido descargable según los filtros (7):**
+  - CSV del portafolio filtrado, del roadmap agrupado y de la comparación de dos versiones;
+  - protección contra inyección de fórmulas, límite propio de 10 por minuto, tope de filas y
+    evento de auditoría 4213;
+  - aviso dentro del sitio cuando se publican reglas nuevas.
+
+**Respaldo y distribución:**
+
+- **Repositorio git** con remoto `origin`, commit base local y `.gitignore`. Las capturas del
+  BRD quedan fuera del repositorio.
+- **Scripts de respaldo** (`tools/git/`): corren las verificaciones y se niegan a subir
+  capturas, llaves o `.env`. Runbook en [docs/runbooks/respaldo-en-git.md](docs/runbooks/respaldo-en-git.md).
+- **Paquete portable** (`tools/portable/`): ejecutables de un solo archivo con la SPA
+  dentro. Escucha solo en `127.0.0.1`, con un token de servicio aleatorio por arranque.
+  **No es un despliegue**: usa la autenticación de desarrollo.
+
+**Qué no se pudo verificar en local:**
+
+- **Push al remoto:** requiere confirmar la visibilidad del repositorio y la política sobre
+  las capturas (SEC-21, OP-04).
+- **Primera corrida del pipeline**, con sus gates de CodeQL, Gitleaks, Trivy, Checkov y ZAP.
+- **Reautenticación contra un IdP real.**
+- **Rendimiento en hardware de destino:** la misma simulación dio p50 204 ms con la máquina
+  ocupada y 47 ms en reposo. Hay que medirla con la concurrencia real (TD-06).
+
+**Tres decisiones que corrigen o precisan el plan:**
+
+1. **El cero no siempre es un valor.** La regla general del BRD se aplica donde las tablas no
+   la contradicen.
+2. **Los tipos de la SPA no se generan desde OpenAPI.** Una prueba de contrato da la misma
+   garantía sin sumar una herramienta a la cadena de suministro.
+3. **Los hallazgos H-16, H-17, H-20 y H-21 pasan al final del plan**, por decisión del
+   2026-09-14. Los parciales de ASVS se resuelven antes, en la Fase 14.
+
 ## 8bis. Ampliación solicitada — fases 10 a 12
 
 Siete puntos pedidos el 12 de septiembre de 2026, una vez entregadas las fases 00
@@ -908,6 +1008,92 @@ portafolio, queda auditado con su impacto, y no requiere recompilar ni desplegar
 
 ---
 
+## 8ter. Plan desde la Fase 14
+
+Ordenado según las prioridades del 2026-09-14:
+
+1. las reglas de cálculo mandan;
+2. los parciales de ASVS se resuelven;
+3. APIM reemplaza a OIDC;
+4. los hallazgos de infraestructura H-16, H-17, H-20 y H-21 van al final.
+
+El detalle de cada punto está en [docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md), con su
+identificador.
+
+### En paralelo desde ya — decisiones de negocio sobre el score
+
+| Punto | Decisión | Por qué antes de la Fase 14 |
+|---|---|---|
+| SR-01 · RFC-01 | Estrategia de los compuestos | 20 de 100 puntos de peso |
+| SR-03 · RFC-03 | Peso de Tech Debt 5 o 10 | No está verificado con ningún caso dorado |
+| SR-07 · RFC-13 | Lectura de *"null or zero values are excluded"* | Cambia el score de toda aplicación con ceros |
+| SR-04, SR-05, SR-06, SR-10, SR-12 | Override, SCA, huecos de bandas, Containerized, nivel de agregación | Diferencias visibles contra el dashboard |
+
+Cada decisión se aplica publicando una versión de reglas desde el portal, sin desplegar,
+salvo SR-04 (override) y SR-12 (agregación), que requieren código.
+
+### Fase 14 — Verificación de seguridad (ASVS L2)
+
+| Trabajo | Requisitos o puntos |
+|---|---|
+| Primer push y primera corrida del pipeline con todos los gates; corregir lo que encuentren | SEC-20, OP-04 |
+| Construir y escanear las imágenes; ZAP contra staging | SEC-20 |
+| Verificar en un entorno de prueba: llaves protegidas, mTLS del mesh, gestor de secretos, TLS del ingress, cifrado interno | ASVS 1.6.2, 1.9.2, 6.4.1, 9.1.2, 9.1.3, 9.2.2 |
+| MFA exigido por el IdP a `ingestion.write` y `ruleset.admin` | ASVS 4.3.1 |
+| Auditar validaciones rechazadas en endpoints sensibles | ASVS 7.1.3 |
+| Política de retención de cargas | ASVS 8.3.4, OP-03 |
+| Reglas del SIEM por EventId | ASVS 11.1.8, PA-08 |
+| Decidir validación de esquema formal para los cuerpos de reglas | ASVS 13.2.2 |
+| Controles compensatorios documentados para aislamiento de terceros | ASVS 14.2.6 |
+| Revisión de seguridad de las fases 09–13 por otra persona | TD-13 |
+| e2e y accesibilidad (axe) en CI; barrido de idioma sobre los endpoints nuevos | TD-04, TD-05, TD-09 |
+
+**Criterio de aceptación:** pipeline verde con todos los gates, y cada parcial en cumple o
+con control compensatorio documentado y aceptado por seguridad.
+
+### Fase 15 — Autenticación con APIM
+
+Opciones del [ADR 0020](docs/adr/0020-camino-de-oidc-a-oauth-con-apim.md): APIM delante
+del BFF (A), JWT validado por APIM (B) o APIM entre capas (C). Se recomienda **C con A**.
+
+| Trabajo | Puntos |
+|---|---|
+| Elegir la opción y obtener el producto y las políticas de APIM | PA-02 |
+| Implementar `IReauthenticationFlow` para APIM y verificar la frescura de la autenticación | SEC-19 |
+| Claim de alcance emitido por el IdP o APIM | PA-03 |
+| Reemplazar el token de servicio estático (opción C) | PA-05, ASVS 2.10.1 |
+| Actualizar el modelo de amenazas (fronteras ② y ⑥) | — |
+
+**Criterio de aceptación:** publicar reglas en el entorno de prueba exige reautenticarse
+ante el proveedor real, y no queda ningún secreto estático entre las capas.
+
+### Fase 16 — Escala y operación
+
+| Trabajo | Puntos |
+|---|---|
+| Destino de despliegue y motor de base; migraciones y job de despliegue | PA-01 · RFC-07 |
+| Redis para sesiones y llaves de Data Protection compartidas | PA-04 · RFC-11 |
+| Dos réplicas por capa bajo carga; adaptador de base para varias réplicas | PA-06, TD-06, TD-07 |
+| Respaldos del volumen y del almacén de reglas; prueba de restauración | OP-02 |
+| Recorrer los runbooks con operación | OP-01 |
+| Notificar a los responsables cuando se publican reglas | PA-09 |
+
+**Criterio de aceptación:** dos réplicas de cada capa sirven bajo carga, una publicación
+llega a todas dentro del intervalo de refresco y una restauración funciona.
+
+### Fase 17 — Hallazgos de infraestructura (al final, por decisión)
+
+| Hallazgo | Requisito ASVS | Trabajo |
+|---|---|---|
+| H-16 · Token de servicio estático | 2.10.1 | Identidad de carga de trabajo de vida corta, si la Fase 15 no lo cerró |
+| H-17 · Cadena de publicación incompleta | 7.3.3, 14.1.5 | Firma de imágenes con cosign, verificación en admisión y logs de auditoría en destino inmutable |
+| H-20 · Ver y cerrar sesiones activas | 3.3.4 | Índice de tickets por usuario, panel de sesiones y revocación |
+| H-21 · Antivirus en cargas | 12.4.2 | Escaneo en staging antes de publicar |
+
+**Criterio de aceptación:** los cinco requisitos ASVS pasan a cumple.
+
+---
+
 ## 9. Estructura del repositorio
 
 ```
@@ -916,10 +1102,14 @@ modernization-score/
 ├─ Directory.Build.props             # warnings como errores, todas las reglas de seguridad, lock files
 ├─ .github/workflows/ci.yml          # tests, vulnerabilidades, CodeQL, Gitleaks, OSV, Trivy, Checkov, SBOM
 ├─ renovate.json · .gitleaks.toml
+├─ .gitignore · .gitattributes          # capturas del BRD, estado y secretos fuera del repositorio
+├─ HANDOFF.md                        # traspaso completo del contexto
 ├─ docs/
-│  ├─ adr/                           # decisiones de arquitectura (0001–0018)
+│  ├─ PENDING-ITEMS.md               # pendientes para revisar con el equipo, en inglés
+│  ├─ adr/                           # decisiones de arquitectura (0001–0020)
+│  ├─ brd/                           # índice de las capturas del BRD; las imágenes no se versionan
 │  ├─ security/                      # modelo de amenazas, ASVS L2, hallazgos
-│  └─ runbooks/                      # secretos, carga defectuosa, DR, incidente
+│  └─ runbooks/                      # secretos, carga defectuosa, DR, incidente, reglas, respaldo en git
 ├─ contracts/
 │  ├─ ruleset-v1.3.json              # pesos, bandas, estrategias
 │  ├─ roadmap-v1.json                # modelo MAPS
@@ -938,14 +1128,16 @@ modernization-score/
 │  │  ├─ Modernization.Sources/         # ensamblador + adaptadores Dummy y File
 │  │  │  └─ {Dummy,Files,Export}/
 │  │  └─ Modernization.Sources.Database/ # adaptador EF Core, migraciones y publicación
-│  └─ web/                              # React 19 SPA
+│  └─ web/                              # React 19 SPA · src/**/*.test.ts (Vitest) · e2e/ (Playwright)
 ├─ tests/
 │  ├─ Modernization.Scoring.Engine.Tests/     # golden tests, tabla de casos, what-if, roadmap
 │  ├─ Modernization.Sources.ContractTests/    # una suite, dos adaptadores (tres en la Fase 09)
 │  └─ Modernization.Api.Tests/                # E2E por ambas capas y seguridad
 ├─ tools/
 │  ├─ Modernization.DummyData/       # generador determinista
-│  └─ Modernization.LoadTest/        # prueba de carga sin dependencias
+│  ├─ Modernization.LoadTest/        # prueba de carga sin dependencias
+│  ├─ git/                           # respaldo con verificaciones y archivos bloqueados
+│  └─ portable/                      # paquete portable de prueba para otros equipos
 └─ deploy/
    ├─ docker/                        # imágenes chiseled, no root
    └─ k8s/                           # kustomize, PSA restricted, NetworkPolicy, mesh
@@ -965,3 +1157,13 @@ modernization-score/
 8. **RFC-10** — Claim de alcance del IdP: nombre (`portfolio_scope` por defecto) y valores (`*`, `lob:…`, `country:…`, `cio:…`). ¿Lo emite el IdP corporativo, o se deriva de grupos?
 9. **RFC-11** — Cache compartido para las sesiones (Redis) antes de escalar channel-api a más de una réplica.
 10. **RFC-12** — Identidad de carga de trabajo de vida corta entre channel-api y system-api, según la plataforma del cluster.
+11. **RFC-13** — ¿El negocio lee *"null or zero values are excluded"* como la implementación: el cero se excluye salvo donde la tabla lo puntúa? En particular, ¿un Kenna 0 es "sin riesgo" o "sin escaneo"?
+12. **RFC-14** — DevSecOps puntúa el nulo con 20 en el BRD; sin efecto mientras tenga peso 0.
+13. **RFC-15** — `Consolidate` no figura en la tabla de puntaje de la disposición.
+14. **RFC-16** — Containerized "added to product strategy (2 pts) and architecture value (2 pts)": ¿texto obsoleto o bonificación?
+15. **RFC-17** — Filas con `EAI Code = 0` en OSS: ¿reportarlas como huérfanas en el linaje?
+16. **Autenticación** — OIDC se reemplazará por OAuth mediante APIM: elegir la opción A, B o C del [ADR 0020](docs/adr/0020-camino-de-oidc-a-oauth-con-apim.md).
+17. **Notificaciones** — ¿A quién y por qué canal se avisa cuando se publican reglas? Hoy hay un aviso dentro del sitio.
+18. **Repositorio** — Visibilidad de `camilarodriguez10/modscore1` y si las capturas del BRD pueden guardarse en él. Nada se ha subido todavía.
+
+Cada punto, con contexto, opciones, recomendación y criterio de aceptación, está en [docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md).

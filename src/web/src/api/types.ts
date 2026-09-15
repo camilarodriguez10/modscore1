@@ -662,6 +662,8 @@ export interface RulesSimulationView {
   errors: readonly Notice[];
   changes: readonly Notice[];
   impact: RulesImpact | null;
+  /** La aplicacion en foco, metrica por metrica; null si no se pidio o no esta en la carga. */
+  application: ApplicationComparison | null;
 }
 
 export interface RulesPublishView {
@@ -703,4 +705,78 @@ export interface RoadmapPathDraft {
   key: string;
   levers: readonly string[];
   milestoneWeeks: readonly number[];
+}
+
+// --------------------------------------------------- 10 Rules comparison
+
+/** Una version en la linea de tiempo que ve quien consulta. No dice quien la publico. */
+export interface RulesTimelineEntry {
+  id: string;
+  basedOn: string | null;
+  publishedAt: string | null;
+  reason: string;
+  isActive: boolean;
+  isBuiltIn: boolean;
+  changeCount: number;
+}
+
+export interface RulesTimelineView {
+  active: RulesTimelineEntry;
+  versions: readonly RulesTimelineEntry[];
+}
+
+export interface MetricComparison {
+  key: string;
+  name: string;
+  pillar: string;
+  display: Notice;
+  weightFrom: number;
+  weightTo: number;
+  mappedFrom: number | null;
+  mappedTo: number | null;
+  weightedFrom: number | null;
+  weightedTo: number | null;
+  includedFrom: boolean;
+  includedTo: boolean;
+  ruleFrom: string | null;
+  ruleTo: string | null;
+  exclusionFrom: Notice | null;
+  exclusionTo: Notice | null;
+  changed: boolean;
+}
+
+export interface PillarComparison {
+  key: string;
+  name: string;
+  scoreFrom: number | null;
+  scoreTo: number | null;
+  availableFrom: number;
+  availableTo: number;
+  totalFrom: number;
+  totalTo: number;
+}
+
+/** Una aplicacion con dos juegos de reglas. Un score null es un dato fuera de toda banda. */
+export interface ApplicationComparison {
+  eaiCode: string;
+  applicationName: string;
+  scoreFrom: number | null;
+  scoreTo: number | null;
+  delta: number | null;
+  bandFrom: string | null;
+  bandTo: string | null;
+  numeratorFrom: number | null;
+  numeratorTo: number | null;
+  denominatorFrom: number | null;
+  denominatorTo: number | null;
+  pillars: readonly PillarComparison[];
+  metrics: readonly MetricComparison[];
+}
+
+export interface RulesCompareView {
+  from: RulesVersionView;
+  to: RulesVersionView;
+  changes: readonly Notice[];
+  impact: RulesImpact;
+  application: ApplicationComparison | null;
 }

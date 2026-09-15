@@ -99,6 +99,7 @@ public static class IngestionEndpoints
         PortfolioScope scope,
         IngestionService ingestion,
         PortfolioService portfolio,
+        PortfolioWarmup warmup,
         ILoggerFactory loggers,
         CancellationToken cancellationToken)
     {
@@ -173,8 +174,10 @@ public static class IngestionEndpoints
             return Results.Ok(UploadResponse.From(outcome));
         }
 
-        // La carga cambio el portafolio: el cache de scores queda obsoleto.
+        // La carga cambio el portafolio: el cache de scores queda obsoleto, y se vuelve a
+        // calcular en segundo plano antes de que alguien lo pida.
         portfolio.Invalidate();
+        warmup.Request();
 
         SecurityAudit.UploadPublished(audit, user, outcome.Version.Id, outcome.Files.Count, outcome.ApplicationCount);
 

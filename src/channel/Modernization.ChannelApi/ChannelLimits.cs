@@ -30,6 +30,9 @@ public static class ChannelLimits
     /// <summary>Publicar reglas mueve el score de toda la organizacion.</summary>
     public const string RulesPublishPolicy = "rules-publish";
 
+    /// <summary>Exportar es leer el portafolio completo de una vez.</summary>
+    public const string ExportPolicy = "export";
+
     /// <summary>Lo que puede tardar en viajar y validarse una carga completa.</summary>
     public static TimeSpan UploadTimeout { get; } = TimeSpan.FromMinutes(5);
 
@@ -48,7 +51,8 @@ public sealed record RateLimits(
     TimeSpan UploadWindow,
     int RulesSimulationsPerMinute,
     int RulesPublishesPerWindow,
-    TimeSpan RulesPublishWindow)
+    TimeSpan RulesPublishWindow,
+    int ExportsPerMinute)
 {
     public static RateLimits From(IConfiguration configuration)
     {
@@ -61,7 +65,8 @@ public sealed record RateLimits(
             TimeSpan.FromMinutes(configuration.GetValue("RateLimiting:UploadWindowMinutes", 10)),
             configuration.GetValue("RateLimiting:RulesSimulationsPerMinute", 10),
             configuration.GetValue("RateLimiting:RulesPublishesPerWindow", 5),
-            TimeSpan.FromMinutes(configuration.GetValue("RateLimiting:RulesPublishWindowMinutes", 60)));
+            TimeSpan.FromMinutes(configuration.GetValue("RateLimiting:RulesPublishWindowMinutes", 60)),
+            configuration.GetValue("RateLimiting:ExportsPerMinute", 10));
     }
 }
 

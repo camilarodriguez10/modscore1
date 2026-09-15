@@ -93,9 +93,16 @@ la versión con que se calcularon. Hacerlo mezclaría en una misma tendencia un 
 datos con un cambio de reglas: si MFA pasa a pesar más, la curva saltaría sin que ninguna
 aplicación haya mejorado.
 
-Toda la serie se recalcula con las reglas vigentes y cada punto dice con qué versión se
-calculó. Lo que no se reescribe es el registro: cada versión guarda quién la publicó,
-por qué, qué cambió y el impacto que tuvo al publicarse.
+Toda la serie se recalcula con las reglas vigentes. Lo que no se reescribe es el
+registro: cada versión guarda quién la publicó, por qué, qué cambió y el impacto que
+tuvo al publicarse.
+
+> *Corrección de la revisión del 2026-09-14.* Este ADR decía que «cada punto dice con qué
+> versión se calculó». Los puntos no llevan versión: todos usan la vigente, y la tarjeta
+> de la tendencia lo dice. Desde la revisión, la tendencia **marca con una línea punteada
+> cuándo se publicó cada versión** (`GET /api/rules/timeline`, visible para quien
+> consulta y sin quién publicó), para que un salto no se lea como mejora cuando lo que
+> cambió fueron las reglas.
 
 ### 9. Controles de seguridad
 
@@ -124,3 +131,23 @@ por qué, qué cambió y el impacto que tuvo al publicarse.
 - La reautenticación contra un IdP real no se verificó en local, donde corre el esquema
   de desarrollo. La lectura del `auth_time` está aislada en `StepUp` para probarla en el
   primer entorno con IdP.
+
+## Ampliación de la revisión del 2026-09-14
+
+- **Comparar antes de publicar.** `GET /system/rules/compare?from&to&eai` compara dos
+  versiones sobre todo el portafolio y, con `eai`, una aplicación métrica por métrica. La
+  simulación de un borrador acepta `eaiCode` con el mismo detalle. La SPA lo muestra en
+  `/admin/rules/compare`, con el borrador de la pestaña como destino posible.
+- **Exportar el impacto.** `GET /api/admin/rules/compare/export.csv` entrega cada
+  aplicación antes y después, con el mismo control de acceso que comparar.
+- **Almacén caído.** Si el almacén no responde se sigue puntuando con las reglas vigentes
+  y se registra el evento 5303; publicar se rechaza con `rules.storeUnavailable` y leer
+  una versión anterior responde 503, no 404.
+- **Versiones recordadas.** Una versión publicada no cambia, así que su modelo y sus
+  metadatos se validan una vez por proceso. Listar ya no reconstruye 50 motores.
+- **Simulación más barata.** El lado de las reglas vigentes se calcula una vez por carga y
+  por versión; cada simulación solo calcula el borrador, en paralelo. Medido en reposo con
+  8 clientes y 250 aplicaciones: p50 de 117 ms a 47 ms, y de 66 a 168 simulaciones por
+  segundo.
+- **Reautenticación independiente del proveedor.** `IReauthenticationFlow` aísla OIDC y
+  cierra la sesión anterior antes de ir al IdP ([ADR 0020](0020-camino-de-oidc-a-oauth-con-apim.md)).

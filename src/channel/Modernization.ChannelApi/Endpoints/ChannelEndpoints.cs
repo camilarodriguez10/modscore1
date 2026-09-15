@@ -26,7 +26,7 @@ public static class ChannelEndpoints
     private const int MaxAssignmentLength = 64;
 
     /// <summary>Dimensiones por las que se puede agrupar el plan del portafolio.</summary>
-    private static readonly string[] Groupings =
+    internal static readonly string[] Groupings =
         ["portfolio", "application", "country", "cio", "lob", "disposition", "roadmap"];
 
     public static void MapChannelEndpoints(this IEndpointRouteBuilder app)
@@ -220,7 +220,7 @@ public static class ChannelEndpoints
     /// aplica sobre un conjunto ya recortado, asi que ninguna combinacion de estos
     /// parametros amplia lo que se ve (ADR 0012).
     /// </summary>
-    private static IResult? InvalidFilters(
+    internal static IResult? InvalidFilters(
         string? lob,
         string? country,
         string? cio,

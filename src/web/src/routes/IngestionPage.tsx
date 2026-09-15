@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { useUpload } from '../api/hooks';
+import { useRulesTimeline, useUpload } from '../api/hooks';
 import type { ExpectedFileView, IngestionView, UploadFileView, UploadResultView } from '../api/types';
 import { Card, Label, fmt } from '../components/primitives';
 import { ScoreTrend } from '../components/ScoreTrend';
@@ -26,6 +26,18 @@ export function IngestionPanel({
   selectedVersion: string;
 }) {
   const upload = useUpload();
+  const timeline = useRulesTimeline();
+
+  // Cada version publicada es una marca en la tendencia. La de fabrica no se marca: rige
+  // desde antes de la primera carga.
+  const markers = (timeline.data?.versions ?? [])
+    .filter((version) => !version.isBuiltIn && version.publishedAt !== null)
+    .map((version) => ({
+      id: version.id,
+      at: version.publishedAt ?? '',
+      label: version.id,
+      detail: version.reason,
+    }));
 
   const [selected, setSelected] = useState<readonly File[]>([]);
   const [label, setLabel] = useState('');
@@ -77,10 +89,12 @@ export function IngestionPanel({
       {data.portfolioHistory.length > 1 && (
         <Card
           title="Portfolio trend"
-          subtitle="Average score in each upload. The available weight explains jumps that are not real improvement."
+          subtitle={`Average score in each upload, every point calculated with the active rules${
+            timeline.data ? ` (${timeline.data.active.id})` : ''
+          }. Dashed lines mark when the rules changed; the available weight explains jumps that are not real improvement.`}
         >
           <div className="px-4 py-5">
-            <ScoreTrend points={data.portfolioHistory} />
+            <ScoreTrend points={data.portfolioHistory} markers={markers} />
           </div>
         </Card>
       )}

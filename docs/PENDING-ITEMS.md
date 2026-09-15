@@ -568,11 +568,15 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
 - **Priority:** P0 · **Owner:** DevSecOps · **Status:** Open
 - **Context:**
   - `.github/workflows/ci.yml` declares tests, vulnerable packages, CodeQL, Gitleaks, OSV-Scanner, Trivy, Checkov, SBOM (CycloneDX), actions pinned by SHA, and DAST with OWASP ZAP in staging.
-  - `main` was first pushed on 2026-09-15, which triggers the workflow. Its result has not been checked: the development machine has no GitHub CLI.
-  - Locally we ran tests, ESLint, `dotnet list package --vulnerable` and `npm audit`.
+  - `main` was first pushed on 2026-09-15, which triggered the workflow. First run (commit `d4870d9`), as seen in the Actions tab:
+    - passed: Backend .NET, secret scanning (Gitleaks) and OSV-Scanner;
+    - failed: SPA, on ESLint (a literal BOM in `e2e/support.ts`, fixed in `3b038b5`);
+    - failed: both CodeQL jobs. Probable cause: a private repository without GitHub Code Security has no code scanning, so uploading the SARIF fails. The workflow now runs the analysis with `upload: never`, keeps the SARIF as an artifact and fails on high-severity results (level `error` or `security-severity` ≥ 7);
+    - skipped: images and infrastructure, because the job depends on the SPA job.
+  - Locally we ran tests, ESLint, `dotnet list package --vulnerable`, `npm audit` and a locked-mode restore.
   - Container images were never built, because that needs to download base images.
 - **Work:**
-  - Review the pipeline run triggered by the push (Actions tab).
+  - Check the next runs: image build, Trivy and Checkov run there for the first time, and CodeQL with the new gate.
   - Fix whatever the scanners find.
   - Build and scan both images.
   - Run ZAP against a staging deployment.

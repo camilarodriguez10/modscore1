@@ -296,7 +296,7 @@ Lo que bloquea producción (P0):
 | PA-01 | Destino de despliegue y motor de base |
 | PA-02 · PA-03 | Autenticación con APIM (opción A, B o C del ADR 0020) y claim de alcance |
 | SEC-19 | Reautenticación verificada contra el proveedor real |
-| SEC-20 | Primera corrida del pipeline con todos los gates: el push ya la disparó; revisar el resultado en la pestaña Actions |
+| SEC-20 | Pipeline con todos los gates en verde. En la primera corrida (2026-09-15) pasaron backend, secretos y OSV; fallaron el lint de la SPA (corregido) y CodeQL (sin code scanning en un repositorio privado: ahora guarda el SARIF como artefacto y falla con hallazgos altos); imágenes, Trivy y Checkov no llegaron a correr |
 
 SEC-21 quedó resuelto el 2026-09-15 (repositorio privado, capturas e imágenes fuera, correo
 de la cuenta). OP-04 sigue abierto como P1: protección de la rama `main`, Renovate y

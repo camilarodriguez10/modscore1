@@ -136,12 +136,15 @@ jobs:
             --recursive
             ./
 
+  # Un repositorio privado sin GitHub Code Security no tiene code scanning: subir el SARIF
+  # falla. El analisis corre igual, el SARIF queda como artefacto y el job falla si hay
+  # hallazgos de severidad alta. Con Code Security activo se puede volver a upload: always
+  # (y security-events: write) para verlos en la pestana Security.
   codeql:
     name: CodeQL (${{ matrix.language }})
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-      security-events: write
     strategy:
       fail-fast: false
       matrix:
@@ -171,6 +174,55 @@ jobs:
         run: dotnet build ModernizationScore.slnx --configuration Release
 
       - uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        with:
+          category: "/language:${{ matrix.language }}"
+          upload: never
+          output: sarif
+
+      - name: Guardar el SARIF
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: codeql-${{ matrix.language }}
+          path: sarif/
+          if-no-files-found: ignore
+
+      # Alta = nivel error o security-severity de 7 o mas, igual que el umbral de GitHub.
+      - name: Sin hallazgos de severidad alta
+        run: |
+          python3 - "${{ matrix.language }}" <<'PY'
+          import glob, json, os, sys
+
+          language = sys.argv[1]
+          paths = sorted(glob.glob("sarif/*.sarif"))
+          if not paths:
+              print("::error::CodeQL no dejo ningun SARIF.")
+              sys.exit(1)
+
+          total = 0
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              for path in paths:
+                  with open(path, encoding="utf-8") as handle:
+                      document = json.load(handle)
+                  count = 0
+                  for run in document.get("runs", []):
+                      tool = run.get("tool", {})
+                      rules = list(tool.get("driver", {}).get("rules", []))
+                      for extension in tool.get("extensions", []):
+                          rules.extend(extension.get("rules", []))
+                      severity = {rule.get("id"): float(rule.get("properties", {}).get("security-severity", 0)) for rule in rules}
+                      for result in run.get("results", []):
+                          if result.get("level") == "error" or severity.get(result.get("ruleId"), 0) >= 7:
+                              count += 1
+                  line = f"{path}: {count} hallazgos de severidad alta"
+                  print(line)
+                  print(line, file=summary)
+                  total += count
+
+          if total:
+              print(f"::error::CodeQL encontro {total} hallazgos de severidad alta. Detalle en el artefacto codeql-{language}.")
+              sys.exit(1)
+          PY
 
   contenedores:
     name: Imagenes e infraestructura

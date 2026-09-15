@@ -876,9 +876,10 @@ en inglés y con el máximo detalle.
 
 **Qué no se pudo verificar en local:**
 
-- **Primera corrida del pipeline**, con sus gates de CodeQL, Gitleaks, Trivy, Checkov y ZAP.
-  El push la dispara, pero este equipo no tiene la CLI de GitHub: el resultado se revisa en
-  la pestaña Actions (SEC-20).
+- **Pipeline completo.** En la primera corrida (2026-09-15) pasaron backend, Gitleaks y OSV.
+  Fallaron el lint de la SPA (corregido) y CodeQL, que no puede subir resultados a un
+  repositorio privado sin GitHub Code Security: ahora guarda el SARIF como artefacto y falla
+  con hallazgos altos. Imágenes, Trivy, Checkov y ZAP siguen sin correr (SEC-20).
 - **Reautenticación contra un IdP real.**
 - **Rendimiento en hardware de destino:** la misma simulación dio p50 204 ms con la máquina
   ocupada y 47 ms en reposo. Hay que medirla con la concurrencia real (TD-06).

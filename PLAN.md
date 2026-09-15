@@ -590,7 +590,7 @@ Las tres Altas:
 | Modelo de amenazas STRIDE por frontera | [docs/security/modelo-de-amenazas.md](docs/security/modelo-de-amenazas.md) |
 | ASVS L2 al cierre de la Fase 08: 100 cumple · 15 parciales · 3 pendientes. **Vigente desde la Fase 12: 103 cumple · 14 parciales · 3 pendientes · 10 IdP o N/A** | [docs/security/asvs-l2.md](docs/security/asvs-l2.md) |
 | Runbooks: secretos, carga defectuosa, DR, incidente | [docs/runbooks/](docs/runbooks) |
-| Pipeline con gates de seguridad | `.github/workflows/ci.yml` — acciones fijadas por SHA, CodeQL, Gitleaks, OSV, Trivy, Checkov, SBOM |
+| Pipeline con gates de seguridad | `.github/workflows/ci.yml` (build, pruebas, CodeQL, Trivy, Checkov, SBOM) y `seguridad.yml` (Gitleaks y OSV en cada push) — acciones fijadas por SHA |
 | Contenedores y cluster | `deploy/docker` (chiseled, no root) · `deploy/k8s` (PSA restricted, NetworkPolicy default-deny, mTLS) |
 | Prueba de carga | `tools/Modernization.LoadTest` |
 | Decisiones | ADR 0011 (sesión en el servidor) · 0012 (alcance sobre los datos) · 0013 (autenticado no significa inofensivo) |
@@ -876,12 +876,10 @@ en inglés y con el máximo detalle.
 
 **Qué no se pudo verificar en local:**
 
-- **Pipeline completo.** En la primera corrida (2026-09-15) pasaron backend, Gitleaks y OSV.
-  Fallaron el lint de la SPA (corregido) y CodeQL, que no puede subir resultados a un
-  repositorio privado sin GitHub Code Security: ahora guarda el SARIF como artefacto y falla
-  con hallazgos altos. Con Docker en local pasan gitleaks, el build de las imágenes, Trivy
-  (fijado en v0.74.0) y Checkov, tras subir el UID de los pods a 10001. Falta confirmarlo en
-  el CI y correr ZAP contra staging (SEC-20).
+- **ZAP contra staging** (SEC-20). El resto del pipeline quedó en verde el 2026-09-15 en la
+  corrida #5, que pasó los 7 jobs en unos 10 minutos. Antes hubo que corregir el lint de la
+  SPA, CodeQL en un repositorio privado (`upload: never` y `actions: read`), la versión de
+  Trivy (v0.74.0) y el UID de los pods (10001).
 - **Reautenticación contra un IdP real.**
 - **Rendimiento en hardware de destino:** la misma simulación dio p50 204 ms con la máquina
   ocupada y 47 ms en reposo. Hay que medirla con la concurrencia real (TD-06).
@@ -1105,7 +1103,7 @@ llega a todas dentro del intervalo de refresco y una restauración funciona.
 modernization-score/
 ├─ Directory.Packages.props          # versiones centralizadas
 ├─ Directory.Build.props             # warnings como errores, todas las reglas de seguridad, lock files
-├─ .github/workflows/ci.yml          # tests, vulnerabilidades, CodeQL, Gitleaks, OSV, Trivy, Checkov, SBOM
+├─ .github/workflows/                # ci.yml: tests, CodeQL, Trivy, Checkov, SBOM · seguridad.yml: Gitleaks, OSV
 ├─ renovate.json · .gitleaks.toml
 ├─ .gitignore · .gitattributes          # capturas, imágenes, salidas de build y secretos fuera del repositorio
 ├─ .claude/launch.json               # servidor de desarrollo para la vista previa de Claude Code

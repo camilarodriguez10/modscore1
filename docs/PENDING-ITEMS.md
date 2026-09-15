@@ -102,7 +102,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 | SEC-17 | ASVS 12.4.2 — antivirus on uploads (H-21) | Security | P3 | Development + platform | Deferred (by decision) |
 | SEC-18 | H-16 static shared service token | Security | P2 | Platform | Deferred (by decision) |
 | SEC-19 | Step-up against a real identity provider not verified | Security | P0 | Identity + development | Open |
-| SEC-20 | Security gates never run outside CI (DAST, Trivy, CodeQL, Checkov, gitleaks, image build) | Security | P0 | DevSecOps | Open |
+| SEC-20 | Security gates never run outside CI (DAST, Trivy, CodeQL, Checkov, gitleaks, image build) | Security | P0 | DevSecOps | In progress (CI green; ZAP pending) |
 | SEC-21 | Repository visibility, BRD captures and commit metadata | Security | P0 | Repository owner | Decided (2026-09-15) |
 | SEC-22 | Portable package uses development authentication | Security | P1 | Everyone who distributes it | Accepted risk (with rules) |
 | SEC-23 | Rules timeline shows the publication reason to every reader | Security / privacy | P3 | Rules administrators | Accepted risk |
@@ -565,9 +565,9 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
 
 ### SEC-20 — Security gates never run outside CI
 
-- **Priority:** P0 · **Owner:** DevSecOps · **Status:** Open
+- **Priority:** P0 · **Owner:** DevSecOps · **Status:** In progress. CI has been green since run #5 (2026-09-15); ZAP is still pending
 - **Context:**
-  - `.github/workflows/ci.yml` declares tests, vulnerable packages, CodeQL, Gitleaks, OSV-Scanner, Trivy, Checkov, SBOM (CycloneDX), actions pinned by SHA, and DAST with OWASP ZAP in staging.
+  - `.github/workflows/ci.yml` runs tests, vulnerable packages, CodeQL, Trivy, Checkov and SBOM (CycloneDX). `seguridad.yml` runs Gitleaks and OSV-Scanner on every push. Actions are pinned by SHA. DAST with OWASP ZAP is planned for staging and is not in the workflows yet.
   - `main` was first pushed on 2026-09-15, which triggered the workflow. First run (commit `d4870d9`), as seen in the Actions tab:
     - passed: Backend .NET, secret scanning (Gitleaks) and OSV-Scanner;
     - failed: SPA, on ESLint (a literal BOM in `e2e/support.ts`, fixed in `3b038b5`);
@@ -588,9 +588,19 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
       - After the fixes: Kubernetes 188 passed, 0 failed; Dockerfile 128 passed, 0 failed, 2 skipped.
     - `aquasecurity/trivy-action` v0.36.0 (pinned SHA `ed142fd`, not affected by the March 2026 compromise) installs **Trivy v0.70.0** by default. That version is affected by GHSA-mcj4-mphf-j9ff (High), GHSA-q3fv-x8vg-qqm4 and GHSA-8rc5-4fr6-64pw, all fixed by v0.72.0. The workflow now pins `version: v0.74.0`, the same version used locally.
     - `.dockerignore` now excludes `artifacts/`, `*.zip`, test results and `*.tsbuildinfo`.
+  - Run #5 (commit `55cf36f`): **all 7 jobs green** in 9 min 54 s, with 3 artifacts (backend SBOM and the two CodeQL SARIF files).
+    - CodeQL: no high-severity results in either language.
+    - Trivy v0.74.0: no fixable HIGH/CRITICAL vulnerabilities.
+    - Checkov: green.
+    - Durations: CodeQL C# 8 min 41 s, CodeQL JS/TS 4 min 38 s, Backend 2 min 58 s, images and infrastructure 2 min 45 s, SPA 22 s, OSV 23 s, secrets 14 s.
 - **Work:**
-  - Check the next CI run: CodeQL with the new gate, and the images job in CI.
   - Run OWASP ZAP against a staging deployment (needs PA-01).
+  - Check the duration of the next run after the CI speed-up of 2026-09-15. Changes, none of which removes a control:
+    - Gitleaks and OSV moved to `seguridad.yml`, which runs on every push without path filters.
+    - `ci.yml` skips docs-only changes (`**/*.md`, `docs/`, `tools/sesiones/`, `artifacts/`, `data/history/`, local databases, `.claude/`).
+    - CodeQL C# builds only the deployed code: `ChannelApi` pulls in the ten `src/` projects. Tests and tools are left out, and so are the Roslyn analyzers, which the Backend job already enforces. Source generators still run.
+    - NuGet cache in `setup-dotnet`, keyed on the lock files.
+    - The images job no longer waits for Backend and SPA.
   - Fix whatever the scanners find.
   - Build and scan both images.
   - Run ZAP against a staging deployment.
@@ -902,6 +912,7 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
   2. Enable Renovate and secret scanning.
   3. Tag phase closes (`fase-13`).
   4. Watch repository size. Each portable `.zip` adds about 93 MB to the history for good, and GitHub rejects files over 100 MB. Keep only the latest `.zip` in the tree; move to GitHub Releases or Git LFS if builds become frequent.
+  5. When adding required status checks, remember that `ci.yml` skips docs-only changes: its checks stay "Expected" on a docs-only PR. Either require only the `seguridad.yml` checks for those PRs or merge them explicitly.
 - **Acceptance criteria:** branch protection active; first CI run green (SEC-20).
 - **Effort:** S.
 

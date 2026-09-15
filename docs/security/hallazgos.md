@@ -390,7 +390,8 @@ Resultado final en local:
 - Checkov con 188 controles de Kubernetes y 128 de Dockerfile en verde, y 2 omitidos con
   motivo.
 
-Falta confirmarlo en el CI (SEC-20).
+Confirmado en el CI: la corrida #5 (`55cf36f`) pasó los 7 jobs, con CodeQL sin hallazgos
+altos (SEC-20).
 
 ### H-31 · El CI instalaba un Trivy con avisos de seguridad · Media · **Cerrado**
 

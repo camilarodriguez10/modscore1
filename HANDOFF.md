@@ -38,6 +38,7 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | Fase 13 — revisión y remediación | Entregada el 2026-09-14/15 (PLAN §8.6) |
 | Pruebas | **640 .NET** (200 motor · 175 contratos · 265 API) · **35 unitarias** de la SPA · **6 de punta a punta** con Playwright y Edge, contra el stack de desarrollo y contra el paquete portable · ESLint sin errores. Todo repetido en verde el 2026-09-15 |
 | Dependencias | Cero paquetes vulnerables (`dotnet list package --vulnerable`), `npm audit` limpio |
+| CI | GitHub Actions en verde desde la corrida #5 (`55cf36f`, 2026-09-15), que pasó los 7 jobs: backend, SPA, gitleaks, OSV, CodeQL C# y JS/TS, e imágenes con Trivy v0.74.0 y Checkov. CodeQL sin hallazgos altos. Dura unos 10 minutos; 8 min 41 s son de CodeQL C#. Antes hubo que corregir el lint, CodeQL en repositorio privado (`upload: never`, `actions: read`), la versión de Trivy y el UID de los pods. Para acortarlo: gitleaks y OSV están en `seguridad.yml` y corren en cada push; `ci.yml` se salta los cambios que solo tocan documentación; CodeQL C# compila solo `src/` sin los analizadores de Roslyn; hay caché de NuGet, y el job de imágenes no espera a los demás |
 | ASVS L2 | 103 cumple · 14 parciales · 3 pendientes · 10 IdP o N/A |
 | Hallazgos | Fase 08: 23 (19 cerrados, H-16 parcial, H-17/H-20/H-21 pendientes). Revisión 09–13: 7 (6 cerrados, 1 aceptado) |
 | Git | Repositorio **privado** <https://github.com/camilarodriguez10/modscore1>, rama `main`. Guarda todo lo creado —el `.zip` portable, el estado local de `data/`, los scripts de las sesiones (`tools/sesiones/`) y la copia del plan (`docs/plan/`)— salvo las capturas del BRD y las imágenes. Los commits usan el correo de la cuenta. Cada push se confirma antes |
@@ -306,7 +307,7 @@ Lo que bloquea producción (P0):
 | PA-01 | Destino de despliegue y motor de base |
 | PA-02 · PA-03 | Autenticación con APIM (opción A, B o C del ADR 0020) y claim de alcance |
 | SEC-19 | Reautenticación verificada contra el proveedor real |
-| SEC-20 | Pipeline con todos los gates en verde. En la primera corrida (2026-09-15) pasaron backend, secretos y OSV; fallaron el lint de la SPA (corregido) y CodeQL (sin code scanning en un repositorio privado: ahora guarda el SARIF como artefacto y falla con hallazgos altos). Con Docker en local: gitleaks sin fugas, imágenes construidas, Trivy v0.74.0 sin vulnerabilidades altas ni críticas y Checkov en verde tras dos correcciones. Falta confirmarlo en el CI y correr ZAP |
+| SEC-20 | ZAP contra staging (depende de PA-01). El resto del pipeline está en verde desde la corrida #5 |
 
 SEC-21 quedó resuelto el 2026-09-15 (repositorio privado, capturas e imágenes fuera, correo
 de la cuenta). OP-04 sigue abierto como P1: protección de la rama `main`, Renovate y

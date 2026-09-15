@@ -103,10 +103,11 @@ flowchart LR
 
 | | Amenaza | Control | Evidencia | Riesgo residual |
 |---|---|---|---|---|
-| **T** | Dependencia vulnerable | NuGetAudit bloqueante · `dotnet list package --vulnerable` · `npm audit` · OSV-Scanner | `Directory.Build.props` · `ci.yml` | — |
+| **T** | Dependencia vulnerable | NuGetAudit bloqueante · `dotnet list package --vulnerable` · `npm audit` · OSV-Scanner | `Directory.Build.props` · `ci.yml` · `seguridad.yml` | — |
 | **T** | Árbol de dependencias alterado | `packages.lock.json` + `--locked-mode` · `npm ci` | Un lock file por proyecto · `ci.yml` | — |
 | **T** | Script de instalación malicioso | `ignore-scripts=true` | `src/web/.npmrc` | — |
-| **T** | Acción de CI secuestrada por etiqueta | Todas las acciones fijadas por SHA | `ci.yml` | — |
+| **T** | Acción de CI secuestrada por etiqueta | Todas las acciones fijadas por SHA | `ci.yml` · `seguridad.yml` | — |
+| **T** | Herramienta vulnerable instalada por una acción fijada | La versión del escáner también se fija (Trivy v0.74.0, H-31) | `ci.yml` | — |
 | **T** | Versión recién publicada y maliciosa | Renovate espera 3 días | `renovate.json` | — |
 | **I** | Secreto en el repositorio | Gitleaks sobre todo el historial · `DeploymentGuards` | `.gitleaks.toml` · `ProductionRefusesTheRepositoryDevelopmentToken` | — |
 | **E** | Imagen con superficie de más | Chiseled, sin shell, no root · filesystem de solo lectura · capabilities fuera · PSA `restricted` | Dockerfiles · manifiestos · Checkov y Trivy en CI | No construidas ni escaneadas localmente (H-17) |

@@ -236,7 +236,7 @@ La autenticación de personas se delega en el IdP corporativo por OIDC.
 
 | Req. | Requisito | Estado | Evidencia |
 |---|---|---|---|
-| 14.1.1 | Build y despliegue automatizados | Cumple | `ci.yml` · Dockerfiles · manifiestos |
+| 14.1.1 | Build y despliegue automatizados | Cumple | `ci.yml` · `seguridad.yml` · Dockerfiles · manifiestos |
 | 14.1.2 | Advertencias del compilador y análisis | Cumple | `TreatWarningsAsErrors` · todas las reglas de seguridad (`AnalysisLevelSecurity=latest-all`) |
 | 14.1.3 | Servidor endurecido | Cumple | Chiseled, no root, filesystem de solo lectura, capabilities fuera, PSA `restricted` |
 | 14.1.5 | Integridad de la configuración | Parcial | Checkov en CI; firma de imágenes pendiente (H-17) |

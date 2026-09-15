@@ -879,7 +879,9 @@ en inglés y con el máximo detalle.
 - **Pipeline completo.** En la primera corrida (2026-09-15) pasaron backend, Gitleaks y OSV.
   Fallaron el lint de la SPA (corregido) y CodeQL, que no puede subir resultados a un
   repositorio privado sin GitHub Code Security: ahora guarda el SARIF como artefacto y falla
-  con hallazgos altos. Imágenes, Trivy, Checkov y ZAP siguen sin correr (SEC-20).
+  con hallazgos altos. Con Docker en local pasan gitleaks, el build de las imágenes, Trivy
+  (fijado en v0.74.0) y Checkov, tras subir el UID de los pods a 10001. Falta confirmarlo en
+  el CI y correr ZAP contra staging (SEC-20).
 - **Reautenticación contra un IdP real.**
 - **Rendimiento en hardware de destino:** la misma simulación dio p50 204 ms con la máquina
   ocupada y 47 ms en reposo. Hay que medirla con la concurrencia real (TD-06).

@@ -1,9 +1,10 @@
-# Registro de hallazgos — Fase 08 y revisión de las fases 09 a 13
+# Registro de hallazgos — Fase 08, revisión de las fases 09 a 13 y primer pipeline
 
-**Fecha:** 2026-09-11, ampliado el 2026-09-14 · **Criterio de aceptación de la Fase 08:** sin hallazgos High ni Critical abiertos
+**Fecha:** 2026-09-11, ampliado el 2026-09-14 y el 2026-09-15 · **Criterio de aceptación de la Fase 08:** sin hallazgos High ni Critical abiertos
 
 > **Decisión del 2026-09-14:** H-16, H-17, H-20 y H-21 se resuelven en la **Fase 17**, al
-> final del plan. La revisión de las fases 09 a 13 está al final de este documento.
+> final del plan. La revisión de las fases 09 a 13 y la del primer pipeline están al final
+> de este documento.
 
 ## Resultado
 
@@ -361,3 +362,99 @@ quien publicó, para marcar la tendencia y avisar de reglas nuevas. No dice qui�
 y una prueba lo comprueba.
 
 - **Regla:** los motivos no llevan nombres, scores ni contexto confidencial (SEC-23).
+
+## Primer pipeline y verificación con Docker (2026-09-15)
+
+El primer push a GitHub disparó el workflow por primera vez. Pasaron backend, Gitleaks y
+OSV. Fallaron el lint de la SPA y los dos CodeQL. El job de imágenes no corrió porque
+depende de la SPA. Los jobs que nunca habían corrido se reprodujeron en local con Docker y
+las mismas versiones del CI:
+
+- Gitleaks v8.30.1 sobre toda la historia;
+- build de las dos imágenes;
+- Trivy;
+- Checkov 3.3.17.
+
+| Severidad | Encontrados | Cerrados | Aceptados |
+|---|---:|---:|---:|
+| Crítica | 0 | — | — |
+| Alta | 0 | — | — |
+| Media | 2 | 2 | 0 |
+| Baja | 1 | 1 | 0 |
+| Informativa | 3 | 2 | 1 |
+| **Total** | **6** | **5** | **1** |
+
+Resultado final en local:
+- Gitleaks sin fugas;
+- Trivy v0.74.0 sin vulnerabilidades altas ni críticas corregibles en ninguna imagen;
+- Checkov con 188 controles de Kubernetes y 128 de Dockerfile en verde, y 2 omitidos con
+  motivo.
+
+Falta confirmarlo en el CI (SEC-20).
+
+### H-31 · El CI instalaba un Trivy con avisos de seguridad · Media · **Cerrado**
+
+`aquasecurity/trivy-action` está fijada por SHA en v0.36.0, que no fue afectada por el
+compromiso de marzo de 2026 (GHSA-69fq-xp46-6x23). Pero la acción instala por defecto
+Trivy v0.70.0, que tiene tres avisos posteriores:
+
+- GHSA-mcj4-mphf-j9ff (alta): escritura de archivos fuera de lugar con artefactos OCI
+  manipulados;
+- GHSA-q3fv-x8vg-qqm4 (moderada);
+- GHSA-8rc5-4fr6-64pw (moderada).
+
+Fijar la acción no fijaba la herramienta.
+
+- **Corrección:** `version: v0.74.0` en los dos pasos de Trivy. Es la última versión, que
+  incluye las correcciones de v0.71.0, v0.71.1 y v0.72.0.
+- **Evidencia:** escaneo local con `aquasec/trivy:0.74.0`.
+
+### H-32 · CodeQL no podía publicar resultados y el gate no protegía · Media · **Cerrado**
+
+Un repositorio privado sin GitHub Code Security no tiene code scanning: el paso `analyze`
+fallaba al subir el SARIF en los dos lenguajes. Un gate que falla siempre no distingue
+código con hallazgos de código limpio.
+
+- **Corrección:** análisis con `upload: never`, SARIF como artefacto, y el job falla con
+  hallazgos de nivel `error` o `security-severity` de 7 o más. El job ya no pide
+  `security-events: write`.
+- **Evidencia:** el paso se probó con SARIF de ejemplo: sin hallazgos altos, con dos y sin
+  archivo (`tools/sesiones/test-codeql-gate.mjs`).
+
+### H-33 · Los pods corrían con un UID bajo · Baja · **Cerrado**
+
+Los Deployments usaban el UID de la imagen, 1654. Un UID bajo puede coincidir con un
+usuario del nodo (Checkov CKV_K8S_40).
+
+- **Corrección:** `runAsUser`, `runAsGroup` y `fsGroup` en 10001. La imagen no cambia: `/app`
+  es de root y legible por todos, y solo se escribe en `/tmp` y en los volúmenes.
+- **Evidencia:** las dos imágenes corrieron como `10001:10001` con el sistema de archivos
+  de solo lectura, sin capacidades; `/health` y la SPA respondieron sin errores de permisos.
+
+### H-34 · Las imágenes no declaran HEALTHCHECK · Informativa · **Aceptado**
+
+Checkov CKV_DOCKER_2. Las imágenes chiseled no tienen shell ni curl para ejecutar un
+HEALTHCHECK, y Kubernetes no lo usa: la salud la vigilan las probes de `/health`.
+
+- **Regla:** supresión en línea con el motivo en cada Dockerfile. Si las imágenes se usan
+  fuera de Kubernetes, hay que revisar la decisión.
+
+### H-35 · El paquete portable modificaba los lock files · Informativa · **Cerrado**
+
+Publicar con `-r win-x64` agrega a 10 `packages.lock.json` una sección por runtime y
+`Microsoft.NET.ILLink.Tasks`. Si se confirmaban, la restauración del CI en modo bloqueado
+fallaría.
+
+- **Corrección:** `build-portable.ps1` guarda los lock files y los devuelve al terminar
+  (TD-12).
+- **Evidencia:** build nuevo sin cambios en los lock files; restauración `--locked-mode` en
+  verde.
+
+### H-36 · El lint de la SPA no estaba en la verificación local · Informativa · **Cerrado**
+
+Un BOM literal en una expresión regular de `e2e/support.ts` rompió el lint en el primer
+pipeline. La verificación local de la Fase 13 no corría `npm run lint`.
+
+- **Corrección:** el carácter se escribe como escape, y el lint entra en la verificación de
+  cierre (HANDOFF, lecciones aprendidas).
+- **Evidencia:** `npm run lint` sin errores.

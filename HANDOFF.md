@@ -245,6 +245,12 @@ La simulación depende mucho de la carga de la máquina: con la máquina ocupada
 - Para probar `start.ps1` sin intervención: `(sleep 600; echo) | powershell -File start.ps1 -NoBrowser`.
   El `echo` equivale a presionar Enter y deja que el script detenga las capas y borre los
   secretos; para terminar antes, matar el `sleep`.
+- Este equipo tiene Docker 29, pero no `gh` ni `jq`. En Git Bash, `MSYS_NO_PATHCONV=1` evita
+  que rutas como `/repo` o `/var/run/docker.sock` se conviertan en rutas de Windows al
+  llamar a `docker run`.
+- Fijar una acción por SHA no fija la herramienta que instala: `trivy-action` v0.36.0 baja
+  Trivy v0.70.0, que tiene avisos de seguridad posteriores. Hay que fijar también su
+  `version`.
 
 **.NET y analizadores:**
 
@@ -296,7 +302,7 @@ Lo que bloquea producción (P0):
 | PA-01 | Destino de despliegue y motor de base |
 | PA-02 · PA-03 | Autenticación con APIM (opción A, B o C del ADR 0020) y claim de alcance |
 | SEC-19 | Reautenticación verificada contra el proveedor real |
-| SEC-20 | Pipeline con todos los gates en verde. En la primera corrida (2026-09-15) pasaron backend, secretos y OSV; fallaron el lint de la SPA (corregido) y CodeQL (sin code scanning en un repositorio privado: ahora guarda el SARIF como artefacto y falla con hallazgos altos); imágenes, Trivy y Checkov no llegaron a correr |
+| SEC-20 | Pipeline con todos los gates en verde. En la primera corrida (2026-09-15) pasaron backend, secretos y OSV; fallaron el lint de la SPA (corregido) y CodeQL (sin code scanning en un repositorio privado: ahora guarda el SARIF como artefacto y falla con hallazgos altos). Con Docker en local: gitleaks sin fugas, imágenes construidas, Trivy v0.74.0 sin vulnerabilidades altas ni críticas y Checkov en verde tras dos correcciones. Falta confirmarlo en el CI y correr ZAP |
 
 SEC-21 quedó resuelto el 2026-09-15 (repositorio privado, capturas e imágenes fuera, correo
 de la cuenta). OP-04 sigue abierto como P1: protección de la rama `main`, Renovate y

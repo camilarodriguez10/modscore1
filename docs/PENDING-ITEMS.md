@@ -574,9 +574,19 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
     - failed: both CodeQL jobs. Probable cause: a private repository without GitHub Code Security has no code scanning, so uploading the SARIF fails. The workflow now runs the analysis with `upload: never`, keeps the SARIF as an artifact and fails on high-severity results (level `error` or `security-severity` ≥ 7);
     - skipped: images and infrastructure, because the job depends on the SPA job.
   - Locally we ran tests, ESLint, `dotnet list package --vulnerable`, `npm audit` and a locked-mode restore.
-  - Container images were never built, because that needs to download base images.
+  - **Local Docker verification (2026-09-15)**, with the same tool versions as CI:
+    - Gitleaks v8.30.1 over the full history: no leaks (4 commits).
+    - Both images build: `system-api` 243 MB, `channel-api` 197 MB, non-root user.
+    - Trivy: 0 fixable HIGH/CRITICAL vulnerabilities in either image (Ubuntu 24.04 chiseled, .NET 10.0.12, application dependencies).
+    - Checkov 3.3.17 first failed 4 checks, so the CI job would have failed:
+      - CKV_K8S_40 on both Deployments: UID 1654 is below 10000. Fixed: `runAsUser`, `runAsGroup` and `fsGroup` are now 10001. Both images ran as UID 10001 with a read-only root filesystem, and `/health` and the SPA answered.
+      - CKV_DOCKER_2 on both Dockerfiles: no `HEALTHCHECK`. Suppressed inline with a reason: chiseled images have no shell or curl, and Kubernetes uses its `/health` probes instead.
+      - After the fixes: Kubernetes 188 passed, 0 failed; Dockerfile 128 passed, 0 failed, 2 skipped.
+    - `aquasecurity/trivy-action` v0.36.0 (pinned SHA `ed142fd`, not affected by the March 2026 compromise) installs **Trivy v0.70.0** by default. That version is affected by GHSA-mcj4-mphf-j9ff (High), GHSA-q3fv-x8vg-qqm4 and GHSA-8rc5-4fr6-64pw, all fixed by v0.72.0. The workflow now pins `version: v0.74.0`, the same version used locally.
+    - `.dockerignore` now excludes `artifacts/`, `*.zip`, test results and `*.tsbuildinfo`.
 - **Work:**
-  - Check the next runs: image build, Trivy and Checkov run there for the first time, and CodeQL with the new gate.
+  - Check the next CI run: CodeQL with the new gate, and the images job in CI.
+  - Run OWASP ZAP against a staging deployment (needs PA-01).
   - Fix whatever the scanners find.
   - Build and scan both images.
   - Run ZAP against a staging deployment.

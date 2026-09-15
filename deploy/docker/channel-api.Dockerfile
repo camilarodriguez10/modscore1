@@ -31,6 +31,9 @@ RUN dotnet publish src/channel/Modernization.ChannelApi/Modernization.ChannelApi
     --configuration Release --no-restore --output /app /p:UseAppHost=false
 
 # ---------------------------------------------------------------- runtime
+# Sin HEALTHCHECK: la imagen no tiene shell ni curl para ejecutarlo, y Kubernetes no
+# lo usa; la salud la vigilan las probes de /health del Deployment.
+# checkov:skip=CKV_DOCKER_2:Imagen chiseled sin shell; la salud la cubren las probes de Kubernetes
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS runtime
 WORKDIR /app
 COPY --from=build /app ./

@@ -5,6 +5,11 @@
 **/node_modules/
 **/dist/
 **/TestResults/
+**/test-results/
+**/playwright-report/
+**/*.tsbuildinfo
+artifacts/
+*.zip
 .git/
 .vs/
 .claude/

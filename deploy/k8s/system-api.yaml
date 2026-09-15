@@ -31,11 +31,14 @@ spec:
     spec:
       serviceAccountName: system-api
       automountServiceAccountToken: false
+      # UID alto (>= 10000) para no coincidir con usuarios del nodo (CKV_K8S_40). La
+      # imagen trae el usuario 1654, pero /app es de root y legible por todos: solo se
+      # escribe en los volumenes, que toman el grupo de fsGroup.
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1654
-        runAsGroup: 1654
-        fsGroup: 1654
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
       containers:

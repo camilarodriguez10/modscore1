@@ -1,0 +1,17 @@
+# Solo el codigo fuente entra al contexto de build: ni binarios locales, ni
+# dependencias instaladas fuera del contenedor, ni datos, ni las capturas.
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/TestResults/
+.git/
+.vs/
+.claude/
+data/
+tests/
+tools/
+docs/
+*.JPG
+*.jpg
+*.md

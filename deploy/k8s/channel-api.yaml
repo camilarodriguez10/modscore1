@@ -1,0 +1,162 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: channel-api
+  namespace: modernization-score
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: channel-api
+  namespace: modernization-score
+  labels:
+    app.kubernetes.io/name: channel-api
+    app.kubernetes.io/part-of: modernization-score
+spec:
+  # Las sesiones viven en el servidor (ADR 0011). Con un cache en memoria por pod,
+  # una segunda replica no conoce las sesiones de la primera: una replica hasta
+  # registrar un IDistributedCache compartido (RFC-11).
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: channel-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: channel-api
+        app.kubernetes.io/part-of: modernization-score
+    spec:
+      serviceAccountName: channel-api
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1654
+        runAsGroup: 1654
+        fsGroup: 1654
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: channel-api
+          image: registry.example.com/modernization/channel-api@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: AllowedHosts
+              value: "modscore.example.com"
+            # El mesh cifra el trafico entre pods con mTLS; la URL interna es http.
+            - name: SystemApi__BaseUrl
+              value: "http://system-api:8080"
+            - name: Authentication__Oidc__Authority
+              value: "https://login.example.com/tenant/v2.0"
+            - name: Authentication__Oidc__ClientId
+              value: "modernization-score"
+            - name: Authorization__ScopeClaimType
+              value: "portfolio_scope"
+            # Solo el ingress controller puede declarar la IP del cliente.
+            - name: ForwardedHeaders__KnownNetworks__0
+              value: "10.244.0.0/16"
+            - name: DataProtection__KeysDirectory
+              value: /keys
+            - name: Secrets__Directory
+              value: /mnt/secrets
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 250m
+              memory: 384Mi
+            limits:
+              cpu: "1"
+              memory: 768Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 20
+            failureThreshold: 3
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: keys
+              mountPath: /keys
+            - name: secrets
+              mountPath: /mnt/secrets
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 600Mi
+        # Llaves de Data Protection: cifran la cookie y el ticket de sesion, y
+        # tienen que sobrevivir a un reinicio del pod.
+        - name: keys
+          persistentVolumeClaim:
+            claimName: channel-api-keys
+        - name: secrets
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: channel-api-secrets
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: channel-api-keys
+  namespace: modernization-score
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: channel-api
+  namespace: modernization-score
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: channel-api
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: channel-api
+  namespace: modernization-score
+  annotations:
+    # TLS obligatorio y cuerpo acotado al tamano maximo de una carga.
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "260m"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: ["modscore.example.com"]
+      secretName: modscore-tls
+  rules:
+    - host: modscore.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: channel-api
+                port:
+                  name: http

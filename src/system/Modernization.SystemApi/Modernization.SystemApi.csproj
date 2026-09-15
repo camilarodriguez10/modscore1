@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>Modernization.SystemApi</RootNamespace>
+    <UserSecretsId>modernization-system-api</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Modernization.Scoring.Engine\Modernization.Scoring.Engine.csproj" />
+    <ProjectReference Include="..\..\shared\Modernization.WhatIf\Modernization.WhatIf.csproj" />
+    <ProjectReference Include="..\..\shared\Modernization.Roadmap\Modernization.Roadmap.csproj" />
+    <ProjectReference Include="..\..\shared\Modernization.Rules\Modernization.Rules.csproj" />
+    <ProjectReference Include="..\..\shared\Modernization.Security\Modernization.Security.csproj" />
+    <ProjectReference Include="..\Modernization.Sources\Modernization.Sources.csproj" />
+    <ProjectReference Include="..\Modernization.Sources.Database\Modernization.Sources.Database.csproj" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

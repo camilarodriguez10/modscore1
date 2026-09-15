@@ -1,0 +1,328 @@
+import type { Notice } from '../api/types';
+
+/**
+ * Catalogo de frases del sitio.
+ *
+ * El backend no redacta texto para personas: devuelve `{ code, args }` y este
+ * catalogo arma la frase (ADR 0017). Asi el idioma vive en un solo lugar, las
+ * pruebas del backend comparan codigos, y un segundo idioma es otro catalogo con
+ * las mismas claves.
+ *
+ * Una prueba del backend recorre `NoticeCodes` y falla si algun codigo no esta
+ * aqui: un codigo nuevo sin frase no puede llegar a produccion.
+ */
+
+type Args = Readonly<Record<string, string>>;
+
+const numberFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
+const scoreFormat = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+/** Un argumento numerico con formato en ingles; si no es numero, tal cual. */
+function num(value: string | undefined): string {
+  const parsed = Number(value);
+  return value === undefined || value === '' || Number.isNaN(parsed) ? (value ?? '') : numberFormat.format(parsed);
+}
+
+/** Un score, siempre con dos decimales como en el resto del sitio. */
+function score(value: string | undefined): string {
+  const parsed = Number(value);
+  return value === undefined || value === '' || Number.isNaN(parsed) ? (value ?? '') : scoreFormat.format(parsed);
+}
+
+function signed(value: string | undefined): string {
+  const parsed = Number(value);
+  if (Number.isNaN(parsed)) return value ?? '';
+  return `${parsed >= 0 ? '+' : ''}${scoreFormat.format(parsed)}`;
+}
+
+function plural(count: string | undefined, singular: string, many = `${singular}s`): string {
+  return count === '1' ? singular : many;
+}
+
+const COMPOSITE_CATEGORIES: Record<string, string> = {
+  modern: 'modern',
+  heritage: 'heritage',
+  obsolete: 'obsolete',
+  notApprovedForUse: 'not approved for use',
+  invest: 'invest',
+  tolerate: 'tolerate',
+  eliminate: 'eliminate',
+  migrate: 'migrate',
+};
+
+/** "15xmodern + 1xheritage" -> "15 modern + 1 heritage". */
+function counts(value: string | undefined): string {
+  return (value ?? '')
+    .split(' + ')
+    .filter(Boolean)
+    .map((part) => {
+      const [count, key = ''] = part.split('x');
+      return `${count} ${COMPOSITE_CATEGORIES[key] ?? key}`;
+    })
+    .join(' + ');
+}
+
+/** Las partes de un borrador de reglas, como las nombra la pantalla. */
+const DRAFT_PARTS: Record<string, string> = {
+  metrics: 'metrics',
+  levers: 'levers',
+  roadmaps: 'roadmaps',
+  roadmapLevers: 'levers in one roadmap',
+};
+
+const EXPECTED_VALUE: Record<string, string> = {
+  integer: 'an integer',
+  long: 'a long integer',
+  number: 'a number',
+  boolean: 'TRUE or FALSE',
+  date: 'a date',
+};
+
+const MESSAGES: Record<string, (a: Args) => string> = {
+  // ------------------------------------------------------ raw metric value
+  'value.plain': (a) => a.value ?? '',
+  'value.noData': () => 'No data available',
+  'value.scaFlaws': (a) =>
+    a.count === '0'
+      ? `No open ${a.severity} flaws`
+      : `${num(a.count)} open ${a.severity} ${plural(a.count, 'flaw')}`,
+  'value.mfa': (a) => (a.users ? `${a.state} · ${num(a.users)} ${plural(a.users, 'user')}` : `${a.state} · user count unknown`),
+  'value.monitoring': (a) => a.capabilities ?? '',
+  'value.monitoringNone': () => 'No monitoring',
+  'value.compositeProvided': (a) => `${a.value} (value provided by ${a.system})`,
+  'value.compositeCounts': (a) => `${a.value} (${counts(a.counts)})`,
+
+  // ------------------------------------------------------ metric exclusion
+  'exclusion.notReported': (a) => (a.system ? `Not reported by ${a.system}` : 'Not reported'),
+  'exclusion.scaSeverityNotReported': (a) => `The SCA scan did not report ${a.severity} severity`,
+  'exclusion.containerizedNo': () => "Not containerized: the BRD assigns no score to 'No'",
+  'exclusion.monitoringNotReported': () => 'No monitoring capability was reported',
+  'exclusion.compositeNoProducts': (a) => `The application has no products reported by ${a.system}`,
+  'exclusion.zeroValue': (a) =>
+    a.system
+      ? `${a.system} reported 0, which the BRD excludes from scoring like a missing value`
+      : 'Reported as 0, which the BRD excludes from scoring like a missing value',
+
+  // ---------------------------------------------------------------- what-if
+  'lever.compositeProvided': (a) =>
+    `${a.system} delivers the composite value already calculated, without the per-product detail: there are no counts to reclassify.`,
+  'scenario.weightAdded': (a) =>
+    `The combined result is not the sum of the parts: these levers bring data to metrics that had none and raise the calculation weight from ${num(a.from)} to ${num(a.to)}. Adding up the individual deltas would give ${score(a.sum)} instead of ${score(a.delta)}.`,
+  'scenario.interaction': (a) =>
+    `The combined result differs from the sum of the parts by ${score(a.effect)} points.`,
+  'target.alreadyMet': (a) => `The application already exceeds the target: its score is ${score(a.score)}.`,
+  'target.unreachable': (a) =>
+    `A target of ${score(a.target)} is above this application's reachable ceiling, which is ${score(a.ceiling)} even with every lever applied.`,
+  'target.reachable': (a) =>
+    `With ${num(a.count)} ${plural(a.count, 'lever')} the score goes from ${score(a.baseline)} to ${score(a.projected)}.`,
+
+  // ---------------------------------------------------------------- roadmap
+  'alert.roadmapMissing': (a) => `Disposition ${a.disposition} without an assigned roadmap.`,
+  'alert.pairInvalid': (a) => `${a.disposition} with ${a.roadmap}: that pair does not exist in MAPS.`,
+  'alert.investProducts': (a) =>
+    `${num(a.count)} ${plural(a.count, 'product')} classified as Invest in an application marked to leave.`,
+  'alert.manyUsers': (a) => `${num(a.users)} registered users.`,
+  'alert.criticalFlaws': (a) =>
+    `${num(a.count)} open Critical-severity SCA ${plural(a.count, 'flaw')}.`,
+  'alert.usersWithoutMfa': (a) =>
+    `${num(a.users)} ${plural(a.users, 'user')} without multi-factor; the rehost leaves them unchanged.`,
+  'alert.healthyScore': (a) => `Current score ${score(a.score)}, above ${num(a.threshold)}.`,
+  'alert.criticalWithoutDr': () => 'Critical Application Indicator = Y, DR In-Scope = No.',
+  'outlook.noRoadmap': () => 'No roadmap assigned: this application has no future plan to project.',
+  'outlook.leavesPortfolio': (a) =>
+    `${a.roadmap} takes the application out of the portfolio in about ${num(a.weeks)} ${plural(a.weeks, 'week')}. Its score does not improve because it stops existing: investing to raise it would mean spending on something about to be switched off.`,
+  'outlook.noScoreEffect': (a) =>
+    `${a.roadmap} does not move any of the score's metrics. The roadmap's value lies elsewhere.`,
+  'outlook.projected': (a) =>
+    `Executing ${a.roadmap} takes the score from ${score(a.baseline)} to ${score(a.projected)}, ${signed(a.delta)} points, in about ${num(a.weeks)} ${plural(a.weeks, 'week')}.`,
+
+  // ---------------------------------------------------------------- formula
+  'formula.numerator': (a) => `Numerator: sum of the weighted scores with data = ${a.numerator}`,
+  'formula.denominator': (a) => `Denominator: sum of the weights with data = ${a.denominator} of 100`,
+  'formula.excluded': (a) =>
+    `${num(a.count)} ${plural(a.count, 'metric')} without data ${a.count === '1' ? 'is' : 'are'} left out of the numerator and the denominator`,
+  'formula.quotient': (a) => `Quotient: ${a.numerator} / ${a.denominator} = ${a.quotient}`,
+  'formula.normalization': (a) =>
+    `Normalization: ${a.floor} + ${a.quotient} × ${a.range} = ${score(a.score)}`,
+
+  // ----------------------------------------------------------------- upload
+  'upload.noFiles': () => 'No file was received.',
+  'upload.tooLarge': (a) => `The upload weighs ${a.size} MB and the maximum is ${a.max} MB.`,
+  'upload.busy': () => 'Another upload is being published right now. Try again when it finishes.',
+  'upload.missingMaster': (a) =>
+    `${a.master} is missing. It is the application inventory: without it there is no portfolio to score.`,
+  'upload.empty': () =>
+    'The upload produced no applications. Replacing the portfolio with an empty one would be worse than not uploading at all, so it was discarded.',
+  'upload.tooManyFiles': (a) => `An upload accepts up to ${a.max} files; ${a.count} were received.`,
+  'upload.assignmentMisaligned': () => 'The source assignment does not line up with the files that were sent.',
+  'upload.notSupported': () => 'The active data adapter does not accept uploads.',
+  'upload.labelInvalid': (a) =>
+    `The label can be up to ${a.max} characters long and cannot contain line breaks or control characters.`,
+  'upload.disabledAdapter': (a) =>
+    `The active adapter is '${a.provider}', which serves generated data. Uploading files requires the file or database adapter.`,
+  'upload.disabledPermission': (a) =>
+    `Your user can view uploads but not publish them. Publishing requires the '${a.role}' role and scope over the whole portfolio.`,
+  'upload.published': (a) =>
+    `Upload published: ${num(a.files)} ${plural(a.files, 'file')}, ${num(a.rows)} ${plural(a.rows, 'row')}, ${num(a.applications)} ${plural(a.applications, 'application')} recalculated.` +
+    (a.rejectedRows && a.rejectedRows !== '0'
+      ? ` ${num(a.rejectedRows)} ${plural(a.rejectedRows, 'row was', 'rows were')} left out; see the per-file detail.`
+      : ''),
+  'upload.rejected': (a) =>
+    a.count === '1'
+      ? 'The upload was rejected. Nothing in the current portfolio changed.'
+      : `The upload was rejected for ${num(a.count)} problems. Nothing in the current portfolio changed.`,
+  'upload.rejectedUnidentified': (a) =>
+    `The upload was rejected: ${num(a.count)} ${plural(a.count, 'file')} could not be identified by ${a.count === '1' ? 'its' : 'their'} header. Assign the source below and upload again.`,
+
+  'file.tooLarge': (a) => `It weighs ${a.size} MB and the per-file maximum is ${a.max} MB.`,
+  'file.duplicate': (a) => `It duplicates a file already received for the '${a.source}' source.`,
+  'file.noName': () => 'A file without a name was received.',
+  'file.extension': (a) => `Only ${a.extension} files are accepted.`,
+  'file.contentType': (a) => `The content type '${a.contentType}' is not accepted.`,
+  'file.assignmentShape': () => 'The assigned source is not shaped like a file name.',
+
+  'match.assignmentUnknown': () => 'The assigned source does not exist in the catalog.',
+  'match.ambiguous': () => 'Its header matches more than one source. Assign it manually before publishing.',
+  'match.unrecognized': () => 'Its header does not match any known source.',
+
+  'csv.noHeader': () => 'The file has no header.',
+  'csv.fieldTooLong': (a) =>
+    `A field in row ${a.row} is longer than ${num(a.max)} characters: the file is corrupt or is not the expected export.`,
+  'csv.unreadable': (a) => (a.row ? `The file could not be read as CSV (row ${a.row}).` : 'The file could not be read as CSV.'),
+  'csv.tooManyRows': (a) => `The file exceeds the limit of ${num(a.max)} rows.`,
+  'csv.missingColumns': (a) => `Required columns are missing: ${a.missing}. The file has: ${a.found}.`,
+  'contract.unmapped': (a) => `The '${a.file}' contract has no database mapping.`,
+
+  'row.missingKey': (a) => `No value in the key column '${a.column}'.`,
+  'row.invalidValue': (a) =>
+    `'${a.column}' expected ${EXPECTED_VALUE[a.expected ?? ''] ?? 'a known type'} and received '${a.value}'.` +
+    (a.more ? ` (+${a.more} more in this row)` : ''),
+  'row.notConvertible': () => 'The row could not be converted to the canonical model.',
+  'row.unknownEai': (a) => `EAI '${a.key}' does not exist in the EAI master.`,
+
+  // ----------------------------------------------------- rules administration
+  'rules.metricUnknown': (a) => `Metric #${a.position} does not exist in the ruleset.`,
+  'rules.duplicate': (a) => `${a.item} appears more than once in the draft.`,
+  'rules.kindMismatch': (a) => `${a.metric} does not use that kind of mapping.`,
+  'rules.weightInvalid': (a) =>
+    `The weight of ${a.metric} must be between 0 and 100, with up to two decimals.`,
+  'rules.weightTotal': (a) =>
+    `The weights add up to ${num(a.total)}; they must add up to ${num(a.expected)}.`,
+  'rules.scoreInvalid': (a) =>
+    `A score of ${a.metric} (${a.item}) must be between 0 and 100, with up to two decimals.`,
+  'rules.bandCount': (a) => `${a.metric} needs between 1 and ${a.max} bands.`,
+  'rules.bandBounds': (a) =>
+    `Band ${a.band} of ${a.metric} has its minimum above its maximum, or a bound out of range.`,
+  'rules.bandOrder': (a) =>
+    `The bands of ${a.metric} must go from lowest to highest without overlapping.`,
+  'rules.bandLabel': (a) =>
+    `Band ${a.band} of ${a.metric} needs a label of up to ${a.max} characters.`,
+  'rules.caseKeys': (a) =>
+    `The cases of ${a.metric} cannot be added or removed; only their scores can change.`,
+  'rules.categoryKeys': (a) =>
+    `The categories of ${a.metric} cannot be added or removed; only their scores can change.`,
+  'rules.leverUnknown': (a) => `Lever #${a.position} does not exist in the catalog.`,
+  'rules.leverParameter': (a) =>
+    `The default quantity of ${a.lever} must be between 1 and ${a.max}, and only levers that move products have one.`,
+  'rules.roadmapUnknown': (a) => `Roadmap #${a.position} does not exist in MAPS.`,
+  'rules.roadmapLever': (a) =>
+    a.lever
+      ? `${a.roadmap} delivers ${a.lever}, which is turned off. Remove it from the roadmap or turn it back on.`
+      : `${a.roadmap} delivers a lever that does not exist or is turned off.`,
+  'rules.roadmapLeaves': (a) =>
+    `${a.roadmap} takes the application out of the portfolio, so it cannot deliver levers.`,
+  'rules.milestones': (a) =>
+    `${a.roadmap} needs a duration for each of its ${a.count} milestones, between 1 and ${a.max} weeks.`,
+  'rules.healthyScore': () => 'The healthy score must be between 20 and 100, with up to two decimals.',
+  'rules.userBase': (a) => `The significant user base must be between 0 and ${num(a.max)}.`,
+  'rules.tooLarge': (a) =>
+    `The draft has too many ${DRAFT_PARTS[a.part ?? ''] ?? 'items'}: the limit is ${num(a.max)}.`,
+  'rules.reasonInvalid': (a) => `Explain the change in one line of ${a.min} to ${a.max} characters.`,
+  'rules.noChanges': () => 'The draft does not change anything in the active rules.',
+  'rules.stale': (a) =>
+    `Rules ${a.active} were published while you were editing. Reload to start from them.`,
+  'rules.busy': () => 'Another rules publication is in progress. Try again in a moment.',
+  'rules.invalid': () => 'The resulting rules are not consistent. Review the draft.',
+  'rules.storeUnavailable': () =>
+    'The rules store did not respond, so nothing was published. Scores keep using the active rules. Try again in a moment.',
+
+  'change.weight': (a) => `${a.metric}: weight ${num(a.from)} → ${num(a.to)}`,
+  'change.bands': (a) => `${a.metric}: bands ${a.from} → ${a.to}`,
+  'change.case': (a) => `${a.metric}, “${a.case}”: score ${num(a.from)} → ${num(a.to)}`,
+  'change.category': (a) =>
+    `${a.metric}, ${COMPOSITE_CATEGORIES[a.category ?? ''] ?? a.category}: score ${num(a.from)} → ${num(a.to)}`,
+  'change.leverEnabled': (a) => `${a.lever}: ${a.enabled === 'true' ? 'turned on' : 'turned off'}`,
+  'change.leverParameter': (a) => `${a.lever}: default quantity ${num(a.from)} → ${num(a.to)}`,
+  'change.roadmapLevers': (a) =>
+    `${a.roadmap}: ` +
+    [a.added ? `now delivers ${a.added}` : '', a.removed ? `no longer delivers ${a.removed}` : '']
+      .filter(Boolean)
+      .join('; '),
+  'change.milestoneWeeks': (a) =>
+    `${a.roadmap}, “${a.milestone}”: ${num(a.from)} → ${num(a.to)} ${plural(a.to, 'week')}`,
+  'change.healthyScore': (a) => `Healthy score: ${num(a.from)} → ${num(a.to)}`,
+  'change.userBase': (a) => `Significant user base: ${num(a.from)} → ${num(a.to)} users`,
+};
+
+/** Codigos que llevan el archivo en la propia frase y no necesitan prefijo. */
+const FILE_IN_SENTENCE = new Set(['contract.unmapped']);
+
+/**
+ * La frase de un aviso. Un codigo que este catalogo no conoce no rompe la pantalla:
+ * se muestra el codigo, que es lo mas util para quien lo reporte.
+ */
+export function formatNotice(notice: Notice | null | undefined): string {
+  if (!notice) return '';
+
+  const message = MESSAGES[notice.code];
+  const args = notice.args ?? {};
+  const text = message ? message(args) : `Unrecognized message (${notice.code})`;
+
+  return args.file && !FILE_IN_SENTENCE.has(notice.code) ? `${args.file}: ${text}` : text;
+}
+
+// ----------------------------------------------------------------- counts
+
+/** "1 application", "250 applications": el conteo con su sustantivo concordado. */
+export function countOf(count: number, singular: string, many = `${singular}s`): string {
+  return `${numberFormat.format(count)} ${count === 1 ? singular : many}`;
+}
+
+// ------------------------------------------------------------------ bands
+
+const BANDS: Record<string, string> = {
+  critical: 'Critical',
+  'at-risk': 'At risk',
+  acceptable: 'Acceptable',
+  solid: 'Solid',
+};
+
+/** Nombre de un tramo de score. El backend solo envia el codigo. */
+export function bandLabel(code: string): string {
+  return BANDS[code] ?? code;
+}
+
+/**
+ * Nombres de tramo de la Fase 10. Un enlace guardado entonces todavia puede
+ * traerlos; el servidor los acepta, y aqui se vuelven codigo para que la barra
+ * de filtros no muestre el nombre anterior.
+ */
+const LEGACY_BANDS: Record<string, string> = {
+  critico: 'critical',
+  'en riesgo': 'at-risk',
+  aceptable: 'acceptable',
+  solido: 'solid',
+};
+
+/** El codigo de un tramo, aunque llegue con su nombre anterior. */
+export function bandCode(value: string): string {
+  return LEGACY_BANDS[value.trim().toLowerCase()] ?? value;
+}
+
+/** Nombre de una clave de agregado: la vacia es "sin asignar". */
+export function groupLabel(key: string): string {
+  return key === '' ? 'Unassigned' : key;
+}

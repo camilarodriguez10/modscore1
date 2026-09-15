@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Modernization.Rules</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Las reglas editables son las del motor, el what-if y el roadmap: el editor
+         construye con ellos el modelo candidato y lo simula con el mismo codigo que
+         calcula el score vigente. -->
+    <ProjectReference Include="..\Modernization.Roadmap\Modernization.Roadmap.csproj" />
+  </ItemGroup>
+</Project>

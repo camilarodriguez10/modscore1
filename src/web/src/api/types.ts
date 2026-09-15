@@ -1,0 +1,706 @@
+/**
+ * Modelos de vista que entrega el channel-api. Reflejan exactamente los records
+ * de `Modernization.ChannelApi.ViewModels`; el plan contempla generarlos desde el
+ * OpenAPI del channel-api para que dejen de mantenerse a mano.
+ *
+ * Ninguna regla de negocio vive aqui: el front pinta lo que ya viene calculado.
+ */
+
+export type PillarKey = 'risk' | 'architecture' | 'stability';
+
+/** Tramos de score. Siempre se muestran con su nombre: el color nunca va solo. */
+export type ScoreBand = 'critical' | 'at-risk' | 'acceptable' | 'solid';
+
+export interface SessionView {
+  name: string;
+  email: string | null;
+  roles: readonly string[];
+  isAuthenticated: boolean;
+  permissions: SessionPermissionsView;
+}
+
+/**
+ * Lo que la sesion permite, resuelto por el servidor. Sirve para no ofrecer lo que
+ * se va a negar; la autorizacion real sigue en el servidor.
+ */
+export interface SessionPermissionsView {
+  canRead: boolean;
+  fullPortfolio: boolean;
+  canUpload: boolean;
+  canAdministerRules: boolean;
+}
+
+/**
+ * Un mensaje para personas como codigo y datos. El backend no redacta frases: la
+ * interfaz las arma con `formatNotice` (ADR 0017).
+ */
+export interface Notice {
+  code: string;
+  args: Readonly<Record<string, string>>;
+}
+
+// -------------------------------------------------------------- 01 Portfolio
+
+export interface PortfolioView {
+  totalApplications: number;
+  averageScore: number;
+  medianScore: number;
+  distribution: readonly ScoreBandView[];
+  byLob: readonly GroupSummaryView[];
+  byCountry: readonly GroupSummaryView[];
+  byCio: readonly GroupSummaryView[];
+  byDisposition: readonly GroupSummaryView[];
+  byRoadmap: readonly GroupSummaryView[];
+  applications: readonly PortfolioRowView[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+}
+
+export interface ScoreBandView {
+  band: string;
+  range: string;
+  count: number;
+  percent: number;
+}
+
+/**
+ * Un agregado del portafolio. La clave es tambien el valor del filtro: al hacer
+ * clic se envia esa misma clave, sin traducir nada por el camino.
+ */
+export interface GroupSummaryView {
+  key: string;
+  count: number;
+  averageScore: number;
+}
+
+export interface PortfolioRowView {
+  eaiCode: string;
+  applicationName: string;
+  lob: string | null;
+  country: string | null;
+  cio: string | null;
+  cre: string | null;
+  criticalApplication: boolean | null;
+  disposition: string | null;
+  roadmap: string | null;
+  score: number;
+  band: string;
+  availableWeight: number;
+}
+
+// --------------------------------------------------------- 02 Score Overview
+
+export interface ApplicationHeaderView {
+  eaiCode: string;
+  applicationName: string;
+  lob: string | null;
+  subLob: string | null;
+  country: string | null;
+  region: string | null;
+  cio: string | null;
+  cre: string | null;
+  criticalApplication: boolean | null;
+  disposition: string | null;
+  roadmap: string | null;
+  codingLanguage: string | null;
+  userCount: number | null;
+}
+
+export interface ScoreOverviewView {
+  application: ApplicationHeaderView;
+  score: number;
+  band: string;
+  rulesetVersion: string;
+  numerator: number;
+  denominator: number;
+  pillars: readonly PillarCardView[];
+  override: OverrideView | null;
+  calculatedAt: string;
+}
+
+export interface PillarCardView {
+  key: string;
+  name: string;
+  score: number | null;
+  totalWeight: number;
+  availableWeight: number;
+  numerator: number;
+  metricsIncluded: number;
+  metricsExcluded: number;
+  metrics: readonly PillarMetricView[];
+}
+
+export interface PillarMetricView {
+  metricKey: string;
+  name: string;
+  rawValue: Notice;
+  mappedScore: number | null;
+  weight: number;
+  weightedScore: number | null;
+  isIncluded: boolean;
+}
+
+export interface OverrideView {
+  value: number;
+  reason: string;
+  appliedBy: string;
+  appliedAt: string;
+}
+
+// -------------------------------------------------------- 03 Como se calculo
+
+export interface ExplainView {
+  application: ApplicationHeaderView;
+  formula: FormulaView;
+  waterfall: readonly WaterfallStepView[];
+  included: readonly ExplainMetricView[];
+  excluded: readonly ExcludedMetricView[];
+  informational: readonly ExplainMetricView[];
+  calculatedAt: string;
+}
+
+export interface FormulaView {
+  expression: string;
+  floor: number;
+  range: number;
+  numerator: number;
+  denominator: number;
+  score: number;
+  rulesetVersion: string;
+  steps: readonly Notice[];
+}
+
+export interface WaterfallStepView {
+  metricKey: string;
+  name: string;
+  pillarKey: string;
+  weightedScore: number;
+  cumulative: number;
+  pointsOfFinalScore: number;
+}
+
+export interface ProvenanceView {
+  system: string;
+  report: string;
+  field: string;
+  provider: string | null;
+  extractedAt: string | null;
+}
+
+export interface ExplainMetricView {
+  metricKey: string;
+  name: string;
+  pillarKey: string;
+  rawValue: Notice;
+  ruleApplied: string;
+  mappedScore: number | null;
+  weight: number;
+  weightedScore: number | null;
+  provenance: ProvenanceView;
+}
+
+export interface ExcludedMetricView {
+  metricKey: string;
+  name: string;
+  pillarKey: string;
+  weight: number;
+  reason: Notice;
+  provenance: ProvenanceView;
+}
+
+// ------------------------------------------------------------ 07 Data Lineage
+
+export interface LineageView {
+  provider: string;
+  totalApplications: number;
+  sources: readonly LineageSourceView[];
+  capturedAt: string;
+  /** La carga que se esta mirando: el linaje es por carga, no del sistema. */
+  versionId: string;
+  versionLabel: string;
+}
+
+export interface LineageSourceView {
+  sourceName: string;
+  origin: string;
+  recordCount: number;
+  matchedApplications: number;
+  coveragePercent: number;
+  rejectedCount: number;
+  rejections: readonly LineageRejectionView[];
+  extractedAt: string;
+}
+
+export interface LineageRejectionView {
+  rowNumber: number;
+  reason: Notice;
+  key: string | null;
+}
+
+/**
+ * Filtros del portafolio. Con `exactOptionalPropertyTypes` activo, limpiar un
+ * filtro es asignarle `undefined` de forma explicita, asi que el tipo tiene que
+ * admitirlo.
+ */
+export interface PortfolioFilters {
+  lob?: string | undefined;
+  country?: string | undefined;
+  cio?: string | undefined;
+  disposition?: string | undefined;
+  roadmap?: string | undefined;
+  /** Codigo de tramo: "critical", "at-risk", "acceptable" o "solid". */
+  band?: string | undefined;
+  criticalOnly?: boolean | undefined;
+  page?: number | undefined;
+  pageSize?: number | undefined;
+}
+
+// ------------------------------------------------------------- 04 What-If Lab
+
+export interface WhatIfLabView {
+  application: ApplicationHeaderView;
+  baselineScore: number;
+  baselineWeight: number;
+  ceilingScore: number;
+  headroom: number;
+  quickWins: readonly LeverView[];
+  actionable: readonly LeverView[];
+  alreadyAchieved: readonly LeverView[];
+  notActionable: readonly LeverView[];
+}
+
+export interface LeverView {
+  key: string;
+  name: string;
+  action: string;
+  metricKey: string;
+  pillarKey: string;
+  parameter: number | null;
+  delta: number;
+  projectedScore: number;
+  weightAdded: number;
+  isAlreadyAchieved: boolean;
+  notActionableReason: Notice | null;
+}
+
+export interface ScenarioView {
+  baselineScore: number;
+  projectedScore: number;
+  delta: number;
+  baselineWeight: number;
+  projectedWeight: number;
+  sumOfIndividualDeltas: number;
+  interactionEffect: number;
+  applied: readonly AppliedLeverView[];
+  individualEffects: readonly LeverView[];
+  interactionNote: Notice | null;
+}
+
+export interface AppliedLeverView {
+  key: string;
+  name: string;
+  action: string;
+  metricKey: string;
+  pillarKey: string;
+  parameter: number | null;
+}
+
+export interface TargetView {
+  target: number;
+  baselineScore: number;
+  ceilingScore: number;
+  isReachable: boolean;
+  isAlreadyMet: boolean;
+  scenario: ScenarioView | null;
+  explanation: Notice;
+}
+
+/** Palanca elegida en el laboratorio, con su cantidad si la admite. */
+export interface LeverSelection {
+  key: string;
+  parameter?: number | undefined;
+}
+
+// ---------------------------------------------------------------- 05 Roadmap
+
+export type AlertSeverity = 'Info' | 'Warning' | 'Critical';
+
+export interface RoadmapPlanView {
+  application: ApplicationHeaderView;
+  disposition: string | null;
+  dispositionDefinition: string | null;
+  roadmap: string | null;
+  roadmapDefinition: string | null;
+  leverRationale: string | null;
+  leavesPortfolio: boolean;
+  baselineScore: number;
+  baselineBand: string;
+  baselineWeight: number;
+  projectedScore: number | null;
+  projectedBand: string | null;
+  projectedDelta: number;
+  deliveredBy: readonly AppliedLeverView[];
+  milestones: readonly MilestoneView[];
+  alerts: readonly AlertView[];
+  startDate: string;
+  completionDate: string | null;
+  totalWeeks: number;
+  outlook: Notice;
+}
+
+export interface MilestoneView {
+  order: number;
+  name: string;
+  owner: string;
+  weeks: number;
+  start: string;
+  end: string;
+  sharePercent: number;
+}
+
+export interface AlertView {
+  ruleKey: string;
+  severity: AlertSeverity;
+  title: string;
+  detail: string;
+  evidence: Notice;
+}
+
+export interface PortfolioRoadmapView {
+  totalApplications: number;
+  withoutDisposition: number;
+  leavingPortfolio: number;
+  dispositions: readonly DispositionGroupView[];
+  alerts: readonly AlertSummaryView[];
+  /** Dimension por la que se agrupo. */
+  groupBy: string;
+  groups: readonly RoadmapGroupView[];
+}
+
+/**
+ * Un grupo del portafolio con su plan agregado. La clave es la que entienden los
+ * filtros, para que abrir un grupo acote el resto de las pantallas.
+ */
+export interface RoadmapGroupView {
+  key: string;
+  name: string;
+  count: number;
+  sharePercent: number;
+  averageScore: number;
+  band: string;
+  projectedScore: number | null;
+  projectedBand: string | null;
+  delta: number | null;
+  leavingPortfolio: number;
+  withoutDisposition: number;
+  averageWeeks: number;
+  alerts: number;
+  mix: readonly RoadmapMixView[];
+}
+
+export interface RoadmapMixView {
+  roadmap: string;
+  name: string;
+  count: number;
+}
+
+export interface DispositionGroupView {
+  disposition: string;
+  name: string;
+  definition: string;
+  count: number;
+  sharePercent: number;
+  averageScore: number;
+  roadmaps: readonly RoadmapRowView[];
+}
+
+export interface RoadmapRowView {
+  roadmap: string;
+  name: string;
+  definition: string;
+  count: number;
+  averageScore: number;
+  averageProjectedScore: number | null;
+  averageDelta: number | null;
+  totalWeeks: number;
+  removesFromPortfolio: boolean;
+}
+
+export interface AlertSummaryView {
+  ruleKey: string;
+  severity: AlertSeverity;
+  title: string;
+  count: number;
+  sampleEaiCodes: readonly string[];
+}
+
+// -------------------------------------------------------------- 08 Cargas
+
+export interface VersionView {
+  id: string;
+  label: string;
+  capturedAt: string;
+  applicationCount: number;
+  isCurrent: boolean;
+}
+
+export interface HistoryPointView {
+  versionId: string;
+  label: string;
+  capturedAt: string;
+  score: number | null;
+  availableWeight: number | null;
+  deltaFromPrevious: number | null;
+}
+
+export interface IngestionView {
+  uploadEnabled: boolean;
+  provider: string;
+  disabledReason: Notice | null;
+  expectedFiles: readonly ExpectedFileView[];
+  versions: readonly VersionView[];
+  portfolioHistory: readonly HistoryPointView[];
+  maxFileBytes: number;
+  maxTotalBytes: number;
+}
+
+export interface ExpectedFileView {
+  source: string;
+  fileName: string;
+  description: string | null;
+  keyColumn: string;
+  requiredColumns: readonly string[];
+  optionalColumnCount: number;
+}
+
+export interface UploadResultView {
+  accepted: boolean;
+  version: VersionView | null;
+  applicationCount: number;
+  files: readonly UploadFileView[];
+  errors: readonly Notice[];
+  summary: Notice;
+}
+
+export interface UploadFileView {
+  fileName: string;
+  canonicalFileName: string | null;
+  source: string;
+  bytes: number;
+  rowCount: number;
+  rejectedCount: number;
+  error: Notice | null;
+  /** El encabezado leido, cuando no se pudo identificar la fuente. */
+  detectedColumns: readonly string[];
+  /** Fuentes a las que se puede asignar el archivo a mano. */
+  candidates: readonly string[];
+}
+
+// ---------------------------------------------------------- 09 Scoring rules
+
+/** Lo esencial del impacto de una version, guardado con ella. */
+export interface RulesImpactSummary {
+  applications: number;
+  up: number;
+  down: number;
+  unchanged: number;
+  averageBefore: number | null;
+  averageAfter: number | null;
+  averageDelta: number | null;
+}
+
+export interface RulesVersionView {
+  id: string;
+  basedOn: string | null;
+  publishedAt: string | null;
+  publishedBy: string;
+  reason: string;
+  isActive: boolean;
+  isBuiltIn: boolean;
+  changes: readonly Notice[];
+  impact: RulesImpactSummary | null;
+}
+
+export interface BandRule {
+  min: number;
+  max: number;
+  score: number;
+  label: string;
+}
+
+export type MappingKind = 'numericBands' | 'categorical' | 'identity';
+
+export interface RulesPillar {
+  key: string;
+  name: string;
+  nominalWeight: number;
+}
+
+export interface RulesMetric {
+  key: string;
+  name: string;
+  pillar: string;
+  weight: number;
+  kind: MappingKind;
+  bands: readonly BandRule[] | null;
+  cases: Readonly<Record<string, number>> | null;
+  categoryScores: Readonly<Record<string, number>> | null;
+  sourceSystem: string;
+  note: string | null;
+}
+
+export interface RulesLever {
+  key: string;
+  name: string;
+  action: string;
+  metricKey: string;
+  pillarKey: string;
+  enabled: boolean;
+  isParameterized: boolean;
+  defaultParameter: number | null;
+  /** Roadmaps que entregan esta palanca, por clave. */
+  usedBy: readonly string[];
+}
+
+export interface RulesMilestone {
+  name: string;
+  owner: string;
+  weeks: number;
+}
+
+export interface RulesRoadmapPath {
+  key: string;
+  name: string;
+  disposition: string;
+  removesFromPortfolio: boolean;
+  levers: readonly string[];
+  milestones: readonly RulesMilestone[];
+}
+
+export interface RulesRoadmap {
+  healthyScore: number;
+  significantUserBase: number;
+  roadmaps: readonly RulesRoadmapPath[];
+}
+
+/** Un juego de reglas en la forma en que se edita. */
+export interface RulesDocument {
+  version: string;
+  floor: number;
+  range: number;
+  pillars: readonly RulesPillar[];
+  metrics: readonly RulesMetric[];
+  levers: readonly RulesLever[];
+  roadmap: RulesRoadmap;
+}
+
+export interface RulesLimitsView {
+  totalWeight: number;
+  maxBands: number;
+  maxBandLabelLength: number;
+  minReasonLength: number;
+  maxReasonLength: number;
+  maxWeeks: number;
+  maxLeverParameter: number;
+}
+
+export interface RulesAdminView {
+  active: RulesVersionView;
+  versions: readonly RulesVersionView[];
+  document: RulesDocument;
+  store: string;
+  /** Si la sesion puede publicar ahora, sin volver a autenticarse. */
+  reauthenticated: boolean;
+  reauthenticationMinutes: number;
+  limits: RulesLimitsView;
+}
+
+export interface RulesVersionDocumentView {
+  version: RulesVersionView;
+  document: RulesDocument;
+}
+
+export interface BandShift {
+  band: string;
+  before: number;
+  after: number;
+}
+
+export interface ApplicationShift {
+  eaiCode: string;
+  applicationName: string;
+  before: number | null;
+  after: number | null;
+  delta: number | null;
+  bandBefore: string | null;
+  bandAfter: string | null;
+}
+
+export interface RulesImpact {
+  applications: number;
+  up: number;
+  down: number;
+  unchanged: number;
+  noLongerScored: number;
+  newlyScored: number;
+  averageBefore: number | null;
+  averageAfter: number | null;
+  averageDelta: number | null;
+  bands: readonly BandShift[];
+  movers: readonly ApplicationShift[];
+  projectedBefore: number | null;
+  projectedAfter: number | null;
+  alertsBefore: number;
+  alertsAfter: number;
+}
+
+export interface RulesSimulationView {
+  valid: boolean;
+  stale: boolean;
+  activeVersion: string;
+  errors: readonly Notice[];
+  changes: readonly Notice[];
+  impact: RulesImpact | null;
+}
+
+export interface RulesPublishView {
+  published: boolean;
+  version: RulesVersionView | null;
+  errors: readonly Notice[];
+  changes: readonly Notice[];
+  impact: RulesImpact | null;
+}
+
+/** Lo que la pantalla envia: solo lo editable. */
+export interface RulesDraft {
+  metrics: readonly MetricDraft[];
+  levers: readonly LeverDraft[];
+  roadmap: RoadmapDraft;
+}
+
+export interface MetricDraft {
+  key: string;
+  weight: number;
+  bands: readonly BandRule[] | null;
+  cases: Readonly<Record<string, number>> | null;
+  categoryScores: Readonly<Record<string, number>> | null;
+}
+
+export interface LeverDraft {
+  key: string;
+  enabled: boolean;
+  defaultParameter: number | null;
+}
+
+export interface RoadmapDraft {
+  healthyScore: number;
+  significantUserBase: number;
+  roadmaps: readonly RoadmapPathDraft[];
+}
+
+export interface RoadmapPathDraft {
+  key: string;
+  levers: readonly string[];
+  milestoneWeeks: readonly number[];
+}

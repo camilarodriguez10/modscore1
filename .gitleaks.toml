@@ -1,0 +1,15 @@
+title = "modernization-score"
+
+[extend]
+useDefault = true
+
+# Solo dos valores conocidos, y ambos inutiles fuera de su contexto: el token de
+# desarrollo lleva la marca "dev-only" y DeploymentGuards impide arrancar con el
+# fuera de Development; el de tests solo existe dentro del proceso de pruebas.
+# Cualquier otro secreto que aparezca en el repositorio rompe el pipeline.
+[allowlist]
+description = "Valores de desarrollo y de pruebas, marcados y rechazados fuera de Development."
+regexes = [
+  '''dev-only-service-token-not-for-any-real-environment''',
+  '''test-service-token-with-enough-length-1234567890''',
+]

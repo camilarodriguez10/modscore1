@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Modernization.WhatIf</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Libreria, no llamada de red: el score base y el simulado se calculan con
+         el mismo codigo en el mismo proceso (ADR 0001). -->
+    <ProjectReference Include="..\Modernization.Scoring.Engine\Modernization.Scoring.Engine.csproj" />
+  </ItemGroup>
+</Project>

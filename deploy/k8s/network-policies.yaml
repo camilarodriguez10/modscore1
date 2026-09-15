@@ -1,0 +1,127 @@
+# Todo cerrado por defecto: ningun pod recibe ni emite trafico que no este
+# declarado abajo (plan secc. 7.2, "cada servicio declara con quien habla").
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: modernization-score
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress", "Egress"]
+---
+# Resolucion de nombres y plano de control del mesh, para todos los pods.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-and-mesh
+  namespace: modernization-score
+spec:
+  podSelector: {}
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: linkerd
+---
+# channel-api recibe trafico solo del ingress controller.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: channel-api-ingress
+  namespace: modernization-score
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: channel-api
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+# channel-api habla con system-api y con el IdP (HTTPS fuera del cluster). Nada mas.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: channel-api-egress
+  namespace: modernization-score
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: channel-api
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: system-api
+      ports:
+        - protocol: TCP
+          port: 8080
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+---
+# system-api recibe trafico solo de channel-api, y no emite nada salvo DNS y mesh.
+#
+# Con el adaptador de base de datos (Fase 09) hay que abrir exactamente su destino,
+# y solo ese. El motor concreto es RFC-07; cuando se confirme, esta politica se
+# agrega con su CIDR y su puerto reales:
+#
+#   apiVersion: networking.k8s.io/v1
+#   kind: NetworkPolicy
+#   metadata: { name: system-api-database-egress, namespace: modernization-score }
+#   spec:
+#     podSelector:
+#       matchLabels:
+#         app.kubernetes.io/name: system-api
+#     policyTypes: ["Egress"]
+#     egress:
+#       - to:
+#           - ipBlock:
+#               cidr: 10.20.30.40/32   # la instancia gestionada, no su subred entera
+#         ports:
+#           - protocol: TCP
+#             port: 1433
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: system-api-ingress
+  namespace: modernization-score
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: system-api
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: channel-api
+      ports:
+        - protocol: TCP
+          port: 8080

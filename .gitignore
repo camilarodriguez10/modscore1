@@ -1,0 +1,45 @@
+bin/
+obj/
+.vs/
+*.user
+TestResults/
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Estado de ejecucion: las cargas publicadas no van al repositorio.
+data/history/
+
+# Versiones de reglas publicadas en local (proveedor File).
+data/.rules/
+
+# Bases locales del adaptador de datos: son estado, no fuente.
+*.db
+*.db-shm
+*.db-wal
+
+# Configuracion local de herramientas y del asistente.
+.claude/
+.vscode/
+.idea/
+
+# Resultados de pruebas de la SPA.
+src/web/test-results/
+src/web/playwright-report/
+src/web/blob-report/
+src/web/coverage/
+
+# Paquete portable: se genera con tools/portable/build-portable.ps1.
+artifacts/
+
+# Capturas del BRD y del dashboard: documentacion interna. Quedan fuera del
+# repositorio por defecto; ver docs/brd/README.md para incluirlas.
+docs/brd/capturas/
+*.JPG
+*.jpg
+
+# Secretos locales: nunca al repositorio.
+*.pfx
+*.key
+.env
+.env.*

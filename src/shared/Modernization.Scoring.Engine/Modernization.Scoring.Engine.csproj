@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Modernization.Scoring.Engine</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Modernization.Domain\Modernization.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- El ruleset viaja dentro del ensamblado: el motor es autocontenido y no
+         depende del layout del disco en runtime. -->
+    <EmbeddedResource Include="..\..\..\contracts\ruleset-v1.3.json" LogicalName="ruleset-v1.3.json" />
+  </ItemGroup>
+</Project>

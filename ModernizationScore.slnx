@@ -1,0 +1,28 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/channel/">
+    <Project Path="src/channel/Modernization.ChannelApi/Modernization.ChannelApi.csproj" />
+  </Folder>
+  <Folder Name="/src/shared/">
+    <Project Path="src/shared/Modernization.Domain/Modernization.Domain.csproj" />
+    <Project Path="src/shared/Modernization.Roadmap/Modernization.Roadmap.csproj" />
+    <Project Path="src/shared/Modernization.Rules/Modernization.Rules.csproj" />
+    <Project Path="src/shared/Modernization.Scoring.Engine/Modernization.Scoring.Engine.csproj" />
+    <Project Path="src/shared/Modernization.Security/Modernization.Security.csproj" />
+    <Project Path="src/shared/Modernization.WhatIf/Modernization.WhatIf.csproj" />
+  </Folder>
+  <Folder Name="/src/system/">
+    <Project Path="src/system/Modernization.Sources.Database/Modernization.Sources.Database.csproj" />
+    <Project Path="src/system/Modernization.Sources/Modernization.Sources.csproj" />
+    <Project Path="src/system/Modernization.SystemApi/Modernization.SystemApi.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Modernization.Api.Tests/Modernization.Api.Tests.csproj" />
+    <Project Path="tests/Modernization.Scoring.Engine.Tests/Modernization.Scoring.Engine.Tests.csproj" />
+    <Project Path="tests/Modernization.Sources.ContractTests/Modernization.Sources.ContractTests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Modernization.DummyData/Modernization.DummyData.csproj" />
+    <Project Path="tools/Modernization.LoadTest/Modernization.LoadTest.csproj" />
+  </Folder>
+</Solution>

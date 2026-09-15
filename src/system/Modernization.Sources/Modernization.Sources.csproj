@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Modernization.Sources</RootNamespace>
+
+    <!-- CA1720: los nombres de tipo de columna (string, int, decimal, bool) son el
+         vocabulario del contrato de esquema, no una eleccion de nomenclatura.
+         Renombrarlos alejaria el codigo del JSON que describe los archivos. -->
+    <NoWarn>$(NoWarn);CA1720</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Modernization.Domain\Modernization.Domain.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CsvHelper" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Los contratos de columna viajan con el ensamblado, igual que el ruleset. -->
+    <EmbeddedResource Include="..\..\..\contracts\sources\source-schemas.json" LogicalName="source-schemas.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modernization.Sources.ContractTests" />
+    <InternalsVisibleTo Include="Modernization.Sources.Database" />
+  </ItemGroup>
+</Project>

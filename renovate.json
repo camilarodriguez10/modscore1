@@ -1,0 +1,31 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Actualizaciones de dependencias (plan secc. 7.1): parches automaticos con la suite en verde, el resto con revision.",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "minimumReleaseAge": "3 days",
+  "rangeStrategy": "pin",
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["seguridad"],
+    "minimumReleaseAge": null
+  },
+  "packageRules": [
+    {
+      "description": "Parches: auto-merge solo si todos los checks del pipeline pasan.",
+      "matchUpdateTypes": ["patch", "digest", "pin"],
+      "automerge": true,
+      "automergeType": "pr"
+    },
+    {
+      "description": "Imagenes base fijadas por digest: una etiqueta puede cambiar de contenido, un digest no.",
+      "matchDatasources": ["docker"],
+      "pinDigests": true
+    },
+    {
+      "description": "Cambios mayores siempre con revision humana.",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencias", "revision-requerida"]
+    }
+  ]
+}

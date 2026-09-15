@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: modernization-score
+  labels:
+    # Pod Security Admission en su perfil mas estricto: un pod que corra como
+    # root, pida privilegios o conserve capabilities no se admite.
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+  annotations:
+    # mTLS entre servicios: todo pod del namespace entra al mesh, y un pod solo
+    # acepta trafico de identidades autenticadas por el mesh (plan secc. 7.2).
+    linkerd.io/inject: enabled
+    config.linkerd.io/default-inbound-policy: all-authenticated

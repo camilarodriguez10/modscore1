@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Modernization.DummyData</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\system\Modernization.Sources\Modernization.Sources.csproj" />
+    <ProjectReference Include="..\..\src\shared\Modernization.Scoring.Engine\Modernization.Scoring.Engine.csproj" />
+  </ItemGroup>
+</Project>

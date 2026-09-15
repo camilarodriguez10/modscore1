@@ -1,0 +1,202 @@
+{
+  "version": "v1",
+  "description": "The BRD's MAPS model: three dispositions, seven roadmaps. Each roadmap declares its milestones and the what-if levers its execution naturally delivers, so the future score is projected with the same engine that calculates today's instead of with a hand-written number.",
+
+  "dispositions": [
+    {
+      "key": "Tolerate",
+      "name": "Tolerate",
+      "definition": "Optimize while preserving. No changes are required, or the application needs modernization that cannot be achieved within the current calendar year."
+    },
+    {
+      "key": "Invest",
+      "name": "Invest",
+      "definition": "Applications with a functional fit to the business, needed to sustain essential objectives. They may require additional capabilities or have technical constraints to resolve by refactoring or reimagining."
+    },
+    {
+      "key": "Eliminate",
+      "name": "Eliminate",
+      "definition": "The application leaves the portfolio, reducing the application count."
+    }
+  ],
+
+  "roadmaps": [
+    {
+      "key": "MaintainPatch",
+      "name": "Maintain (Patch)",
+      "disposition": "Tolerate",
+      "definition": "Also called Retain. The investment needed to keep the application current and secure.",
+      "mappedScore": 60,
+      "removesFromPortfolio": false,
+      "levers": ["sca.remediateCritical", "sca.remediateHigh", "oss.improve", "kenna.reduce"],
+      "leverRationale": "Keeping it current and secure is exactly remediating vulnerabilities and upgrading components. It does not touch the architecture.",
+      "milestones": [
+        { "name": "Inventory of open vulnerabilities", "weeks": 2, "owner": "AppSec" },
+        { "name": "Remediation plan prioritized by severity", "weeks": 2, "owner": "AD Director" },
+        { "name": "Library and component upgrades", "weeks": 8, "owner": "Application team" },
+        { "name": "Rescan and verification", "weeks": 2, "owner": "AppSec" }
+      ]
+    },
+    {
+      "key": "Rehost",
+      "name": "Rehost",
+      "disposition": "Tolerate",
+      "definition": "The application moves to another hosting or compute service (AKS, ASE or other) without changing its architecture or functionality. There is no recompilation.",
+      "mappedScore": 60,
+      "removesFromPortfolio": false,
+      "levers": ["monitoring.enable", "operational.improve"],
+      "leverRationale": "The target platform brings observability and stability. With no recompilation, the architecture and the technical debt stay the same.",
+      "milestones": [
+        { "name": "Target assessment (AKS, ASE or other)", "weeks": 3, "owner": "Architecture" },
+        { "name": "Infrastructure and pipeline preparation", "weeks": 4, "owner": "Platform" },
+        { "name": "Migration to a non-production environment", "weeks": 4, "owner": "Application team" },
+        { "name": "Load and resilience testing", "weeks": 3, "owner": "Application team" },
+        { "name": "Cutover and stabilization", "weeks": 3, "owner": "AD Director" }
+      ]
+    },
+    {
+      "key": "MaintainEvolve",
+      "name": "Maintain (Evolve)",
+      "disposition": "Invest",
+      "definition": "New functionality or capabilities added on top of the current application.",
+      "mappedScore": 100,
+      "removesFromPortfolio": false,
+      "levers": ["sca.remediateCritical", "sca.remediateHigh", "oss.improve", "techDebt.clear", "monitoring.enable"],
+      "leverRationale": "Evolving an application you invest in means keeping it healthy: it gets remediated, its debt paid down and it gets instrumented.",
+      "milestones": [
+        { "name": "Definition of the capabilities to add", "weeks": 4, "owner": "Product Owner" },
+        { "name": "Clean-up of blocking technical debt", "weeks": 6, "owner": "Application team" },
+        { "name": "Incremental development", "weeks": 12, "owner": "Application team" },
+        { "name": "Instrumentation and observability", "weeks": 3, "owner": "Platform" },
+        { "name": "Release and adoption measurement", "weeks": 3, "owner": "Product Owner" }
+      ]
+    },
+    {
+      "key": "Refactor",
+      "name": "Refactor",
+      "disposition": "Invest",
+      "definition": "Changes to the code or the architecture that preserve the original functionality. It takes advantage of modern architectural patterns. Unlike rehost, it requires a deeper commitment to the application's structure. It includes the former rearchitect and re-platform dispositions.",
+      "mappedScore": 20,
+      "removesFromPortfolio": false,
+      "levers": ["api.onboardApim", "archValue.modernize", "techDebt.clear", "rawTech.improve", "sca.remediateCritical", "sca.remediateHigh"],
+      "leverRationale": "Touching the structure is the opportunity to modernize components, expose native APIs and pay down debt. It is the roadmap with the most levers within reach.",
+      "milestones": [
+        { "name": "Analysis of the current and target architecture", "weeks": 4, "owner": "Architecture" },
+        { "name": "Definition of patterns and service boundaries", "weeks": 4, "owner": "Architecture" },
+        { "name": "Refactoring by domain", "weeks": 16, "owner": "Application team" },
+        { "name": "Native API exposure through APIM", "weeks": 6, "owner": "Application team" },
+        { "name": "Modernization of obsolete components", "weeks": 8, "owner": "Application team" },
+        { "name": "Functional parity verification", "weeks": 4, "owner": "QA" }
+      ]
+    },
+    {
+      "key": "Reimagine",
+      "name": "Reimagine",
+      "disposition": "Invest",
+      "definition": "Also called Replace. Build a new version of the application from scratch with modern frameworks and development tools, or replace the existing application with a new COTS product, often SaaS.",
+      "mappedScore": 20,
+      "removesFromPortfolio": false,
+      "levers": ["api.onboardApim", "archValue.modernize", "productStrategy.invest", "techDebt.clear", "rawTech.improve", "monitoring.enable", "operational.improve", "sca.remediateCritical", "sca.remediateHigh", "oss.improve", "mfa.enable", "dr.include", "kenna.reduce"],
+      "leverRationale": "Building from scratch to current standards reaches every lever. It is also the most expensive and longest roadmap: the score ceiling alone does not justify the decision.",
+      "milestones": [
+        { "name": "Build versus buy assessment", "weeks": 6, "owner": "Architecture" },
+        { "name": "Target solution design", "weeks": 8, "owner": "Architecture" },
+        { "name": "Build of the core functionality", "weeks": 24, "owner": "Application team" },
+        { "name": "Historical data migration", "weeks": 10, "owner": "Data" },
+        { "name": "Parallel operation", "weeks": 8, "owner": "AD Director" },
+        { "name": "Decommissioning of the previous application", "weeks": 4, "owner": "AD Director" }
+      ]
+    },
+    {
+      "key": "Retire",
+      "name": "Retire",
+      "disposition": "Eliminate",
+      "definition": "Decommission applications that have become obsolete or redundant, or that no longer deliver enough business value.",
+      "mappedScore": 20,
+      "removesFromPortfolio": true,
+      "levers": [],
+      "leverRationale": "The application leaves the portfolio. Its score stops existing rather than improving: investing to raise it would mean spending on something about to be switched off.",
+      "milestones": [
+        { "name": "Confirmation that there is no active use", "weeks": 4, "owner": "AD Director" },
+        { "name": "Notification to consumers and integrations", "weeks": 4, "owner": "AD Director" },
+        { "name": "Data archiving under legal retention", "weeks": 6, "owner": "Data" },
+        { "name": "Shutdown and dismantling", "weeks": 3, "owner": "Platform" },
+        { "name": "Removal from the EAI inventory", "weeks": 1, "owner": "AD Director" }
+      ]
+    },
+    {
+      "key": "Consolidate",
+      "name": "Consolidate",
+      "disposition": "Eliminate",
+      "definition": "The functionality is still needed and is consolidated into another application.",
+      "mappedScore": 20,
+      "removesFromPortfolio": true,
+      "levers": [],
+      "leverRationale": "The application leaves the portfolio and its functionality lives on in another one. The score that matters afterwards is the receiving application's.",
+      "milestones": [
+        { "name": "Identification of the receiving application", "weeks": 4, "owner": "Architecture" },
+        { "name": "Functional gap analysis", "weeks": 5, "owner": "Product Owner" },
+        { "name": "Addition of the missing functionality", "weeks": 14, "owner": "Receiving team" },
+        { "name": "User and data migration", "weeks": 8, "owner": "Data" },
+        { "name": "Decommissioning of the source application", "weeks": 3, "owner": "AD Director" }
+      ]
+    }
+  ],
+
+  "parameters": {
+    "healthyScore": 85,
+    "significantUserBase": 500,
+    "_comment": "healthyScore uses the floor of the Solid band shown by the interface, so the alert speaks the same language as the rest of the application."
+  },
+
+  "coherenceRules": [
+    {
+      "key": "eliminate.withInvestProducts",
+      "severity": "warning",
+      "title": "Marked to leave the portfolio, but with products in Invest",
+      "detail": "The disposition says to retire the application and the product strategy says to invest in its components. One of the two is out of date."
+    },
+    {
+      "key": "tolerate.withOpenCriticalFlaws",
+      "severity": "critical",
+      "title": "Tolerate with open critical vulnerabilities",
+      "detail": "Tolerating is not the same as accepting critical risk. Maintain (Patch) exists precisely for this: the application should be on that roadmap, or the flaws should be remediated."
+    },
+    {
+      "key": "critical.withoutDisasterRecovery",
+      "severity": "critical",
+      "title": "Critical application outside the DR plan",
+      "detail": "It is marked as business-critical but it is not in disaster recovery scope."
+    },
+    {
+      "key": "eliminate.withManyUsers",
+      "severity": "warning",
+      "title": "Leaving the portfolio with a significant user base",
+      "detail": "Retiring or consolidating an application with this many users requires an explicit migration plan before the decommission date is set."
+    },
+    {
+      "key": "reimagine.onHealthyApplication",
+      "severity": "info",
+      "title": "Reimagine on an application that is already healthy",
+      "detail": "Rebuilding from scratch is the most expensive and longest path. With a score that is already solid, the decision should be justified by functional need, not by technical debt."
+    },
+    {
+      "key": "roadmap.missing",
+      "severity": "warning",
+      "title": "Disposition without an assigned roadmap",
+      "detail": "The application has a disposition but no roadmap, so there is no future plan to project."
+    },
+    {
+      "key": "roadmap.mismatched",
+      "severity": "critical",
+      "title": "The roadmap does not match its disposition",
+      "detail": "The disposition/roadmap pair is not one of the seven that MAPS defines. The source data is wrong."
+    },
+    {
+      "key": "rehost.withoutMfa",
+      "severity": "warning",
+      "title": "Rehost does not fix missing MFA",
+      "detail": "Changing hosting does not change authentication. The application has users and does not use multi-factor: that stays the same after the rehost."
+    }
+  ]
+}

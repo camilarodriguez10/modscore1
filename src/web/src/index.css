@@ -1,0 +1,162 @@
+@import 'tailwindcss';
+
+/*
+  Paleta de datos validada con el validador de la guia de visualizacion, contra
+  las superficies reales de esta app (claro #ffffff, oscuro #141d22):
+
+    categorico  3 slots  todos los gates PASS en ambos modos, pairlist completo
+    status      4 tramos fijos, nunca tematizados; siempre con etiqueta visible,
+                porque en modo claro warning y serious quedan bajo 3:1 a proposito
+
+  Los tres hues categoricos identifican pilares (risk, architecture, stability) y
+  su orden es fijo: un filtro que cambie el conteo de series no puede repintar a
+  las supervivientes.
+
+  El acento petrol es cromo de interfaz — enlaces, foco, seleccion — y nunca un
+  color de serie.
+*/
+
+:root {
+  color-scheme: light;
+
+  --app-page: #eef1f2;
+  --app-surface: #ffffff;
+  --app-surface-2: #f7f9f9;
+  --app-ink: #131a21;
+  --app-ink-2: #455158;
+  --app-ink-3: #6d7a81;
+  --app-rule: #d3dadd;
+  --app-grid: #e4e9eb;
+  --app-accent: #0d5f6b;
+  --app-accent-wash: #e2eef0;
+  --app-on-accent: #ffffff;
+
+  --app-risk: #2a78d6;
+  --app-arch: #eb6834;
+  --app-stab: #1baf7a;
+
+  --app-good: #0ca30c;
+  --app-warning: #fab219;
+  --app-serious: #ec835a;
+  --app-critical: #d03b3b;
+
+  --app-good-wash: #e6f4e6;
+  --app-warning-wash: #fdf2dc;
+  --app-serious-wash: #fceee8;
+  --app-critical-wash: #f9e5e5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --app-page: #0d1418;
+    --app-surface: #141d22;
+    --app-surface-2: #18232a;
+    --app-ink: #e4ebee;
+    --app-ink-2: #a4b2b8;
+    --app-ink-3: #7b8a91;
+    --app-rule: #2a3941;
+    --app-grid: #213038;
+    --app-accent: #54b6c4;
+    --app-accent-wash: #14313a;
+    --app-on-accent: #0b1114;
+
+    --app-risk: #3987e5;
+    --app-arch: #d95926;
+    --app-stab: #199e70;
+
+    --app-good-wash: #10281a;
+    --app-warning-wash: #2e2415;
+    --app-serious-wash: #2f1f18;
+    --app-critical-wash: #2e1717;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --app-page: #0d1418;
+  --app-surface: #141d22;
+  --app-surface-2: #18232a;
+  --app-ink: #e4ebee;
+  --app-ink-2: #a4b2b8;
+  --app-ink-3: #7b8a91;
+  --app-rule: #2a3941;
+  --app-grid: #213038;
+  --app-accent: #54b6c4;
+  --app-accent-wash: #14313a;
+  --app-on-accent: #0b1114;
+
+  --app-risk: #3987e5;
+  --app-arch: #d95926;
+  --app-stab: #199e70;
+
+  --app-good-wash: #10281a;
+  --app-warning-wash: #2e2415;
+  --app-serious-wash: #2f1f18;
+  --app-critical-wash: #2e1717;
+}
+
+@theme inline {
+  --color-page: var(--app-page);
+  --color-surface: var(--app-surface);
+  --color-surface-2: var(--app-surface-2);
+  --color-ink: var(--app-ink);
+  --color-ink-2: var(--app-ink-2);
+  --color-ink-3: var(--app-ink-3);
+  --color-rule: var(--app-rule);
+  --color-grid: var(--app-grid);
+  --color-accent: var(--app-accent);
+  --color-accent-wash: var(--app-accent-wash);
+  --color-on-accent: var(--app-on-accent);
+
+  --color-risk: var(--app-risk);
+  --color-arch: var(--app-arch);
+  --color-stab: var(--app-stab);
+
+  --color-good: var(--app-good);
+  --color-warning: var(--app-warning);
+  --color-serious: var(--app-serious);
+  --color-critical: var(--app-critical);
+
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--app-page);
+  color: var(--app-ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Las columnas de numeros se alinean; los numeros sueltos usan figuras
+   proporcionales, que es como se leen mejor en grande. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--app-accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

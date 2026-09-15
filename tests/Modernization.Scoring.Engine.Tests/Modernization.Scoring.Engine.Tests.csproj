@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Modernization.Scoring.Engine.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\shared\Modernization.Scoring.Engine\Modernization.Scoring.Engine.csproj" />
+    <ProjectReference Include="..\..\src\shared\Modernization.WhatIf\Modernization.WhatIf.csproj" />
+    <ProjectReference Include="..\..\src\shared\Modernization.Roadmap\Modernization.Roadmap.csproj" />
+    <ProjectReference Include="..\..\src\shared\Modernization.Rules\Modernization.Rules.csproj" />
+  </ItemGroup>
+</Project>

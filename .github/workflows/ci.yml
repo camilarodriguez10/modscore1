@@ -1,0 +1,216 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Minimo privilegio: el token del workflow solo lee. El job que publica hallazgos
+# pide su permiso de forma explicita.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+
+# Toda accion va fijada por SHA de commit, no por etiqueta: una etiqueta se puede
+# mover a codigo malicioso, un SHA no. Renovate mantiene los SHA al dia.
+
+jobs:
+  backend:
+    name: Backend .NET
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restaurar con el arbol de dependencias bloqueado
+        run: dotnet restore ModernizationScore.slnx --locked-mode
+
+      - name: Compilar (warnings como errores, NuGetAudit bloqueante)
+        run: dotnet build ModernizationScore.slnx --no-restore --configuration Release
+
+      - name: Tests
+        run: dotnet test ModernizationScore.slnx --no-build --configuration Release
+
+      - name: Paquetes vulnerables, incluidos los transitivos
+        run: |
+          dotnet list ModernizationScore.slnx package --vulnerable --include-transitive | tee vulnerable.txt
+          if grep -qi "has the following vulnerable packages" vulnerable.txt; then
+            echo "::error::Hay paquetes con vulnerabilidades conocidas."
+            exit 1
+          fi
+
+      - name: SBOM CycloneDX
+        run: |
+          dotnet tool install --global CycloneDX --version 6.2.0
+          dotnet CycloneDX src/system/Modernization.SystemApi/Modernization.SystemApi.csproj -o sbom -fn system-api.cdx.json -F Json
+          dotnet CycloneDX src/channel/Modernization.ChannelApi/Modernization.ChannelApi.csproj -o sbom -fn channel-api.cdx.json -F Json
+
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sbom-backend
+          path: sbom/
+
+  frontend:
+    name: SPA
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: src/web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: src/web/package-lock.json
+
+      - name: Instalar exactamente el lock, sin scripts de instalacion
+        run: npm ci --ignore-scripts
+
+      - name: Auditoria de dependencias
+        run: npm audit --audit-level=moderate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: El build no publica source maps ni recursos de terceros
+        run: |
+          if ls dist/assets/*.map >/dev/null 2>&1; then
+            echo "::error::El build incluye source maps."
+            exit 1
+          fi
+          if grep -rqiE "fonts\.googleapis|fonts\.gstatic" dist; then
+            echo "::error::El build referencia recursos de terceros."
+            exit 1
+          fi
+
+  secretos:
+    name: Escaneo de secretos
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      # Todo el historial, no solo el ultimo commit: un secreto borrado en un commit
+      # posterior sigue expuesto en los anteriores.
+      - name: Gitleaks
+        run: |
+          docker run --rm \
+            -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/repo \
+            -v "$PWD:/repo:ro" \
+            ghcr.io/gitleaks/gitleaks:v8.30.1 \
+            git /repo --config /repo/.gitleaks.toml --redact --exit-code 1
+
+  osv:
+    name: OSV-Scanner
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Segunda opinion sobre npm y NuGet con la base de datos de OSV.
+      - uses: google/osv-scanner-action/osv-scanner-action@6e4298ebc4db23e847df9b2e2de2939d6f066c67 # v2.5.1
+        with:
+          scan-args: |-
+            --recursive
+            ./
+
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: csharp
+            build-mode: manual
+          - language: javascript-typescript
+            build-mode: none
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - if: matrix.language == 'csharp'
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: "10.0.x"
+
+      - uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          queries: security-extended
+
+      - if: matrix.language == 'csharp'
+        name: Compilar para el analisis
+        run: dotnet build ModernizationScore.slnx --configuration Release
+
+      - uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+
+  contenedores:
+    name: Imagenes e infraestructura
+    needs: [backend, frontend]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Construir imagenes
+        run: |
+          docker build -f deploy/docker/system-api.Dockerfile -t modscore/system-api:ci .
+          docker build -f deploy/docker/channel-api.Dockerfile -t modscore/channel-api:ci .
+
+      - name: Trivy — system-api
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: modscore/system-api:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Trivy — channel-api
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: modscore/channel-api:ci
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Checkov — manifiestos y Dockerfiles
+        uses: bridgecrewio/checkov-action@a8664e3a0549367977f0cda990a34311835c87c0 # v12.3123.0
+        with:
+          directory: deploy
+          framework: kubernetes,dockerfile
+          quiet: true
+          soft_fail: false
+
+# Pendiente de la infraestructura de publicacion (docs/security/hallazgos.md, H-17):
+# empujar las imagenes al registro, firmarlas con cosign keyless y generar la
+# atestacion SLSA que verifica la admision del cluster. Sin registro no hay donde
+# publicar, y un paso que no puede correr no se deja escrito como si protegiera.

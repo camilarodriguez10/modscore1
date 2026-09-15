@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>Modernization.ChannelApi</RootNamespace>
+    <UserSecretsId>modernization-channel-api</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Solo por los contratos de la capa System: un cambio de contrato debe
+         romper la compilacion, no la produccion. -->
+    <ProjectReference Include="..\..\system\Modernization.SystemApi\Modernization.SystemApi.csproj" />
+    <ProjectReference Include="..\..\shared\Modernization.Security\Modernization.Security.csproj" />
+  </ItemGroup>
+</Project>

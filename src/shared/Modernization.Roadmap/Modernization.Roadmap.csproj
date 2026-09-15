@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Modernization.Roadmap</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Modernization.WhatIf\Modernization.WhatIf.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- El modelo MAPS viaja dentro del ensamblado, igual que el ruleset. -->
+    <EmbeddedResource Include="..\..\..\contracts\roadmap-v1.json" LogicalName="roadmap-v1.json" />
+  </ItemGroup>
+</Project>

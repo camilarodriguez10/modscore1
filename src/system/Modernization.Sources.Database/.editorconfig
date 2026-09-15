@@ -1,0 +1,6 @@
+# Las migraciones las escribe `dotnet ef`, no una persona: se tratan como codigo
+# generado. Exigirles el mismo estilo que al codigo propio obliga a editarlas a
+# mano, y una migracion editada a mano deja de coincidir con su snapshot.
+[Migrations/**.cs]
+generated_code = true
+dotnet_diagnostic.CA1861.severity = none

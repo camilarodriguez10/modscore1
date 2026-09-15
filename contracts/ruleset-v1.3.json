@@ -1,0 +1,312 @@
+{
+  "version": "v1.3",
+  "description": "Modernization Score v1.3. Weights and bands taken from the BRD 'Modernization Scoring Tool' and verified against the Power BI dashboard (EAI 10969 = 79.61, EAI 14381 = 79.67). Rulesets are immutable: any change publishes a new version.",
+
+  "normalization": {
+    "floor": 20,
+    "range": 80
+  },
+
+  "pillars": [
+    { "key": "risk", "name": "Modernization Risk Vectors", "nominalWeight": 50 },
+    { "key": "architecture", "name": "Architecture & Maturity", "nominalWeight": 40 },
+    { "key": "stability", "name": "Stability", "nominalWeight": 10 }
+  ],
+
+  "metrics": [
+    {
+      "key": "kenna",
+      "name": "Kenna Score",
+      "pillar": "risk",
+      "weight": 8,
+      "input": "kennaScore",
+      "source": { "system": "CMT", "report": "App Sec Kenna Application Report", "field": "Kenna_Score" },
+      "mapping": {
+        "kind": "numericBands",
+        "bands": [
+          { "min": 0,   "max": 339,  "score": 100, "label": "Low" },
+          { "min": 340, "max": 669,  "score": 60,  "label": "Medium" },
+          { "min": 670, "max": 1000, "score": 20,  "label": "Critical/High" }
+        ]
+      },
+      "zeroIsNoData": true,
+      "note": "Host security risk, derived from Qualys vulnerability scans. BRD 'ALL Sections': a 0 is excluded like a null (ADR 0019)."
+    },
+    {
+      "key": "dr.inScope",
+      "name": "DR In-Scope",
+      "pillar": "risk",
+      "weight": 7,
+      "input": "disasterRecoveryInScope",
+      "source": { "system": "EAI", "report": "Application Security and IT Risk", "field": "DR_In_Scope" },
+      "mapping": {
+        "kind": "categorical",
+        "cases": { "Yes": 100, "No": 20 }
+      }
+    },
+    {
+      "key": "sca.critical",
+      "name": "SCA Flaws (Critical)",
+      "pillar": "risk",
+      "weight": 10,
+      "input": "scaCritical",
+      "source": { "system": "SCA Scan", "report": "veracode_sca_open_flaws", "field": "SVR_DSC = 1-Critical" },
+      "mapping": {
+        "kind": "categorical",
+        "cases": { "None": 100, "Present": 20 }
+      },
+      "note": "RFC-05: by default the presence of at least one open flaw is evaluated, not the count."
+    },
+    {
+      "key": "sca.high",
+      "name": "SCA Flaws (High)",
+      "pillar": "risk",
+      "weight": 8,
+      "input": "scaHigh",
+      "source": { "system": "SCA Scan", "report": "veracode_sca_open_flaws", "field": "SVR_DSC = 2-High" },
+      "mapping": {
+        "kind": "categorical",
+        "cases": { "None": 100, "Present": 20 }
+      }
+    },
+    {
+      "key": "sca.medium",
+      "name": "SCA Flaws (Medium)",
+      "pillar": "risk",
+      "weight": 0,
+      "input": "scaMedium",
+      "source": { "system": "SCA Scan", "report": "veracode_sca_open_flaws", "field": "SVR_DSC = 3-Medium" },
+      "mapping": {
+        "kind": "categorical",
+        "cases": { "None": 100, "Present": 20 }
+      },
+      "note": "BRD: 'Medium (removed from score)'. Weight 0, kept for display."
+    },
+    {
+      "key": "sca.low",
+      "name": "SCA Flaws (Low)",
+      "pillar": "risk",
+      "weight": 0,
+      "input": "scaLow",
+      "source": { "system": "SCA Scan", "report": "veracode_sca_open_flaws", "field": "SVR_DSC = 4-Low" },
+      "mapping": {
+        "kind": "categorical",
+        "cases": { "None": 100, "Present": 60 }
+      },
+      "note": "BRD: 'Low (removed from score)'. Weight 0, kept for display."
+    },
+    {
+      "key": "mfa",
+      "name": "MFA",
+      "pillar": "risk",
+      "weight": 7,
+      "input": "mfa",
+      "source": { "system": "EAI", "report": "Application Security and IT Risk", "field": "Does this Application Utilize MFA?" },
+      "mapping": {
+        "kind": "categorical",
+        "cases": {
+          "Yes (with users)": 100,
+          "Yes (with no users)": 100,
+          "No (with users)": 20,
+          "No (with no users)": 100
+        }
+      },
+      "note": "Missing MFA is only penalized when the application has users."
+    },
+    {
+      "key": "oss",
+      "name": "Open-Source Score",
+      "pillar": "risk",
+      "weight": 10,
+      "input": "openSourceScore",
+      "source": { "system": "RPT", "report": "OSS_Score_by_EAI", "field": "OSS Score" },
+      "mapping": {
+        "kind": "numericBands",
+        "bands": [
+          { "min": 0,  "max": 59,  "score": 20,  "label": "0-59" },
+          { "min": 60, "max": 74,  "score": 60,  "label": "60-74" },
+          { "min": 75, "max": 100, "score": 100, "label": "75-100" }
+        ]
+      },
+      "zeroIsNoData": true,
+      "note": "BRD 'ALL Sections': a 0 is excluded like a null (ADR 0019). Rows with EAI Code 0 in the real file are not applications and match nothing."
+    },
+
+    {
+      "key": "rawTech",
+      "name": "RAW Tech Score",
+      "pillar": "architecture",
+      "weight": 5,
+      "input": "rawTechScore",
+      "source": { "system": "CMT", "report": "Currency Model Detail Report", "field": "Raw_Tech_Score" },
+      "mapping": {
+        "kind": "numericBands",
+        "bands": [
+          { "min": 0,  "max": 59,  "score": 20,  "label": "0-59" },
+          { "min": 60, "max": 74,  "score": 60,  "label": "60-74" },
+          { "min": 75, "max": 100, "score": 100, "label": "75-100" }
+        ]
+      },
+      "zeroIsNoData": true,
+      "note": "Calculated at component level from each component's end-of-life date. BRD 'ALL Sections': a 0 is excluded like a null (ADR 0019)."
+    },
+    {
+      "key": "api.native",
+      "name": "Native REST APIs / APIM",
+      "pillar": "architecture",
+      "weight": 5,
+      "input": "nativeApi",
+      "source": { "system": "API & DataPower", "report": "APIM_Onboarded_EAIs", "field": "API Type" },
+      "mapping": {
+        "kind": "categorical",
+        "cases": {
+          "APIM": 100,
+          "APIC": 100,
+          "SOAP": 20,
+          "DataPower/SOAP Libraries": 20
+        }
+      }
+    },
+    {
+      "key": "archValue",
+      "name": "Architectural Value",
+      "pillar": "architecture",
+      "weight": 10,
+      "input": "architecturalValue",
+      "source": { "system": "CMT", "report": "Architectural Value by EAI", "field": "Modern/Heritage/Obsolete/Not_Approved counts" },
+      "mapping": {
+        "kind": "identity",
+        "identityLabel": "average weighted by product count"
+      },
+      "composite": {
+        "categoryScores": {
+          "modern": 100,
+          "heritage": 60,
+          "obsolete": 20,
+          "notApprovedForUse": 20
+        }
+      },
+      "note": "RFC-01: if CMT delivers the composite already calculated, that value wins over the counts."
+    },
+    {
+      "key": "productStrategy",
+      "name": "Product Strategy",
+      "pillar": "architecture",
+      "weight": 10,
+      "input": "productStrategy",
+      "source": { "system": "MTS", "report": "PRODUCT STRATEGY", "field": "Invest/Tolerate/Eliminate/Migrate counts" },
+      "mapping": {
+        "kind": "identity",
+        "identityLabel": "average weighted by product count"
+      },
+      "composite": {
+        "categoryScores": {
+          "invest": 100,
+          "tolerate": 60,
+          "eliminate": 20,
+          "migrate": 20
+        }
+      }
+    },
+    {
+      "key": "techDebt",
+      "name": "Tech Debt Score",
+      "pillar": "architecture",
+      "weight": 10,
+      "input": "techDebtScore",
+      "source": { "system": "EAI", "report": "tech_debt", "field": "COMBINED_APP_SCORE" },
+      "mapping": {
+        "kind": "numericBands",
+        "bands": [
+          { "min": 0,   "max": 0,   "score": 100, "label": "no debt" },
+          { "min": 0.1, "max": 2.4, "score": 60,  "label": "0.1-2.4" },
+          { "min": 2.5, "max": 5,   "score": 20,  "label": "2.5-5" }
+        ]
+      },
+      "note": "RFC-03: the BRD weights table states 5 and the v1.3 dashboard states 10; 10 is used because it is the published dashboard weight. Neither golden case (14381, 10969) has Tech Debt data, so the choice is not numerically verified. zeroIsNoData stays false: the BRD table scores 0 as its own data point (0 -> 100), and the specific rule wins over 'ALL Sections'."
+    },
+    {
+      "key": "devsecops",
+      "name": "Automation DevSecOps Score",
+      "pillar": "architecture",
+      "weight": 0,
+      "input": "automationDevSecOps",
+      "source": { "system": "DevOps", "report": "Application Maturity Assessment", "field": "Automation DevSecOps Score" },
+      "mapping": {
+        "kind": "numericBands",
+        "bands": [
+          { "min": 0, "max": 3, "score": 20,  "label": "0/NULL-3" },
+          { "min": 4, "max": 4, "score": 60,  "label": "4" },
+          { "min": 5, "max": 5, "score": 100, "label": "5" }
+        ]
+      },
+      "note": "BRD: 'Removed from calculation'. Weight 0. The BRD table maps '0/NULL-3' to 20, so a null would score 20 if the metric ever regains weight; today a null is excluded like any other metric (RFC-14)."
+    },
+    {
+      "key": "containerized",
+      "name": "Containerized",
+      "pillar": "architecture",
+      "weight": 0,
+      "input": "containerized",
+      "source": { "system": "OCP", "report": "OpenShift Container Platform", "field": "Containerized" },
+      "mapping": {
+        "kind": "categorical",
+        "cases": { "Yes": 100 }
+      },
+      "note": "BRD: weight 4 struck through in the weights table. 'No' does not score (NULL). The BRD also says 'This score is added to product strategy (2 pts) and architecture value (2 pts)'; the v1.3 dashboard shows both composites at 10, which the BRD worked example for EAI 14381 confirms (denominator 25 = RAW 5 + ArchValue 10 + ProductStrategy 10). See RFC-01."
+    },
+    {
+      "key": "roadmap",
+      "name": "Application Disposition / Roadmap",
+      "pillar": "architecture",
+      "weight": 0,
+      "input": "roadmap",
+      "source": { "system": "EAI", "report": "Application General Information", "field": "Application_Disposition" },
+      "mapping": {
+        "kind": "categorical",
+        "cases": {
+          "Maintain (Patch)": 60,
+          "Rehost": 60,
+          "Maintain (Evolve)": 100,
+          "Refactor": 20,
+          "Reimagine": 20,
+          "Retire": 20,
+          "Consolidate": 20
+        }
+      },
+      "note": "BRD: 'Currently removed from calculation'. Weight 0, but mapped: it feeds the future plan section. 'Consolidate' is not in the BRD disposition score table; it comes from the MAPS model (roadmap-v1.json) and its 20 is an assumption (RFC-15)."
+    },
+
+    {
+      "key": "monitoring",
+      "name": "Monitoring",
+      "pillar": "stability",
+      "weight": 5,
+      "input": "monitoring",
+      "source": { "system": "Elastic / APM", "report": "MONITOREO", "field": "Agent / APM / Monitoring / Synthetics" },
+      "mapping": {
+        "kind": "categorical",
+        "cases": { "Enabled": 100, "None": 20 }
+      },
+      "note": "A single enabled capability (Elastic Agent, Synthetics or APM) is enough to score 100."
+    },
+    {
+      "key": "operational",
+      "name": "Operational Score",
+      "pillar": "stability",
+      "weight": 5,
+      "input": "operationalScore",
+      "source": { "system": "CMT", "report": "ServiceNow incident & problem, ventana 12 meses", "field": "Operational_Score" },
+      "mapping": {
+        "kind": "numericBands",
+        "bands": [
+          { "min": 0,  "max": 59.9,  "score": 20,  "label": "0-59.9" },
+          { "min": 60, "max": 79.99, "score": 60,  "label": "60-79.99" },
+          { "min": 80, "max": 100,   "score": 100, "label": "80-100" }
+        ]
+      },
+      "zeroIsNoData": true,
+      "note": "BRD 'ALL Sections': a 0 is excluded like a null (ADR 0019)."
+    }
+  ]
+}

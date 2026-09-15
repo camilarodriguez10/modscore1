@@ -1,0 +1,131 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: system-api
+  namespace: modernization-score
+# La aplicacion no habla con el API de Kubernetes: sin token montado.
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: system-api
+  namespace: modernization-score
+  labels:
+    app.kubernetes.io/name: system-api
+    app.kubernetes.io/part-of: modernization-score
+spec:
+  # El adaptador de archivos escribe las versiones en un volumen RWO: una replica
+  # hasta que la Fase 09 mueva la historia a base de datos.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: system-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: system-api
+        app.kubernetes.io/part-of: modernization-score
+    spec:
+      serviceAccountName: system-api
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1654
+        runAsGroup: 1654
+        fsGroup: 1654
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: system-api
+          # Fijada por digest, nunca por etiqueta: el pipeline firma y publica el
+          # digest, y la admision del cluster verifica la firma (plan secc. 7.1).
+          image: registry.example.com/modernization/system-api@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: AllowedHosts
+              value: "system-api;system-api.modernization-score.svc.cluster.local"
+            - name: DataSource__Provider
+              value: File
+            - name: DataSource__Directory
+              value: /data/history
+            # Los secretos llegan como archivos del CSI driver, no como variables.
+            - name: Secrets__Directory
+              value: /mnt/secrets
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 20
+            failureThreshold: 3
+          volumeMounts:
+            - name: history
+              mountPath: /data/history
+            # Unico lugar escribible fuera del volumen de datos: el buffer temporal
+            # de los multipart grandes.
+            - name: tmp
+              mountPath: /tmp
+            - name: secrets
+              mountPath: /mnt/secrets
+              readOnly: true
+      volumes:
+        - name: history
+          persistentVolumeClaim:
+            claimName: system-api-history
+        - name: tmp
+          emptyDir:
+            sizeLimit: 600Mi
+        - name: secrets
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: system-api-secrets
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: system-api-history
+  namespace: modernization-score
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: system-api
+  namespace: modernization-score
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: system-api
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

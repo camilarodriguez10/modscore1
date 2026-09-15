@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Modernization.Sources.Database</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- El adaptador vive en su propio proyecto para que EF Core no entre en el
+         arbol de dependencias del generador dummy ni del lector de archivos: son
+         los que corren en el CLI de datos y en cada test del motor. -->
+    <ProjectReference Include="..\Modernization.Sources\Modernization.Sources.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

@@ -33,7 +33,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-646 pruebas .NET: 200 del motor, 178 de contratos y 268 de API. Las dos que importan más
+666 pruebas .NET: 200 del motor, 178 de contratos y 288 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **EAI 14381 = 79,67:** ejemplo trabajado del BRD, derivado desde datos crudos por el

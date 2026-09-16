@@ -45,7 +45,7 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | Hallazgos | Fase 08: 23 (19 cerrados, H-16 parcial, H-17/H-20/H-21 pendientes). Revisión 09–13: 7 (6 cerrados, 1 aceptado) |
 | Git | Repositorio **privado** <https://github.com/camilarodriguez10/modscore1>, rama `main`. Guarda todo lo creado —el `.zip` portable, el estado local de `data/`, los scripts de las sesiones (`tools/sesiones/`) y la copia del plan (`docs/plan/`)— salvo las capturas del BRD y las imágenes. Los commits usan el correo de la cuenta. Cada push se confirma antes |
 | Artefacto del plan | <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> (versión 17, del 2026-09-16, con el avance de la Fase 14; copia en `docs/plan/modscore-plan.html`, que hay que reemplazar al republicar; enlace anterior del mismo artefacto: <https://claude.ai/code/artifact/25507d1f-40a6-4e74-8c43-0337dbb63358>) |
-| Paquete portable | `artifacts/modscore-portable-win-x64-selfcontained-20260915-0819.zip` (92,8 MB autocontenido, SHA-256 `4778b8d9d092c0d71bed0632e90f77528bff6cef761384528affd04dd913df0f`), versionado en el repositorio; se regenera con `tools/portable/build-portable.ps1`. Verificado el 2026-09-15: descomprimido y arrancado con `start.ps1`; las dos capas escuchan solo en `127.0.0.1`, con CSP estricta; los 6 escenarios e2e pasan contra él; al detenerlo no quedan procesos ni secretos |
+| Paquete portable | `artifacts/modscore-portable-win-x64-selfcontained-20260916-1035.zip` (93,1 MB autocontenido, SHA-256 `10bf572eae52c62a259919d9795e29bad7404f4623055ee9cd760189fb5bfcb6`), versionado en el repositorio; se regenera con `tools/portable/build-portable.ps1`. Verificado el 2026-09-16, ya con las fases 14 y 15: descomprimido y arrancado con `start.ps1`; las dos capas escuchan solo en `127.0.0.1`, con CSP estricta; los 16 escenarios e2e pasan contra él; al detenerlo no quedan procesos ni secretos |
 
 ---
 
@@ -186,7 +186,7 @@ La simulación depende mucho de la carga de la máquina: con la máquina ocupada
 | Para | Comando |
 |---|---|
 | Pruebas .NET | `dotnet test ModernizationScore.slnx` |
-| Pruebas de la SPA | `npm --prefix src/web run lint` (el CI lo exige) · `npm --prefix src/web test` · `npm --prefix src/web run test:e2e` |
+| Pruebas de la SPA | `npm --prefix src/web run lint` (el CI lo exige) · `npm --prefix src/web test` · `npm --prefix src/web run test:e2e` (16 escenarios, 10 de ellos de accesibilidad) |
 | Pruebas contra el paquete portable | Con `start.ps1 -NoBrowser` corriendo, desde `src/web`: `MODSCORE_E2E_BASE_URL=http://localhost:5100 npx playwright test` |
 | Tipos de la SPA | `npx --prefix src/web tsc -b` (desde `src/web`: `npx tsc -b`) |
 | Vulnerabilidades | `dotnet list ModernizationScore.slnx package --vulnerable --include-transitive` · `npm --prefix src/web audit --audit-level=moderate` |
@@ -286,6 +286,9 @@ La simulación depende mucho de la carga de la máquina: con la máquina ocupada
   en reposo y repetir.
 - Una prueba de contrato entre C# y TypeScript da la garantía de un cliente generado sin
   sumar herramientas a la cadena de suministro.
+- Un `DelegatingHandler` nuevo hay que agregarlo a **todos** los clientes HTTP, no solo al
+  principal: el de cargas se quedó sin credencial y lo encontraron las pruebas, no el
+  compilador.
 - En Playwright, esperar «el enlace Portfolio» falla en la pantalla de cálculo, que tiene
   dos: el del encabezado y el de su navegación. La carrera aparece y desaparece según lo
   rápido que renderice. El ayudante apunta al del encabezado (`getByRole('banner')`).

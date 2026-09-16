@@ -1143,10 +1143,10 @@ del BFF (A), JWT validado por APIM (B) o APIM entre capas (C). Se recomienda **C
 
 | Trabajo | Puntos |
 |---|---|
-| Elegir la opción y obtener el producto y las políticas de APIM | PA-02 |
-| Implementar `IReauthenticationFlow` para APIM y verificar la frescura de la autenticación | SEC-19 |
-| Claim de alcance emitido por el IdP o APIM | PA-03 |
-| Reemplazar el token de servicio estático (opción C) | PA-05, ASVS 2.10.1 |
+| Elegir la opción ✅ (C con A, ADR 0022) y obtener el producto y las políticas de APIM | PA-02 |
+| Implementar `IReauthenticationFlow` para APIM ✅ y verificar la frescura de la autenticación contra el proveedor real | SEC-19 |
+| Claim de alcance emitido por el IdP o APIM, con mapeo de grupos como respaldo ✅ | PA-03 |
+| Reemplazar el token de servicio estático (opción C) ✅ código listo, falta el emisor | PA-05, ASVS 2.10.1 |
 | Actualizar el modelo de amenazas (fronteras ② y ⑥) | — |
 
 **Criterio de aceptación:** publicar reglas en el entorno de prueba exige reautenticarse

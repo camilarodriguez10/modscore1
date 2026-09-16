@@ -28,4 +28,5 @@ BRD ni las copias temporales de datos que quedaron en el directorio de la sesió
 | 12: administración de reglas | 2026-09-12 | `p12_web`, `p12_asvs`, `p12_docs`, `p12_artifact` |
 | 13: revisión y remediación | 2026-09-14/15 | `extract-draft.mjs`, `p13_artifact` |
 | 14: verificacion de seguridad (ASVS) | 2026-09-15 | `p14_sec06` (auditoria de validaciones), `p14_sec07` (retencion de cargas), `p14_td04*` (contraste y accesibilidad), `p14_ci_e2e`, `p14_asvs`, `p14_docs`, `p14_plan`, `p14_handoff2`, `p14_td_items`, `p14_fixups` |
+| 15: autenticacion con APIM | 2026-09-16 | `p15_system` (validacion JWT en la capa System), `p15_channel` (credencial de vida corta), `p15_apim` (reautenticacion y alcance por grupos), `p15_both` (modo de cambio sin corte), `p15_docs`, `p15_plan` |
 | CI: paso de CodeQL sin code scanning | 2026-09-15 | `test-codeql-gate.mjs`: valida `ci.yml` y prepara SARIF de ejemplo para probar el paso "Sin hallazgos de severidad alta" (el directorio de destino va como argumento) |

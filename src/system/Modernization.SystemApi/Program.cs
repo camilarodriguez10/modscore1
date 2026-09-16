@@ -36,16 +36,62 @@ builder.WebHost.ConfigureKestrel(options =>
 // El token de servicio es el control de aplicacion; mTLS es el de transporte y
 // lo impone el service mesh (ADR 0001).
 
+// Static (hoy), Jwt (con APIM) o Both, que es la ventana del cambio (ADR 0022).
+var serviceTokenMode = Enum.TryParse<ServiceTokenMode>(
+    builder.Configuration["ServiceToken:Mode"],
+    ignoreCase: true,
+    out var configuredMode)
+        ? configuredMode
+        : ServiceTokenMode.Static;
+
+var jwtServiceToken = serviceTokenMode is ServiceTokenMode.Jwt or ServiceTokenMode.Both;
+
 builder.Services
     .AddAuthentication(ServiceTokenAuthenticationHandler.SchemeName)
     .AddScheme<ServiceTokenOptions, ServiceTokenAuthenticationHandler>(
         ServiceTokenAuthenticationHandler.SchemeName,
         options =>
         {
+            options.Mode = serviceTokenMode;
             options.Token = builder.Configuration["ServiceToken:Token"] ?? string.Empty;
             options.SecondaryToken = builder.Configuration["ServiceToken:SecondaryToken"];
             options.CallerName = builder.Configuration["ServiceToken:CallerName"] ?? "channel-api";
         });
+
+// Quien decide si el token vale: el secreto compartido de hoy, o el token de vida
+// corta que emite APIM (ADR 0020, opcion C). Un solo esquema, dos validadores.
+if (jwtServiceToken)
+{
+    var jwt = new JwtServiceTokenOptions
+    {
+        Authority = builder.Configuration["ServiceToken:Jwt:Authority"],
+        Issuer = builder.Configuration["ServiceToken:Jwt:Issuer"] ?? string.Empty,
+        Audience = builder.Configuration["ServiceToken:Jwt:Audience"] ?? string.Empty,
+    };
+
+    foreach (var caller in builder.Configuration.GetSection("ServiceToken:Jwt:AllowedCallers").Get<string[]>() ?? [])
+    {
+        jwt.AllowedCallers.Add(caller);
+    }
+
+    builder.Services.AddSingleton(jwt);
+    builder.Services.AddSingleton<JwtServiceTokenValidator>();
+
+    if (serviceTokenMode == ServiceTokenMode.Both)
+    {
+        builder.Services.AddSingleton<StaticServiceTokenValidator>();
+        builder.Services.AddSingleton<IServiceTokenValidator, EitherServiceTokenValidator>();
+    }
+    else
+    {
+        builder.Services.AddSingleton<IServiceTokenValidator>(
+            sp => sp.GetRequiredService<JwtServiceTokenValidator>());
+    }
+}
+else
+{
+    builder.Services.AddSingleton<IServiceTokenValidator, StaticServiceTokenValidator>();
+}
 
 builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()

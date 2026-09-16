@@ -560,7 +560,7 @@ tests corre igual contra el tercer adaptador.
 | **12 — Administración de reglas** ✅ | ENTREGADA | Ruleset, palancas de what-if y parámetros de roadmap editables desde el portal, solo administradores, con borrador, simulación de impacto y publicación auditada | **Cumplido:** cambiar un peso desde el portal mueve el portafolio, queda auditado con su impacto y lo toman las réplicas sin desplegar |
 | **13 — Revisión y remediación** ✅ | ENTREGADA | Reglas contra las capturas del BRD, deuda técnica, rendimiento, robustez, comparación de reglas, exportaciones, pruebas de la SPA, git y paquete portable (ver 8.6) | **Cumplido:** 640 pruebas .NET, 35 unitarias y 6 de punta a punta en verde; la historia en frío pasa de 1,7 s a 8–15 ms con calentamiento y la simulación de 117 a 47 ms |
 | **14 — Verificación de seguridad (ASVS L2)** 🟡 | EN CURSO | Lo que no necesita infraestructura, hecho el 2026-09-15 (ver 8.7): pipeline verde, auditoría de validaciones rechazadas, retención de cargas, decisión sobre validación de esquema, controles compensatorios de aislamiento, y accesibilidad y e2e en el CI. Falta el entorno de prueba para los once parciales restantes y la revisión por otra persona | **Parcial:** ASVS pasa de 103 a 106 cumple y de 14 a 11 parciales; los que quedan dependen de cluster, IdP, ingress y gestor de secretos |
-| **15 — Autenticación con APIM** | 3 sem | OAuth mediante Azure API Management ([ADR 0020](docs/adr/0020-camino-de-oidc-a-oauth-con-apim.md)), claim de alcance, token de servicio reemplazado | Reautenticación verificada contra el IdP real; sin secreto estático entre capas |
+| **15 — Autenticación con APIM** 🟡 | EN CURSO | Opción C con A elegida el 2026-09-16 ([ADR 0022](docs/adr/0022-la-credencial-entre-capas-es-conectable.md)): credencial conectable, validación del JWT en la capa System, modo `Both` para cambiar sin corte, reautenticación de APIM y alcance desde grupos (ver 8.8) | **Parcial:** el código está probado con dobles; cerrar H-16 espera a que APIM emita los tokens y el secreto salga del gestor |
 | **16 — Escala y operación** | 3 sem | Destino y motor de base (RFC-07), Redis, réplicas, respaldos, retención, SIEM, notificaciones de reglas | Dos réplicas por capa bajo carga; restauración probada; alertas activas |
 | **17 — Hallazgos de infraestructura** | 2 sem | **Al final por decisión del 2026-09-14:** H-16, H-17, H-20, H-21 | ASVS 2.10.1, 3.3.4, 7.3.3, 12.4.2 y 14.1.5 cumplen |
 
@@ -932,6 +932,49 @@ IdP, reglas del SIEM y firma de imágenes—. El runbook
 [verificación ASVS](docs/runbooks/verificacion-asvs.md) deja cada uno con su comando y su
 resultado esperado. La revisión de seguridad por una segunda persona (TD-13) sigue abierta.
 
+### 8.8 Resultado de la Fase 15 — Autenticación con APIM
+
+En curso desde el 2026-09-16. Se eligió la **opción C junto con A** del
+[ADR 0020](docs/adr/0020-camino-de-oidc-a-oauth-con-apim.md) y se dejó el código listo,
+probado con dobles: APIM todavía no existe.
+
+**La credencial entre capas ahora es conectable** ([ADR 0022](docs/adr/0022-la-credencial-entre-capas-es-conectable.md)):
+
+| Pieza | Hoy | Con APIM |
+|---|---|---|
+| Qué manda la capa Channel | El secreto del gestor de secretos | Token de vida corta con `client_credentials`, cacheado y renovado un minuto antes de vencer |
+| Qué valida la capa System | Comparación en tiempo constante, con token de rotación | Firma, emisor, audiencia, vencimiento, algoritmo de una lista blanca y cliente permitido |
+| Cómo se elige | `ServiceToken:Mode` y `SystemApi:Credential:Mode` | Igual, cambiando el valor |
+
+**Tres decisiones dentro de esa:**
+
+1. **Modo `Both` para la ventana del cambio.** La capa System acepta el secreto compartido
+   y el token de APIM a la vez, así que las dos capas no tienen que cambiar en el mismo
+   instante. Sin eso, el cambio pediría un corte, y un corte invita a hacerlo mal.
+2. **La credencial se pide por petición.** Un token de vida corta cambia; una cabecera
+   fijada al arrancar se queda vieja. Lo pone un `DelegatingHandler` — y la primera versión
+   se olvidó del cliente de cargas, cosa que encontraron las pruebas.
+3. **El token no se registra nunca**, ni siquiera cuando el emisor responde con error: el
+   mensaje lleva el código de estado, no el cuerpo.
+
+**Reautenticación y alcance:**
+
+- `ApimReauthentication` cierra la sesión anterior y sale al mismo flujo de código de
+  autorización, con los parámetros que APIM espera (`acr_values`, por ejemplo). Exigir MFA
+  sigue siendo política del IdP o de APIM, no del código (SEC-04).
+- Si el IdP no puede emitir el claim de alcance, se mapean grupos
+  (`Authorization:ScopeFromGroups`). **El claim manda sobre los grupos:** sumarlos podría
+  ampliar un alcance ya emitido, y eso no puede pasar por accidente (H-02).
+
+**Medido en pruebas:** 20 llamadas simultáneas al vencer el token piden **una sola** vez el
+token nuevo; un token de otra audiencia, de otro emisor, vencido, sin firma o firmado con
+otra llave se rechaza; el cuerpo del error del emisor no llega al mensaje.
+
+**Lo que falta, y por qué:** el emisor. Con APIM real hay que verificar que el token traiga
+la audiencia de la capa System y un `azp` estable, que la reautenticación llegue al IdP
+(SEC-19) y que el alcance entregue lo que el negocio espera. El cambio, paso a paso y con
+su vuelta atrás, está en el [runbook de paso a APIM](docs/runbooks/paso-a-apim.md).
+
 ## 8bis. Ampliación solicitada — fases 10 a 12
 
 Siete puntos pedidos el 12 de septiembre de 2026, una vez entregadas las fases 00
@@ -1151,10 +1194,10 @@ modernization-score/
 ├─ docs/
 │  ├─ PENDING-ITEMS.md               # pendientes para revisar con el equipo, en inglés
 │  ├─ plan/                          # copia del plan publicado como artefacto
-│  ├─ adr/                           # decisiones de arquitectura (0001–0021)
+│  ├─ adr/                           # decisiones de arquitectura (0001–0022)
 │  ├─ brd/                           # índice de las capturas del BRD; las imágenes no se versionan
 │  ├─ security/                      # modelo de amenazas, ASVS L2, hallazgos
-│  └─ runbooks/                      # secretos, carga defectuosa, DR, incidente, reglas, respaldo en git, verificación ASVS
+│  └─ runbooks/                      # secretos, carga defectuosa, DR, incidente, reglas, respaldo, verificación ASVS, paso a APIM
 ├─ contracts/
 │  ├─ ruleset-v1.3.json              # pesos, bandas, estrategias
 │  ├─ roadmap-v1.json                # modelo MAPS

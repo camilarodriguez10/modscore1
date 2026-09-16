@@ -193,7 +193,39 @@ var serviceToken = builder.Configuration["SystemApi:ServiceToken"]
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<UserContextHandler>();
 
+// Con que credencial se llama a la capa System (ADR 0020, opcion C). Por defecto el
+// secreto compartido; con APIM, un token de vida corta pedido con client_credentials.
+if (string.Equals(
+        builder.Configuration["SystemApi:Credential:Mode"],
+        "ClientCredentials",
+        StringComparison.OrdinalIgnoreCase))
+{
+    var credential = new ClientCredentialsOptions
+    {
+        TokenEndpoint = builder.Configuration["SystemApi:Credential:TokenEndpoint"] ?? string.Empty,
+        ClientId = builder.Configuration["SystemApi:Credential:ClientId"] ?? string.Empty,
+        ClientSecret = builder.Configuration["SystemApi:Credential:ClientSecret"] ?? string.Empty,
+        Scope = builder.Configuration["SystemApi:Credential:Scope"] ?? string.Empty,
+    };
+
+    credential.Validate();
+
+    builder.Services.AddHttpClient(
+        ClientCredentialsServiceCredential.ClientName,
+        client => client.Timeout = TimeSpan.FromSeconds(10));
+
+    builder.Services.AddSingleton(credential);
+    builder.Services.AddSingleton<IServiceCredential, ClientCredentialsServiceCredential>();
+}
+else
+{
+    builder.Services.AddSingleton<IServiceCredential>(new StaticServiceCredential(serviceToken));
+}
+
+builder.Services.AddTransient<ServiceCredentialHandler>();
+
 builder.Services.AddHttpClient<SystemApiClient>(client => ConfigureSystemClient(client, TimeSpan.FromSeconds(30)))
+    .AddHttpMessageHandler<ServiceCredentialHandler>()
     .AddHttpMessageHandler<UserContextHandler>()
     // Nunca se reintenta un POST: una simulacion es inocua, pero la regla no puede
     // depender de recordar cual es cual.
@@ -205,6 +237,7 @@ builder.Services.AddHttpClient<SystemApiClient>(client => ConfigureSystemClient(
 builder.Services.AddHttpClient(
         SystemApiClient.UploadClientName,
         client => ConfigureSystemClient(client, ChannelLimits.UploadTimeout))
+    .AddHttpMessageHandler<ServiceCredentialHandler>()
     .AddHttpMessageHandler<UserContextHandler>();
 
 builder.Services.AddScoped<ScreenComposer>();
@@ -345,7 +378,8 @@ void ConfigureSystemClient(HttpClient client, TimeSpan timeout)
 {
     client.BaseAddress = new Uri(systemApiUrl);
     client.Timeout = timeout;
-    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", serviceToken);
+    // La credencial la pone ServiceCredentialHandler en cada llamada: un token de
+    // vida corta cambia, y un valor fijado al arrancar se quedaria viejo.
     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 }
 

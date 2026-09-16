@@ -57,6 +57,35 @@ public sealed class ReauthenticationFlowTests
         Assert.Equal(StepUp.RulesPath, redirect.Url);
     }
 
+    /// <summary>
+    /// Con APIM delante, el flujo es el mismo codigo de autorizacion y ademas viajan los
+    /// parametros que APIM espera: exigir MFA es politica suya, no del codigo (SEC-04).
+    /// </summary>
+    [Fact]
+    public async Task Apim_ClosesThePreviousSessionAndCarriesItsAuthorizeParameters()
+    {
+        var authentication = new RecordingAuthenticationService();
+        await using var services = ServicesWith(authentication);
+        var context = ContextWith(services);
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                ["Authentication:Apim:AuthorizeParameters:acr_values"] = "mfa",
+            })
+            .Build();
+
+        var result = await new ApimReauthentication(configuration).StartAsync(context, StepUp.RulesPath);
+
+        Assert.Equal(["signout:" + Cookie], authentication.Calls);
+
+        var challenge = Assert.IsType<ChallengeHttpResult>(result);
+        Assert.Equal([OpenIdConnectDefaults.AuthenticationScheme], challenge.AuthenticationSchemes);
+        Assert.Equal(StepUp.RulesPath, challenge.Properties?.RedirectUri);
+        Assert.True(challenge.Properties?.Items.ContainsKey(StepUp.PropertyKey));
+        Assert.Equal("mfa", challenge.Properties?.Items[ApimReauthentication.ParameterPrefix + "acr_values"]);
+    }
+
     private static ServiceProvider ServicesWith(IAuthenticationService authentication)
         => new ServiceCollection().AddSingleton(authentication).BuildServiceProvider();
 

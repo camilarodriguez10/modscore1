@@ -98,7 +98,7 @@ La autenticación de personas se delega en el IdP corporativo por OIDC.
 | 2.1.x · 2.3.x · 2.5.x | Contraseñas, credenciales, recuperación | IdP | — |
 | 2.8.x | MFA | IdP | Acceso condicional del IdP |
 | 2.2.1 | Anti-automatización | Cumple | Rate limiting por usuario · `AuthenticatedUsersAreLimitedPerUserNotPerAddress` |
-| 2.10.1 | Secretos de integración no estáticos | Parcial | Token compartido con rotación sin corte y mTLS; tokens de vida corta pendientes (H-16) |
+| 2.10.1 | Secretos de integración no estáticos | Parcial | Token compartido con rotación sin corte y mTLS. Desde la Fase 15 la credencial es conectable: `ClientCredentialsServiceCredential` pide un token de vida corta y `JwtServiceTokenValidator` lo valida (firma, emisor, audiencia, vencimiento, algoritmo y cliente) · `JwtServiceTokenValidatorTests` · `ClientCredentialsServiceCredentialTests`. Pasa a cumple cuando APIM emita y el secreto salga del gestor ([ADR 0022](../adr/0022-la-credencial-entre-capas-es-conectable.md), H-16) |
 | 2.10.3 | Secretos protegidos en el almacenamiento | Cumple | Archivos del CSI driver, nunca variables de entorno (`Secrets:Directory`) |
 | 2.10.4 | Secretos fuera del código | Cumple | `ProductionRefusesTheRepositoryDevelopmentToken` · Gitleaks en CI |
 

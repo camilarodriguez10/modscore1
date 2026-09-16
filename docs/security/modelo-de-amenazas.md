@@ -61,7 +61,7 @@ flowchart LR
 
 | | Amenaza | Control | Evidencia | Riesgo residual |
 |---|---|---|---|---|
-| **S** | Llamar a la System sin ser la Channel | Token de servicio en tiempo constante · mTLS del mesh · NetworkPolicy solo desde channel-api | `SystemEndpointsRejectRequestsWithoutAServiceToken` · `network-policies.yaml` · `namespace.yaml` | Token compartido y estático, no de vida corta (H-16) |
+| **S** | Llamar a la System sin ser la Channel | Token de servicio en tiempo constante · mTLS del mesh · NetworkPolicy solo desde channel-api. Desde la Fase 15 el token puede ser uno de vida corta emitido por APIM, validado por firma, emisor, audiencia y vencimiento | `SystemEndpointsRejectRequestsWithoutAServiceToken` · `JwtServiceTokenValidatorTests` · `network-policies.yaml` | Mientras el modo sea `Static`, el secreto sigue siendo compartido y sin vencimiento (H-16) |
 | **S** | Declarar alcance sin ser servicio | El header solo se acepta de un llamador de servicio | `OnlyAServiceCallerCanDeclareAScope` | Quien tenga el token puede declarar cualquier alcance |
 | **E** | Declarar permisos de administración sin ser servicio | `X-Portfolio-Grants` solo se acepta de un llamador de servicio, con valores de una lista blanca | `TheSystemLayerChecksTheForwardedGrantsItself` · `ForwardedGrants.cs` | Quien tenga el token puede declararlos (H-16) |
 | **T** | Rotar el token con corte | Token secundario durante la ventana | `SecondaryTokenIsAcceptedDuringARotation` · [runbook](../runbooks/rotacion-de-secretos.md) | — |

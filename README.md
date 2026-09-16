@@ -137,6 +137,24 @@ Con el adaptador Dummy las reglas viven en memoria; con base de datos, en la tab
 | `Portfolio__WarmupSeconds` | System | 15 | Cada cuánto se dejan calculados scores e historia; 0 lo apaga |
 | `Uploads__RetainVersions` | System | 0 | Cuántas cargas conserva el adaptador de archivos; 0 conserva todas |
 
+## Autenticación y credencial entre capas
+
+Hoy: OIDC para las personas y un secreto compartido entre las dos capas. Con APIM
+([ADR 0022](docs/adr/0022-la-credencial-entre-capas-es-conectable.md)), las dos cosas
+cambian por configuración, sin desplegar otra versión. El paso a paso, en el
+[runbook](docs/runbooks/paso-a-apim.md).
+
+| Variable | Capa | Por defecto | Para qué |
+|---|---|---|---|
+| `ServiceToken__Mode` | System | `Static` | Qué acepta: el secreto compartido, `Jwt` de APIM, o `Both` durante el cambio |
+| `ServiceToken__Jwt__Authority` · `__Issuer` · `__Audience` | System | — | De dónde salen las llaves y qué emisor y audiencia se exigen |
+| `ServiceToken__Jwt__AllowedCallers__0` | System | vacío | Clientes aceptados (`azp`); vacío acepta cualquiera que el emisor autorice |
+| `SystemApi__Credential__Mode` | Channel | `Static` | `ClientCredentials` pide un token de vida corta y lo renueva |
+| `SystemApi__Credential__TokenEndpoint` · `__ClientId` · `__Scope` | Channel | — | Emisor, cliente y audiencia. El secreto va como archivo `SystemApi__Credential__ClientSecret` |
+| `Authentication__Provider` | Channel | `Oidc` | `Apim` usa el flujo de reautenticación de APIM |
+| `Authentication__Apim__AuthorizeParameters__*` | Channel | vacío | Parámetros extra de la autorización, por ejemplo `acr_values=mfa` |
+| `Authorization__ScopeFromGroups__ClaimType` · `__Map__*` | Channel | vacío | Traduce grupos del IdP a alcance cuando no hay claim propio; el claim manda sobre los grupos |
+
 Los CSV neutralizan textos que una planilla ejecutaría como fórmula, y cada descarga queda
 auditada con el evento 4213.
 

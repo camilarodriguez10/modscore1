@@ -2,6 +2,10 @@
 
 **Estado:** aceptada · **Fecha:** 2026-09-14 · **Relacionado:** ADR 0005, ADR 0011, ADR 0013, RFC-12
 
+> **2026-09-16:** se eligio la opcion **C junto con A**, y el codigo quedo listo detras de
+> interfaces. Ver [ADR 0022](0022-la-credencial-entre-capas-es-conectable.md) y el
+> [runbook de paso a APIM](../runbooks/paso-a-apim.md).
+
 ## Contexto
 
 La capa Channel autentica hoy con OIDC (Authorization Code + PKCE) contra el IdP

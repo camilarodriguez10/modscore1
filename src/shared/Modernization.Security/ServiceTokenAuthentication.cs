@@ -1,8 +1,7 @@
 using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -32,11 +31,11 @@ public sealed class ServiceTokenAuthenticationHandler(
 
     public const string ServiceCallerType = "service";
 
-    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+    protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         if (!Request.Headers.TryGetValue("Authorization", out var header))
         {
-            return Task.FromResult(AuthenticateResult.NoResult());
+            return AuthenticateResult.NoResult();
         }
 
         var value = header.ToString();
@@ -44,44 +43,43 @@ public sealed class ServiceTokenAuthenticationHandler(
 
         if (!value.StartsWith(Prefix, StringComparison.Ordinal))
         {
-            return Task.FromResult(AuthenticateResult.Fail("Se esperaba un token Bearer."));
+            return AuthenticateResult.Fail("Se esperaba un token Bearer.");
         }
 
         var presented = value[Prefix.Length..];
 
-        if (!IsExpectedToken(presented))
+        // Que token es valido lo decide el validador configurado: secreto compartido
+        // hoy, token de vida corta de APIM cuando exista ([ADR 0020], opcion C).
+        var validator = Context.RequestServices.GetRequiredService<IServiceTokenValidator>();
+        var outcome = await validator.ValidateAsync(presented, Context.RequestAborted).ConfigureAwait(false);
+
+        if (!outcome.IsValid)
         {
-            // Sin detalle: un mensaje especifico ayudaria a enumerar tokens.
-            return Task.FromResult(AuthenticateResult.Fail("Token de servicio invalido."));
+            // Sin detalle en la respuesta: un mensaje especifico ayudaria a enumerar tokens.
+            return AuthenticateResult.Fail("Token de servicio invalido.");
         }
 
         var identity = new ClaimsIdentity(
-            [new Claim(ClaimTypes.Name, Options.CallerName), new Claim(CallerTypeClaim, ServiceCallerType)],
+            [
+                new Claim(ClaimTypes.Name, outcome.Caller ?? Options.CallerName),
+                new Claim(CallerTypeClaim, ServiceCallerType),
+            ],
             SchemeName);
 
-        return Task.FromResult(AuthenticateResult.Success(
-            new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName)));
-    }
-
-    /// <summary>
-    /// Acepta el token vigente y, durante una rotacion, el siguiente. Asi se cambia
-    /// el secreto sin cortar el servicio (runbook de rotacion de secretos).
-    /// </summary>
-    private bool IsExpectedToken(string presented)
-    {
-        var actual = Encoding.UTF8.GetBytes(presented);
-
-        var primary = CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(Options.Token), actual);
-        var secondary = !string.IsNullOrEmpty(Options.SecondaryToken)
-            && CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(Options.SecondaryToken), actual);
-
-        return primary || secondary;
+        return AuthenticateResult.Success(
+            new AuthenticationTicket(new ClaimsPrincipal(identity), SchemeName));
     }
 }
 
 public sealed class ServiceTokenOptions : AuthenticationSchemeOptions
 {
     private const int MinimumLength = 32;
+
+    /// <summary>
+    /// Como se valida lo que presenta la capa Channel. <see cref="ServiceTokenMode.Static"/>
+    /// exige el secreto compartido; <see cref="ServiceTokenMode.Jwt"/> no lo usa.
+    /// </summary>
+    public ServiceTokenMode Mode { get; set; } = ServiceTokenMode.Static;
 
     /// <summary>
     /// Token compartido con la capa Channel. Viene de Key Vault en despliegue;
@@ -100,6 +98,13 @@ public sealed class ServiceTokenOptions : AuthenticationSchemeOptions
     public override void Validate()
     {
         base.Validate();
+
+        if (Mode == ServiceTokenMode.Jwt)
+        {
+            // Con APIM el secreto compartido no existe: lo que hay que validar son
+            // el emisor, la audiencia y las llaves, y de eso se ocupa su validador.
+            return;
+        }
 
         if (string.IsNullOrWhiteSpace(Token) || Token.Length < MinimumLength)
         {

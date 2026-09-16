@@ -52,7 +52,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
   - Contract test between the C# view models and the TypeScript types.
   - Git repository with backup scripts, and a portable package to test on other machines.
 - **Tests**:
-  - 646 .NET tests: 200 engine, 178 contracts, 268 API.
+  - 666 .NET tests: 200 engine, 178 contracts, 288 API.
   - 35 SPA unit tests.
   - 16 end-to-end scenarios: 6 flows and 10 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
   - Zero vulnerable packages, and `npm audit` is clean.
@@ -88,10 +88,10 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 | SR-14 | Meaning of the "Monitoring" column in MONITOREO | Scoring rules / data | P2 | Observability owner | Decision needed |
 | SR-15 | MFA with unknown user count assumed "with users" | Scoring rules | P2 | Application security | Decision needed |
 | PA-01 | Deployment target and database engine (RFC-07) | Platform | P0 | Platform/architecture | Decision needed |
-| PA-02 | Authentication through Azure API Management with OAuth (ADR 0020) | Platform / security | P0 | Platform + identity + security | Decision needed |
-| PA-03 | Portfolio scope claim (RFC-10) | Platform / security | P0 | Identity | Decision needed |
+| PA-02 | Authentication through Azure API Management with OAuth (ADR 0020) | Platform / security | P0 | Platform + identity + security | Option decided on 2026-09-16 (C with A); code ready, waiting for APIM |
+| PA-03 | Portfolio scope claim (RFC-10) | Platform / security | P0 | Identity | Code ready: claim, or a group-to-scope map; identity has to confirm which |
 | PA-04 | Shared session cache (RFC-11) | Platform | P2 | Platform | Open |
-| PA-05 | Workload identity Channel → System (RFC-12, H-16) | Platform / security | P1 | Platform + security | Open |
+| PA-05 | Workload identity Channel → System (RFC-12, H-16) | Platform / security | P1 | Platform + security | Code ready (client credentials + JWT validation); waiting for the issuer |
 | PA-06 | Horizontal scaling constraints | Platform | P2 | Platform | Open |
 | PA-07 | Secrets manager integration verified | Platform / security | P1 | Platform | Open |
 | PA-08 | Observability and SIEM rules | Platform / security | P1 | Operations + security | Open |
@@ -501,7 +501,7 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
 |---|---|---|---|---|---|---|
 | SEC-01 | 1.6.2 | Cryptographic keys protected | Data Protection keys on their own volume (`DataProtection:KeysDirectory`) | Encryption at rest of that volume; key protection with the vault (`ProtectKeysWithAzureKeyVault` or equivalent) | Inspect the volume and key ring in the test environment | S |
 | SEC-02 | 1.9.2 | Encrypted communication between components | Linkerd mTLS declared in `deploy/k8s/namespace.yaml` | Verification in a real cluster | `linkerd viz edges` or mesh dashboard shows mTLS for Channel → System | S |
-| SEC-03 | 2.10.1 | Integration secrets are not static | Shared token with seamless rotation and mTLS | Short-lived workload identity (PA-05) or APIM (PA-02 C) | No static secret in configuration | M |
+| SEC-03 | 2.10.1 | Integration secrets are not static | Shared token with seamless rotation and mTLS; since phase 15 the credential is pluggable and the System layer validates a short-lived JWT, with a `Both` mode for the cutover | The issuer: APIM or the IdP. Closing it means `ServiceToken:Mode=Jwt` and removing the shared secret | No static secret in configuration; `JwtServiceTokenValidatorTests` already covers the validation | M |
 | SEC-04 | 4.3.1 | MFA on administrative interfaces | Uploads need `ingestion.write`; rules need `ruleset.admin` + step-up within 10 minutes | MFA enforcement for both roles is an IdP/APIM conditional access policy | Sign-in with each role requires MFA | S |
 | SEC-05 | 6.4.1 | Secrets manager | CSI key-per-file mount declared | Verification against the real vault (PA-07) | Secrets read from the vault; none in env vars | S |
 | SEC-06 | 7.1.3 | Security events logged | **Done (2026-09-15).** Every `/api` response that rejects the input (400, 413, 415, 422) logs event **4214** with the path and the status code, from a middleware in the Channel layer, so no endpoint can forget. The values that were sent are never logged | — | `ValidationAuditTests` | S |
@@ -978,8 +978,8 @@ Numbers are for comparing changes on the same machine, not for sizing production
 | Suite | Count | Command |
 |---|---|---|
 | Engine (golden cases, mapping table, what-if, roadmap, rules editor, comparison) | 200 | `dotnet test tests/Modernization.Scoring.Engine.Tests` |
-| Source contracts (Dummy, File, Database; rules stores) | 175 | `dotnet test tests/Modernization.Sources.ContractTests` |
-| API end-to-end through both layers and security | 265 | `dotnet test tests/Modernization.Api.Tests` |
+| Source contracts (Dummy, File, Database; rules stores) | 178 | `dotnet test tests/Modernization.Sources.ContractTests` |
+| API end-to-end through both layers and security | 288 | `dotnet test tests/Modernization.Api.Tests` |
 | SPA unit (Vitest) | 35 | `npm --prefix src/web test` |
 | SPA end-to-end (Playwright, Edge locally, Chromium in CI) | 6 | `npm --prefix src/web run test:e2e` |
 | SPA accessibility (axe, five screens in light and dark) | 10 | Same command; `e2e/accessibility.spec.ts` |
@@ -995,7 +995,7 @@ Numbers are for comparing changes on the same machine, not for sizing production
 |---|---|---|---|
 | 13 | Review and remediation | Delivered on 2026-09-14 | Section 7 |
 | 14 | Security verification (ASVS L2) | **In progress.** Done on 2026-09-15: CI green, SEC-06, SEC-07, SEC-12, SEC-14, and e2e with axe in CI (TD-04, TD-05). Left: the eleven partials that need a test environment, ZAP, and the peer review | SEC-01…05, SEC-08…11, SEC-13, SEC-19, SEC-20, TD-09, TD-13 |
-| 15 | Authentication through APIM | Decide option; implement flow; scope claim; remove static token if option C | PA-02, PA-03, PA-05, SEC-03, SEC-19 |
+| 15 | Authentication through APIM | **In progress.** Option C with A decided on 2026-09-16; pluggable credential, JWT validation, `Both` mode for the cutover, APIM step-up and group-to-scope map, all tested with doubles. Left: the issuer itself (APIM), SEC-19 against the real provider and closing H-16 | PA-02, PA-03, PA-05, SEC-03, SEC-19 |
 | 16 | Scale and operations | Target and engine; Redis; replicas; backups; retention; SIEM; notifications | PA-01, PA-04, PA-06, PA-07, PA-08, PA-09, OP-01…03 |
 | 17 | Infrastructure findings (last, by decision) | H-16 workload identity, H-17 image signing and immutable logs, H-20 session management, H-21 upload antivirus | SEC-15…18 |
 

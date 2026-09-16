@@ -165,6 +165,11 @@ producción nadie servía la SPA con CSP.
 
 ### H-16 · Token de servicio estático y compartido · **Parcial**
 
+> **Fase 15 (2026-09-16):** el código ya acepta un token de vida corta en las dos puntas y
+> hay un modo `Both` para cambiar sin corte ([ADR 0022](../adr/0022-la-credencial-entre-capas-es-conectable.md),
+> [runbook](../runbooks/paso-a-apim.md)). El hallazgo se cierra cuando APIM emita los tokens
+> y el secreto compartido salga del gestor de secretos.
+
 ASVS 2.10.1 pide que los secretos de integración no sean contraseñas fijas.
 
 - **Hecho:** rotación sin corte con token secundario; mTLS del mesh con política

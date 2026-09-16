@@ -23,7 +23,21 @@ namespace Modernization.ChannelApi.Auth;
 /// Son roles separados a proposito: quien sube los datos no deberia poder cambiar
 /// tambien como se puntuan.
 /// </remarks>
-public sealed class ChannelPermissions(string scopeClaimType, TimeSpan? reauthenticationWindow = null)
+/// <summary>
+/// Traduccion de grupos del IdP a alcance del portafolio, para cuando el IdP no puede
+/// emitir el claim propio (PA-03).
+/// </summary>
+/// <param name="ClaimType">Claim donde llegan los grupos; <c>groups</c> por defecto.</param>
+/// <param name="Map">Grupo a entradas de alcance, en formato de header: <c>lob:Individual;country:Chile</c>.</param>
+public sealed record GroupScopeMapping(string ClaimType, IReadOnlyDictionary<string, string> Map)
+{
+    public const string DefaultClaimType = "groups";
+}
+
+public sealed class ChannelPermissions(
+    string scopeClaimType,
+    TimeSpan? reauthenticationWindow = null,
+    GroupScopeMapping? groupScopes = null)
 {
     public const string RoleClaimType = "roles";
     public const string ReadRole = "portfolio.read";
@@ -53,7 +67,33 @@ public sealed class ChannelPermissions(string scopeClaimType, TimeSpan? reauthen
 
     public TimeSpan ReauthenticationWindow { get; } = reauthenticationWindow ?? DefaultReauthenticationWindow;
 
-    public PortfolioScope ScopeOf(ClaimsPrincipal user) => PortfolioScope.FromClaims(user, ScopeClaimType);
+    /// <summary>
+    /// El alcance del usuario. Manda el claim propio; los grupos son el camino de
+    /// respaldo para un IdP que no puede emitirlo (PA-03).
+    /// </summary>
+    /// <remarks>
+    /// No se suman: si el claim esta, decide el. Sumar grupos a un alcance ya emitido
+    /// podria ampliarlo sin que nadie lo haya pedido.
+    /// </remarks>
+    public PortfolioScope ScopeOf(ClaimsPrincipal user)
+    {
+        var declared = PortfolioScope.FromClaims(user, ScopeClaimType);
+
+        if (!declared.IsEmpty || groupScopes is null)
+        {
+            return declared;
+        }
+
+        ArgumentNullException.ThrowIfNull(user);
+
+        var entries = user.FindAll(groupScopes.ClaimType)
+            .Select(claim => groupScopes.Map.TryGetValue(claim.Value, out var scope) ? scope : null)
+            .Where(scope => !string.IsNullOrWhiteSpace(scope));
+
+        var header = string.Join(';', entries);
+
+        return string.IsNullOrEmpty(header) ? PortfolioScope.None : PortfolioScope.FromHeader(header);
+    }
 
     /// <summary>
     /// Subject seudonimo del usuario: <c>sub</c> con OIDC, el identificador del
@@ -115,11 +155,24 @@ public static class ChannelAuthorization
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
+        // Traduccion de grupos a alcance: solo si esta configurada (PA-03).
+        var mapped = configuration.GetSection("Authorization:ScopeFromGroups:Map")
+            .GetChildren()
+            .Where(entry => !string.IsNullOrWhiteSpace(entry.Value))
+            .ToDictionary(entry => entry.Key, entry => entry.Value!, StringComparer.Ordinal);
+
+        var groupScopes = mapped.Count == 0
+            ? null
+            : new GroupScopeMapping(
+                configuration["Authorization:ScopeFromGroups:ClaimType"] ?? GroupScopeMapping.DefaultClaimType,
+                mapped);
+
         var permissions = new ChannelPermissions(
             configuration["Authorization:ScopeClaimType"] ?? ChannelPermissions.DefaultScopeClaimType,
             TimeSpan.FromMinutes(configuration.GetValue(
                 "RulesAdministration:ReauthenticationMinutes",
-                (int)ChannelPermissions.DefaultReauthenticationWindow.TotalMinutes)));
+                (int)ChannelPermissions.DefaultReauthenticationWindow.TotalMinutes)),
+            groupScopes);
 
         services.AddSingleton(permissions);
         services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuditingAuthorizationResultHandler>();

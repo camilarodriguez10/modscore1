@@ -143,8 +143,16 @@ public static class ChannelAuthentication
             return services;
         }
 
-        // Punto de reemplazo cuando la autenticacion pase a OAuth mediante APIM (ADR 0020).
-        services.TryAddSingleton<IReauthenticationFlow, OidcReauthentication>();
+        // Quien conduce la reautenticacion (ADR 0020). Con APIM delante, el flujo es el
+        // mismo codigo de autorizacion y cambian los parametros que se piden.
+        if (string.Equals(configuration["Authentication:Provider"], "Apim", StringComparison.OrdinalIgnoreCase))
+        {
+            services.TryAddSingleton<IReauthenticationFlow, ApimReauthentication>();
+        }
+        else
+        {
+            services.TryAddSingleton<IReauthenticationFlow, OidcReauthentication>();
+        }
 
         authentication.AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
         {
@@ -187,6 +195,19 @@ public static class ChannelAuthentication
                 {
                     context.ProtocolMessage.MaxAge = "0";
                     context.ProtocolMessage.Prompt = "login";
+                }
+
+                // Parametros propios de APIM, si los hay: viajan como propiedades del
+                // challenge y solo se agregan los que esta capa puso.
+                foreach (var (key, value) in context.Properties.Items)
+                {
+                    if (key.StartsWith(ApimReauthentication.ParameterPrefix, StringComparison.Ordinal)
+                        && !string.IsNullOrEmpty(value))
+                    {
+                        context.ProtocolMessage.SetParameter(
+                            key[ApimReauthentication.ParameterPrefix.Length..],
+                            value);
+                    }
                 }
 
                 return Task.CompletedTask;

@@ -7,6 +7,11 @@ Windows sin instalar Visual Studio, Node ni (en la variante autocontenida) .NET.
 > desarrollo: quien llegue al puerto entra como administrador. Por eso las dos capas
 > escuchan solo en `127.0.0.1`. No usar con datos reales ni exponer en una red.
 
+> Si quien lo va a usar no conoce el proyecto, el paso a paso completo —con lo que tiene que
+> ver en pantalla en cada momento y los problemas frecuentes— viaja **dentro del paquete**
+> como `GUIA-PASO-A-PASO.txt`, y en el repositorio está en
+> [docs/guia-localhost.md](../../docs/guia-localhost.md).
+
 ## Arrancar
 
 1. Descomprimir el `.zip` completo en una carpeta local (no dentro de OneDrive sincronizado).

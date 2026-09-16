@@ -390,7 +390,7 @@ Regla general cuando la métrica **ya tiene dato**: `Δ = 0.8 × w × (v' − v)
 | Gráficos | Recharts + SVG propio | **SVG propio** ([ADR 0006](docs/adr/0006-spa-sin-libreria-de-graficos.md)) |
 | Estilos | Tailwind CSS 4 + Radix UI | Tailwind CSS 4, componentes propios accesibles |
 | Cliente API | Generado desde OpenAPI | **Tipos a mano con prueba de contrato**: `ViewModelContractTests` falla si un modelo de vista C# y su interfaz TypeScript difieren en cualquier sentido |
-| Tests | Vitest + Testing Library + Playwright | **Vitest** (lógica pura, sin DOM) + **Playwright** (16 escenarios: 6 de flujo y 10 de accesibilidad con axe; Edge en local, Chromium en el CI) |
+| Tests | Vitest + Testing Library + Playwright | **Vitest** (lógica pura, sin DOM) + **Playwright** (22 escenarios: 10 de flujo y 12 de accesibilidad con axe; Edge en local, Chromium en el CI) |
 | Carga | — | Pantallas de administración cargadas bajo demanda (`lazy` + `Suspense`) |
 
 > *Corrección del plan.* Se prometía usar **Actions + `useActionState`**, **`use()`** con Suspense y el **compilador** de React 19. No se usan: las mutaciones de TanStack Query cubren los estados pendientes y no hubo tablas con costo de render medible. Queda como decisión abierta TD-02 en [docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md).
@@ -919,14 +919,15 @@ En curso desde el 2026-09-15. Se hizo todo lo que no depende de un despliegue re
 
 **Accesibilidad y pruebas (TD-04, TD-05):**
 
-- axe recorre cinco pantallas en claro y en oscuro dentro del CI, y falla con violaciones
+- axe recorre las pantallas de uso diario y una de administración, en claro y en oscuro
+  dentro del CI, y falla con violaciones
   serias o críticas. Encontró dos problemas reales, ya corregidos:
   - el texto atenuado quedaba en 4,42:1 sobre blanco y 3,89:1 sobre el fondo de página;
   - los colores de estado, pensados como marcas vivas, se usaban también como letra, con
     contrastes de hasta 1,65:1. Ahora hay variantes de texto que cumplen AA sin cambiar las
     marcas, y tres barras decorativas declaran `role="img"` en lugar de llevar `aria-label`
     en un `div` sin rol.
-- El job **SPA de punta a punta** corre los 16 escenarios en el CI con Chromium.
+- El job **SPA de punta a punta** corre la suite completa en el CI con Chromium.
 
 **Lo que queda y por qué:** los once parciales restantes necesitan un entorno real —llaves
 protegidas, mTLS, gestor de secretos, TLS del ingress, cifrado interno, MFA exigida por el

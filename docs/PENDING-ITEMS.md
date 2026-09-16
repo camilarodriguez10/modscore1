@@ -52,9 +52,9 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
   - Contract test between the C# view models and the TypeScript types.
   - Git repository with backup scripts, and a portable package to test on other machines.
 - **Tests**:
-  - 666 .NET tests: 200 engine, 178 contracts, 288 API.
-  - 35 SPA unit tests.
-  - 16 end-to-end scenarios: 6 flows and 10 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
+  - 694 .NET tests: 214 engine, 178 contracts, 302 API.
+  - 39 SPA unit tests.
+  - 22 end-to-end scenarios: 10 flows and 12 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
   - Zero vulnerable packages, and `npm audit` is clean.
 
 ### What needs the team

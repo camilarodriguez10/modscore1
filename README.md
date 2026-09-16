@@ -8,6 +8,10 @@ El plan completo está en [PLAN.md](PLAN.md). Las decisiones de arquitectura, en
 
 ## Levantar el stack
 
+> ¿Primera vez, o hay que levantarlo en otro equipo? La guía paso a paso, sin dar nada por
+> sabido y con los problemas frecuentes, está en
+> [docs/guia-localhost.md](docs/guia-localhost.md).
+
 Tres procesos, en este orden:
 
 ```bash
@@ -203,7 +207,8 @@ powershell -ExecutionPolicy Bypass -File tools/portable/build-portable.ps1
 
 Genera en `artifacts/` un `.zip` con las dos capas como ejecutables de un solo archivo y la
 SPA dentro, más su SHA-256. El último `.zip` se versiona en el repositorio. En el otro equipo
-se descomprime y se ejecuta `start.cmd`. Ver [tools/portable/README.md](tools/portable/README.md).
+se descomprime y se ejecuta `start.cmd`. Ver [tools/portable/README.md](tools/portable/README.md)
+y, para el paso a paso completo, [docs/guia-localhost.md](docs/guia-localhost.md).
 
 **No es un despliegue:** usa la autenticación de desarrollo, y por eso escucha solo en
 `127.0.0.1`.

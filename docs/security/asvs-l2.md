@@ -60,7 +60,7 @@ agrega verificación automática de accesibilidad:
 - **13.2.2:** contrato tipado estricto en lugar de esquema formal, decidido y registrado en
   el [ADR 0021](../adr/0021-el-cuerpo-de-reglas-se-valida-por-contrato-tipado.md) (SEC-12).
 - **14.2.6:** sin sandbox por librería, con controles compensatorios aceptados (SEC-14).
-- **Accesibilidad:** axe recorre cinco pantallas en claro y en oscuro dentro del CI, y falla
+- **Accesibilidad:** axe recorre seis pantallas en claro y en oscuro dentro del CI, y falla
   con violaciones serias o críticas (TD-04, TD-05).
 
 La Fase 13 no cambia los totales y agrega evidencia:

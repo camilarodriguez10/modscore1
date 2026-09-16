@@ -14,7 +14,7 @@ Contenido:
   system\   capa System (Modernization.SystemApi.exe), un solo archivo
   channel\  capa Channel (Modernization.ChannelApi.exe) con la SPA en wwwroot
   samples\  los CSV dummy, para probar la carga con el proveedor de archivos
-  start.cmd / start.ps1 / README.txt
+  start.cmd / start.ps1 / README.txt / GUIA-PASO-A-PASO.txt
 
 .PARAMETER Variant
 SelfContained (por defecto): no requiere .NET instalado; unos 45 MB por capa comprimidos.
@@ -119,6 +119,9 @@ Get-ChildItem -Recurse -Path $staging -Include '*.pdb', '*.map', '*.xml' -File |
 # ------------------------------------------------------ lanzador y datos
 Copy-Item -Force -Path (Join-Path $PSScriptRoot 'start.ps1'), (Join-Path $PSScriptRoot 'start.cmd') -Destination $staging
 Copy-Item -Force -Path (Join-Path $PSScriptRoot 'README.md') -Destination (Join-Path $staging 'README.txt')
+
+# La guia paso a paso viaja con el paquete: quien lo recibe no tiene el repositorio.
+Copy-Item -Force -Path (Join-Path $root 'docs\guia-localhost.md') -Destination (Join-Path $staging 'GUIA-PASO-A-PASO.txt')
 
 $samples = New-Item -ItemType Directory -Force -Path (Join-Path $staging 'samples')
 Copy-Item -Force -Path (Join-Path $root 'data\dummy\*.csv') -Destination $samples

@@ -71,6 +71,9 @@ public static class ChannelEndpoints
         api.MapGet("/roadmap", GetPortfolioRoadmap)
             .WithSummary("Pantalla 06 — el portafolio visto por disposition y roadmap.");
 
+        api.MapGet("/insights", GetInsights)
+            .WithSummary("Pantalla 09 — las seis preguntas del portafolio, con los mismos filtros.");
+
         api.MapGet("/ingestion", GetIngestion)
             .WithSummary("Pantalla 08 — archivos esperados, cargas existentes y evolucion del portafolio.");
 
@@ -437,6 +440,46 @@ public static class ChannelEndpoints
         var view = await composer.ComposePlanAsync(eaiCode, cancellationToken).ConfigureAwait(false);
 
         return view is null ? NotFound() : Results.Ok(view);
+    }
+
+    /// <summary>
+    /// Las seis preguntas. La capa Channel no calcula nada: entrega lo que la System
+    /// analizo, con el mismo filtro que la pantalla tiene puesto.
+    /// </summary>
+    private static async Task<IResult> GetInsights(
+        SystemApiClient system,
+        CancellationToken cancellationToken,
+        string? lob = null,
+        string? country = null,
+        string? cio = null,
+        string? disposition = null,
+        string? roadmap = null,
+        string? band = null,
+        bool? criticalOnly = null,
+        int? duplicates = null,
+        int? top = null)
+    {
+        if (InvalidFilters(lob, country, cio, disposition, roadmap, band) is { } problem)
+        {
+            return problem;
+        }
+
+        var insights = await system.GetInsightsAsync(
+            new ApplicationQuery
+            {
+                Lob = lob,
+                Country = country,
+                Cio = cio,
+                Disposition = disposition,
+                Roadmap = roadmap,
+                Band = band,
+                CriticalOnly = criticalOnly,
+            },
+            duplicates,
+            top,
+            cancellationToken).ConfigureAwait(false);
+
+        return Results.Ok(insights);
     }
 
     private static async Task<IResult> GetPortfolioRoadmap(

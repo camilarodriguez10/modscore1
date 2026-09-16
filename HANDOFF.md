@@ -38,7 +38,8 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | Fase 13 — revisión y remediación | Entregada el 2026-09-14/15 (PLAN §8.6) |
 | Fase 15 — autenticación con APIM | **En curso** (PLAN §8.8). Elegida la opción C con A ([ADR 0022](docs/adr/0022-la-credencial-entre-capas-es-conectable.md)): la credencial entre capas es conectable, la capa System valida un JWT de APIM y hay un modo `Both` para cambiar sin corte. Falta el emisor real; el cambio está en [su runbook](docs/runbooks/paso-a-apim.md) |
 | Fase 14 — verificación de seguridad | **En curso** (PLAN §8.7). Cerrados SEC-06 (evento 4214), SEC-07 (`Uploads:RetainVersions`) y SEC-12 (ADR 0021); SEC-14 aceptado con controles compensatorios; accesibilidad y e2e en el CI. Los once parciales que quedan necesitan cluster, IdP, ingress y gestor de secretos: ver [runbook de verificación](docs/runbooks/verificacion-asvs.md) |
-| Pruebas | **666 .NET** (200 motor · 178 contratos · 288 API) · **35 unitarias** de la SPA · **16 de punta a punta** con Playwright (6 de flujo y 10 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-09-15 |
+| Las seis preguntas (pantalla 09) | Entregada el 2026-09-16 (PLAN §8.9, [ADR 0023](docs/adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md)). Salud, prioridades, complejidad, riesgo, obsolescencia y resiliencia en `/insights`, con los mismos filtros. Ningún dato nuevo hizo falta; lo que mejoraría el esfuerzo y el valor de negocio está en PENDING-ITEMS como DQ-01 a DQ-07 |
+| Pruebas | **694 .NET** (214 motor · 178 contratos · 302 API) · **39 unitarias** de la SPA · **22 de punta a punta** con Playwright (10 de flujo y 12 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-09-16 |
 | Dependencias | Cero paquetes vulnerables (`dotnet list package --vulnerable`), `npm audit` limpio |
 | CI | GitHub Actions en verde desde la corrida #5 (`55cf36f`, 2026-09-15), que pasó los 7 jobs: backend, SPA, gitleaks, OSV, CodeQL C# y JS/TS, e imágenes con Trivy v0.74.0 y Checkov. CodeQL sin hallazgos altos. Tras acelerarlo, la corrida #6 (`148c6ce`) tardó 7 min 3 s en lugar de 9 min 54 s; CodeQL C# sigue marcando el total (6 min 58 s). Antes hubo que corregir el lint, CodeQL en repositorio privado (`upload: never`, `actions: read`), la versión de Trivy y el UID de los pods. Para acortarlo: gitleaks y OSV están en `seguridad.yml` y corren en cada push; `ci.yml` se salta los cambios que solo tocan documentación; CodeQL C# compila solo `src/` sin los analizadores de Roslyn; hay caché de NuGet, y el job de imágenes no espera a los demás |
 | ASVS L2 | 106 cumple · 11 parciales · 3 pendientes · 10 IdP o N/A. Los parciales dependen de un entorno real |
@@ -65,6 +66,7 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
   - Portfolio, con filtros en la URL y descarga CSV;
   - detalle, cálculo, what-if y plan futuro por aplicación;
   - Roadmap por dimensión, con descarga CSV;
+  - Insights: las seis preguntas del portafolio en una vista;
   - Data (cargas, linaje y tendencia con marcas de reglas);
   - Rules (editar, simular y publicar);
   - Compare rules (dos versiones o el borrador, con una aplicación métrica por métrica).
@@ -181,12 +183,43 @@ La simulación depende mucho de la carga de la máquina: con la máquina ocupada
 
 ---
 
+## 6bis. Las seis preguntas del portafolio
+
+Pedido del 2026-09-16. Detalle en PLAN §8.9 y en
+[ADR 0023](docs/adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md).
+
+| Pregunta | Dónde | Con qué |
+|---|---|---|
+| ¿Qué tan sano está? | `/insights` | Promedio, mediana, reparto por tramo, cobertura de dato, críticas bajo el umbral sano |
+| ¿Qué modernizar primero? | ídem | `uplift ÷ semanas`, ponderado por criticidad, usuarios y capacidades |
+| ¿Dónde reducir complejidad? | ídem | Capacidad repetida en un país (umbral 2–5), capacidad en varios países, `Eliminate` activas, muchos lenguajes |
+| ¿Dónde se concentra el riesgo? | ídem | Por LOB, país, CIO, capacidad: flaws, Kenna, componentes obsoletos, críticas expuestas |
+| ¿Qué causa la obsolescencia? | ídem | Puntos perdidos por métrica; el peso sin dato, aparte |
+| ¿Dónde faltan defensas? | ídem | DR, monitoreo, score operacional, RTO/RPO |
+
+**Piezas:** `src/shared/Modernization.Insights` (función pura),
+`InsightsEndpoints` en la capa System, un paso en `ChannelEndpoints`,
+`src/web/src/routes/InsightsPage.tsx` y doce códigos `insights.*` con su frase en
+`src/web/src/i18n/notices.ts`.
+
+**Cuidados:**
+
+- El esfuerzo son las semanas del roadmap, que son **por roadmap y no por aplicación**.
+  Es un proxy y la pantalla lo dice; DQ-02 lo convertiría en real.
+- Los enums de la respuesta viajan como texto (`Roadmap`, `Kind`). No hay
+  `JsonStringEnumConverter` registrado en ninguna capa: los contratos los convierten a
+  mano, como el resto del API.
+- `ViewModelContractTests` cubre los diez contratos nuevos: cualquier propiedad que se
+  agregue en C# tiene que aparecer en `src/web/src/api/types.ts`.
+
+---
+
 ## 7. Comandos frecuentes
 
 | Para | Comando |
 |---|---|
 | Pruebas .NET | `dotnet test ModernizationScore.slnx` |
-| Pruebas de la SPA | `npm --prefix src/web run lint` (el CI lo exige) · `npm --prefix src/web test` · `npm --prefix src/web run test:e2e` (16 escenarios, 10 de ellos de accesibilidad) |
+| Pruebas de la SPA | `npm --prefix src/web run lint` (el CI lo exige) · `npm --prefix src/web test` · `npm --prefix src/web run test:e2e` (22 escenarios, 12 de ellos de accesibilidad) |
 | Pruebas contra el paquete portable | Con `start.ps1 -NoBrowser` corriendo, desde `src/web`: `MODSCORE_E2E_BASE_URL=http://localhost:5100 npx playwright test` |
 | Tipos de la SPA | `npx --prefix src/web tsc -b` (desde `src/web`: `npx tsc -b`) |
 | Vulnerabilidades | `dotnet list ModernizationScore.slnx package --vulnerable --include-transitive` · `npm --prefix src/web audit --audit-level=moderate` |

@@ -119,6 +119,8 @@ public sealed class SpanishFreeChannelTests(QueryExperienceFixture fixture) : IC
             await Get($"/api/roadmap?groupBy={grouping}");
         }
 
+        await Get("/api/insights");
+        await Get("/api/insights?criticalOnly=true&top=50&duplicates=2");
         await Get("/api/ingestion");
         await Get("/api/lineage");
 
@@ -158,6 +160,7 @@ public sealed class SpanishFreeChannelTests(QueryExperienceFixture fixture) : IC
         await Get("/api/portfolio?page=0");
         await Get("/api/portfolio?band=Excelente");
         await Get("/api/roadmap?groupBy=planeta");
+        await Get("/api/insights?band=Excelente");
         await Get("/api/applications/abc/overview");
         await Get("/api/applications/9999999999/overview");
         await Get("/api/lineage?version=..%2F..%2Fx");

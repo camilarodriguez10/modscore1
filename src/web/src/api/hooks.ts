@@ -113,6 +113,22 @@ export function usePortfolioRoadmap(filters: PortfolioFilters = {}, groupBy = 'd
   });
 }
 
+/**
+ * Las seis preguntas, sobre el mismo filtro que la pantalla tiene puesto. Se
+ * mantiene lo anterior mientras llega lo nuevo: cambiar un filtro no vacia la
+ * pantalla.
+ */
+export function useInsights(
+  filters: PortfolioFilters = {},
+  options: { duplicates?: number; top?: number } = {},
+) {
+  return useQuery({
+    queryKey: ['insights', filters, options],
+    queryFn: () => api.insights(filters, options),
+    placeholderData: (previous) => previous,
+  });
+}
+
 export function useWhatIfLab(eaiCode: string) {
   return useQuery({
     queryKey: ['whatif', eaiCode],

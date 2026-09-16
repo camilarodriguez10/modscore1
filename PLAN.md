@@ -407,6 +407,7 @@ Regla general cuando la métrica **ya tiene dato**: `Δ = 0.8 × w × (v' − v)
 | 6 | **Portfolio Roadmap** | Matriz Disposition × Roadmap, capacidad por trimestre, agregados por LOB. | 6 |
 | 7 | **Data Lineage** | Estado de cada fuente: última carga, filas, filas rechazadas con motivo, cobertura por métrica (% de apps con dato). | 8, 9 |
 | 8 | **Admin / Rulesets** | Comparación de versiones de ruleset, simulación de impacto en el portafolio antes de publicar, historial de overrides con justificación. | — |
+| 9 | **Insights** | Las seis preguntas de gestión sobre el portafolio filtrado: salud, qué modernizar primero (impacto contra esfuerzo), dónde reducir complejidad, dónde se concentra el riesgo, qué causa la obsolescencia y dónde faltan defensas de continuidad. Cada número con su aritmética a la vista ([ADR 0023](docs/adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md)). | 4, 6 |
 
 ### 6.3 Seguridad del frontend
 
@@ -561,6 +562,7 @@ tests corre igual contra el tercer adaptador.
 | **13 — Revisión y remediación** ✅ | ENTREGADA | Reglas contra las capturas del BRD, deuda técnica, rendimiento, robustez, comparación de reglas, exportaciones, pruebas de la SPA, git y paquete portable (ver 8.6) | **Cumplido:** 640 pruebas .NET, 35 unitarias y 6 de punta a punta en verde; la historia en frío pasa de 1,7 s a 8–15 ms con calentamiento y la simulación de 117 a 47 ms |
 | **14 — Verificación de seguridad (ASVS L2)** 🟡 | EN CURSO | Lo que no necesita infraestructura, hecho el 2026-09-15 (ver 8.7): pipeline verde, auditoría de validaciones rechazadas, retención de cargas, decisión sobre validación de esquema, controles compensatorios de aislamiento, y accesibilidad y e2e en el CI. Falta el entorno de prueba para los once parciales restantes y la revisión por otra persona | **Parcial:** ASVS pasa de 103 a 106 cumple y de 14 a 11 parciales; los que quedan dependen de cluster, IdP, ingress y gestor de secretos |
 | **15 — Autenticación con APIM** 🟡 | EN CURSO | Opción C con A elegida el 2026-09-16 ([ADR 0022](docs/adr/0022-la-credencial-entre-capas-es-conectable.md)): credencial conectable, validación del JWT en la capa System, modo `Both` para cambiar sin corte, reautenticación de APIM y alcance desde grupos (ver 8.8) | **Parcial:** el código está probado con dobles; cerrar H-16 espera a que APIM emita los tokens y el secreto salga del gestor |
+| **Pantalla 09 — las seis preguntas** ✅ | ENTREGADA | Pedida el 2026-09-16, fuera de la numeración de fases: salud, prioridades, complejidad, riesgo, obsolescencia y resiliencia en una vista con los mismos filtros (ver 8.9) | **Cumplido:** las seis se responden con las fuentes actuales; 14 pruebas del analizador, 14 de API, 4 de Vitest y 4 de punta a punta, más accesibilidad en claro y oscuro |
 | **16 — Escala y operación** | 3 sem | Destino y motor de base (RFC-07), Redis, réplicas, respaldos, retención, SIEM, notificaciones de reglas | Dos réplicas por capa bajo carga; restauración probada; alertas activas |
 | **17 — Hallazgos de infraestructura** | 2 sem | **Al final por decisión del 2026-09-14:** H-16, H-17, H-20, H-21 | ASVS 2.10.1, 3.3.4, 7.3.3, 12.4.2 y 14.1.5 cumplen |
 
@@ -974,6 +976,47 @@ otra llave se rechaza; el cuerpo del error del emisor no llega al mensaje.
 la audiencia de la capa System y un `azp` estable, que la reautenticación llegue al IdP
 (SEC-19) y que el alcance entregue lo que el negocio espera. El cambio, paso a paso y con
 su vuelta atrás, está en el [runbook de paso a APIM](docs/runbooks/paso-a-apim.md).
+
+### 8.9 Las seis preguntas del portafolio (pantalla 09)
+
+Pedido el 2026-09-16: que el sitio permita responder seis preguntas de gestión. Las seis
+se responden con las ocho fuentes actuales, el score ya calculado y el catálogo de
+roadmaps; ninguna necesitó un dato nuevo para existir. El método, sus supuestos y lo que
+cada uno asume están en
+[ADR 0023](docs/adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md).
+
+| Pregunta | Dónde se responde | Con qué |
+|---|---|---|
+| ¿Qué tan sano está el portafolio? | Insights → *How healthy is the portfolio?* | Promedio y mediana, reparto por tramo, cobertura de dato y críticas bajo el umbral sano |
+| ¿Qué modernizar primero? | Insights → *Which applications should be modernized first?* | Uplift del roadmap (motor de what-if) ÷ semanas de sus hitos, ponderado por criticidad, usuarios y capacidades |
+| ¿Dónde reducir complejidad? | Insights → *Where should we reduce complexity?* | Misma capacidad y país (umbral ajustable 2–5), misma capacidad en varios países, `Eliminate` todavía activas, una capacidad en muchos lenguajes |
+| ¿Dónde se concentra el riesgo? | Insights → *Where is technology risk concentrated?* | Por LOB, país, CIO y capacidad: flaws críticos y altos, Kenna bajo 50, componentes obsoletos o no aprobados, críticas expuestas a internet |
+| ¿Qué causa la obsolescencia? | Insights → *What is driving obsolescence?* | Puntos perdidos por métrica = peso × (100 − score mapeado) ÷ 100, más una columna aparte con el peso sin dato |
+| ¿Dónde faltan defensas? | Insights → *Where are the resilience gaps?* | Fuera del alcance de DR, sin monitoreo, score operacional bajo 60, sin RTO o RPO |
+
+**Cómo encaja con el resto del sitio.** La pantalla usa los mismos filtros de la barra
+superior, que viven en la URL ([ADR 0016](docs/adr/0016-el-filtro-vive-en-la-url-y-solo-acota.md)),
+y dos controles propios que también viajan en ella: el umbral de duplicados y la
+agrupación del riesgo. Un grupo de riesgo se convierte en filtro de todo el sitio con un
+clic, y cada aplicación enlaza a su plan o a su detalle. El análisis se calcula sobre lo
+que el alcance del usuario deja ver, no sobre el portafolio completo filtrado después.
+
+**Dónde vive.** `src/shared/Modernization.Insights` (modelo y analizador, función pura),
+`GET /system/insights` en la capa System, `GET /api/insights` como paso en la capa Channel
+y `src/web/src/routes/InsightsPage.tsx` en la SPA. Doce códigos de aviso nuevos
+(`insights.*`) con su frase en el catálogo de la interfaz.
+
+**Qué se probó.** 14 pruebas del analizador sobre un portafolio sintético de once
+aplicaciones (duplicados a propósito, una crítica expuesta sin DR ni monitoreo, dos
+`Eliminate` activas, una sin plan), 14 de punta a punta por HTTP —las seis respuestas,
+el filtro, el alcance de un usuario limitado a un LOB, los umbrales acotados por el
+servidor y el portafolio vacío—, 4 de Vitest sobre las frases y la URL del cliente, y 4
+de Playwright más la revisión con axe en claro y oscuro.
+
+**Lo que mejoraría las respuestas.** Dos de las seis son hoy indicativas: el esfuerzo sale
+del roadmap y no de la aplicación, y el valor de negocio es un proxy de tres atributos.
+Los datos que lo cambiarían están en [docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md) como
+**DQ-01 a DQ-07**, con qué respuesta mejora cada uno.
 
 ## 8bis. Ampliación solicitada — fases 10 a 12
 

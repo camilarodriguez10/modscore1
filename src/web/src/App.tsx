@@ -8,6 +8,7 @@ import { ExplainPage } from './routes/ExplainPage';
 import { WhatIfPage } from './routes/WhatIfPage';
 import { RoadmapPage } from './routes/RoadmapPage';
 import { PortfolioRoadmapPage } from './routes/PortfolioRoadmapPage';
+import { InsightsPage } from './routes/InsightsPage';
 import { DataPage } from './routes/DataPage';
 import { Spinner } from './components/primitives';
 import { RulesChangedNotice } from './components/RulesChangedNotice';
@@ -20,7 +21,7 @@ const RulesComparePage = lazy(() =>
 );
 
 /** Las pantallas donde el filtro actua. En el resto se muestra, pero sin controles. */
-const FILTERED_ROUTES = new Set(['/', '/roadmap']);
+const FILTERED_ROUTES = new Set(['/', '/insights', '/roadmap']);
 
 export function App() {
   return (
@@ -31,6 +32,7 @@ export function App() {
         <Route path="applications/:eaiCode/calculation" element={<ExplainPage />} />
         <Route path="applications/:eaiCode/what-if" element={<WhatIfPage />} />
         <Route path="applications/:eaiCode/roadmap" element={<RoadmapPage />} />
+        <Route path="insights" element={<InsightsPage />} />
         <Route path="roadmap" element={<PortfolioRoadmapPage />} />
         <Route path="data" element={<DataPage />} />
         <Route
@@ -169,6 +171,9 @@ function Workspace({ name, canAdministerRules }: { name: string; canAdministerRu
           <nav className="flex gap-1">
             <Tab to="/" search={search}>
               Portfolio
+            </Tab>
+            <Tab to="/insights" search={search}>
+              Insights
             </Tab>
             <Tab to="/roadmap" search={search}>
               Roadmap

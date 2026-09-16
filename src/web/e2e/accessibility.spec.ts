@@ -10,6 +10,7 @@ import { signIn } from './support';
 const screens = [
   { name: 'portfolio', path: '/' },
   { name: 'calculation of the BRD example', path: '/applications/14381/calculation' },
+  { name: 'insights', path: '/insights' },
   { name: 'roadmap', path: '/roadmap' },
   { name: 'data', path: '/data' },
   { name: 'rules administration', path: '/admin/rules' },

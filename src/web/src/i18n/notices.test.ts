@@ -34,6 +34,51 @@ describe('formatNotice', () => {
   });
 });
 
+describe('insights notices', () => {
+  it('writes the evidence of a modernization candidate', () => {
+    expect(formatNotice({ code: 'insights.criticalApplication', args: {} })).toBe('Critical application');
+    expect(formatNotice({ code: 'insights.largeUserBase', args: { users: '12000' } })).toBe('12,000 users');
+    expect(formatNotice({ code: 'insights.largeUserBase', args: { users: '1' } })).toBe('1 user');
+    expect(formatNotice({ code: 'insights.upliftFromRoadmap', args: { uplift: '6.5', weeks: '12' } })).toBe(
+      'Its roadmap adds 6.50 points over 12 weeks',
+    );
+  });
+
+  it('names a concentration with its own numbers', () => {
+    expect(
+      formatNotice({
+        code: 'insights.duplicateCapability',
+        args: { capability: 'Policy Servicing', country: 'Chile', count: '4' },
+      }),
+    ).toBe('4 applications cover \u201cPolicy Servicing\u201d in Chile');
+
+    expect(
+      formatNotice({
+        code: 'insights.languageSpread',
+        args: { capability: 'Claims', languages: 'Java, COBOL, C#', count: '3' },
+      }),
+    ).toBe('\u201cClaims\u201d is written in 3 languages: Java, COBOL, C#');
+
+    expect(formatNotice({ code: 'insights.decommissionBacklog', args: { count: '1' } })).toBe(
+      '1 application marked Eliminate is still active',
+    );
+    expect(formatNotice({ code: 'insights.decommissionBacklog', args: { count: '7' } })).toBe(
+      '7 applications marked Eliminate are still active',
+    );
+  });
+
+  it('names a resilience gap without inventing a value', () => {
+    expect(formatNotice({ code: 'insights.gapDisasterRecovery', args: {} })).toBe(
+      'Out of the disaster recovery scope',
+    );
+    expect(formatNotice({ code: 'insights.gapMonitoring', args: {} })).toBe('No monitoring reported');
+    expect(formatNotice({ code: 'insights.gapOperational', args: { score: '41.5' } })).toBe(
+      'Operational score 41.50',
+    );
+    expect(formatNotice({ code: 'insights.gapRecoveryObjectives', args: {} })).toBe('No RTO or RPO declared');
+  });
+});
+
 describe('counts and bands', () => {
   it('formats counts in English with agreement', () => {
     expect(countOf(1, 'application')).toBe('1 application');

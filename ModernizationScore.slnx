@@ -6,6 +6,7 @@
   <Folder Name="/src/shared/">
     <Project Path="src/shared/Modernization.Domain/Modernization.Domain.csproj" />
     <Project Path="src/shared/Modernization.Roadmap/Modernization.Roadmap.csproj" />
+    <Project Path="src/shared/Modernization.Insights/Modernization.Insights.csproj" />
     <Project Path="src/shared/Modernization.Rules/Modernization.Rules.csproj" />
     <Project Path="src/shared/Modernization.Scoring.Engine/Modernization.Scoring.Engine.csproj" />
     <Project Path="src/shared/Modernization.Security/Modernization.Security.csproj" />

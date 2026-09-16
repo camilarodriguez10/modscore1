@@ -1,6 +1,7 @@
 import type {
   ExplainView,
   LeverSelection,
+  InsightsView,
   LineageView,
   PortfolioFilters,
   PortfolioView,
@@ -204,6 +205,18 @@ export const api = {
     if (groupBy) params.set('groupBy', groupBy);
 
     return request<PortfolioRoadmapView>(`/api/roadmap${withQuery(params)}`);
+  },
+
+  /**
+   * Las seis preguntas del portafolio. Una sola llamada: la pantalla no compone
+   * seis respuestas ni calcula nada, solo pinta lo que llega.
+   */
+  insights: (filters: PortfolioFilters = {}, options: { duplicates?: number; top?: number } = {}) => {
+    const params = buildFilterQuery(filters);
+    if (options.duplicates) params.set('duplicates', String(options.duplicates));
+    if (options.top) params.set('top', String(options.top));
+
+    return request<InsightsView>(`/api/insights${withQuery(params)}`);
   },
 
   whatIf: (eaiCode: string) =>

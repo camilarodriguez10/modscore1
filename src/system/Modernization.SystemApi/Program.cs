@@ -246,6 +246,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy" })).AllowAnonymo
 app.MapSystemEndpoints();
 app.MapWhatIfEndpoints();
 app.MapRoadmapEndpoints();
+app.MapInsightsEndpoints();
 app.MapIngestionEndpoints();
 app.MapRulesEndpoints();
 

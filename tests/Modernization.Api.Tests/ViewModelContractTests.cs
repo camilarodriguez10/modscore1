@@ -46,6 +46,16 @@ public sealed partial class ViewModelContractTests
         [typeof(RulesRoadmap)] = "RulesRoadmap",
         [typeof(RulesRoadmapPath)] = "RulesRoadmapPath",
         [typeof(RulesMilestone)] = "RulesMilestone",
+        [typeof(InsightsResponse)] = "InsightsView",
+        [typeof(PortfolioHealthResponse)] = "PortfolioHealthView",
+        [typeof(BandShareResponse)] = "BandShareView",
+        [typeof(ModernizationCandidateResponse)] = "ModernizationCandidateView",
+        [typeof(ComplexityClusterResponse)] = "ComplexityClusterView",
+        [typeof(RiskConcentrationResponse)] = "RiskConcentrationView",
+        [typeof(ObsolescenceDriverResponse)] = "ObsolescenceDriverView",
+        [typeof(ResilienceGapsResponse)] = "ResilienceGapsView",
+        [typeof(ResilienceGapApplicationResponse)] = "ResilienceGapApplicationView",
+        [typeof(InsightsOptionsResponse)] = "InsightsOptionsView",
     };
 
     [Fact]

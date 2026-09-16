@@ -17,5 +17,6 @@
     <ProjectReference Include="..\..\src\shared\Modernization.WhatIf\Modernization.WhatIf.csproj" />
     <ProjectReference Include="..\..\src\shared\Modernization.Roadmap\Modernization.Roadmap.csproj" />
     <ProjectReference Include="..\..\src\shared\Modernization.Rules\Modernization.Rules.csproj" />
+    <ProjectReference Include="..\..\src\shared\Modernization.Insights\Modernization.Insights.csproj" />
   </ItemGroup>
 </Project>

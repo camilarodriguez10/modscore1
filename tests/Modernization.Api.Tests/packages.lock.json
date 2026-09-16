@@ -321,6 +321,12 @@
       "modernization.domain": {
         "type": "Project"
       },
+      "modernization.insights": {
+        "type": "Project",
+        "dependencies": {
+          "Modernization.Roadmap": "[1.0.0, )"
+        }
+      },
       "modernization.roadmap": {
         "type": "Project",
         "dependencies": {
@@ -364,6 +370,7 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.AspNetCore.OpenApi": "[10.0.3, )",
+          "Modernization.Insights": "[1.0.0, )",
           "Modernization.Roadmap": "[1.0.0, )",
           "Modernization.Rules": "[1.0.0, )",
           "Modernization.Scoring.Engine": "[1.0.0, )",

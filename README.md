@@ -33,7 +33,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-666 pruebas .NET: 200 del motor, 178 de contratos y 288 de API. Las dos que importan más
+694 pruebas .NET: 214 del motor, 178 de contratos y 302 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **EAI 14381 = 79,67:** ejemplo trabajado del BRD, derivado desde datos crudos por el
@@ -44,8 +44,8 @@ reproducen los casos documentados:
 TypeScript difieren.
 
 ```bash
-npm --prefix src/web test          # 35 pruebas unitarias (Vitest)
-npm --prefix src/web run test:e2e  # 16 escenarios: 6 de flujo y 10 de accesibilidad (axe)
+npm --prefix src/web test          # 39 pruebas unitarias (Vitest)
+npm --prefix src/web run test:e2e  # 22 escenarios: 10 de flujo y 12 de accesibilidad (axe)
 ```
 
 Las de punta a punta usan el Microsoft Edge instalado (no descargan navegadores) y levantan
@@ -92,6 +92,43 @@ su alcance permite, nunca más.
 En **Datos**, los exports se suben con cualquier nombre: cada archivo se reconoce por
 su encabezado. Si un encabezado encaja en dos fuentes, la pantalla muestra lo que leyó
 y deja asignar la fuente a mano.
+
+## Las seis preguntas del portafolio
+
+La pantalla **Insights** (`/insights`) responde en una sola vista las seis preguntas de
+gestión, sobre el mismo recorte que el filtro tiene puesto:
+
+| Pregunta | Qué muestra |
+|---|---|
+| *How healthy is the portfolio?* | Promedio y mediana, reparto por tramo, cobertura de dato y cuántas críticas están bajo el umbral sano |
+| *Which applications should be modernized first?* | Impacto contra esfuerzo: lo que sube el score al ejecutar su roadmap, dividido por las semanas de sus hitos y ponderado por criticidad, usuarios y capacidades |
+| *Where should we reduce complexity?* | Misma capacidad repetida en un país, la misma capacidad resuelta distinto en varios países, aplicaciones marcadas `Eliminate` todavía activas, y una capacidad escrita en muchos lenguajes |
+| *Where is technology risk concentrated?* | Por LOB, país, CIO o capacidad: flaws críticos y altos, gestión de vulnerabilidades débil, componentes obsoletos y críticas expuestas a internet |
+| *What is driving obsolescence?* | Los puntos que pierde el portafolio en cada métrica, con el peso sin dato en columna aparte |
+| *Where are the resilience gaps?* | Críticas fuera del alcance de DR o sin monitoreo, score operacional bajo y aplicaciones sin RTO ni RPO |
+
+Cada número viene con su aritmética, y la evidencia de cada fila es una frase con sus
+datos, no una etiqueta. El método está en
+[ADR 0023](docs/adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md).
+
+Dos controles propios viajan en la URL junto a los filtros, así que una vista se comparte
+copiando el enlace:
+
+| Parámetro | Valores | Para qué |
+|---|---|---|
+| `duplicates` | 2 a 5 (por defecto 3) | A partir de cuántas aplicaciones una coincidencia ya es una concentración |
+| `riskBy` | `lob`, `country`, `cio`, `capability` | Por qué dimensión se agrupa el riesgo |
+
+Ejemplo: `/insights?country=Mexico&duplicates=2&riskBy=capability`.
+
+El mismo análisis está en `GET /api/insights`, que acepta además `top` (1 a 50) para el
+largo de cada lista. Con un alcance limitado, todo se calcula solo sobre lo que ese
+alcance deja ver.
+
+**Lo que hoy es indicativo:** el esfuerzo sale de las semanas del roadmap, que son por
+roadmap y no por aplicación, y el valor de negocio es un proxy de criticidad, usuarios y
+capacidades. Los datos que lo harían real están en
+[docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md) como DQ-01 a DQ-07.
 
 ## Administrar las reglas
 
@@ -245,7 +282,7 @@ referencia deja de dar 79,67.
 ```
 contracts/ruleset-v1.3.json     18 métricas: pesos, bandas y procedencia — reglas como datos
 data/dummy/                     los ocho CSV generados
-src/shared/                     dominio, motor de scoring, what-if, roadmap, reglas, seguridad
+src/shared/                     dominio, motor de scoring, what-if, roadmap, insights, reglas, seguridad
 src/system/                     capa System: reglas de negocio + fuentes
 src/channel/                    capa Channel: BFF, composición por pantalla y exportaciones
 src/web/                        SPA React 19 · pruebas unitarias en src/ · e2e/ con Playwright
@@ -275,7 +312,8 @@ HANDOFF.md                      traspaso completo del contexto
 | 12 Administración de reglas | entregada |
 | 13 Revisión y remediación | entregada |
 | 14 Verificación de seguridad (ASVS L2) | en curso: hecho lo que no necesita un entorno real (PLAN §8.7) |
-| 15 Autenticación con APIM | planificada |
+| 15 Autenticación con APIM | en curso: código listo y probado con dobles; falta el emisor real (PLAN §8.8) |
+| Pantalla 09 — las seis preguntas | entregada (PLAN §8.9) |
 | 16 Escala y operación | planificada |
 | 17 Hallazgos de infraestructura (H-16, H-17, H-20, H-21) | planificada, al final por decisión |
 

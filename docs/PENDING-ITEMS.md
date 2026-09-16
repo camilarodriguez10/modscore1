@@ -66,6 +66,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 | Security | SEC-01 … SEC-24 | SEC-19 and SEC-20 are P0 (SEC-21 was decided on 2026-09-15); ASVS partials are P1; H-16/H-17/H-20/H-21 deferred to the last phase by decision |
 | Technical debt | TD-01 … TD-15 | None blocks; TD-06 and TD-09 are P1. TD-05 done and TD-04 automated on 2026-09-15 |
 | Product follow-ups | PF-01 … PF-06 | No |
+| Data that would sharpen the portfolio answers | DQ-01 … DQ-07 | No. The six questions are already answered with today's sources; these make two of the answers real instead of indicative |
 | Operations | OP-01 … OP-05 | No. The first push was done on 2026-09-15; OP-04 (branch protection and repository settings) is P1 |
 
 ### All items at a glance
@@ -128,6 +129,13 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 | PF-04 | Excel (XLSX) exports | Product | P3 | Product | Decision needed |
 | PF-05 | Compare rules for a group of applications (LOB, country) | Product | P3 | Product | Open |
 | PF-06 | Rules change history per application | Product | P3 | Product | Open |
+| DQ-01 | Application class column, as the business words the question | Data | P2 | EAI master owner + enterprise architecture | Decision needed |
+| DQ-02 | Estimated cost or effort per application | Data / product | P1 | Application owners + finance | Decision needed |
+| DQ-03 | Business value of an application (revenue, volume, tier) | Data / product | P2 | Business owners | Decision needed |
+| DQ-04 | Application dependencies and integrations | Data | P2 | Enterprise architecture | Decision needed |
+| DQ-05 | End-of-life and end-of-support dates of components | Data | P2 | RPT / architecture repository owner | Decision needed |
+| DQ-06 | Incident and availability history | Data | P2 | Operations | Decision needed |
+| DQ-07 | Hosting and migration status beyond the cloud flags | Data | P3 | Platform | Decision needed |
 | OP-01 | Runbook walkthrough with operations | Operations | P1 | Operations | Open |
 | OP-02 | Backups of the data volume and the rules store | Operations | P1 | Operations | Open |
 | OP-03 | Upload retention policy | Operations / compliance | P1 | Data owners + compliance | Decision needed |
@@ -879,6 +887,59 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
 - **Priority:** P3 · **Owner:** product · **Status:** Open
 - **Context:** An application's screen could list how each published rules version changed its score. It would reuse the comparison.
 - **Effort:** S.
+
+---
+
+## 5bis. Data that would sharpen the portfolio answers
+
+The six portfolio questions — how healthy is it, what to modernize first, where to reduce
+complexity, where risk is concentrated, what drives obsolescence, where resilience is
+missing — are answered today from the eight current sources, the computed score and the
+roadmap catalog. Nothing below blocks an answer; each item turns one answer from
+*indicative* into *real*. The method and its assumptions are in
+[ADR 0023](adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md).
+
+### DQ-01 — Application class column, as the business words the question
+- **Priority:** P2 · **Owner:** EAI master owner + enterprise architecture · **Status:** Decision needed
+- **Context:** The question was phrased as "more than X applications with the same *application class* per country". The sources have no such column, so the screen groups by `L1 Business Capability` from the EAI master, which is the closest thing that exists. If "application class" is a real attribute somewhere (an architecture repository, a CMDB), one column per application would answer the question exactly as asked.
+- **What it changes:** the complexity answer stops being an approximation of the business's own wording.
+- **Effort:** S in the platform (one more column in the EAI contract); the cost is in the source.
+
+### DQ-02 — Estimated cost or effort per application
+- **Priority:** P1 · **Owner:** application owners + finance · **Status:** Decision needed
+- **Context:** The only effort in today's data is the weeks of the roadmap milestones, which are defined **per roadmap**, not per application: two applications on `Refactor` show the same weeks. The priority list therefore ranks by a proxy. A t-shirt size (S/M/L), a range of person-weeks or a budget figure per application would make "impact against effort" a real comparison.
+- **What it changes:** the ranking of what to modernize first, which is the answer most likely to move money.
+- **Effort:** S in the platform; the cost is in collecting it. A coarse value (S/M/L) is worth much more than nothing and is far cheaper than an estimate per application.
+
+### DQ-03 — Business value of an application (revenue, volume, tier)
+- **Priority:** P2 · **Owner:** business owners · **Status:** Decision needed
+- **Context:** Business weight is built today from three attributes that do exist: critical indicator, user count and number of capabilities covered. Revenue supported, transactions per month or a criticality tier finer than a boolean would replace that proxy with the real thing.
+- **What it changes:** the weighting of impact, and with it the order of the priority list.
+- **Effort:** S in the platform; the decision is which measure the business considers fair.
+
+### DQ-04 — Application dependencies and integrations
+- **Priority:** P2 · **Owner:** enterprise architecture · **Status:** Decision needed
+- **Context:** The complexity answer can say "four applications cover Policy Servicing in Chile", but not whether consolidating them is feasible: nothing in the sources says what calls what. A dependency edge list (source, target, kind) would let the screen say which of the four is the hub and which is a leaf.
+- **What it changes:** complexity stops being a list of candidates and becomes a consolidation order.
+- **Effort:** M — a new source with its own contract and lineage.
+
+### DQ-05 — End-of-life and end-of-support dates of components
+- **Priority:** P2 · **Owner:** RPT / architecture repository owner · **Status:** Decision needed
+- **Context:** Obsolescence is measured today as counts of obsolete and not-approved components, with no dates. That answers "what is costing us points now" but not "what becomes obsolete next quarter", which is the version of the question a budget cycle needs.
+- **What it changes:** obsolescence gains a time axis, and the priority list could bring forward what expires soon.
+- **Effort:** M.
+
+### DQ-06 — Incident and availability history
+- **Priority:** P2 · **Owner:** operations · **Status:** Decision needed
+- **Context:** The resilience answer is built from declared controls: DR scope, monitoring flags, operational score, RTO/RPO ranges. It says where a defence is missing, not where the portfolio has actually failed. Sev1 counts, MTTR and measured availability per application would tell whether a declared control works.
+- **What it changes:** resilience stops being a compliance answer and becomes an evidence-based one.
+- **Effort:** M — a new source, plus a retention decision (OP-03 applies).
+
+### DQ-07 — Hosting and migration status beyond the cloud flags
+- **Priority:** P3 · **Owner:** platform · **Status:** Decision needed
+- **Context:** The sources carry `Cloud Indicator`, `Cloud Type`, `Cloud Vendor` and `Containerized`. A migration state (on-premises, IaaS, PaaS, SaaS, in flight, with a target date) would let the obsolescence and priority answers separate "old and staying" from "old and already being replaced".
+- **What it changes:** avoids proposing work on applications a migration will retire anyway.
+- **Effort:** S–M.
 
 ---
 

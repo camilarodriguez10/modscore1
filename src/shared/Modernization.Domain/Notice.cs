@@ -209,4 +209,18 @@ public static class NoticeCodes
     public const string ChangeMilestoneWeeks = "change.milestoneWeeks";
     public const string ChangeHealthyScore = "change.healthyScore";
     public const string ChangeUserBase = "change.userBase";
+
+    // Analisis del portafolio (las seis preguntas). La interfaz redacta la frase.
+    public const string InsightsCriticalApplication = "insights.criticalApplication";
+    public const string InsightsLargeUserBase = "insights.largeUserBase";
+    public const string InsightsManyCapabilities = "insights.manyCapabilities";
+    public const string InsightsUpliftFromRoadmap = "insights.upliftFromRoadmap";
+    public const string InsightsDuplicateCapability = "insights.duplicateCapability";
+    public const string InsightsCapabilityAcrossCountries = "insights.capabilityAcrossCountries";
+    public const string InsightsDecommissionBacklog = "insights.decommissionBacklog";
+    public const string InsightsLanguageSpread = "insights.languageSpread";
+    public const string InsightsGapDisasterRecovery = "insights.gapDisasterRecovery";
+    public const string InsightsGapMonitoring = "insights.gapMonitoring";
+    public const string InsightsGapOperational = "insights.gapOperational";
+    public const string InsightsGapRecoveryObjectives = "insights.gapRecoveryObjectives";
 }

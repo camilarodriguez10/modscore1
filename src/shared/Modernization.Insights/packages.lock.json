@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "dependencies": {
+    "net10.0": {
+      "modernization.domain": {
+        "type": "Project"
+      },
+      "modernization.roadmap": {
+        "type": "Project",
+        "dependencies": {
+          "Modernization.WhatIf": "[1.0.0, )"
+        }
+      },
+      "modernization.scoring.engine": {
+        "type": "Project",
+        "dependencies": {
+          "Modernization.Domain": "[1.0.0, )"
+        }
+      },
+      "modernization.whatif": {
+        "type": "Project",
+        "dependencies": {
+          "Modernization.Scoring.Engine": "[1.0.0, )"
+        }
+      }
+    }
+  }
+}

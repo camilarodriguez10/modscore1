@@ -33,7 +33,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-640 pruebas .NET: 200 del motor, 175 de contratos y 265 de API. Las dos que importan más
+646 pruebas .NET: 200 del motor, 178 de contratos y 268 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **EAI 14381 = 79,67:** ejemplo trabajado del BRD, derivado desde datos crudos por el
@@ -45,7 +45,7 @@ TypeScript difieren.
 
 ```bash
 npm --prefix src/web test          # 35 pruebas unitarias (Vitest)
-npm --prefix src/web run test:e2e  # 6 escenarios de punta a punta (Playwright + Edge)
+npm --prefix src/web run test:e2e  # 16 escenarios: 6 de flujo y 10 de accesibilidad (axe)
 ```
 
 Las de punta a punta usan el Microsoft Edge instalado (no descargan navegadores) y levantan
@@ -256,7 +256,7 @@ HANDOFF.md                      traspaso completo del contexto
 | 11 Sitio en inglés | entregada |
 | 12 Administración de reglas | entregada |
 | 13 Revisión y remediación | entregada |
-| 14 Verificación de seguridad (ASVS L2) | planificada |
+| 14 Verificación de seguridad (ASVS L2) | en curso: hecho lo que no necesita un entorno real (PLAN §8.7) |
 | 15 Autenticación con APIM | planificada |
 | 16 Escala y operación | planificada |
 | 17 Hallazgos de infraestructura (H-16, H-17, H-20, H-21) | planificada, al final por decisión |

@@ -52,9 +52,9 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
   - Contract test between the C# view models and the TypeScript types.
   - Git repository with backup scripts, and a portable package to test on other machines.
 - **Tests**:
-  - 640 .NET tests: 200 engine, 175 contracts, 265 API.
+  - 646 .NET tests: 200 engine, 178 contracts, 268 API.
   - 35 SPA unit tests.
-  - 6 end-to-end scenarios in Microsoft Edge.
+  - 16 end-to-end scenarios: 6 flows and 10 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
   - Zero vulnerable packages, and `npm audit` is clean.
 
 ### What needs the team
@@ -64,7 +64,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 | Scoring rules (business) | SR-01 … SR-15 | SR-01, SR-03, SR-07 must be confirmed before scores are published to the organization (P0/P1) |
 | Platform and architecture | PA-01 … PA-09 | PA-01 (target and database engine) and PA-02 (authentication through APIM) are P0 |
 | Security | SEC-01 … SEC-24 | SEC-19 and SEC-20 are P0 (SEC-21 was decided on 2026-09-15); ASVS partials are P1; H-16/H-17/H-20/H-21 deferred to the last phase by decision |
-| Technical debt | TD-01 … TD-15 | None blocks; TD-06 and TD-09 are P1 |
+| Technical debt | TD-01 … TD-15 | None blocks; TD-06 and TD-09 are P1. TD-05 done and TD-04 automated on 2026-09-15 |
 | Product follow-ups | PF-01 … PF-06 | No |
 | Operations | OP-01 … OP-05 | No. The first push was done on 2026-09-15; OP-04 (branch protection and repository settings) is P1 |
 
@@ -994,7 +994,7 @@ Numbers are for comparing changes on the same machine, not for sizing production
 | Phase | Name | Content | Main items |
 |---|---|---|---|
 | 13 | Review and remediation | Delivered on 2026-09-14 | Section 7 |
-| 14 | Security verification (ASVS L2) | First CI run and fixes; ASVS partial items verified in a test environment; peer security review; e2e and axe in CI | SEC-01…14, SEC-19, SEC-20, TD-04, TD-05, TD-09, TD-13 |
+| 14 | Security verification (ASVS L2) | **In progress.** Done on 2026-09-15: CI green, SEC-06, SEC-07, SEC-12, SEC-14, and e2e with axe in CI (TD-04, TD-05). Left: the eleven partials that need a test environment, ZAP, and the peer review | SEC-01…05, SEC-08…11, SEC-13, SEC-19, SEC-20, TD-09, TD-13 |
 | 15 | Authentication through APIM | Decide option; implement flow; scope claim; remove static token if option C | PA-02, PA-03, PA-05, SEC-03, SEC-19 |
 | 16 | Scale and operations | Target and engine; Redis; replicas; backups; retention; SIEM; notifications | PA-01, PA-04, PA-06, PA-07, PA-08, PA-09, OP-01…03 |
 | 17 | Infrastructure findings (last, by decision) | H-16 workload identity, H-17 image signing and immutable logs, H-20 session management, H-21 upload antivirus | SEC-15…18 |

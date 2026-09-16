@@ -43,7 +43,7 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | ASVS L2 | 106 cumple · 11 parciales · 3 pendientes · 10 IdP o N/A. Los parciales dependen de un entorno real |
 | Hallazgos | Fase 08: 23 (19 cerrados, H-16 parcial, H-17/H-20/H-21 pendientes). Revisión 09–13: 7 (6 cerrados, 1 aceptado) |
 | Git | Repositorio **privado** <https://github.com/camilarodriguez10/modscore1>, rama `main`. Guarda todo lo creado —el `.zip` portable, el estado local de `data/`, los scripts de las sesiones (`tools/sesiones/`) y la copia del plan (`docs/plan/`)— salvo las capturas del BRD y las imágenes. Los commits usan el correo de la cuenta. Cada push se confirma antes |
-| Artefacto del plan | <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> (versión 16, con la Fase 13; copia en `docs/plan/modscore-plan.html`; enlace anterior del mismo artefacto: <https://claude.ai/code/artifact/25507d1f-40a6-4e74-8c43-0337dbb63358>) |
+| Artefacto del plan | <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> (versión 17, del 2026-09-16, con el avance de la Fase 14; copia en `docs/plan/modscore-plan.html`, que hay que reemplazar al republicar; enlace anterior del mismo artefacto: <https://claude.ai/code/artifact/25507d1f-40a6-4e74-8c43-0337dbb63358>) |
 | Paquete portable | `artifacts/modscore-portable-win-x64-selfcontained-20260915-0819.zip` (92,8 MB autocontenido, SHA-256 `4778b8d9d092c0d71bed0632e90f77528bff6cef761384528affd04dd913df0f`), versionado en el repositorio; se regenera con `tools/portable/build-portable.ps1`. Verificado el 2026-09-15: descomprimido y arrancado con `start.ps1`; las dos capas escuchan solo en `127.0.0.1`, con CSP estricta; los 6 escenarios e2e pasan contra él; al detenerlo no quedan procesos ni secretos |
 
 ---
@@ -340,7 +340,7 @@ La memoria del proyecto está en
 - migración a APIM;
 - política de paquetes desactualizados;
 - repositorio git;
-- estado tras la Fase 13.
+- estado tras la Fase 14.
 
 Se carga sola en cada sesión.
 

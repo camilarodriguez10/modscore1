@@ -351,7 +351,7 @@ La capa Channel referencia el proyecto de la System por sus contratos. Al public
 
 - **Corrección:**
   - 35 pruebas unitarias (Vitest);
-  - 6 escenarios de punta a punta con Playwright y el Edge instalado;
+  - 6 escenarios de punta a punta con Playwright y el Edge instalado (en la Fase 14 se sumaron 10 de accesibilidad con axe, en claro y oscuro);
   - `ViewModelContractTests`, que falla si un modelo de vista C# y su interfaz TypeScript
     difieren.
 

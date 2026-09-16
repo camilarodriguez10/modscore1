@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Modernization Score Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -307,7 +308,7 @@ pre em{color:var(--ink-3);font-style:normal}
     <div class="mast-meta">
       <span>Base documental · <b>34 capturas: BRD + dashboard Power BI v1.3 + archivos fuente</b></span>
       <span>Ruleset · <b>v1.3</b></span>
-      <span>Fases 00–13 entregadas · Fase 14 en curso · <b>646 pruebas .NET, 35 unitarias y 16 e2e en verde</b></span>
+      <span>Fases 00–13 entregadas · 14 y 15 en curso · <b>694 pruebas .NET, 39 unitarias y 22 e2e en verde</b></span>
       <span>Duración estimada · <b>16 semanas</b></span>
     </div>
   </div>
@@ -822,6 +823,7 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
     <div class="screen"><span class="i">07</span><div><div class="t">Data Lineage <span class="req">req. 8 · 9</span></div><div class="d">Estado de cada fuente: última carga, filas leídas, filas rechazadas con motivo y cobertura por métrica — qué porcentaje de aplicaciones tiene dato.</div></div></div>
     <div class="screen"><span class="i">08</span><div><div class="t">Cargas <span class="req">req. 8 · 9</span></div><div class="d">Subir los archivos del período y recalcular el portafolio, con el veredicto de cada archivo — filas leídas, filas rechazadas y el motivo — el historial de versiones publicadas y la evolución del score del portafolio a lo largo de las cargas. Desde la Fase 10, Cargas y Linaje son las dos pestañas de la pantalla Datos, con un selector de carga compartido.</div></div></div>
     <div class="screen"><span class="i">09</span><div><div class="t">Admin · Rulesets</div><div class="d">Comparación de versiones de ruleset, simulación del impacto en todo el portafolio antes de publicar, e historial de overrides con su justificación.</div></div></div>
+    <div class="screen key"><span class="i">10</span><div><div class="t">Insights — las seis preguntas <span class="req">req. 4 · 6</span></div><div class="d">Qué tan sano está el portafolio, qué modernizar primero según impacto y esfuerzo, dónde reducir complejidad, dónde se concentra el riesgo tecnológico, qué causa la obsolescencia y dónde faltan defensas de continuidad. Una sola llamada, el mismo filtro que el resto del sitio, y cada número con su aritmética a la vista.</div></div></div>
   </div>
 
   <h4>Seguridad del frontend</h4>
@@ -969,7 +971,8 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
         <tr class="shipped"><td class="mono">12</td><td>Administración de reglas</td><td><span class="done">ENTREGADA</span></td><td><strong>Un peso cambiado desde el portal mueve el portafolio, queda auditado y lo toman las réplicas sin desplegar</strong> · borrador, simulación sobre todo el portafolio y versiones inmutables · reautenticación</td></tr>
         <tr class="shipped"><td class="mono">13</td><td>Revisión y remediación</td><td><span class="done">ENTREGADA</span></td><td><strong>Reglas revisadas contra las capturas del BRD</strong> · comparación de reglas · descargas según filtros · pruebas de la SPA · git y paquete portable</td></tr>
         <tr class="shipped"><td class="mono">14</td><td>Verificación de seguridad</td><td><span class="done">EN CURSO</span></td><td>Pipeline en verde; auditoría de validaciones rechazadas, retención de cargas, decisión sobre validación de esquema, aislamiento de terceros y accesibilidad en el CI. Quedan los once parciales que necesitan un entorno real</td></tr>
-        <tr><td class="mono">15</td><td>Autenticación con APIM</td><td><div class="dur"><i style="width:48px"></i><span>3 sem</span></div></td><td>OAuth mediante Azure API Management, claim de alcance y sin secreto estático entre capas</td></tr>
+        <tr class="shipped"><td class="mono">15</td><td>Autenticación con APIM</td><td><span class="done">EN CURSO</span></td><td>Elegida la opción C con A: la credencial entre capas es conectable, la capa System valida el JWT y hay un modo <span class="mono">Both</span> para cambiar sin corte. El código está probado con dobles; <strong>falta el emisor real</strong></td></tr>
+        <tr class="shipped"><td class="mono">—</td><td>Pantalla 09 · las seis preguntas</td><td><span class="done">ENTREGADA</span></td><td><strong>Las seis preguntas de gestión se responden con las fuentes actuales</strong> · salud, prioridades, complejidad, riesgo, obsolescencia y resiliencia con los mismos filtros · 14 pruebas del analizador, 15 de API y 8 de la SPA</td></tr>
         <tr><td class="mono">16</td><td>Escala y operación</td><td><div class="dur"><i style="width:48px"></i><span>3 sem</span></div></td><td>Destino y motor de base, Redis, dos réplicas por capa, respaldos, SIEM y notificaciones de reglas</td></tr>
         <tr><td class="mono">17</td><td>Hallazgos de infraestructura</td><td><div class="dur"><i style="width:32px"></i><span>2 sem</span></div></td><td>Al final, por decisión: identidad de carga de trabajo (H-16), firma de imágenes y logs inmutables (H-17), sesiones activas (H-20) y antivirus en cargas (H-21)</td></tr>
       </tbody>
@@ -981,7 +984,7 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
 
   <div class="ship">
     <div class="h">Criterio de aceptación cumplido</div>
-    <p><strong>646 pruebas .NET en verde</strong> en quince proyectos, más 35 unitarias y 16 de punta a punta en la SPA —seis de flujo y diez de accesibilidad—, cero paquetes vulnerables —ya con EF Core y SQLite dentro—, y el build compila con todas las reglas de seguridad del analizador como errores. El motor reproduce exactamente los dos casos documentados: <span class="mono">EAI 14381 = 79,67</span> y <span class="mono">EAI 10969 = 79,61</span>, métrica por métrica.</p>
+    <p><strong>694 pruebas .NET en verde</strong> en quince proyectos, más 39 unitarias y 22 de punta a punta en la SPA —diez de flujo y doce de accesibilidad—, cero paquetes vulnerables —ya con EF Core y SQLite dentro—, y el build compila con todas las reglas de seguridad del analizador como errores. El motor reproduce exactamente los dos casos documentados: <span class="mono">EAI 14381 = 79,67</span> y <span class="mono">EAI 10969 = 79,61</span>, métrica por métrica.</p>
     <p>El 14381 se reproduce <strong>extremo a extremo</strong>: generador → puerto <code>ISourceReader</code> → ensamblado → motor → <code>system-api</code> → <code>channel-api</code> → SPA. Cada eslabón de esa cadena está cubierto por tests, y el último se ve en pantalla.</p>
   </div>
 
@@ -1307,6 +1310,33 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
 
   <div class="note"><strong>Lo que sigue.</strong> Terminar la Fase 14 en un entorno de prueba: llaves protegidas, mTLS, gestor de secretos, TLS del ingress, MFA exigida por el IdP, reglas del SIEM, firma de imágenes y ZAP contra staging; más la revisión de seguridad por una segunda persona. Después, Fase 15 con autenticación por APIM; Fase 16, escala y operación; y al final, por decisión, la Fase 17 con H-16, H-17, H-20 y H-21. Los pendientes para el equipo, en inglés y con el máximo detalle, están en <code>docs/PENDING-ITEMS.md</code>. Todo el trabajo está respaldado en un repositorio privado, con el pipeline en verde.</div>
 
+  <h3>Las seis preguntas del portafolio</h3>
+  <div class="ship">
+    <div class="h">Pedido el 16 de septiembre · entregado</div>
+    <p>El sitio responde en una sola vista las seis preguntas que hace un comité de portafolio. <strong>Ninguna necesitó un dato nuevo:</strong> las seis salen de las ocho fuentes actuales, del score ya calculado y del catálogo de roadmaps. Lo que falta no impide responder, sino que dos de las respuestas sean exactas en lugar de indicativas.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:27%">Pregunta</th><th>Con qué se responde</th></tr></thead>
+      <tbody>
+        <tr><td><strong>¿Qué tan sano está?</strong></td><td>Promedio y mediana juntos —la segunda delata cuando una cola mueve al primero—, reparto por tramo, <strong>cobertura de dato</strong> (la parte del peso del modelo que tuvo valor) y cuántas aplicaciones críticas están bajo el umbral sano</td></tr>
+        <tr><td><strong>¿Qué modernizar primero?</strong></td><td>Impacto contra esfuerzo: <span class="mono">uplift</span> es lo que sube el score al ejecutar su roadmap, calculado con el motor de what-if; <span class="mono">semanas</span> son las de sus hitos; el peso de negocio pondera criticidad, usuarios y capacidades. Ordena por <span class="mono">(uplift × peso) ÷ semanas</span></td></tr>
+        <tr><td><strong>¿Dónde reducir complejidad?</strong></td><td>Cuatro formas: la misma capacidad repetida en un país —umbral ajustable de 2 a 5—, la misma capacidad resuelta distinto en varios países, aplicaciones marcadas <span class="mono">Eliminate</span> todavía activas, y una capacidad escrita en muchos lenguajes</td></tr>
+        <tr><td><strong>¿Dónde se concentra el riesgo?</strong></td><td>Por LOB, país, CIO o capacidad: <span class="mono">críticos×3 + altos×1 + Kenna&lt;50×5 + componentes obsoletos×2 + críticas expuestas a internet×10</span>. El índice ordena dentro de este portafolio, no compara con otro</td></tr>
+        <tr><td><strong>¿Qué causa la obsolescencia?</strong></td><td>Puntos perdidos por métrica: <span class="mono">peso × (100 − score mapeado) ÷ 100</span>, sumado en todo el portafolio. El peso que quedó fuera por falta de dato va en columna aparte: <strong>eso es ceguera, no obsolescencia</strong></td></tr>
+        <tr><td><strong>¿Dónde faltan defensas?</strong></td><td>Fuera del alcance de DR, sin monitoreo, score operacional bajo 60 y sin RTO ni RPO declarados. Los dos primeros contadores miran solo las críticas, que es donde un hueco duele</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="rfc">
+    <b class="tag">Supuestos a la vista</b>
+    El esfuerzo son las semanas del roadmap, que están definidas <strong>por roadmap y no por aplicación</strong>: dos aplicaciones en <span class="mono">Refactor</span> muestran las mismas semanas. Es un proxy, y la pantalla lo dice. El valor de negocio también lo es: criticidad, usuarios y capacidades en lugar de ingresos. Una talla S/M/L por aplicación bastaría para convertir el primero en una comparación real — es el dato más barato y el que más mueve el orden de la lista.
+  </div>
+
+  <div class="note">El ejemplo que dio el negocio —<em>“más de X aplicaciones con la misma application class por país”</em>— se responde hoy con la capacidad de negocio primaria del maestro EAI, que es lo más cercano que existe en las fuentes. Los siete datos que afinarían las respuestas —clase de aplicación, costo o esfuerzo, valor de negocio, dependencias, fechas de fin de soporte, historial de incidentes y estado de migración— están en <code>docs/PENDING-ITEMS.md</code> como <strong>DQ-01 a DQ-07</strong>, cada uno con qué respuesta mejora.</div>
+
   <h3>Estructura del repositorio</h3>
   <pre>modernization-score/
 ├─ <b>Directory.Packages.props</b>        <em>versiones centralizadas</em>
@@ -1321,6 +1351,7 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
 │  ├─ shared/
 │  │  ├─ <b>Modernization.Domain/</b>            <em>modelo canónico + puertos ✓</em>
 │  │  ├─ <b>Modernization.Scoring.Engine/</b>    <em>motor puro — el activo crítico ✓</em>
+│  │  ├─ <b>Modernization.Insights/</b>         <em>las seis preguntas, función pura ✓</em>
 │  │  └─ Modernization.Security/
 │  ├─ channel/
 │  │  └─ Modernization.ChannelApi/       <em>BFF / orquestador</em>
@@ -1374,3 +1405,5 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
 
 </div>
 
+
+</body></html>

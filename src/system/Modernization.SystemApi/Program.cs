@@ -84,7 +84,10 @@ switch (provider)
 
         builder.Services.AddSingleton<IApplicationSnapshotProvider>(
             _ => new FileSnapshotProvider(dataDirectory));
-        builder.Services.AddSingleton(_ => new UploadService(dataDirectory));
+        // Retencion declarativa, igual que en el adaptador de base: 0 conserva todas.
+        builder.Services.AddSingleton(_ => new UploadService(
+            dataDirectory,
+            retainVersions: builder.Configuration.GetValue("Uploads:RetainVersions", 0)));
         builder.Services.AddSingleton<ISnapshotPublisher>(sp => sp.GetRequiredService<UploadService>());
 
         // Por defecto en el mismo volumen que las cargas: persisten juntas.

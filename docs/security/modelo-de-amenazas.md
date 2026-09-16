@@ -1,6 +1,6 @@
 # Modelo de amenazas
 
-**Versión:** Fase 13 · **Fecha:** 2026-09-15 · **Método:** STRIDE por frontera de confianza
+**Versión:** Fase 14 · **Fecha:** 2026-09-15 · **Método:** STRIDE por frontera de confianza
 
 Cada amenaza lleva el control que la mitiga y **la evidencia de que el control
 existe**: un test, un archivo de configuración o una verificación en vivo. Un control
@@ -107,6 +107,7 @@ flowchart LR
 | **T** | Árbol de dependencias alterado | `packages.lock.json` + `--locked-mode` · `npm ci` | Un lock file por proyecto · `ci.yml` | — |
 | **T** | Script de instalación malicioso | `ignore-scripts=true` | `src/web/.npmrc` | — |
 | **T** | Acción de CI secuestrada por etiqueta | Todas las acciones fijadas por SHA | `ci.yml` · `seguridad.yml` | — |
+| **R** | Sondeo del borde sin rastro | Toda entrada rechazada por validación deja el evento 4214 con ruta y código | Middleware de la capa Channel · `ValidationAuditTests` | Alerta del SIEM sobre ráfagas de 4214 (SEC-11) |
 | **T** | Herramienta vulnerable instalada por una acción fijada | La versión del escáner también se fija (Trivy v0.74.0, H-31) | `ci.yml` | — |
 | **T** | Versión recién publicada y maliciosa | Renovate espera 3 días | `renovate.json` | — |
 | **I** | Secreto en el repositorio | Gitleaks sobre todo el historial · `DeploymentGuards` | `.gitleaks.toml` · `ProductionRefusesTheRepositoryDevelopmentToken` | — |

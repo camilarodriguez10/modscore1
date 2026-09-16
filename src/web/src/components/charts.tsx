@@ -125,6 +125,7 @@ export function NumeratorComposition({
 
           {unearned > 0 && (
             <div
+              role="img"
               className="min-w-[3px] rounded-r-sm bg-grid"
               style={{ flexGrow: unearned, flexBasis: 0 }}
               aria-label={`Not earned: ${fmt(unearned)} points`}
@@ -405,12 +406,14 @@ export function WeightAvailability({
     <div className="flex flex-col gap-2">
       <div className="flex h-6 gap-[2px] overflow-hidden rounded-sm">
         <div
+          role="img"
           className="rounded-l-sm bg-accent"
           style={{ flexGrow: available, flexBasis: 0 }}
           aria-label={`Weight with data: ${fmt(available, 0)}`}
         />
         {available < total && (
           <div
+            role="img"
             className="rounded-r-sm bg-grid"
             style={{ flexGrow: total - available, flexBasis: 0 }}
             aria-label={`Weight without data: ${fmt(total - available, 0)}`}

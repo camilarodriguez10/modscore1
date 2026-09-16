@@ -1,6 +1,6 @@
 # OWASP ASVS 4.0.3 — Nivel 2
 
-**Versión:** Fase 13 · **Fecha:** 2026-09-14
+**Versión:** Fase 14 · **Fecha:** 2026-09-15
 
 Requisitos de nivel 2 **aplicables a este sistema**, con su estado y la evidencia.
 No es un certificado: es el registro de qué se verificó, cómo, y qué falta.
@@ -23,29 +23,45 @@ No es un certificado: es el registro de qué se verificó, cómo, y qué falta.
 | V4 Control de acceso | 8 | 1 | 0 | 0 |
 | V5 Validación y codificación | 10 | 0 | 0 | 1 |
 | V6 Criptografía | 4 | 1 | 0 | 0 |
-| V7 Errores y logs | 8 | 1 | 1 | 0 |
-| V8 Protección de datos | 4 | 1 | 0 | 0 |
+| V7 Errores y logs | 9 | 0 | 1 | 0 |
+| V8 Protección de datos | 5 | 0 | 0 | 0 |
 | V9 Comunicaciones | 1 | 3 | 0 | 0 |
 | V10 Código malicioso | 2 | 0 | 0 | 2 |
 | V11 Lógica de negocio | 7 | 1 | 0 | 0 |
 | V12 Archivos | 9 | 0 | 1 | 3 |
-| V13 API | 7 | 1 | 0 | 0 |
+| V13 API | 8 | 0 | 0 | 0 |
 | V14 Configuración | 19 | 2 | 0 | 0 |
-| **Total** | **103** | **14** | **3** | **10** |
+| **Total** | **106** | **11** | **3** | **10** |
 
 **Ningún requisito aplicable queda sin estado.** De los tres pendientes, dos son de
 severidad baja (H-20, H-21) y el tercero —logs en un destino inmutable— es
-infraestructura (H-17). Los parciales dependen de verificarse en un despliegue real:
-mTLS, TLS del ingress, gestor de secretos y reglas del SIEM.
+infraestructura (H-17). Los once parciales dependen de verificarse en un despliegue real:
+llaves protegidas, mTLS, gestor de secretos, TLS del ingress, cifrado interno, reglas del
+SIEM, firma de imágenes y MFA exigido por el IdP. El runbook
+[verificación ASVS](../runbooks/verificacion-asvs.md) dice qué comprobar y con qué comando,
+para que la verificación sea un rato de trabajo y no una investigación.
 
 **Plan de resolución (decidido el 2026-09-14).**
 
-- Los **14 parciales** se verifican en la **Fase 14**, en un entorno de prueba, con la
-  primera corrida del pipeline.
+- Los **11 parciales** que quedan se verifican en un entorno de prueba: dependen de un
+  cluster, un IdP, un ingress y un gestor de secretos reales.
 - Los **3 pendientes** (H-17, H-20, H-21) y el parcial de H-16 van en la **Fase 17**, al
   final del plan.
 - Cada requisito tiene su identificador `SEC-xx` en [PENDING-ITEMS.md](../PENDING-ITEMS.md),
   con lo que falta y cómo se verifica.
+
+La Fase 14 cierra tres parciales, documenta los controles compensatorios de un cuarto y
+agrega verificación automática de accesibilidad:
+
+- **7.1.3:** toda entrada rechazada por validación deja el evento 4214, con la ruta y el
+  código y sin los valores enviados (SEC-06).
+- **8.3.4:** el adaptador de archivos también tiene retención declarativa,
+  `Uploads:RetainVersions`, igual que el de base de datos (SEC-07).
+- **13.2.2:** contrato tipado estricto en lugar de esquema formal, decidido y registrado en
+  el [ADR 0021](../adr/0021-el-cuerpo-de-reglas-se-valida-por-contrato-tipado.md) (SEC-12).
+- **14.2.6:** sin sandbox por librería, con controles compensatorios aceptados (SEC-14).
+- **Accesibilidad:** axe recorre cinco pantallas en claro y en oscuro dentro del CI, y falla
+  con violaciones serias o críticas (TD-04, TD-05).
 
 La Fase 13 no cambia los totales y agrega evidencia:
 
@@ -151,7 +167,7 @@ La autenticación de personas se delega en el IdP corporativo por OIDC.
 |---|---|---|---|
 | 7.1.1 | Sin credenciales ni tokens en logs | Cumple | Se registra el subject; nunca cookie, token ni correo |
 | 7.1.2 | Sin otros datos sensibles | Cumple | Sin nombre, correo ni contenido de archivos |
-| 7.1.3 | Eventos de seguridad registrados | Parcial | Sesión, acceso denegado, CSRF, rate limit, cargas, alcance, reglas publicadas y rechazadas (4211, 4212), reautenticación (4004, 4104) y exportaciones con su cantidad de filas (4213); las validaciones rechazadas (400) no se auditan (Fase 14, SEC-06) |
+| 7.1.3 | Eventos de seguridad registrados | Cumple | Sesión, acceso denegado, CSRF, rate limit, cargas, alcance, reglas publicadas y rechazadas (4211, 4212), reautenticación (4004, 4104), exportaciones con su cantidad de filas (4213) y entradas rechazadas por validación (4214), con ruta y código y sin los valores enviados · `ValidationAuditTests` |
 | 7.1.4 | Información suficiente para investigar | Cumple | EventId, subject, ruta, versión y hora del logger |
 | 7.2.1 | Decisiones de autenticación registradas | Cumple | Eventos 4001–4003 |
 | 7.2.2 | Decisiones de acceso fallidas registradas | Cumple | Eventos 4101 y 4203 |
@@ -168,7 +184,7 @@ La autenticación de personas se delega en el IdP corporativo por OIDC.
 | 8.2.1 | Anti-cache en respuestas sensibles | Cumple | `PortfolioResponsesAreNotCacheable` |
 | 8.2.2 | Nada sensible en el almacenamiento del navegador | Cumple | Sin tokens ni datos en `localStorage` |
 | 8.3.1 | Datos sensibles en el cuerpo, no en la URL | Cumple | La URL lleva identificadores (EAI), no datos |
-| 8.3.4 | Política de retención de datos sensibles | Parcial | Retención manual de versiones (plan 7bis); política declarativa en la Fase 09 |
+| 8.3.4 | Política de retención de datos sensibles | Cumple | `Database:RetainVersions` y `Uploads:RetainVersions` conservan las N cargas más recientes en los dos adaptadores; 0 conserva todas · `FileUploadRetentionTests`. Cuántas conservar lo fija el negocio (OP-03) |
 
 ## V9 — Comunicaciones
 
@@ -227,7 +243,7 @@ La autenticación de personas se delega en el IdP corporativo por OIDC.
 | 13.1.4 | Autorización por URI y por recurso | Cumple | Política por endpoint + alcance por aplicación |
 | 13.1.5 | Content-type inesperado rechazado | Cumple | `NonMultipartRequestIsRejected` · `UnexpectedContentTypeIsRejected` |
 | 13.2.1 | Métodos HTTP limitados | Cumple | Solo los métodos mapeados; el resto 405 |
-| 13.2.2 | Validación de esquema JSON | Parcial | DTOs tipados y comprobaciones explícitas; sin validador de esquema formal |
+| 13.2.2 | Validación de esquema JSON | Cumple | Contrato tipado estricto con `BoundedJson` (128 KB, sin propiedades desconocidas, sin nulos donde el contrato no los admite, profundidad 16) más las invariantes de `Ruleset.Validate` · [ADR 0021](../adr/0021-el-cuerpo-de-reglas-se-valida-por-contrato-tipado.md) |
 | 13.2.3 | CSRF en APIs con cookie | Cumple | Doble envío + `SameSite=Strict` |
 | 13.2.5 | Content-Type verificado | Cumple | Enlace JSON exige `application/json` |
 | 13.2.6 | Tamaño de cuerpo acotado | Cumple | 1 MB por defecto, verificado en vivo con 413 |
@@ -245,7 +261,7 @@ La autenticación de personas se delega en el IdP corporativo por OIDC.
 | 14.2.3 | Recursos externos con SRI | Cumple | No hay recursos externos: fuentes auto-alojadas |
 | 14.2.4 | Componentes de repositorios confiables | Cumple | Lock files · `ignore-scripts` · acciones fijadas por SHA |
 | 14.2.5 | Inventario de componentes | Cumple | SBOM CycloneDX en CI |
-| 14.2.6 | Aislamiento de componentes de terceros | Parcial | Contenedores y NetworkPolicy; sin sandbox por librería |
+| 14.2.6 | Aislamiento de componentes de terceros | Parcial | Sin sandbox por librería: ni .NET ni Node lo ofrecen. Controles compensatorios aceptados: árbol mínimo y bloqueado (`packages.lock.json`, `npm ci --ignore-scripts`), NuGetAudit, `npm audit`, OSV y Trivy en cada push, imágenes chiseled sin shell con usuario no root, sistema de archivos de solo lectura y capacidades descartadas, NetworkPolicy y CSP estricta sin recursos de terceros (SEC-14) |
 | 14.3.2 | Modos de depuración desactivados | Cumple | `DeploymentGuards` · guardia del esquema de desarrollo · `DOTNET_EnableDiagnostics=0` |
 | 14.3.3 | Encabezados sin versiones | Cumple | Sin encabezado `Server`, verificado en vivo |
 | 14.4.1 | Content-Type con charset | Cumple | JSON con `charset=utf-8` |

@@ -306,6 +306,24 @@ app.Use(async (context, next) =>
     await next().ConfigureAwait(false);
 });
 
+// Una entrada rechazada por validacion tambien es informacion de seguridad (ASVS 7.1.3).
+// Se audita aqui, y no endpoint por endpoint, para que ninguno se olvide: cualquier
+// respuesta de /api que rechace la entrada deja el evento 4214 con su ruta y su codigo.
+app.Use(async (context, next) =>
+{
+    await next().ConfigureAwait(false);
+
+    if (SecurityAudit.IsValidationRejection(context.Response.StatusCode)
+        && context.Request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase))
+    {
+        SecurityAudit.ValidationRejected(
+            audit,
+            ChannelPermissions.SubjectOf(context.User),
+            context.Request.Path.Value,
+            context.Response.StatusCode);
+    }
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi().AllowAnonymous();

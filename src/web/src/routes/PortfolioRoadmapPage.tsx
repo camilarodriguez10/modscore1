@@ -250,7 +250,7 @@ function GroupRow({
         )}
         <span className="tnum ml-2 font-mono text-[11px] text-ink-3">{fmt(group.sharePercent, 0)}%</span>
         {group.alerts > 0 && (
-          <span className="tnum ml-2 font-mono text-[11px]" style={{ color: 'var(--app-serious)' }}>
+          <span className="tnum ml-2 font-mono text-[11px]" style={{ color: 'var(--app-serious-text)' }}>
             {group.alerts} {group.alerts === 1 ? 'alert' : 'alerts'}
           </span>
         )}
@@ -270,7 +270,7 @@ function GroupRow({
         {group.delta === null ? (
           <span className="text-ink-3">leaves</span>
         ) : (
-          <span style={{ color: 'var(--app-good)' }}>+{fmt(group.delta)}</span>
+          <span style={{ color: 'var(--app-good-text)' }}>+{fmt(group.delta)}</span>
         )}
       </td>
 
@@ -328,7 +328,7 @@ function DispositionCard({ group }: { group: DispositionGroupView }) {
                   {roadmap.averageDelta === null ? (
                     <span className="text-ink-3">leaves</span>
                   ) : (
-                    <span style={{ color: 'var(--app-good)' }}>+{fmt(roadmap.averageDelta)}</span>
+                    <span style={{ color: 'var(--app-good-text)' }}>+{fmt(roadmap.averageDelta)}</span>
                   )}
                 </td>
                 <td className="tnum px-4 py-2.5 text-right font-mono text-ink-3">{roadmap.totalWeeks} wk</td>

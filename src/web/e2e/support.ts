@@ -6,7 +6,9 @@ export async function signIn(page: Page, path = '/') {
   await page.goto(path);
 
   const signInButton = page.getByRole('button', { name: 'Sign in' });
-  const portfolioTab = page.getByRole('link', { name: 'Portfolio', exact: true });
+  // El enlace del encabezado, no el de la navegacion de una aplicacion: la pantalla de
+  // calculo tiene los dos, y esperar "cualquiera" es una carrera con el render.
+  const portfolioTab = page.getByRole('banner').getByRole('link', { name: 'Portfolio', exact: true });
 
   await expect(signInButton.or(portfolioTab)).toBeVisible();
 

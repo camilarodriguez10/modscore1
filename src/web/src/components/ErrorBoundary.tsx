@@ -28,7 +28,7 @@ export class ErrorBoundary extends Component<
     return (
       <main className="grid min-h-full place-items-center px-6">
         <div className="w-full max-w-md rounded-md border border-rule bg-surface px-6 py-6">
-          <p className="font-mono text-[11px] font-semibold tracking-[0.12em] uppercase" style={{ color: 'var(--app-critical)' }}>
+          <p className="font-mono text-[11px] font-semibold tracking-[0.12em] uppercase" style={{ color: 'var(--app-critical-text)' }}>
             Something broke while drawing the screen
           </p>
           <h1 className="mt-2 text-[17px] font-semibold">This view could not be shown</h1>

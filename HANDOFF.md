@@ -1,6 +1,6 @@
 # Traspaso — Modernization Score Platform
 
-**Fecha:** 2026-09-15 · **Estado:** fases 00 a 13 entregadas · **Siguiente:** Fase 14 (verificación de seguridad) y decisiones de negocio en paralelo
+**Fecha:** 2026-09-15 · **Estado:** fases 00 a 13 entregadas; Fase 14 en curso · **Siguiente:** terminar la Fase 14 en un entorno de prueba y decisiones de negocio en paralelo
 
 Este documento permite que otra persona —o otra sesión— retome el proyecto sin haber
 estado en él. No reemplaza al plan ([PLAN.md](PLAN.md)) ni a los ADR: dice qué hay, dónde
@@ -36,10 +36,11 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 |---|---|
 | Fases 00–12 | Entregadas: motor, datos dummy, dos capas, SPA, what-if, roadmap, archivos, endurecimiento, base de datos, experiencia de consulta, sitio en inglés, administración de reglas |
 | Fase 13 — revisión y remediación | Entregada el 2026-09-14/15 (PLAN §8.6) |
-| Pruebas | **640 .NET** (200 motor · 175 contratos · 265 API) · **35 unitarias** de la SPA · **6 de punta a punta** con Playwright y Edge, contra el stack de desarrollo y contra el paquete portable · ESLint sin errores. Todo repetido en verde el 2026-09-15 |
+| Fase 14 — verificación de seguridad | **En curso** (PLAN §8.7). Cerrados SEC-06 (evento 4214), SEC-07 (`Uploads:RetainVersions`) y SEC-12 (ADR 0021); SEC-14 aceptado con controles compensatorios; accesibilidad y e2e en el CI. Los once parciales que quedan necesitan cluster, IdP, ingress y gestor de secretos: ver [runbook de verificación](docs/runbooks/verificacion-asvs.md) |
+| Pruebas | **646 .NET** (200 motor · 178 contratos · 268 API) · **35 unitarias** de la SPA · **16 de punta a punta** con Playwright (6 de flujo y 10 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-09-15 |
 | Dependencias | Cero paquetes vulnerables (`dotnet list package --vulnerable`), `npm audit` limpio |
 | CI | GitHub Actions en verde desde la corrida #5 (`55cf36f`, 2026-09-15), que pasó los 7 jobs: backend, SPA, gitleaks, OSV, CodeQL C# y JS/TS, e imágenes con Trivy v0.74.0 y Checkov. CodeQL sin hallazgos altos. Tras acelerarlo, la corrida #6 (`148c6ce`) tardó 7 min 3 s en lugar de 9 min 54 s; CodeQL C# sigue marcando el total (6 min 58 s). Antes hubo que corregir el lint, CodeQL en repositorio privado (`upload: never`, `actions: read`), la versión de Trivy y el UID de los pods. Para acortarlo: gitleaks y OSV están en `seguridad.yml` y corren en cada push; `ci.yml` se salta los cambios que solo tocan documentación; CodeQL C# compila solo `src/` sin los analizadores de Roslyn; hay caché de NuGet, y el job de imágenes no espera a los demás |
-| ASVS L2 | 103 cumple · 14 parciales · 3 pendientes · 10 IdP o N/A |
+| ASVS L2 | 106 cumple · 11 parciales · 3 pendientes · 10 IdP o N/A. Los parciales dependen de un entorno real |
 | Hallazgos | Fase 08: 23 (19 cerrados, H-16 parcial, H-17/H-20/H-21 pendientes). Revisión 09–13: 7 (6 cerrados, 1 aceptado) |
 | Git | Repositorio **privado** <https://github.com/camilarodriguez10/modscore1>, rama `main`. Guarda todo lo creado —el `.zip` portable, el estado local de `data/`, los scripts de las sesiones (`tools/sesiones/`) y la copia del plan (`docs/plan/`)— salvo las capturas del BRD y las imágenes. Los commits usan el correo de la cuenta. Cada push se confirma antes |
 | Artefacto del plan | <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> (versión 16, con la Fase 13; copia en `docs/plan/modscore-plan.html`; enlace anterior del mismo artefacto: <https://claude.ai/code/artifact/25507d1f-40a6-4e74-8c43-0337dbb63358>) |
@@ -252,6 +253,9 @@ La simulación depende mucho de la carga de la máquina: con la máquina ocupada
 - Fijar una acción por SHA no fija la herramienta que instala: `trivy-action` v0.36.0 baja
   Trivy v0.70.0, que tiene avisos de seguridad posteriores. Hay que fijar también su
   `version`.
+- `sed -i` sobre un archivo con finales de línea CRLF lo deja en LF y el diff se vuelve el
+  archivo entero. Revisar `git diff --numstat` después de editar con `sed`; los scripts de
+  parche en Python conservan los finales de línea a propósito.
 - En un repositorio privado, la acción de CodeQL necesita `actions: read` aunque no suba
   resultados. Sin ese permiso, `analyze` falla con "Resource not accessible by integration".
 - Una captura de Actions puede ser de una corrida anterior al último push. Antes de corregir,
@@ -281,6 +285,12 @@ La simulación depende mucho de la carga de la máquina: con la máquina ocupada
   en reposo y repetir.
 - Una prueba de contrato entre C# y TypeScript da la garantía de un cliente generado sin
   sumar herramientas a la cadena de suministro.
+- En Playwright, esperar «el enlace Portfolio» falla en la pantalla de cálculo, que tiene
+  dos: el del encabezado y el de su navegación. La carrera aparece y desaparece según lo
+  rápido que renderice. El ayudante apunta al del encabezado (`getByRole('banner')`).
+- axe encuentra lo que la revisión a ojo no: un color atenuado a 4,42:1 y colores de estado
+  usados como letra a 1,65:1. Los colores de marca y los de texto son dos cosas distintas y
+  conviene que sean dos tokens distintos.
 - La verificación local tiene que incluir `npm run lint`, porque el CI lo exige. En la Fase 13
   no se corrió y se escapó un BOM literal en una expresión regular de `e2e/support.ts`
   (`no-irregular-whitespace`); se corrigió escribiendo `\uFEFF`.

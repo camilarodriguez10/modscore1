@@ -11,10 +11,10 @@ import { bandLabel } from '../i18n/notices';
 
 const BAND_STYLE: Record<string, { text: string; wash: string }> = {
   // Claves: los codigos de tramo del backend. El nombre lo pone bandLabel.
-  critical: { text: 'var(--app-critical)', wash: 'var(--app-critical-wash)' },
-  'at-risk': { text: 'var(--app-serious)', wash: 'var(--app-serious-wash)' },
-  acceptable: { text: 'var(--app-warning)', wash: 'var(--app-warning-wash)' },
-  solid: { text: 'var(--app-good)', wash: 'var(--app-good-wash)' },
+  critical: { text: 'var(--app-critical-text)', wash: 'var(--app-critical-wash)' },
+  'at-risk': { text: 'var(--app-serious-text)', wash: 'var(--app-serious-wash)' },
+  acceptable: { text: 'var(--app-warning-text)', wash: 'var(--app-warning-wash)' },
+  solid: { text: 'var(--app-good-text)', wash: 'var(--app-good-wash)' },
 };
 
 export function bandColor(band: string): string {
@@ -224,7 +224,7 @@ export function ErrorPanel({ title, detail }: { title: string; detail: string })
         background: 'var(--app-critical-wash)',
       }}
     >
-      <p className="text-[13px] font-semibold" style={{ color: 'var(--app-critical)' }}>
+      <p className="text-[13px] font-semibold" style={{ color: 'var(--app-critical-text)' }}>
         {title}
       </p>
       <p className="mt-0.5 text-[13px] text-ink-2">{detail}</p>

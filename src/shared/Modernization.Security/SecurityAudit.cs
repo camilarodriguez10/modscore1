@@ -169,6 +169,28 @@ public static partial class SecurityAudit
         }
     }
 
+    /// <summary>
+    /// Una entrada rechazada por validacion (ASVS 7.1.3). Se registran la ruta y el codigo,
+    /// nunca el cuerpo ni los valores enviados: el log no es lugar para datos sin validar.
+    /// </summary>
+    public static void ValidationRejected(ILogger logger, string? user, string? path, int statusCode)
+    {
+        ArgumentNullException.ThrowIfNull(logger);
+        if (logger.IsEnabled(LogLevel.Warning))
+        {
+            var cleanUser = Clean(user);
+            var cleanPath = Clean(path);
+            LogValidationRejected(logger, cleanUser, cleanPath, statusCode);
+        }
+    }
+
+    /// <summary>
+    /// Codigos con los que el borde dice "esta entrada no paso la validacion": 400 (invalida),
+    /// 413 (demasiado grande), 415 (tipo no aceptado) y 422 (semanticamente invalida).
+    /// </summary>
+    public static bool IsValidationRejection(int statusCode)
+        => statusCode is 400 or 413 or 415 or 422;
+
     public static void StepUpCompleted(ILogger logger, string? user)
     {
         ArgumentNullException.ThrowIfNull(logger);
@@ -284,4 +306,8 @@ public static partial class SecurityAudit
     [LoggerMessage(EventId = 4212, Level = LogLevel.Warning,
         Message = "Publicacion de reglas rechazada. usuario={User} motivo={Reason}")]
     private static partial void LogRulesRejected(ILogger logger, string user, string reason);
+
+    [LoggerMessage(EventId = 4214, Level = LogLevel.Warning,
+        Message = "Entrada rechazada por validacion. usuario={User} ruta={Path} codigo={StatusCode}")]
+    private static partial void LogValidationRejected(ILogger logger, string user, string path, int statusCode);
 }

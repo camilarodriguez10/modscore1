@@ -172,7 +172,7 @@ function CompareWorkspace({ view }: { view: RulesAdminView }) {
           )}
         </form>
         {!eaiInputValid && (
-          <p className="px-4 pb-3 text-[12.5px]" style={{ color: 'var(--app-critical)' }}>
+          <p className="px-4 pb-3 text-[12.5px]" style={{ color: 'var(--app-critical-text)' }}>
             An EAI code is a sequence of up to 10 digits.
           </p>
         )}
@@ -532,7 +532,7 @@ function ApplicationCard({
             <span
               className="tnum font-mono text-[16px] font-semibold"
               style={{
-                color: delta > 0 ? 'var(--app-good)' : delta < 0 ? 'var(--app-critical)' : 'var(--app-ink-3)',
+                color: delta > 0 ? 'var(--app-good-text)' : delta < 0 ? 'var(--app-critical-text)' : 'var(--app-ink-3)',
               }}
             >
               {signed(delta)}

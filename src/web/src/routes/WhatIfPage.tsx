@@ -127,7 +127,7 @@ export function WhatIfPage() {
                 {delta > 0 && (
                   <span
                     className="tnum text-[15px] font-semibold"
-                    style={{ color: 'var(--app-good)' }}
+                    style={{ color: 'var(--app-good-text)' }}
                   >
                     +{fmt(delta)}
                   </span>
@@ -270,7 +270,7 @@ export function WhatIfPage() {
               )}
 
               {target.error && (
-                <p className="text-[13px]" style={{ color: 'var(--app-critical)' }}>
+                <p className="text-[13px]" style={{ color: 'var(--app-critical-text)' }}>
                   {target.error instanceof ApiError
                     ? target.error.message
                     : 'The plan could not be calculated.'}
@@ -300,7 +300,7 @@ export function WhatIfPage() {
               <ul className="flex flex-wrap gap-x-4 gap-y-1.5 px-4 py-4">
                 {data.alreadyAchieved.map((lever) => (
                   <li key={lever.key} className="flex items-center gap-1.5 text-[12.5px] text-ink-2">
-                    <span aria-hidden="true" style={{ color: 'var(--app-good)' }}>
+                    <span aria-hidden="true" style={{ color: 'var(--app-good-text)' }}>
                       ✓
                     </span>
                     {lever.name}

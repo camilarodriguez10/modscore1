@@ -96,7 +96,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 | PA-07 | Secrets manager integration verified | Platform / security | P1 | Platform | Open |
 | PA-08 | Observability and SIEM rules | Platform / security | P1 | Operations + security | Open |
 | PA-09 | Notifications to responsible parties when rules are published | Platform / product | P2 | Product + platform | Decision needed |
-| SEC-01 … SEC-14 | ASVS L2 partial requirements | Security | P1 | Security + platform | Open (phase 14) |
+| SEC-01 … SEC-14 | ASVS L2 partial requirements | Security | P1 | Security + platform | SEC-06, SEC-07, SEC-12 done; SEC-14 accepted with compensating controls; the rest need a test environment |
 | SEC-15 | ASVS 3.3.4 — see and close own sessions (H-20) | Security | P3 | Development | Deferred (by decision) |
 | SEC-16 | ASVS 7.3.3 — tamper-proof logs (H-17) | Security | P2 | Operations | Deferred (by decision) |
 | SEC-17 | ASVS 12.4.2 — antivirus on uploads (H-21) | Security | P3 | Development + platform | Deferred (by decision) |
@@ -110,8 +110,8 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 | TD-01 | Outdated packages kept on purpose | Technical debt | P3 | Development | Accepted (policy) |
 | TD-02 | React 19 features promised in the plan but not used | Technical debt | P3 | Development | Decision needed |
 | TD-03 | OpenAPI-generated client replaced by a contract test | Technical debt | P3 | Development | Decision needed |
-| TD-04 | Visual QA and accessibility audit of the new screens | Quality | P1 | UX + development | Open |
-| TD-05 | End-to-end tests in CI | Quality | P1 | DevSecOps | Open |
+| TD-04 | Visual QA and accessibility audit of the new screens | Quality | P1 | UX + development | Automated part done (2026-09-15); manual walkthrough open |
+| TD-05 | End-to-end tests in CI | Quality | P1 | DevSecOps | Done (2026-09-15) |
 | TD-06 | Simulation latency under concurrency | Performance | P1 | Development | Open |
 | TD-07 | History performance with the database adapter | Performance | P2 | Development | Open |
 | TD-08 | Load test coverage of Channel, exports and comparison | Performance | P2 | Development | Open |
@@ -504,15 +504,15 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
 | SEC-03 | 2.10.1 | Integration secrets are not static | Shared token with seamless rotation and mTLS | Short-lived workload identity (PA-05) or APIM (PA-02 C) | No static secret in configuration | M |
 | SEC-04 | 4.3.1 | MFA on administrative interfaces | Uploads need `ingestion.write`; rules need `ruleset.admin` + step-up within 10 minutes | MFA enforcement for both roles is an IdP/APIM conditional access policy | Sign-in with each role requires MFA | S |
 | SEC-05 | 6.4.1 | Secrets manager | CSI key-per-file mount declared | Verification against the real vault (PA-07) | Secrets read from the vault; none in env vars | S |
-| SEC-06 | 7.1.3 | Security events logged | Sessions, denials, CSRF, rate limits, uploads, scope, rules publications and rejections, step-up, **exports (4213, new)** | Rejected validations (400) are not audited | Decide whether 400 on sensitive endpoints must be audited; add event | S |
-| SEC-07 | 8.3.4 | Retention policy for sensitive data | `Database:RetainVersions` for the database adapter; manual for files | Business retention policy (OP-03) | Documented policy and configured retention | S |
+| SEC-06 | 7.1.3 | Security events logged | **Done (2026-09-15).** Every `/api` response that rejects the input (400, 413, 415, 422) logs event **4214** with the path and the status code, from a middleware in the Channel layer, so no endpoint can forget. The values that were sent are never logged | — | `ValidationAuditTests` | S |
+| SEC-07 | 8.3.4 | Retention policy for sensitive data | **Done (2026-09-15).** `Uploads:RetainVersions` keeps the N most recent uploads in the file adapter too; 0 keeps all. It only deletes directories with a manifest, so the rules store and the staging area are safe | How many to keep is a business decision (OP-03) | `FileUploadRetentionTests` | S |
 | SEC-08 | 9.1.2 | Only strong cipher suites | Ingress configuration | Verification in the real ingress | TLS scan (for example `testssl.sh`) | S |
 | SEC-09 | 9.1.3 | Only TLS 1.2 or higher | Ingress configuration | Same | Same | S |
 | SEC-10 | 9.2.2 | Encryption on internal connections | Mesh policy `all-authenticated` | Verification in cluster; database and Redis with TLS | Connection strings require TLS; mesh verification | S |
 | SEC-11 | 11.1.8 | Configurable alerts | Stable EventIds | SIEM rules (PA-08) | Alerts fire in test | M |
-| SEC-12 | 13.2.2 | JSON schema validation | Typed DTOs, `BoundedJson` (128 KB, strict JSON, no unknown fields) for rules, explicit checks | No formal schema validation | Decide if strict typed binding is enough or add schema validation for rules bodies | S–M |
+| SEC-12 | 13.2.2 | JSON schema validation | **Decided (2026-09-15).** Strict typed binding stays: `BoundedJson` (128 KB, no unknown members, nullable annotations and required parameters respected, depth 16) plus the `Ruleset.Validate` invariants. Adding a schema library would mean one more dependency and two sources of truth | — | [ADR 0021](adr/0021-el-cuerpo-de-reglas-se-valida-por-contrato-tipado.md) | S |
 | SEC-13 | 14.1.5 | Configuration integrity | Checkov in CI | Image signing and admission verification (H-17) | Signed images, admission policy rejects unsigned | M |
-| SEC-14 | 14.2.6 | Isolation of third-party components | Containers, NetworkPolicy | No per-library sandbox | Accept as design limit or document compensating controls | S |
+| SEC-14 | 14.2.6 | Isolation of third-party components | **Accepted (2026-09-15)** as a design limit: neither .NET nor Node sandboxes a single library. Compensating controls: minimal locked dependency tree, `npm ci --ignore-scripts`, NuGetAudit, `npm audit`, OSV and Trivy on every push, chiseled images with no shell, non-root, read-only filesystem and dropped capabilities, NetworkPolicy, and a strict CSP with no third-party resources | — | `asvs-l2.md` 14.2.6 | S |
 
 ### SEC-15 — ASVS 3.3.4: users can see and close their active sessions · H-20
 
@@ -729,23 +729,27 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
 
 ### TD-04 — Visual QA and accessibility audit of the new screens
 
-- **Priority:** P1 · **Owner:** UX + development · **Status:** Open
+- **Priority:** P1 · **Owner:** UX + development · **Status:** Automated part done (2026-09-15); the manual walkthrough is still open
 - **Context:**
   - Screens are **Rules** (phase 12), **Compare rules**, **trend markers**, the **rules notice** and **Download CSV** buttons (phase 13).
   - Functional behavior is covered by end-to-end tests.
-  - No visual review on several widths and no accessibility audit (axe, screen reader, keyboard only) has been done for them.
-- **Work:** axe scan (can be added to Playwright with `@axe-core/playwright` after a vulnerability check); keyboard-only walkthrough; review at 1280, 1024 and 768 px; contrast of the highlighted rows.
-- **Acceptance criteria:** zero serious or critical axe violations; walkthrough notes resolved. **Effort:** M.
+- **Done (2026-09-15):** `@axe-core/playwright` 4.13.0 (no vulnerabilities) scans five screens in light and dark inside the e2e suite and in CI, failing on serious or critical violations. It found two real problems, both fixed:
+  - muted text at 4.42:1 on white and 3.89:1 on the page background, below the 4.5:1 minimum. `--app-ink-3` is now `#5f6c73` in light and `#8b989e` in dark;
+  - status colours used as text (down to 1.65:1). They stay as marks and text now uses `--app-*-text` variants that meet AA on both the surface and their own wash;
+  - three decorative bars carried `aria-label` on a `div` with no role: they declare `role="img"`.
+- **Work left:** keyboard-only walkthrough, screen reader pass and review at 1280, 1024 and 768 px. A person has to do those.
+- **Acceptance criteria:** zero serious or critical axe violations (met, and guarded by CI); walkthrough notes resolved. **Effort:** S left.
 
 ### TD-05 — End-to-end tests in CI
 
-- **Priority:** P1 · **Owner:** DevSecOps · **Status:** Open
+- **Priority:** P1 · **Owner:** DevSecOps · **Status:** Done (2026-09-15)
 - **Context:**
-  - Six Playwright scenarios run locally with the installed Microsoft Edge (`channel: 'msedge'`), so no browser is downloaded.
+  - Sixteen Playwright scenarios (6 flows and 10 accessibility checks) run locally with the installed Microsoft Edge (`channel: 'msedge'`), so no browser is downloaded.
   - They start System, Channel and Vite, or reuse running ones; they can also target a running portable package with `MODSCORE_E2E_BASE_URL`.
-  - Run time is about 30 s after builds.
-- **Work:** CI job with .NET 10, Node 24 and Edge or Chromium (a runner image with a browser, or `npx playwright install` with its supply-chain review); upload traces on failure.
-- **Acceptance criteria:** e2e job required on pull requests. **Effort:** S–M.
+  - Run time is about 45 s after builds.
+- **Done:** the `SPA de punta a punta` job in `ci.yml` installs .NET 10, Node 24 and Playwright's Chromium (`MODSCORE_E2E_CHANNEL=chromium`), builds both layers, runs the suite and uploads traces when it fails.
+- **Work left:** make the job a required status check when branch protection is configured (OP-04).
+- **Acceptance criteria:** e2e job required on pull requests. **Effort:** S left.
 
 ### TD-06 — Simulation latency under concurrency
 
@@ -977,7 +981,8 @@ Numbers are for comparing changes on the same machine, not for sizing production
 | Source contracts (Dummy, File, Database; rules stores) | 175 | `dotnet test tests/Modernization.Sources.ContractTests` |
 | API end-to-end through both layers and security | 265 | `dotnet test tests/Modernization.Api.Tests` |
 | SPA unit (Vitest) | 35 | `npm --prefix src/web test` |
-| SPA end-to-end (Playwright, Edge) | 6 | `npm --prefix src/web run test:e2e` |
+| SPA end-to-end (Playwright, Edge locally, Chromium in CI) | 6 | `npm --prefix src/web run test:e2e` |
+| SPA accessibility (axe, five screens in light and dark) | 10 | Same command; `e2e/accessibility.spec.ts` |
 | SPA end-to-end against the portable package | 6 | With `start.ps1 -NoBrowser` running, from `src/web`: `MODSCORE_E2E_BASE_URL=http://localhost:5100 npx playwright test` |
 | SPA lint (ESLint, required by CI) | 0 errors | `npm --prefix src/web run lint` |
 | Vulnerable packages | 0 | `dotnet list ModernizationScore.slnx package --vulnerable --include-transitive` and `npm --prefix src/web audit --audit-level=moderate` |

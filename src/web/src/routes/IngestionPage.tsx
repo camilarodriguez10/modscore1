@@ -152,7 +152,7 @@ export function IngestionPanel({
                       </span>
                       <span
                         className="tnum font-mono text-[11.5px]"
-                        style={{ color: isOversized ? 'var(--app-critical)' : 'var(--app-ink-3)' }}
+                        style={{ color: isOversized ? 'var(--app-critical-text)' : 'var(--app-ink-3)' }}
                       >
                         {fmt(file.size / 1024, 0)} KB
                       </span>
@@ -163,7 +163,7 @@ export function IngestionPanel({
             )}
 
             {(tooLarge || oversized.length > 0) && (
-              <p className="text-[13px]" style={{ color: 'var(--app-critical)' }}>
+              <p className="text-[13px]" style={{ color: 'var(--app-critical-text)' }}>
                 {tooLarge
                   ? `The upload weighs ${fmt(totalBytes / 1024 / 1024, 1)} MB and the maximum is ${fmt(data.maxTotalBytes / 1024 / 1024, 0)} MB.`
                   : `${oversized.length} ${oversized.length === 1 ? 'file exceeds' : 'files exceed'} the per-file maximum.`}
@@ -192,7 +192,7 @@ export function IngestionPanel({
             </div>
 
             {upload.error && (
-              <p className="text-[13px]" style={{ color: 'var(--app-critical)' }}>
+              <p className="text-[13px]" style={{ color: 'var(--app-critical-text)' }}>
                 {upload.error instanceof ApiError ? upload.error.message : 'The upload could not be completed.'}
               </p>
             )}
@@ -348,7 +348,7 @@ function AssignSources({
 
 /** El veredicto de la carga, archivo por archivo. */
 function UploadResult({ result }: { result: UploadResultView }) {
-  const color = result.accepted ? 'var(--app-good)' : 'var(--app-critical)';
+  const color = result.accepted ? 'var(--app-good-text)' : 'var(--app-critical-text)';
   const wash = result.accepted ? 'var(--app-good-wash)' : 'var(--app-critical-wash)';
 
   return (
@@ -396,15 +396,15 @@ function UploadResult({ result }: { result: UploadResultView }) {
                     </td>
                     <td
                       className="tnum px-4 py-2.5 text-right font-mono"
-                      style={{ color: file.rejectedCount > 0 ? 'var(--app-serious)' : 'var(--app-ink-3)' }}
+                      style={{ color: file.rejectedCount > 0 ? 'var(--app-serious-text)' : 'var(--app-ink-3)' }}
                     >
                       {file.rejectedCount}
                     </td>
                     <td className="px-4 py-2.5 text-[12.5px]">
                       {file.error ? (
-                        <span style={{ color: 'var(--app-critical)' }}>{formatNotice(file.error)}</span>
+                        <span style={{ color: 'var(--app-critical-text)' }}>{formatNotice(file.error)}</span>
                       ) : (
-                        <span style={{ color: 'var(--app-good)' }}>accepted</span>
+                        <span style={{ color: 'var(--app-good-text)' }}>accepted</span>
                       )}
                     </td>
                   </tr>

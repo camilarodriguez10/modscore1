@@ -254,7 +254,7 @@ export function ScoreTrend({
               className="tnum ml-2 font-mono"
               style={{
                 color:
-                  shown.deltaFromPrevious >= 0 ? 'var(--app-good)' : 'var(--app-critical)',
+                  shown.deltaFromPrevious >= 0 ? 'var(--app-good-text)' : 'var(--app-critical-text)',
               }}
             >
               {shown.deltaFromPrevious >= 0 ? '+' : ''}

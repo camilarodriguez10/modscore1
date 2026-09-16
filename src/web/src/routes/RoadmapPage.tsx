@@ -107,7 +107,7 @@ export function RoadmapPage() {
                 <>
                   <p className="tnum mt-1 flex items-baseline gap-2 text-[38px] leading-none font-semibold text-ink">
                     {fmt(data.projectedScore)}
-                    <span className="tnum text-[15px] font-semibold" style={{ color: 'var(--app-good)' }}>
+                    <span className="tnum text-[15px] font-semibold" style={{ color: 'var(--app-good-text)' }}>
                       +{fmt(data.projectedDelta)}
                     </span>
                   </p>
@@ -267,11 +267,11 @@ export function severityStyle(severity: AlertSeverity): {
 } {
   switch (severity) {
     case 'Critical':
-      return { color: 'var(--app-critical)', wash: 'var(--app-critical-wash)', icon: '!' };
+      return { color: 'var(--app-critical-text)', wash: 'var(--app-critical-wash)', icon: '!' };
     case 'Warning':
-      return { color: 'var(--app-serious)', wash: 'var(--app-serious-wash)', icon: '▲' };
+      return { color: 'var(--app-serious-text)', wash: 'var(--app-serious-wash)', icon: '▲' };
     default:
-      return { color: 'var(--app-warning)', wash: 'var(--app-warning-wash)', icon: 'i' };
+      return { color: 'var(--app-warning-text)', wash: 'var(--app-warning-wash)', icon: 'i' };
   }
 }
 

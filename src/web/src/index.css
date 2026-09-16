@@ -24,7 +24,8 @@
   --app-surface-2: #f7f9f9;
   --app-ink: #131a21;
   --app-ink-2: #455158;
-  --app-ink-3: #6d7a81;
+  /* Texto atenuado: 4.5:1 como minimo sobre page, surface y surface-2 (WCAG AA). */
+  --app-ink-3: #5f6c73;
   --app-rule: #d3dadd;
   --app-grid: #e4e9eb;
   --app-accent: #0d5f6b;
@@ -44,6 +45,14 @@
   --app-warning-wash: #fdf2dc;
   --app-serious-wash: #fceee8;
   --app-critical-wash: #f9e5e5;
+
+  /* Los colores de estado de arriba son marcas: vivos, con etiqueta al lado. Como letra
+     no llegan a 4.5:1, asi que el texto usa estas variantes (WCAG AA sobre surface y
+     sobre su propio wash). */
+  --app-good-text: #097d09;
+  --app-warning-text: #936503;
+  --app-serious-text: #bd4516;
+  --app-critical-text: #c32f2f;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -55,7 +64,7 @@
     --app-surface-2: #18232a;
     --app-ink: #e4ebee;
     --app-ink-2: #a4b2b8;
-    --app-ink-3: #7b8a91;
+    --app-ink-3: #8b989e;
     --app-rule: #2a3941;
     --app-grid: #213038;
     --app-accent: #54b6c4;
@@ -70,6 +79,12 @@
     --app-warning-wash: #2e2415;
     --app-serious-wash: #2f1f18;
     --app-critical-wash: #2e1717;
+
+    /* Sobre fondo oscuro los tres primeros ya pasan; el critico necesita aclararse. */
+    --app-good-text: #0ca30c;
+    --app-warning-text: #fab219;
+    --app-serious-text: #ec835a;
+    --app-critical-text: #d96060;
   }
 }
 
@@ -81,7 +96,7 @@
   --app-surface-2: #18232a;
   --app-ink: #e4ebee;
   --app-ink-2: #a4b2b8;
-  --app-ink-3: #7b8a91;
+  --app-ink-3: #8b989e;
   --app-rule: #2a3941;
   --app-grid: #213038;
   --app-accent: #54b6c4;
@@ -96,6 +111,11 @@
   --app-warning-wash: #2e2415;
   --app-serious-wash: #2f1f18;
   --app-critical-wash: #2e1717;
+  /* Sobre fondo oscuro los tres primeros ya pasan; el critico necesita aclararse. */
+  --app-good-text: #0ca30c;
+  --app-warning-text: #fab219;
+  --app-serious-text: #ec835a;
+  --app-critical-text: #d96060;
 }
 
 @theme inline {

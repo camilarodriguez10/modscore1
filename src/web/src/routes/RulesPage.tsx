@@ -343,13 +343,13 @@ function RulesWorkspace({
           </p>
 
           {totalWeight !== view.limits.totalWeight && (
-            <p className="text-[12.5px]" style={{ color: 'var(--app-critical)' }}>
+            <p className="text-[12.5px]" style={{ color: 'var(--app-critical-text)' }}>
               Weights add up to {fmtScore(totalWeight)} of {fmtScore(view.limits.totalWeight)}
             </p>
           )}
 
           {invalid.size > 0 && (
-            <p className="text-[12.5px]" style={{ color: 'var(--app-critical)' }}>
+            <p className="text-[12.5px]" style={{ color: 'var(--app-critical-text)' }}>
               {countOf(invalid.size, 'field')} without a valid number
             </p>
           )}
@@ -428,7 +428,7 @@ function ReviewPanel({
         <NoticeList title="What changes" notices={simulation.changes} />
 
         {stale ? (
-          <p className="text-[13px]" style={{ color: 'var(--app-critical)' }}>
+          <p className="text-[13px]" style={{ color: 'var(--app-critical-text)' }}>
             Rules {view.active.id} were published while you were editing. Start again from them to publish.
           </p>
         ) : (
@@ -516,7 +516,7 @@ function ImpactSummary({ impact }: { impact: RulesImpact }) {
       </dl>
 
       {impact.noLongerScored > 0 && (
-        <p className="text-[13px]" style={{ color: 'var(--app-critical)' }}>
+        <p className="text-[13px]" style={{ color: 'var(--app-critical-text)' }}>
           {countOf(impact.noLongerScored, 'application')} would lose their score: their data no longer falls in
           any band.
         </p>
@@ -625,7 +625,7 @@ function NoticeList({ title, notices, critical = false }: { title: string; notic
           : undefined
       }
     >
-      <p className="text-[13px] font-semibold" style={critical ? { color: 'var(--app-critical)' } : undefined}>
+      <p className="text-[13px] font-semibold" style={critical ? { color: 'var(--app-critical-text)' } : undefined}>
         {title}
       </p>
       <ul className="mt-1 list-disc space-y-0.5 pl-5 text-[13px] text-ink-2">
@@ -672,7 +672,7 @@ function FormulaTab({
           Total weight{' '}
           <span
             className="font-semibold"
-            style={totalWeight === view.limits.totalWeight ? undefined : { color: 'var(--app-critical)' }}
+            style={totalWeight === view.limits.totalWeight ? undefined : { color: 'var(--app-critical-text)' }}
           >
             {fmtScore(totalWeight)}
           </span>{' '}
@@ -1003,7 +1003,7 @@ function LeversTab({
                   <td className="py-2.5 pr-4">
                     {deliveredBy.length === 0 ? <span className="text-ink-3">No roadmap</span> : deliveredBy.join(', ')}
                     {!edit.enabled && deliveredBy.length > 0 && (
-                      <p className="mt-1 text-[12px]" style={{ color: 'var(--app-critical)' }}>
+                      <p className="mt-1 text-[12px]" style={{ color: 'var(--app-critical-text)' }}>
                         Remove it from these roadmaps before turning it off.
                       </p>
                     )}

@@ -559,7 +559,7 @@ tests corre igual contra el tercer adaptador.
 | **11 — Sitio en inglés** ✅ | ENTREGADA | Todo el texto de interfaz en inglés; el backend devuelve códigos y datos y la interfaz redacta la frase | **Cumplido:** ninguna respuesta de la capa Channel trae texto en español —lo comprueba una prueba— y la interfaz pasó la revisión en vivo |
 | **12 — Administración de reglas** ✅ | ENTREGADA | Ruleset, palancas de what-if y parámetros de roadmap editables desde el portal, solo administradores, con borrador, simulación de impacto y publicación auditada | **Cumplido:** cambiar un peso desde el portal mueve el portafolio, queda auditado con su impacto y lo toman las réplicas sin desplegar |
 | **13 — Revisión y remediación** ✅ | ENTREGADA | Reglas contra las capturas del BRD, deuda técnica, rendimiento, robustez, comparación de reglas, exportaciones, pruebas de la SPA, git y paquete portable (ver 8.6) | **Cumplido:** 640 pruebas .NET, 35 unitarias y 6 de punta a punta en verde; la historia en frío pasa de 1,7 s a 8–15 ms con calentamiento y la simulación de 117 a 47 ms |
-| **14 — Verificación de seguridad (ASVS L2)** | 3 sem | Primera corrida del pipeline con todos los gates; los 14 parciales de ASVS verificados en un entorno de prueba; revisión de seguridad de las fases 09–13 por otra persona; e2e y accesibilidad en CI | Pipeline verde; los parciales pasan a cumple o quedan con control compensatorio documentado |
+| **14 — Verificación de seguridad (ASVS L2)** 🟡 | EN CURSO | Lo que no necesita infraestructura, hecho el 2026-09-15 (ver 8.7): pipeline verde, auditoría de validaciones rechazadas, retención de cargas, decisión sobre validación de esquema, controles compensatorios de aislamiento, y accesibilidad y e2e en el CI. Falta el entorno de prueba para los once parciales restantes y la revisión por otra persona | **Parcial:** ASVS pasa de 103 a 106 cumple y de 14 a 11 parciales; los que quedan dependen de cluster, IdP, ingress y gestor de secretos |
 | **15 — Autenticación con APIM** | 3 sem | OAuth mediante Azure API Management ([ADR 0020](docs/adr/0020-camino-de-oidc-a-oauth-con-apim.md)), claim de alcance, token de servicio reemplazado | Reautenticación verificada contra el IdP real; sin secreto estático entre capas |
 | **16 — Escala y operación** | 3 sem | Destino y motor de base (RFC-07), Redis, réplicas, respaldos, retención, SIEM, notificaciones de reglas | Dos réplicas por capa bajo carga; restauración probada; alertas activas |
 | **17 — Hallazgos de infraestructura** | 2 sem | **Al final por decisión del 2026-09-14:** H-16, H-17, H-20, H-21 | ASVS 2.10.1, 3.3.4, 7.3.3, 12.4.2 y 14.1.5 cumplen |
@@ -892,6 +892,45 @@ en inglés y con el máximo detalle.
    garantía sin sumar una herramienta a la cadena de suministro.
 3. **Los hallazgos H-16, H-17, H-20 y H-21 pasan al final del plan**, por decisión del
    2026-09-14. Los parciales de ASVS se resuelven antes, en la Fase 14.
+
+### 8.7 Resultado de la Fase 14 — Verificación de seguridad (ASVS L2)
+
+En curso desde el 2026-09-15. Se hizo todo lo que no depende de un despliegue real.
+
+**Cerrado en código, con pruebas:**
+
+- **Validaciones rechazadas auditadas** (ASVS 7.1.3, SEC-06). Un middleware de la capa
+  Channel registra el evento **4214** en toda respuesta de `/api` que rechaza la entrada
+  (400, 413, 415 o 422), con la ruta y el código y **sin** los valores enviados. Va en el
+  pipeline y no en cada endpoint para que ninguno se olvide.
+- **Retención de cargas en archivos** (ASVS 8.3.4, SEC-07). `Uploads:RetainVersions`
+  conserva las N cargas más recientes, igual que `Database:RetainVersions`; 0 conserva
+  todas. Solo borra directorios con manifiesto, así que el almacén de reglas y el staging
+  no se tocan. Cuántas conservar lo decide el negocio (OP-03).
+- **Validación de esquema decidida** (ASVS 13.2.2, SEC-12). Se queda el contrato tipado
+  estricto —`BoundedJson` más las invariantes de `Ruleset.Validate`— en lugar de un
+  validador de esquema JSON, que sumaría una dependencia y una segunda fuente de verdad
+  ([ADR 0021](docs/adr/0021-el-cuerpo-de-reglas-se-valida-por-contrato-tipado.md)).
+- **Aislamiento de terceros** (ASVS 14.2.6, SEC-14). Aceptado como límite de diseño con
+  controles compensatorios documentados: árbol mínimo y bloqueado, escaneos en cada push,
+  imágenes chiseled sin shell y con solo lectura, NetworkPolicy y CSP estricta.
+
+**Accesibilidad y pruebas (TD-04, TD-05):**
+
+- axe recorre cinco pantallas en claro y en oscuro dentro del CI, y falla con violaciones
+  serias o críticas. Encontró dos problemas reales, ya corregidos:
+  - el texto atenuado quedaba en 4,42:1 sobre blanco y 3,89:1 sobre el fondo de página;
+  - los colores de estado, pensados como marcas vivas, se usaban también como letra, con
+    contrastes de hasta 1,65:1. Ahora hay variantes de texto que cumplen AA sin cambiar las
+    marcas, y tres barras decorativas declaran `role="img"` en lugar de llevar `aria-label`
+    en un `div` sin rol.
+- El job **SPA de punta a punta** corre los 16 escenarios en el CI con Chromium.
+
+**Lo que queda y por qué:** los once parciales restantes necesitan un entorno real —llaves
+protegidas, mTLS, gestor de secretos, TLS del ingress, cifrado interno, MFA exigida por el
+IdP, reglas del SIEM y firma de imágenes—. El runbook
+[verificación ASVS](docs/runbooks/verificacion-asvs.md) deja cada uno con su comando y su
+resultado esperado. La revisión de seguridad por una segunda persona (TD-13) sigue abierta.
 
 ## 8bis. Ampliación solicitada — fases 10 a 12
 

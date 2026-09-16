@@ -49,7 +49,7 @@ export function LineagePanel({ version }: { version?: string | undefined }) {
                 <dt className="text-ink-3">Rejected</dt>
                 <dd
                   className="text-right"
-                  style={{ color: source.rejectedCount > 0 ? 'var(--app-serious)' : 'var(--app-ink)' }}
+                  style={{ color: source.rejectedCount > 0 ? 'var(--app-serious-text)' : 'var(--app-ink)' }}
                 >
                   {source.rejectedCount}
                 </dd>

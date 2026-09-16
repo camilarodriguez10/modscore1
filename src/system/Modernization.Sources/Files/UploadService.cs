@@ -20,7 +20,7 @@ namespace Modernization.Sources.Files;
 /// portafolio por uno vacio es peor que no cargar nada.</item>
 /// </list>
 /// </remarks>
-public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? catalog = null)
+public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? catalog = null, int retainVersions = 0)
     : ISnapshotPublisher, IDisposable
 {
     /// <summary>Maximo por archivo. Los topes son del dominio: todos los adaptadores comparten los mismos.</summary>
@@ -124,6 +124,10 @@ public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? cat
                 var version = await CommitAsync(staging, label, uploadedBy, capturedAt, outcomes, cancellationToken)
                     .ConfigureAwait(false);
 
+                // La retencion se aplica despues de publicar: si la carga no llega a
+                // existir, tampoco se borra ninguna anterior.
+                PruneVersions();
+
                 return new PublishOutcome(true, version, outcomes, [], version.ApplicationCount);
             }
             catch (SourceSchemaException ex)
@@ -169,6 +173,38 @@ public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? cat
         }
 
         return removed;
+    }
+
+    /// <summary>
+    /// Retencion declarativa: conserva las N cargas mas recientes, igual que
+    /// <c>Database:RetainVersions</c> en el adaptador de base. Con 0 no borra nada.
+    /// Devuelve cuantas borro.
+    /// </summary>
+    /// <remarks>
+    /// Solo borra directorios con manifiesto. El staging, el almacen de reglas y cualquier
+    /// otra cosa que comparta el volumen quedan fuera, pase lo que pase con su nombre.
+    /// </remarks>
+    public int PruneVersions()
+    {
+        if (retainVersions <= 0 || !Directory.Exists(rootDirectory))
+        {
+            return 0;
+        }
+
+        var expired = Directory.EnumerateDirectories(rootDirectory)
+            .Select(directory => (Directory: directory, Manifest: UploadManifest.TryRead(directory)))
+            .Where(candidate => candidate.Manifest is not null)
+            .OrderByDescending(candidate => candidate.Manifest!.CapturedAt)
+            .ThenByDescending(candidate => candidate.Manifest!.Id, StringComparer.Ordinal)
+            .Skip(retainVersions)
+            .ToList();
+
+        foreach (var (directory, _) in expired)
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+
+        return expired.Count;
     }
 
     // -----------------------------------------------------------------------

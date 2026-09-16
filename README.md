@@ -135,6 +135,7 @@ Con el adaptador Dummy las reglas viven en memoria; con base de datos, en la tab
 |---|---|---|---|
 | `RateLimiting__ExportsPerMinute` | Channel | 10 | Descargas por usuario |
 | `Portfolio__WarmupSeconds` | System | 15 | Cada cuánto se dejan calculados scores e historia; 0 lo apaga |
+| `Uploads__RetainVersions` | System | 0 | Cuántas cargas conserva el adaptador de archivos; 0 conserva todas |
 
 Los CSV neutralizan textos que una planilla ejecutaría como fórmula, y cada descarga queda
 auditada con el evento 4213.

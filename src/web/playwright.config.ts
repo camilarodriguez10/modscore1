@@ -3,14 +3,18 @@ import { defineConfig } from '@playwright/test';
 /**
  * Pruebas de punta a punta contra la aplicacion real: capa System, capa Channel y la SPA.
  *
- * Usa el Microsoft Edge instalado en el equipo (`channel: 'msedge'`): no descarga
- * navegadores. Levanta las tres piezas con datos dummy y autenticacion de desarrollo, o
- * reutiliza las que ya esten corriendo. Para probar un paquete portable ya arrancado:
+ * Por defecto usa el Microsoft Edge instalado en el equipo (`channel: 'msedge'`): no
+ * descarga navegadores. En el CI, `MODSCORE_E2E_CHANNEL=chromium` usa el Chromium que
+ * instala Playwright, que es lo que hay en un runner de Linux.
+ *
+ * Levanta las tres piezas con datos dummy y autenticacion de desarrollo, o reutiliza las
+ * que ya esten corriendo. Para probar un paquete portable ya arrancado:
  *
  *   MODSCORE_E2E_BASE_URL=http://localhost:5100 npx playwright test
  */
 
 const externalBaseUrl = process.env.MODSCORE_E2E_BASE_URL;
+const channel = process.env.MODSCORE_E2E_CHANNEL ?? 'msedge';
 const reuse = !process.env.CI;
 
 // Los limites por usuario asumen personas, no una suite que navega sin pausa.
@@ -31,7 +35,7 @@ export default defineConfig({
   reporter: [['list']],
   use: {
     baseURL: externalBaseUrl ?? 'http://localhost:5173',
-    channel: 'msedge',
+    channel,
     acceptDownloads: true,
     trace: 'retain-on-failure',
   },

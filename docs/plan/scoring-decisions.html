@@ -1,0 +1,642 @@
+<title>Modernization Score Decisions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+:root{
+  --ground:#eef1f2;
+  --surface:#ffffff;
+  --surface-2:#f7f9f9;
+  --ink:#151d22;
+  --ink-2:#455158;
+  --ink-3:#6d7a81;
+  --rule:#d3dadd;
+  --rule-2:#e4e9eb;
+  --accent:#0d5f6b;
+  --accent-2:#0a7c8c;
+  --accent-wash:#e2eef0;
+  --good:#2c6b4f;
+  --good-wash:#e2eee8;
+  --warn:#8c5c0c;
+  --warn-wash:#f4ebda;
+  --crit:#9a3729;
+  --crit-wash:#f5e5e2;
+  --shadow:0 1px 2px rgba(21,29,34,.05),0 8px 24px -18px rgba(21,29,34,.35);
+  --f-display:"IBM Plex Serif",Georgia,"Times New Roman",serif;
+  --f-body:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0d1418;
+    --surface:#141d22;
+    --surface-2:#18232a;
+    --ink:#e4ebee;
+    --ink-2:#a4b2b8;
+    --ink-3:#7b8a91;
+    --rule:#2a3941;
+    --rule-2:#213038;
+    --accent:#54b6c4;
+    --accent-2:#7bcdd8;
+    --accent-wash:#14313a;
+    --good:#67b98f;
+    --good-wash:#152d24;
+    --warn:#d6a153;
+    --warn-wash:#2e2415;
+    --crit:#e08573;
+    --crit-wash:#331e1a;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -20px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0d1418;
+  --surface:#141d22;
+  --surface-2:#18232a;
+  --ink:#e4ebee;
+  --ink-2:#a4b2b8;
+  --ink-3:#7b8a91;
+  --rule:#2a3941;
+  --rule-2:#213038;
+  --accent:#54b6c4;
+  --accent-2:#7bcdd8;
+  --accent-wash:#14313a;
+  --good:#67b98f;
+  --good-wash:#152d24;
+  --warn:#d6a153;
+  --warn-wash:#2e2415;
+  --crit:#e08573;
+  --crit-wash:#331e1a;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -20px rgba(0,0,0,.9);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--f-body);
+  font-size:16px;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:24px;padding-block:0 88px}
+.prose{max-width:68ch}
+
+/* ---------------------------------------------------------- masthead */
+header.mast{border-bottom:1px solid var(--rule);background:var(--surface)}
+.mast-in{max-width:1040px;margin:0 auto;padding-inline:24px;padding-block:44px 34px;display:grid;gap:18px}
+.eyebrow{font-family:var(--f-mono);font-size:11.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+h1{
+  font-family:var(--f-display);font-weight:600;
+  font-size:clamp(30px,4.6vw,46px);line-height:1.1;letter-spacing:-.015em;
+  margin:0;text-wrap:balance;max-width:20ch;
+}
+.mast .sub{max-width:62ch;color:var(--ink-2);font-size:17px;margin:0}
+.mast-meta{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px 26px;
+  padding-top:18px;border-top:1px solid var(--rule-2);
+}
+.mast-meta div{display:grid;gap:3px}
+.mast-meta dt,.mast-meta .k{font-family:var(--f-mono);font-size:10.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3)}
+.mast-meta dd,.mast-meta .v{margin:0;font-size:13.5px;color:var(--ink-2)}
+
+/* ---------------------------------------------------------- sections */
+section{padding-top:52px}
+h2{
+  font-family:var(--f-display);font-weight:600;font-size:clamp(21px,2.6vw,27px);
+  line-height:1.2;letter-spacing:-.01em;margin:0 0 10px;text-wrap:balance;max-width:26ch;
+}
+h3{font-family:var(--f-body);font-weight:600;font-size:15.5px;margin:30px 0 8px}
+h4{font-family:var(--f-mono);font-weight:600;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:22px 0 8px}
+p{margin:0 0 13px}
+ul,ol{margin:0 0 13px;padding-left:20px}
+li{margin-bottom:6px}
+li::marker{color:var(--ink-3)}
+a{color:var(--accent);text-underline-offset:2px}
+strong{font-weight:600}
+code{font-family:var(--f-mono);font-size:.87em;background:var(--surface-2);border:1px solid var(--rule-2);padding:.08em .34em;border-radius:3px;color:var(--ink-2)}
+hr.div{border:0;border-top:1px solid var(--rule);margin:48px 0 0}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:12.5px}
+
+/* ---------------------------------------------------------- tables */
+.tw{overflow-x:auto;margin:16px 0 18px;border:1px solid var(--rule);border-radius:5px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:480px}
+th{
+  font-family:var(--f-mono);font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);text-align:left;padding:10px 14px;border-bottom:1px solid var(--rule);
+  background:var(--surface-2);vertical-align:bottom;
+}
+td{padding:10px 14px;border-bottom:1px solid var(--rule-2);vertical-align:top;color:var(--ink-2)}
+tbody tr:last-child td{border-bottom:0}
+td:first-child{color:var(--ink);font-weight:500}
+td.num,th.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.match{color:var(--good);font-weight:600}
+.opt td:first-child{font-family:var(--f-mono);font-weight:600;color:var(--accent);width:2.6rem}
+tr.current td{background:var(--accent-wash)}
+tr.current td:first-child{color:var(--accent)}
+
+/* ---------------------------------------------------------- chips */
+.chip{
+  display:inline-block;font-family:var(--f-mono);font-size:10.5px;font-weight:600;
+  letter-spacing:.06em;padding:2px 7px;border-radius:3px;white-space:nowrap;
+  border:1px solid transparent;text-transform:uppercase;
+}
+.c-block{background:var(--crit-wash);color:var(--crit);border-color:color-mix(in srgb,var(--crit) 26%,transparent)}
+.c-num{background:var(--warn-wash);color:var(--warn);border-color:color-mix(in srgb,var(--warn) 26%,transparent)}
+.c-quick{background:var(--surface-2);color:var(--ink-3);border-color:var(--rule)}
+.c-ok{background:var(--good-wash);color:var(--good);border-color:color-mix(in srgb,var(--good) 26%,transparent)}
+
+/* ---------------------------------------------------------- proof */
+.proof{background:var(--surface);border:1px solid var(--rule);border-radius:5px;box-shadow:var(--shadow);margin:22px 0 0;overflow:hidden}
+.proof-hd{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;padding:13px 17px;border-bottom:1px solid var(--rule);background:var(--surface-2)}
+.proof-hd .t{font-family:var(--f-mono);font-size:11px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-2)}
+.proof-hd .s{font-family:var(--f-mono);font-size:11.5px;color:var(--good);font-weight:500}
+.proof .tw{margin:0;border:0;border-radius:0}
+
+/* ---------------------------------------------------------- items */
+.item{border-top:1px solid var(--rule);padding-top:34px;margin-top:34px}
+.item:first-of-type{border-top:0;margin-top:0}
+.item-no{
+  font-family:var(--f-mono);font-size:11.5px;font-weight:600;letter-spacing:.1em;
+  color:var(--accent);text-transform:uppercase;display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px;
+}
+.lede{font-size:16.5px;color:var(--ink-2);max-width:66ch}
+.cols{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(0,1fr);gap:26px;align-items:start;margin-top:18px}
+.aside{display:grid;gap:14px;align-content:start}
+.box{background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:14px 16px}
+.box .k{font-family:var(--f-mono);font-size:10.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:6px}
+.box p{font-size:13.5px;margin:0 0 8px}
+.box p:last-child{margin:0}
+.box ul{font-size:13.5px;margin:0;padding-left:18px}
+.box.ask{border-left:3px solid var(--accent);background:var(--accent-wash)}
+.box.ask .k{color:var(--accent)}
+.box.ask p,.box.ask li{color:var(--ink-2)}
+.ev{font-size:14.5px;color:var(--ink-2)}
+.ev li{margin-bottom:7px}
+
+/* ---------------------------------------------------------- data asks */
+.asks{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin:20px 0 0}
+.ask-card{background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:16px 17px;display:grid;gap:8px;align-content:start}
+.ask-card .n{font-family:var(--f-mono);font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.ask-card .h{font-weight:600;font-size:14.5px;color:var(--ink)}
+.ask-card p{margin:0;font-size:13.5px;color:var(--ink-2);line-height:1.5}
+.ask-card .least{font-family:var(--f-mono);font-size:12px;color:var(--ink-3);border-top:1px solid var(--rule-2);padding-top:8px}
+
+/* ---------------------------------------------------------- log */
+.log td{height:44px}
+.log td:nth-child(n+3){background:var(--surface-2)}
+.note{border-top:1px solid var(--rule);padding-top:13px;margin:20px 0 0;font-size:14px;color:var(--ink-3);max-width:70ch}
+
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (max-width:820px){
+  .cols{grid-template-columns:1fr;gap:18px}
+}
+@media (max-width:620px){
+  .mast-in{padding-inline:16px;padding-block:32px 26px}
+  .wrap{padding-inline:16px}
+  body{font-size:15.5px}
+}
+</style>
+
+<header class="mast">
+  <div class="mast-in">
+    <div class="eyebrow">Decision memo · Modernization Score v1.3</div>
+    <h1>Eleven rules that need the business to confirm them</h1>
+    <p class="sub">The platform reproduces both documented scores exactly. What is not settled is a handful of rules where the BRD and the Power BI dashboard say different things — and there the platform is applying our reading, not yours.</p>
+    <div class="mast-meta">
+      <div><span class="k">Date</span><span class="v">16 September 2026</span></div>
+      <div><span class="k">For</span><span class="v">Business owner of the score · Power BI model owner</span></div>
+      <div><span class="k">Time needed</span><span class="v">45 minutes for the first three</span></div>
+      <div><span class="k">What closes it</span><span class="v">Three yes/no answers and one dashboard capture</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section id="proof">
+  <h2>Start from what is already proven</h2>
+  <div class="prose">
+    <p>The engine reproduces the two published cases to the cent, metric by metric, from raw source data through the whole pipeline. That is the evidence the model itself is right — and the reason the open questions are narrow rather than fundamental.</p>
+  </div>
+
+  <div class="proof">
+    <div class="proof-hd">
+      <span class="t">Regression tests that run on every change</span>
+      <span class="s">both match exactly</span>
+    </div>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Application</th><th>Source of the expected value</th><th class="num">Expected</th><th class="num">Platform</th></tr></thead>
+        <tbody>
+          <tr><td>EAI 14381</td><td>BRD worked example, derived from raw counts</td><td class="num">79.67</td><td class="num match">79.67 ✓</td></tr>
+          <tr><td>EAI 10969</td><td>Power BI dashboard v1.3, metric by metric</td><td class="num">79.61</td><td class="num match">79.61 ✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="note">Every answer below is cheap to act on. Nine of the eleven rules live in a versioned rules file that an administrator edits from the portal: weights, bands and scores per case. Publishing a new version recalculates the whole portfolio, keeps the previous version readable, and needs no deployment. Only the override rule and the aggregation level would need code.</div>
+</section>
+
+<hr class="div">
+
+<section id="index">
+  <h2>What we are asking</h2>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:3rem">#</th><th>Question</th><th style="width:11rem">Weight at stake</th><th style="width:9rem">Tier</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><a href="#q1">Are the composite metrics a count-weighted average?</a></td><td>20 of 100 points</td><td><span class="chip c-block">Before publishing</span></td></tr>
+        <tr><td>2</td><td><a href="#q2">Is the Tech Debt weight 5 or 10?</a></td><td>5 points, unverified</td><td><span class="chip c-block">Before publishing</span></td></tr>
+        <tr><td>3</td><td><a href="#q3">Does “zero” mean no data?</a></td><td>Up to 8 points per application</td><td><span class="chip c-block">Before publishing</span></td></tr>
+        <tr><td>4</td><td><a href="#q4">When does an override replace a calculated score?</a></td><td>Whole pillars</td><td><span class="chip c-num">Changes numbers</span></td></tr>
+        <tr><td>5</td><td><a href="#q5">SCA: presence or count, and who was scanned?</a></td><td>18 points of risk</td><td><span class="chip c-num">Changes numbers</span></td></tr>
+        <tr><td>6</td><td><a href="#q6">Are the band edges contiguous?</a></td><td>Whole applications</td><td><span class="chip c-num">Changes numbers</span></td></tr>
+        <tr><td>7</td><td><a href="#q7">Is the Containerized “2 + 2 points” text still alive?</a></td><td>4 points</td><td><span class="chip c-num">Changes numbers</span></td></tr>
+        <tr><td>8</td><td><a href="#q8">Is a LOB score the average of its applications?</a></td><td>Every aggregate</td><td><span class="chip c-num">Changes numbers</span></td></tr>
+        <tr><td>9–15</td><td><a href="#quick">Seven confirmations with no effect on today’s numbers</a></td><td>None today</td><td><span class="chip c-quick">One line each</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<hr class="div">
+
+<section id="part1">
+  <h2>Before scores are published to the organization</h2>
+  <div class="prose">
+    <p>These three decide numbers that people will act on. Each one has a default already running, so nothing is blocked — but each default is our reading of a document, and it should be yours.</p>
+  </div>
+
+  <article class="item" id="q1">
+    <div class="item-no">Decision 01 <span class="chip c-block">Before publishing</span></div>
+    <h2>Are the composite metrics a count-weighted average?</h2>
+    <p class="lede">Architectural Value and Product Strategy each summarize several product counts into one number. Is that number, in the Power BI model, the average of the category scores weighted by how many products fall in each category?</p>
+
+    <div class="cols">
+      <div>
+        <h4>Evidence</h4>
+        <ul class="ev">
+          <li>The <strong>BRD weights table</strong> gives each count its own weight: Architectural Value — Modern 5, Obsolete 1, Heritage 2, Not Approved 3 (sum 11); Product Strategy — Invest 4, Tolerate 1, Eliminate 2, Migrate 3 (sum 10).</li>
+          <li>The <strong>v1.3 dashboard</strong> shows each composite as a single metric of weight 10.</li>
+          <li>The <strong>BRD worked example</strong> follows the dashboard: the Architecture denominator of EAI 14381 is 25 = RAW Tech 5 + Architectural Value 10 + Product Strategy 10.</li>
+          <li>In that example Architectural Value is <span class="mono">97.50</span> with 15 Modern and 1 Heritage, and Product Strategy is <span class="mono">70.00</span> with 2 Invest, 1 Tolerate and 1 Eliminate. A count-weighted average of the category scores — Modern and Invest 100, Heritage and Tolerate 60, Obsolete, Not approved, Eliminate and Migrate 20 — reproduces <strong>both numbers exactly</strong>.</li>
+          <li>EAI 10969 shows composites of <span class="mono">75.72</span> and <span class="mono">88.37</span>. No small set of counts produces those, so for that application the dashboard appears to receive the composite <strong>already calculated</strong>.</li>
+        </ul>
+
+        <h4>Options</h4>
+        <div class="tw">
+          <table class="opt">
+            <tbody>
+              <tr class="current"><td>A</td><td><strong>Count-weighted average</strong> — what runs today. The only reading that reproduces the worked example from raw counts.</td></tr>
+              <tr><td>B</td><td>Per-count weights as in the BRD table. Changes the Architecture pillar weights and every score with products.</td></tr>
+              <tr><td>C</td><td>Always take the pre-calculated composite and ignore counts. Depends on CMT and MTS always delivering it.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="aside">
+        <div class="box">
+          <span class="k">Why it matters</span>
+          <p>The two composites carry <strong>20 of the 100 weight points</strong> — half of the Architecture &amp; Maturity pillar. A wrong strategy moves most applications that have products.</p>
+        </div>
+        <div class="box">
+          <span class="k">What runs today</span>
+          <p>Count-weighted average, weight 10 each. When a source delivers the composite already calculated, that value wins over the counts.</p>
+        </div>
+        <div class="box ask">
+          <span class="k">What we need from you</span>
+          <ul>
+            <li>The <strong>DAX measure</strong> of both composites, to record as the source of truth.</li>
+            <li><strong>One more real application</strong> with its counts visible on the dashboard — it becomes a third permanent regression test.</li>
+            <li>From CMT and MTS: do they deliver the composite, the counts, or both?</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="item" id="q2">
+    <div class="item-no">Decision 02 <span class="chip c-block">Before publishing</span></div>
+    <h2>Is the Tech Debt weight 5 or 10?</h2>
+    <p class="lede">The BRD weights table says <strong>5</strong>. The v1.3 dashboard says <strong>10</strong>. This is the one rule in the platform that no published number can currently settle.</p>
+
+    <div class="cols">
+      <div>
+        <h4>Evidence</h4>
+        <ul class="ev">
+          <li>BRD weights table: Tech Debt <span class="mono">5</span>. Dashboard v1.3: <span class="mono">10</span>.</li>
+          <li><strong>Neither case we use as proof has Tech Debt data.</strong> EAI 14381 and EAI 10969 both exclude the metric, so both score identically with 5 or with 10 — the choice is invisible to our tests.</li>
+          <li>If the weight becomes 5, five weight points have to be reassigned inside Architecture &amp; Maturity, because the pillar has to keep totalling 40.</li>
+        </ul>
+
+        <h4>Options</h4>
+        <div class="tw">
+          <table class="opt">
+            <tbody>
+              <tr class="current"><td>A</td><td><strong>Keep 10</strong>, the published dashboard weight — what runs today.</td></tr>
+              <tr><td>B</td><td>Change to 5, the BRD table. You would also have to say which Architecture metric absorbs the freed 5 points.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="aside">
+        <div class="box">
+          <span class="k">Why it matters</span>
+          <p>Every application <strong>with</strong> Tech Debt data is affected — and that is most of the portfolio once the real source is connected.</p>
+        </div>
+        <div class="box ask">
+          <span class="k">What we need from you</span>
+          <p>Do not decide this from the documents. <strong>One dashboard capture of an application that has Tech Debt data</strong>, showing its Architecture numerator and denominator, settles it numerically in five minutes.</p>
+          <p>We turn that application into a regression test and the question closes for good.</p>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="item" id="q3">
+    <div class="item-no">Decision 03 <span class="chip c-block">Before publishing</span></div>
+    <h2>Does “zero” mean no data?</h2>
+    <p class="lede">The BRD’s cross-cutting section says <em>“null or zero values are excluded from scoring”</em>. Several metric tables, however, name zero explicitly as a real value. Which one wins, and where?</p>
+
+    <div class="cols">
+      <div>
+        <h4>Evidence</h4>
+        <ul class="ev">
+          <li>Cross-cutting rule, BRD section <em>ALL Sections</em>: <em>“Null or zero values are excluded from scoring. All resulting scores are normalized within a 20 to 100 range, and null values are not included in the normalization calculation.”</em></li>
+          <li>But specific tables score zero on purpose: Tech Debt <span class="mono">0 → 100</span>; SCA <span class="mono">None → 100</span>; MFA <span class="mono">No (with no users) → 100</span>; DevSecOps <span class="mono">0/NULL–3 → 20</span>.</li>
+          <li><strong>Measured:</strong> the two documented cases do not change. With real data, an application reporting Kenna 0 loses the best host-risk score and its denominator drops by 8 points.</li>
+        </ul>
+
+        <h4>Options</h4>
+        <div class="tw">
+          <table class="opt">
+            <tbody>
+              <tr class="current"><td>A</td><td><strong>The specific table wins over the general rule</strong> — what runs today. Zero is data where the BRD scores it, and no-data where it does not.</td></tr>
+              <tr><td>B</td><td>Exclude zero everywhere. Contradicts the Tech Debt table, where 0 is the best possible value.</td></tr>
+              <tr><td>C</td><td>Never exclude zero. An unscanned host reporting Kenna 0 would get the best risk score.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="aside">
+        <div class="box">
+          <span class="k">Why it matters</span>
+          <p>It changes the score of <strong>every application that reports a zero</strong>. The sharp case is Kenna: is a 0 “no risk found”, or “never scanned”?</p>
+        </div>
+        <div class="box">
+          <span class="k">What runs today</span>
+          <p>Zero means no data for <strong>Kenna, Open-Source Score, RAW Tech Score and Operational Score</strong>; everywhere else it scores as the table says.</p>
+          <p>When a zero is excluded this way, the calculation screen says so in words — nobody has to guess why a metric disappeared.</p>
+        </div>
+        <div class="box ask">
+          <span class="k">What we need from you</span>
+          <p>Written confirmation, plus what a <strong>Kenna 0</strong> and an <strong>Open-Source Score 0</strong> mean in the source systems.</p>
+          <p>If Power BI scores them, we flip one flag and publish a rules version — no code, no deployment.</p>
+        </div>
+      </div>
+    </div>
+  </article>
+</section>
+
+<hr class="div">
+
+<section id="part2">
+  <h2>Changes numbers, does not block</h2>
+  <div class="prose">
+    <p>Each of these has a defensible default running. They are worth settling, but no date depends on them.</p>
+  </div>
+
+  <article class="item" id="q4">
+    <div class="item-no">Decision 04 <span class="chip c-num">Changes numbers</span></div>
+    <h2>When does an override replace a calculated score?</h2>
+    <p class="lede">The dashboard shows two values per pillar in some cases, under an “Override rule”. When does it apply, who can apply it, is it per pillar or global, and does it expire?</p>
+
+    <div class="cols">
+      <div>
+        <h4>Evidence</h4>
+        <ul class="ev">
+          <li>The platform already carries an override in its model — value, reason, who applied it, when — and the effective score uses it.</li>
+          <li><strong>No source delivers overrides and no screen creates them</strong>, so the feature is inert today.</li>
+          <li>Until the rule exists, the platform cannot reproduce any dashboard value that was produced by an override.</li>
+        </ul>
+      </div>
+      <div class="aside">
+        <div class="box">
+          <span class="k">What we would build</span>
+          <p>The same pattern the rules editor already uses: its own role, a mandatory reason, an audit entry, and a recent authentication required to apply it. The calculated score stays visible beside the override — an override should never hide the arithmetic.</p>
+        </div>
+        <div class="box ask">
+          <span class="k">What we need from you</span>
+          <p>The rule in one paragraph. This is one of the two items that needs code.</p>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="item" id="q5">
+    <div class="item-no">Decision 05 <span class="chip c-num">Changes numbers</span> <span class="chip c-quick">Application security</span></div>
+    <h2>SCA flaws: presence or count, and who was never scanned?</h2>
+    <p class="lede">Is “has at least one open critical flaw” the right reading rather than “how many”? And is there a list of applications that have actually been scanned?</p>
+
+    <div class="cols">
+      <div>
+        <h4>Evidence</h4>
+        <ul class="ev">
+          <li>The BRD maps severity to a score — High/Critical → 20, Medium → 20, Low → 60, None → 100 — not a count.</li>
+          <li>The source has one row per flaw, so an application with <strong>no open flaws</strong> and an application <strong>never scanned</strong> look identical: both are absent.</li>
+        </ul>
+      </div>
+      <div class="aside">
+        <div class="box">
+          <span class="k">What runs today</span>
+          <p>Presence per severity. An application that appears in the file at all — even with only closed flaws — counts as scanned. One that never appears is treated as no data, and the metric is excluded rather than rewarded with a perfect score.</p>
+        </div>
+        <div class="box ask">
+          <span class="k">What we need from you</span>
+          <p>Confirmation that presence is the right reading, and the <strong>scanned-applications list</strong> if it exists — then the heuristic becomes a fact.</p>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="item" id="q6">
+    <div class="item-no">Decision 06 <span class="chip c-num">Changes numbers</span></div>
+    <h2>Are the band edges contiguous?</h2>
+    <p class="lede">As written in the BRD, some values fall between two bands and belong to neither.</p>
+
+    <div class="cols">
+      <div>
+        <h4>Evidence</h4>
+        <ul class="ev">
+          <li>Operational Score bands are <span class="mono">0–59.9</span>, <span class="mono">60–79.99</span> and <span class="mono">80–100</span>: a value of <span class="mono">59.95</span> belongs to no band.</li>
+          <li>Tech Debt bands are <span class="mono">0</span>, <span class="mono">0.1–2.4</span> and <span class="mono">2.5–5</span>: <span class="mono">2.45</span> belongs to no band.</li>
+          <li>Real Tech Debt values arrive in steps of 0.25 and never land in a gap. Operational Score could.</li>
+        </ul>
+      </div>
+      <div class="aside">
+        <div class="box">
+          <span class="k">What runs today</span>
+          <p>The engine refuses to guess: that one application fails with an explicit error, leaves the aggregates, and shows the problem on its own screen. It never silently picks a neighbouring band.</p>
+        </div>
+        <div class="box ask">
+          <span class="k">What we need from you</span>
+          <p>The DAX conditions of those two metrics — almost certainly <span class="mono">&lt; 60</span> and <span class="mono">&gt;= 60</span>. We then publish a rules version with contiguous bands.</p>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="item" id="q7">
+    <div class="item-no">Decision 07 <span class="chip c-num">Changes numbers</span></div>
+    <h2>Is the Containerized “2 + 2 points” text still alive?</h2>
+    <p class="lede">The BRD’s Containerized section says <em>“this score is added to product strategy (2 pts) and architecture value (2 pts)”</em>, while the weights table shows Containerized with weight 4 struck through.</p>
+
+    <div class="cols">
+      <div>
+        <h4>Evidence</h4>
+        <ul class="ev">
+          <li>With Containerized, the BRD’s Architecture table sums to 40: RAW 5 + API 5 + Containerized 4 + Architectural Value 11 + Product Strategy 10 + Tech Debt 5.</li>
+          <li>The dashboard reaches the same 40 with a different split — RAW 5, API 5, Architectural Value 10, Product Strategy 10, Tech Debt 10 — and the worked example confirms the dashboard’s split.</li>
+        </ul>
+      </div>
+      <div class="aside">
+        <div class="box">
+          <span class="k">What runs today</span>
+          <p>Containerized has weight 0: it is shown but not scored, and “No” does not score at all.</p>
+        </div>
+        <div class="box ask">
+          <span class="k">What we need from you</span>
+          <p>Confirmation that the sentence is superseded — and a BRD correction, so the next reader does not implement it. If a containerized application really should get a bonus inside the two composites, tell us and we model it.</p>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="item" id="q8">
+    <div class="item-no">Decision 08 <span class="chip c-num">Changes numbers</span></div>
+    <h2>Is a LOB score the average of its applications?</h2>
+    <p class="lede">When the portfolio shows a score for a LOB, a country or a CIO, is that the average of the application scores — or is it computed from the raw values added up across the group?</p>
+
+    <div class="cols">
+      <div>
+        <h4>Evidence</h4>
+        <ul class="ev">
+          <li>The dashboard shows aggregates such as <span class="mono">Suma de Kenna_Score</span>, which suggests some measures are aggregated before scoring.</li>
+          <li>The two approaches give <strong>different numbers for the same group</strong>, so this cannot be left implicit.</li>
+        </ul>
+      </div>
+      <div class="aside">
+        <div class="box">
+          <span class="k">What runs today</span>
+          <p>The average of application scores. It is explainable — click a group and you see exactly which applications produce it — and consistent with the per-application breakdown.</p>
+        </div>
+        <div class="box ask">
+          <span class="k">What we need from you</span>
+          <p>Confirmation. This is the second item that needs code if the answer differs.</p>
+        </div>
+      </div>
+    </div>
+  </article>
+</section>
+
+<hr class="div">
+
+<section id="quick">
+  <h2>Seven confirmations, one line each</h2>
+  <div class="prose">
+    <p>None of these changes today’s numbers, or the effect is very small. They can be answered by mail, and several belong to owners outside this conversation.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:2.4rem">#</th><th>Question</th><th style="width:10rem">Who answers</th><th style="width:16rem">What runs today</th></tr></thead>
+      <tbody>
+        <tr><td>9</td><td><strong>Currency Score</strong> — the dashboard shows one (94.66 in a capture) that the BRD never defines. What is it, and should the platform show it?</td><td>CMT owner</td><td>Not implemented; it is not part of the Modernization Score</td></tr>
+        <tr><td>10</td><td><strong>MFA with unknown user count</strong> — the score depends on whether the application has users. When we do not know, we assume it does, the conservative security reading. Right?</td><td>Application security</td><td>Assume “with users”, and say on screen that the count is unknown</td></tr>
+        <tr><td>11</td><td><strong><span class="mono">Consolidate</span></strong> — the MAPS model uses it under “Eliminate”, but the BRD disposition table does not list it. Is it valid, and which score does it map to?</td><td>Enterprise architecture</td><td>Mapped to 20 by assumption; weight 0, so it only drives the future plan</td></tr>
+        <tr><td>12</td><td><strong>The “Monitoring” column</strong> — the source has Agent, APM, Monitoring and Synthetics. In the sample, Monitoring is true whenever any other is. Derived, or an independent capability?</td><td>Observability</td><td>Any of the four enabled scores 100</td></tr>
+        <tr><td>13</td><td><strong>DevSecOps <span class="mono">0/NULL–3 → 20</span></strong> — as written, a missing assessment would score 20 instead of being excluded. Only matters if the metric regains weight.</td><td>DevOps maturity</td><td>Weight 0; a null is excluded like any other metric</td></tr>
+        <tr><td>14</td><td><strong>Rows with EAI Code 0</strong> in the open-source source — one row has EAI 0 with a score of 30. It is not an application. Fix at the source, or report it?</td><td>Risk Profile Tool</td><td>Silently ignored; lineage does not flag it as an orphan row</td></tr>
+        <tr><td>15</td><td><strong>The EAI 9768 example</strong> in the BRD uses a scheme that does not match v1.3 and contradicts the current one.</td><td>BRD author</td><td>Ignored; the platform uses EAI 14381 as the worked example</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<hr class="div">
+
+<section id="data">
+  <h2>Three data points we would like — not decisions</h2>
+  <div class="prose">
+    <p>The platform already answers the six portfolio questions with the sources it has: how healthy the portfolio is, what to modernize first, where to reduce complexity, where technology risk is concentrated, what drives obsolescence and where resilience is missing. These three would turn two of those answers from <em>indicative</em> into <em>real</em>.</p>
+  </div>
+
+  <div class="asks">
+    <div class="ask-card">
+      <span class="n">A · biggest effect</span>
+      <span class="h">Cost or effort per application</span>
+      <p>“What to modernize first” ranks by value per week. The only effort in today’s data is the duration of each roadmap, defined <strong>per roadmap, not per application</strong>: two applications on the same roadmap show the same weeks. It is a proxy, and the screen says so.</p>
+      <p class="least">A t-shirt size — S / M / L — would already do.</p>
+    </div>
+    <div class="ask-card">
+      <span class="n">B</span>
+      <span class="h">An “application class” column</span>
+      <p>The complexity question was asked as <em>“more than X applications with the same application class per country”</em>. No source carries that column, so we group by the primary business capability from the EAI master — the closest thing that exists.</p>
+      <p class="least">One column per application, if the attribute already lives somewhere.</p>
+    </div>
+    <div class="ask-card">
+      <span class="n">C</span>
+      <span class="h">Business value</span>
+      <p>Business importance is weighted today with three attributes we do have: the critical indicator, the user count and the number of capabilities covered. Revenue supported or transactions per month would replace that proxy with the real thing.</p>
+      <p class="least">Any measure the business considers fair — even a tier.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="div">
+
+<section id="log">
+  <h2>Decision log</h2>
+  <div class="prose">
+    <p>To fill in during the conversation. Items 1 to 3 are the ones that should not stay open.</p>
+  </div>
+
+  <div class="tw">
+    <table class="log">
+      <thead><tr><th style="width:2.4rem">#</th><th style="width:18rem">Item</th><th>Decision</th><th style="width:8rem">Who</th><th style="width:7rem">Date</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Composite metrics strategy</td><td></td><td></td><td></td></tr>
+        <tr><td>2</td><td>Tech Debt weight</td><td></td><td></td><td></td></tr>
+        <tr><td>3</td><td>Zero excluded from scoring</td><td></td><td></td><td></td></tr>
+        <tr><td>4</td><td>Override rule</td><td></td><td></td><td></td></tr>
+        <tr><td>5</td><td>SCA presence vs count</td><td></td><td></td><td></td></tr>
+        <tr><td>6</td><td>Band edges</td><td></td><td></td><td></td></tr>
+        <tr><td>7</td><td>Containerized 2 + 2 points</td><td></td><td></td><td></td></tr>
+        <tr><td>8</td><td>Aggregation level</td><td></td><td></td><td></td></tr>
+        <tr><td>9–15</td><td>Quick confirmations</td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>What happens after the meeting</h3>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:22rem">Type of answer</th><th>What we do</th><th style="width:10rem">How long</th></tr></thead>
+      <tbody>
+        <tr><td>Confirms what we implemented</td><td>Recorded in the rules file as a traceability note, with its date, so the next reader sees the decision and not just the rule</td><td>Same day</td></tr>
+        <tr><td>Changes a weight, a band or a score</td><td>An administrator publishes a new rules version from the portal. The whole portfolio recalculates, the previous version stays readable, and the two can be compared application by application</td><td>Same day, no deployment</td></tr>
+        <tr><td>Provides a new golden case (item 2)</td><td>It becomes a permanent regression test: if any future change moves that number, the build fails</td><td>Same day</td></tr>
+        <tr><td>Changes the override rule or the aggregation level</td><td>Code change, with its tests</td><td>One to two weeks</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">The full backlog — every open item across scoring, platform, security, technical debt and operations — lives with the project as <span class="mono">docs/PENDING-ITEMS.md</span>. This memo covers only what the business owns.</div>
+</section>
+
+</div>

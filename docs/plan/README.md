@@ -1,10 +1,15 @@
-# Copia del plan publicado
+# Copia de las paginas publicadas
 
-[modscore-plan.html](modscore-plan.html) es la versión 17 del plan publicado como artefacto
-(<https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd>), del 2026-09-16, con la Fase 13 y el avance de la Fase 14.
+Las dos son el cuerpo de la pagina, sin la envoltura `<!doctype html><head>` que agrega el
+publicador: se abren en un navegador, pero la fuente de verdad es el documento del
+repositorio que cada una resume.
 
-Es el cuerpo de la página, sin la envoltura `<!doctype html><head>` que agrega el publicador:
-se abre en un navegador, pero la fuente de verdad es [PLAN.md](../../PLAN.md).
+| Copia | Artefacto | Fuente de verdad |
+|---|---|---|
+| [modscore-plan.html](modscore-plan.html) | Version 18, del 2026-09-16, con la pantalla 09 y el estado de la Fase 15: <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> | [PLAN.md](../../PLAN.md) |
+| [scoring-decisions.html](scoring-decisions.html) | Version 1, del 2026-09-16, las once reglas que el negocio tiene que confirmar: <https://claude.ai/artifact/Gp7c9gHv5kTSdGETPfeCi5> | [docs/scoring-decisions.md](../scoring-decisions.md) |
 
-Para actualizar el artefacto desde otra sesión: leerlo por su URL, editar la versión que
-devuelve y publicar con la misma URL. Después, reemplazar esta copia.
+Para actualizar un artefacto desde otra sesion: leerlo por su URL, editar la version que
+devuelve y publicar con la misma URL. Despues, reemplazar esta copia. El archivo que
+devuelve la lectura usa CRLF: un parche escrito con LF no encuentra sus anclas de varias
+lineas.

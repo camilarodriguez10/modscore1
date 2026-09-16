@@ -61,7 +61,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 
 | Group | Items | Blocking production? |
 |---|---|---|
-| Scoring rules (business) | SR-01 … SR-15 | SR-01, SR-03, SR-07 must be confirmed before scores are published to the organization (P0/P1) |
+| Scoring rules (business) | SR-01 … SR-15 | SR-01, SR-03, SR-07 must be confirmed before scores are published to the organization (P0/P1). [scoring-decisions.md](scoring-decisions.md) is the same content written for the conversation with the business owner |
 | Platform and architecture | PA-01 … PA-09 | PA-01 (target and database engine) and PA-02 (authentication through APIM) are P0 |
 | Security | SEC-01 … SEC-24 | SEC-19 and SEC-20 are P0 (SEC-21 was decided on 2026-09-15); ASVS partials are P1; H-16/H-17/H-20/H-21 deferred to the last phase by decision |
 | Technical debt | TD-01 … TD-15 | None blocks; TD-06 and TD-09 are P1. TD-05 done and TD-04 automated on 2026-09-15 |

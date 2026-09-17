@@ -287,8 +287,9 @@ está firmado. El código de la aplicación lo carga `dotnet` como biblioteca, y
 sirve la propia capa Channel desde archivos HTML, JavaScript y CSS, que no se ejecutan. No
 hace falta Node.
 
-> Probado el 2026-09-17: con los ejecutables del proyecto borrados, solo corren procesos
-> `dotnet.exe`, y los 22 escenarios de punta a punta pasan contra `http://localhost:5100`.
+> Probado el 2026-09-17 en un clon limpio del repositorio, desde `cmd`: compila sin
+> generar ningún `.exe` del proyecto, solo corren procesos `dotnet.exe`, y los escenarios de
+> punta a punta pasan contra `http://localhost:5100`.
 
 ### Paso 1 · comprueba que `dotnet` sí corre
 
@@ -323,9 +324,26 @@ Tiene que quedar el archivo `C:\modscore-sitio\wwwroot\index.html`. Compruébalo
 dir C:\modscore-sitio\wwwroot\index.html
 ```
 
-### Paso 4 · levanta las dos capas
+### Paso 4 · compila una sola vez
 
-Dos ventanas de `cmd` abiertas a la vez, **en este orden**. Copia cada bloque completo.
+En **una** ventana de `cmd`:
+
+```bat
+cd /d C:\modscore1
+dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false
+```
+
+Compila las dos capas —la Channel usa los contratos de la System— y tarda uno o dos minutos
+la primera vez. **Tiene que terminar con `0 Errores`** (o `0 Error(s)` si Windows está en
+inglés). Si termina con errores, la aplicación no va a arrancar: copia las líneas que dicen
+`error` y ve a [Si la System no levanta](#si-la-system-no-levanta).
+
+Compilar aparte, y no dentro de cada ventana, evita que las dos ventanas compilen a la vez
+sobre los mismos archivos y se pisen.
+
+### Paso 5 · levanta las dos capas, sin volver a compilar
+
+Dos ventanas de `cmd`, **en este orden**. Copia cada bloque completo.
 
 **Ventana 1 — capa System:**
 
@@ -333,11 +351,12 @@ Dos ventanas de `cmd` abiertas a la vez, **en este orden**. Copia cada bloque co
 cd /d C:\modscore1
 set "ASPNETCORE_ENVIRONMENT=Development"
 set "ASPNETCORE_URLS=http://localhost:5101"
-dotnet run --project src\system\Modernization.SystemApi -p:UseAppHost=false
+dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false
 ```
 
-Espera a ver `Now listening on: http://localhost:5101`. La primera vez tarda uno o dos
-minutos porque compila.
+Tiene que aparecer `Now listening on: http://localhost:5101`. **Compruébalo antes de seguir**:
+abre <http://localhost:5101/health> en el navegador; tiene que decir `{"status":"healthy"}`.
+Si no, no abras la ventana 2 todavía: ve a [Si la System no levanta](#si-la-system-no-levanta).
 
 **Ventana 2 — capa Channel, que además sirve el sitio:**
 
@@ -346,28 +365,55 @@ cd /d C:\modscore1
 set "ASPNETCORE_ENVIRONMENT=Development"
 set "ASPNETCORE_URLS=http://localhost:5100"
 set "ASPNETCORE_WEBROOT=C:\modscore-sitio\wwwroot"
-dotnet run --project src\channel\Modernization.ChannelApi -p:UseAppHost=false
+dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false
 ```
 
-Espera a ver `Now listening on: http://localhost:5100`.
+Tiene que aparecer `Now listening on: http://localhost:5100`.
 
-Qué hace cada línea que no estaba en el camino B:
+> Si en la ventana 2 aparece `warn: ... Failed to determine the https port for redirect`,
+> **no es un error**: en local todo va por HTTP y la aplicación solo avisa que no tiene a
+> dónde redirigir. Desde el 2026-09-17 ya no se muestra al correr desde el código; el
+> paquete portable anterior todavía lo imprime.
 
-| Línea | Para qué |
+Qué hace cada parte que no estaba en el camino B:
+
+| Parte | Para qué |
 |---|---|
-| `-p:UseAppHost=false` | Sin esto, `dotnet run` fabrica un `Modernization.SystemApi.exe` propio y lo ejecuta, que es justo lo que la empresa bloquea. Con esto, quien ejecuta es `dotnet.exe` |
+| `-p:UseAppHost=false` | Sin esto, `dotnet` fabrica un `Modernization.SystemApi.exe` propio y lo ejecuta, que es justo lo que la empresa bloquea. Con esto, quien ejecuta es `dotnet.exe`. Va **también** en `dotnet run`: sin él, `--no-build` busca ese `.exe`, que no existe |
+| `--no-build` | Arranca lo que compilaste en el paso 4, sin volver a compilar |
 | `ASPNETCORE_WEBROOT` | Le dice a la capa Channel dónde están los archivos del sitio, para servirlos ella misma en el puerto 5100. Por eso no hace falta Node ni una tercera ventana |
 
-### Paso 5 · entra y comprueba
+### Si la System no levanta
+
+Mira **las últimas líneas de la ventana 1**. Casi siempre dicen cuál de estos es:
+
+| Si la ventana dice | Qué pasa | Qué hacer |
+|---|---|---|
+| `'AllowedHosts' debe listar los hosts del servicio (entorno 'Production')` | Falta la variable de entorno en **esa** ventana | Repite el bloque completo de la ventana 1, con los dos `set` antes del `dotnet run` |
+| `An error occurred trying to start process '...\Modernization.SystemApi.exe'` seguido de `no puede encontrar el archivo` o `acceso denegado` | Al `dotnet run` le falta `-p:UseAppHost=false`, y busca un `.exe` que no existe o que la empresa bloquea | Copia de nuevo el bloque de la ventana 1 tal cual: el `-p:UseAppHost=false` va al final de la línea del `dotnet run` |
+| `Failed to bind to address http://localhost:5101` o `address already in use` | Otro programa, o una System anterior que quedó abierta, ocupa el puerto | `netstat -ano \| findstr :5101` da el número de proceso al final de la línea; `taskkill /PID <número> /F` lo cierra |
+| `The process cannot access the file ... because it is being used by another process` | Una System o Channel anterior sigue corriendo y tiene tomados los archivos | Cierra todas las ventanas de `cmd`, abre una nueva y repite desde el paso 4 |
+| `MSB1009` o `Couldn't find a project to run` | La carpeta del `cd /d` no es la del proyecto | `dir C:\modscore1\src\system` tiene que listar `Modernization.SystemApi`; corrige la ruta |
+| `NETSDK1045` o `does not support targeting .NET 10.0` | El SDK instalado es anterior al 10 | `dotnet --list-sdks`, y pedir a soporte el .NET SDK 10 |
+| `NU1301` o `Unable to load the service index` | El proxy de la empresa no deja descargar los paquetes de nuget.org | Pedir a soporte acceso a `api.nuget.org`, o la configuración del proxy para NuGet |
+| `error CA…` o `error IDE…` al compilar | Un SDK más nuevo que el del proyecto trae reglas de análisis nuevas, y el proyecto trata las advertencias como errores | Para correrlo en local: agrega `-p:TreatWarningsAsErrors=false` al `dotnet build` del paso 4 **y avísanos**, porque hay que ajustar el código |
+| `No se puede ejecutar el programa` o `Acceso denegado` sobre `dotnet.exe` | La empresa bloquea también `dotnet` | Este camino no sirve en ese equipo: pedir a soporte que habilite el .NET SDK |
+| La ventana vuelve al prompt sin decir nada | La aplicación terminó sin mensaje | Repite el bloque de la ventana 1 y copia **todo** lo que salga desde el `dotnet run` |
+
+Si ninguna fila coincide, copia las últimas 20 líneas de la ventana 1 y mándalas: con eso
+se identifica la causa.
+
+### Paso 6 · entra y comprueba
 
 Abre <http://localhost:5100>, pulsa **Sign in**, y haz las tres comprobaciones del
 [paso 5 del camino A](#paso-5--comprueba-que-quedó-bien) cambiando nada más que el puerto:
 Portfolio con ~250 aplicaciones, `/applications/14381/calculation` con **79.67**, e
 **Insights** con las seis preguntas.
 
-### Paso 6 · para detenerlo
+### Paso 7 · para detenerlo
 
-**Ctrl + C** en cada ventana.
+**Ctrl + C** en cada ventana. La próxima vez basta con el paso 5: no hace falta volver a
+compilar mientras no cambie el código.
 
 ### Si prefieres compilar el sitio en vez de sacarlo del `.zip`
 
@@ -461,6 +507,7 @@ permite ver.
 | «Windows protegió su PC» | SmartScreen: los binarios no están firmados | Más información → Ejecutar de todas formas |
 | «Este programa está bloqueado por una directiva de grupo», «el administrador del sistema bloqueó esta aplicación» o «acceso denegado» al abrir `start.cmd` o un `.exe` | La empresa no deja ejecutar programas sin firmar desde carpetas de usuario | Si el `.zip` llegó por internet o por correo, primero: clic derecho sobre el `.zip` → Propiedades → **Desbloquear**, y descomprímelo otra vez. Si sigue bloqueado, usa el **camino C** |
 | `Unhandled exception ... 'AllowedHosts' debe listar los hosts del servicio (entorno 'Production')` | Falta `ASPNETCORE_ENVIRONMENT=Development` en esa ventana | Escribe `set "ASPNETCORE_ENVIRONMENT=Development"` en la misma ventana, antes del `dotnet run`. Una variable puesta en otra ventana no vale |
+| `warn: ... Failed to determine the https port for redirect` | Solo un aviso: en local no hay HTTPS al que redirigir | Nada: la capa está funcionando. Si el sitio falla, la causa es otra; revisa primero que la System responda en <http://localhost:5101/health> |
 | `Now listening on: http://localhost:5000` | Falta `ASPNETCORE_URLS` en esa ventana | Detén con Ctrl + C, pon `set "ASPNETCORE_URLS=http://localhost:5101"` (o `5100` en la Channel) y vuelve a arrancar |
 | Camino C: `http://localhost:5100` responde 404 o una página vacía | `ASPNETCORE_WEBROOT` no apunta a una carpeta con `index.html` | `dir C:\modscore-sitio\wwwroot\index.html` tiene que encontrar el archivo; corrige la ruta y reinicia la ventana 2 |
 | `Failed to bind to address ... address already in use` | Otro programa ocupa 5100, 5101 o 5173 | Camino A: `.\start.ps1 -Port 5200`. Camino B: cierra lo que use el puerto (ver fila siguiente) |

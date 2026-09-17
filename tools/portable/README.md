@@ -22,6 +22,11 @@ Windows sin instalar Visual Studio, Node ni (en la variante autocontenida) .NET.
 Windows puede advertir que los ejecutables no están firmados (SmartScreen). El paquete de
 prueba no se firma; la firma de binarios e imágenes es parte del hallazgo H-17.
 
+Si la empresa **bloquea** los ejecutables sin firmar (no es un aviso: no abren), este
+paquete no sirve en ese equipo tal cual. El camino C de la guía paso a paso levanta la
+aplicación solo con `dotnet.exe` y usa de este `.zip` únicamente la carpeta
+`channel\wwwroot`, que son archivos estáticos.
+
 ### Opciones
 
 | Comando | Qué hace |

@@ -12,19 +12,27 @@ El plan completo está en [PLAN.md](PLAN.md). Las decisiones de arquitectura, en
 > sabido y con los problemas frecuentes, está en
 > [docs/guia-localhost.md](docs/guia-localhost.md).
 
-Tres procesos, en este orden:
+Tres procesos, en este orden. Las dos variables de las capas **no son opcionales**: sin
+`ASPNETCORE_ENVIRONMENT=Development` la capa arranca como producción y se detiene a propósito
+(pide `AllowedHosts` y secretos reales), y sin `ASPNETCORE_URLS` escucha en el 5000.
 
 ```bash
-dotnet run --project src/system/Modernization.SystemApi    # http://localhost:5101
+ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5101 dotnet run --project src/system/Modernization.SystemApi
 ```
 
 ```bash
-dotnet run --project src/channel/Modernization.ChannelApi  # http://localhost:5100
+ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5100 dotnet run --project src/channel/Modernization.ChannelApi
 ```
 
 ```bash
-npm --prefix src/web run dev                               # http://localhost:5173
+npm --prefix src/web run dev
 ```
+
+En `cmd`, las variables van con `set "ASPNETCORE_ENVIRONMENT=Development"` en la misma
+ventana, antes del `dotnet run`. En un equipo que **no deja ejecutar `.exe` sin firmar**,
+agrega `-p:UseAppHost=false` —así solo corre `dotnet.exe`— y deja que la capa Channel sirva
+el sitio con `ASPNETCORE_WEBROOT`: es el camino C de la
+[guía paso a paso](docs/guia-localhost.md).
 
 La SPA se abre en <http://localhost:5173>. El botón de login usa el esquema de
 desarrollo, que **no autentica a nadie**: solo existe para trabajar sin un

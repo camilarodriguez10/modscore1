@@ -231,7 +231,7 @@ Pedido del 2026-09-16. Detalle en PLAN §8.9 y en
 | Paquete portable | `powershell -ExecutionPolicy Bypass -File tools/portable/build-portable.ps1` |
 | Respaldo | `powershell -ExecutionPolicy Bypass -File tools/git/backup.ps1 -Message "…" -Verify` |
 | Datos dummy | `dotnet run --project tools/Modernization.DummyData -- data/dummy` |
-| Levantarlo en otro equipo | Guía paso a paso, para alguien que no conoce el proyecto: [docs/guia-localhost.md](docs/guia-localhost.md) |
+| Levantarlo en otro equipo | Guía paso a paso, para alguien que no conoce el proyecto: [docs/guia-localhost.md](docs/guia-localhost.md). En un equipo que bloquea `.exe` sin firmar, su **camino C**: `dotnet run ... -p:UseAppHost=false` y la Channel sirviendo el sitio con `ASPNETCORE_WEBROOT` |
 
 ---
 
@@ -346,6 +346,20 @@ Pedido del 2026-09-16. Detalle en PLAN §8.9 y en
 - La verificación local tiene que incluir `npm run lint`, porque el CI lo exige. En la Fase 13
   no se corrió y se escapó un BOM literal en una expresión regular de `e2e/support.ts`
   (`no-irregular-whitespace`); se corrigió escribiendo `\uFEFF`.
+
+**Arrancar en otro equipo:**
+
+- **Los comandos de arranque del README y de la guía nunca se habían corrido tal como
+  estaban escritos.** Aquí siempre se pasaban `ASPNETCORE_ENVIRONMENT` y `ASPNETCORE_URLS`
+  (la configuración de Playwright los pone), y no hay `launchSettings.json`. En un equipo
+  limpio, `dotnet run` arranca en Production, los guardas de despliegue lo detienen
+  (`AllowedHosts`) y, sin URL, escucharía en el 5000. Lo encontró una persona en otro equipo
+  el 2026-09-17. Un comando documentado se prueba en una terminal sin variables.
+- `dotnet run` ejecuta un `.exe` propio (el *apphost*) que crea en `bin`. En equipos que
+  bloquean programas sin firmar ese `.exe` no abre, igual que los del paquete portable.
+  `-p:UseAppHost=false` hace que ejecute `dotnet.exe` con la DLL. La SPA no necesita Node: la
+  capa Channel la sirve si `ASPNETCORE_WEBROOT` apunta a una carpeta con `index.html`, y el
+  `.zip` portable trae esa carpeta ya compilada en `channel\wwwroot`.
 
 **Proceso y producto:**
 

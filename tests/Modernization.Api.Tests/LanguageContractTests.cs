@@ -79,6 +79,85 @@ internal static partial class SpanishText
         }
     }
 
+    /// <summary>
+    /// Un CSV no es JSON y el colector de arriba lo ignoraria. Se barre campo por campo,
+    /// saltando las columnas que son dato de quien carga —etiqueta y motivo—, igual que
+    /// hace <see cref="UserData"/> con las propiedades.
+    /// </summary>
+    public static async Task CollectCsvAsync(HttpResponseMessage response, string request, List<string> found)
+    {
+        var body = await response.Content.ReadAsStringAsync();
+        var lines = body.Replace("\uFEFF", string.Empty, StringComparison.Ordinal)
+            .Split('\n')
+            .Select(line => line.TrimEnd('\r'))
+            .Where(line => line.Length > 0)
+            .ToList();
+
+        if (lines.Count == 0)
+        {
+            return;
+        }
+
+        var headers = Fields(lines[0]);
+        var userColumns = headers
+            .Select((name, index) => (name, index))
+            .Where(h => h.name.Contains("label", StringComparison.OrdinalIgnoreCase)
+                || h.name.Contains("reason", StringComparison.OrdinalIgnoreCase))
+            .Select(h => h.index)
+            .ToHashSet();
+
+        foreach (var (line, row) in lines.Select((line, row) => (line, row)))
+        {
+            foreach (var (field, column) in Fields(line).Select((field, column) => (field, column)))
+            {
+                if (row > 0 && userColumns.Contains(column))
+                {
+                    continue;
+                }
+
+                if (Pattern().IsMatch(field))
+                {
+                    found.Add($"{request} fila {row}, columna {column} = {field}");
+                }
+            }
+        }
+    }
+
+    /// <summary>Campos de una fila CSV, con comillas dobles escapadas como en el export.</summary>
+    private static List<string> Fields(string line)
+    {
+        var fields = new List<string>();
+        var current = new StringBuilder();
+        var quoted = false;
+
+        for (var i = 0; i < line.Length; i++)
+        {
+            var character = line[i];
+
+            if (quoted && character == '"' && i + 1 < line.Length && line[i + 1] == '"')
+            {
+                current.Append('"');
+                i++;
+            }
+            else if (character == '"')
+            {
+                quoted = !quoted;
+            }
+            else if (character == ',' && !quoted)
+            {
+                fields.Add(current.ToString());
+                current.Clear();
+            }
+            else
+            {
+                current.Append(character);
+            }
+        }
+
+        fields.Add(current.ToString());
+        return fields;
+    }
+
     public static string Report(List<string> found)
         => found.Count + " textos en espanol:" + Environment.NewLine
            + string.Join(Environment.NewLine, found.Distinct().Take(25));
@@ -109,6 +188,30 @@ public sealed class SpanishFreeChannelTests(QueryExperienceFixture fixture) : IC
             await SpanishText.CollectAsync(response, "POST " + url, found);
         }
 
+        // Los caminos felices se exigen en 200: un barrido que recibe 403 en todo pasa
+        // sin haber leido nada, y eso no prueba que no haya frases en espanol.
+        async Task Ok(string url)
+        {
+            using var response = await client.GetAsync(new Uri(url, UriKind.Relative));
+            Assert.True(response.IsSuccessStatusCode, $"GET {url} respondio {(int)response.StatusCode}");
+            await SpanishText.CollectAsync(response, "GET " + url, found);
+        }
+
+        async Task PostOk(string url, object body)
+        {
+            using var response = await client.PostAsJsonAsync(new Uri(url, UriKind.Relative), body, Json);
+            Assert.True(response.IsSuccessStatusCode, $"POST {url} respondio {(int)response.StatusCode}");
+            await SpanishText.CollectAsync(response, "POST " + url, found);
+        }
+
+        async Task Csv(string url)
+        {
+            using var response = await client.GetAsync(new Uri(url, UriKind.Relative));
+            Assert.True(response.IsSuccessStatusCode, $"GET {url} respondio {(int)response.StatusCode}");
+            Assert.Equal("text/csv", response.Content.Headers.ContentType?.MediaType);
+            await SpanishText.CollectCsvAsync(response, "GET " + url, found);
+        }
+
         // ------------------------------------------------------ pantallas de consulta
         await Get("/api/session");
         await Get("/api/portfolio?pageSize=100");
@@ -136,6 +239,23 @@ public sealed class SpanishFreeChannelTests(QueryExperienceFixture fixture) : IC
             await Get($"/api/applications/{row.EaiCode}/history");
         }
 
+        // -------------------------------------- administracion de reglas (pantallas 09 y 10)
+        await Ok("/api/admin/rules");
+        await Ok("/api/admin/rules/versions/v1.3");
+        await Ok("/api/rules/timeline");
+        await Ok("/api/admin/rules/compare?from=v1.3&to=v1.3");
+
+        // ------------------------------------------------------------ descargas
+        await Csv("/api/portfolio/export.csv");
+        await Csv("/api/portfolio/export.csv?country=Mexico&band=at-risk");
+
+        foreach (var grouping in Groupings)
+        {
+            await Csv($"/api/roadmap/export.csv?groupBy={grouping}");
+        }
+
+        await Csv("/api/admin/rules/compare/export.csv?from=v1.3&to=v1.3");
+
         // ------------------------------------------- escenarios y score objetivo
         foreach (var row in portfolio.Applications.Take(10))
         {
@@ -154,8 +274,15 @@ public sealed class SpanishFreeChannelTests(QueryExperienceFixture fixture) : IC
                 new { targetScore = Math.Min(100m, lab.BaselineScore + 1m) });
         }
 
-        // ------------------------------------------------ errores de validacion
         var first = portfolio.Applications[0].EaiCode;
+
+        // La simulacion de un borrador, sobre todo el portafolio y sobre una aplicacion.
+        var draft = new { metrics = new[] { new { key = "kenna", weight = 5m }, new { key = "mfa", weight = 10m } } };
+        await PostOk("/api/admin/rules/simulate", new { basedOn = "v1.3", draft });
+        await PostOk("/api/admin/rules/simulate", new { basedOn = "v1.3", draft, eaiCode = first });
+        await Ok($"/api/admin/rules/compare?from=v1.3&to=v1.3&eai={first}");
+
+        // ------------------------------------------------ errores de validacion
 
         await Get("/api/portfolio?page=0");
         await Get("/api/portfolio?band=Excelente");
@@ -168,6 +295,17 @@ public sealed class SpanishFreeChannelTests(QueryExperienceFixture fixture) : IC
         await Post(client, $"/api/applications/{first}/whatif/scenario", new { levers = Array.Empty<object>() });
         await Post(client, $"/api/applications/{first}/whatif/scenario", new { levers = new[] { new { key = "unknown.lever" } } });
         await Post(client, $"/api/applications/{first}/whatif/target", new { targetScore = 5m });
+
+        // Los caminos rotos de la administracion de reglas. Ninguno publica nada: el
+        // motivo demasiado corto se rechaza antes de tocar el almacen.
+        await Get("/api/admin/rules/versions/v9.9");
+        await Get("/api/admin/rules/versions/..%2Fv1.3");
+        await Get("/api/admin/rules/compare?from=v1.3&to=v9.9");
+        await Get("/api/admin/rules/compare?from=v1.3&to=v1.3&eai=abc");
+        await Get("/api/admin/rules/compare/export.csv?from=v1.3");
+        await Post(client, "/api/admin/rules/simulate", new { basedOn = "v1.3", draft = new { metrics = new[] { new { key = "kenna", weight = 200m } } } });
+        await Post(client, "/api/admin/rules/simulate", new { basedOn = "v1.3", draft = new { metrics = new[] { new { key = "no.existe", weight = 5m } } } });
+        await Post(client, "/api/admin/rules/publish", new { basedOn = "v1.3", draft = new { metrics = new[] { new { key = "kenna", weight = 5m }, new { key = "mfa", weight = 10m } } }, reason = "x" });
 
         var withoutCsrf = await fixture.Host.CreateAuthenticatedChannelClientAsync();
         await Post(withoutCsrf, $"/api/applications/{first}/whatif/target", new { targetScore = 90m });
@@ -183,7 +321,48 @@ public sealed class SpanishFreeChannelTests(QueryExperienceFixture fixture) : IC
             await SpanishText.CollectAsync(response, "POST /api/ingestion/upload", found);
         }
 
+        // Al final a proposito: la reautenticacion con destino ajeno se rechaza sin tocar
+        // la sesion, pero cerrar sesion la termina, y todo lo de arriba la necesita.
+        await Get("/api/login/step-up?returnTo=" + Uri.EscapeDataString("https://example.com/"));
+        await Post(client, "/api/logout", new { });
+
         Assert.True(found.Count == 0, SpanishText.Report(found));
+    }
+}
+
+/// <summary>
+/// El colector de CSV se prueba solo: si dejara de encontrar texto en espanol, el
+/// barrido de las descargas pasaria siempre sin decir nada.
+/// </summary>
+public sealed class SpanishCsvCollectorTests
+{
+    private static HttpResponseMessage Csv(string body) => new(System.Net.HttpStatusCode.OK)
+    {
+        Content = new StringContent(body, Encoding.UTF8, "text/csv"),
+    };
+
+    [Fact]
+    public async Task FindsSpanishInHeadersAndFields()
+    {
+        var found = new List<string>();
+
+        using var response = Csv("\uFEFFEAI Code,Aplicacion,Score\r\n14381,Claims Core,79.67\r\n10969,\"Portafolio, sin datos\",79.61\r\n");
+        await SpanishText.CollectCsvAsync(response, "prueba", found);
+
+        Assert.Equal(2, found.Count);
+        Assert.Contains(found, f => f.Contains("Aplicacion", StringComparison.Ordinal));
+        Assert.Contains(found, f => f.Contains("Portafolio, sin datos", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task SkipsWhatThePersonWhoUploadedWrote()
+    {
+        var found = new List<string>();
+
+        using var response = Csv("Version,Label,Reason\nv1.4,Carga de septiembre,Peso de Kenna a MFA\n");
+        await SpanishText.CollectCsvAsync(response, "prueba", found);
+
+        Assert.Empty(found);
     }
 }
 

@@ -884,7 +884,9 @@ en inglés y con el máximo detalle.
   Trivy (v0.74.0) y el UID de los pods (10001).
 - **Reautenticación contra un IdP real.**
 - **Rendimiento en hardware de destino:** la misma simulación dio p50 204 ms con la máquina
-  ocupada y 47 ms en reposo. Hay que medirla con la concurrencia real (TD-06).
+  ocupada y 47 ms en reposo. Fijada a dos núcleos (2026-09-16), ocho simulaciones a la vez
+  dan p95 329 ms, bajo el criterio de 500 ms, sin tocar código (TD-06). Falta repetirlo en el
+  pod real.
 
 **Tres decisiones que corrigen o precisan el plan:**
 
@@ -1175,7 +1177,7 @@ salvo SR-04 (override) y SR-12 (agregación), que requieren código.
 | Decidir validación de esquema formal para los cuerpos de reglas | ASVS 13.2.2 |
 | Controles compensatorios documentados para aislamiento de terceros | ASVS 14.2.6 |
 | Revisión de seguridad de las fases 09–13 por otra persona | TD-13 |
-| e2e y accesibilidad (axe) en CI; barrido de idioma sobre los endpoints nuevos | TD-04, TD-05, TD-09 |
+| e2e y accesibilidad (axe) en CI; barrido de idioma sobre los endpoints nuevos ✅ | TD-04, TD-05, TD-09 |
 
 **Criterio de aceptación:** pipeline verde con todos los gates, y cada parcial en cumple o
 con control compensatorio documentado y aceptado por seguridad.

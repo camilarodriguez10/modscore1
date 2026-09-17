@@ -39,7 +39,7 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | Fase 15 — autenticación con APIM | **En curso** (PLAN §8.8). Elegida la opción C con A ([ADR 0022](docs/adr/0022-la-credencial-entre-capas-es-conectable.md)): la credencial entre capas es conectable, la capa System valida un JWT de APIM y hay un modo `Both` para cambiar sin corte. Falta el emisor real; el cambio está en [su runbook](docs/runbooks/paso-a-apim.md) |
 | Fase 14 — verificación de seguridad | **En curso** (PLAN §8.7). Cerrados SEC-06 (evento 4214), SEC-07 (`Uploads:RetainVersions`) y SEC-12 (ADR 0021); SEC-14 aceptado con controles compensatorios; accesibilidad y e2e en el CI. Los once parciales que quedan necesitan cluster, IdP, ingress y gestor de secretos: ver [runbook de verificación](docs/runbooks/verificacion-asvs.md) |
 | Las seis preguntas (pantalla 09) | Entregada el 2026-09-16 (PLAN §8.9, [ADR 0023](docs/adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md)). Salud, prioridades, complejidad, riesgo, obsolescencia y resiliencia en `/insights`, con los mismos filtros. Ningún dato nuevo hizo falta; lo que mejoraría el esfuerzo y el valor de negocio está en PENDING-ITEMS como DQ-01 a DQ-07 |
-| Pruebas | **694 .NET** (214 motor · 178 contratos · 302 API) · **39 unitarias** de la SPA · **22 de punta a punta** con Playwright (10 de flujo y 12 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-09-16 |
+| Pruebas | **696 .NET** (214 motor · 178 contratos · 304 API) · **39 unitarias** de la SPA · **22 de punta a punta** con Playwright (10 de flujo y 12 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-09-16 |
 | Dependencias | Cero paquetes vulnerables (`dotnet list package --vulnerable`), `npm audit` limpio |
 | CI | GitHub Actions en verde desde la corrida #5 (`55cf36f`, 2026-09-15), que pasó los 7 jobs: backend, SPA, gitleaks, OSV, CodeQL C# y JS/TS, e imágenes con Trivy v0.74.0 y Checkov. CodeQL sin hallazgos altos. Tras acelerarlo, la corrida #6 (`148c6ce`) tardó 7 min 3 s en lugar de 9 min 54 s; CodeQL C# sigue marcando el total (6 min 58 s). Antes hubo que corregir el lint, CodeQL en repositorio privado (`upload: never`, `actions: read`), la versión de Trivy y el UID de los pods. Para acortarlo: gitleaks y OSV están en `seguridad.yml` y corren en cada push; `ci.yml` se salta los cambios que solo tocan documentación; CodeQL C# compila solo `src/` sin los analizadores de Roslyn; hay caché de NuGet, y el job de imágenes no espera a los demás |
 | ASVS L2 | 106 cumple · 11 parciales · 3 pendientes · 10 IdP o N/A. Los parciales dependen de un entorno real |
@@ -179,8 +179,11 @@ Pedido del 2026-09-14, trece puntos. Detalle en PLAN §8.6 y en la sección 7 de
 | Historia en frío | 1.655 ms | 8–15 ms con calentamiento (584 ms sin él) |
 | Simulación p50, en reposo | 117 ms | 47 ms (p95 66 ms) |
 
-La simulación depende mucho de la carga de la máquina: con la máquina ocupada dio 204 ms
-(TD-06).
+La simulación depende mucho de la carga de la máquina: con la máquina ocupada dio 204 ms.
+El 2026-09-16 se midió fijada a **dos núcleos** (TD-06): p95 329 ms con ocho simulaciones a
+la vez, bajo el criterio de 500 ms, y las lecturas siguen cerca de 1 ms mientras simulan.
+Acotar el paralelismo **empeoró** la simulación sin mejorar las lecturas, así que no se
+dejó. Queda repetirlo en el pod real (`medir-en-dos-nucleos.ps1`).
 
 ---
 
@@ -224,7 +227,7 @@ Pedido del 2026-09-16. Detalle en PLAN §8.9 y en
 | Pruebas contra el paquete portable | Con `start.ps1 -NoBrowser` corriendo, desde `src/web`: `MODSCORE_E2E_BASE_URL=http://localhost:5100 npx playwright test` |
 | Tipos de la SPA | `npx --prefix src/web tsc -b` (desde `src/web`: `npx tsc -b`) |
 | Vulnerabilidades | `dotnet list ModernizationScore.slnx package --vulnerable --include-transitive` · `npm --prefix src/web audit --audit-level=moderate` |
-| Prueba de carga | `dotnet run -c Release --project tools/Modernization.LoadTest -- --duration 10 --concurrency 8` (con system-api en Release) |
+| Prueba de carga | `dotnet run -c Release --project tools/Modernization.LoadTest -- --duration 10 --concurrency 8` (con system-api en Release; `--scenario <texto>` corre uno solo) · como en un pod de dos núcleos: `powershell -ExecutionPolicy Bypass -File tools/Modernization.LoadTest/medir-en-dos-nucleos.ps1` |
 | Paquete portable | `powershell -ExecutionPolicy Bypass -File tools/portable/build-portable.ps1` |
 | Respaldo | `powershell -ExecutionPolicy Bypass -File tools/git/backup.ps1 -Message "…" -Verify` |
 | Datos dummy | `dotnet run --project tools/Modernization.DummyData -- data/dummy` |
@@ -319,6 +322,16 @@ Pedido del 2026-09-16. Detalle en PLAN §8.9 y en
   reciben un valor posiblemente indefinido.
 - Una prueba de carga en una máquina ocupada da números que no sirven para comparar. Medir
   en reposo y repetir.
+- **Medir antes de optimizar, también lo «defensivo».** TD-06 proponía acotar el
+  paralelismo de la simulación para no ahogar al resto. Medido en dos núcleos, no ahogaba a
+  nadie y el tope la hacía más lenta: se revirtió. En una máquina de 16 núcleos no se ve
+  ninguna contención; hay que fijar el proceso a pocos núcleos (afinidad y
+  `DOTNET_PROCESSOR_COUNT`) para parecerse a un pod.
+- Un barrido que pasa sin leer nada no prueba nada: el de idioma exige 200 en los caminos
+  felices, y el colector de CSV tiene sus propias pruebas.
+- Lo mismo con la prueba de carga: con 100 000 peticiones por minuto de límite, las lecturas
+  cacheadas agotan la ventana en diez segundos y los escenarios siguientes «miden» 429 a
+  0,4 ms. Un resultado con 429 no cuenta.
 - Una prueba de contrato entre C# y TypeScript da la garantía de un cliente generado sin
   sumar herramientas a la cadena de suministro.
 - Un `DelegatingHandler` nuevo hay que agregarlo a **todos** los clientes HTTP, no solo al

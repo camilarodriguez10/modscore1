@@ -16,10 +16,20 @@ using System.Text.Json;
 //
 // Uso:
 //   dotnet run --project tools/Modernization.LoadTest -- --duration 15 --concurrency 16
+//   dotnet run --project tools/Modernization.LoadTest -- --scenario simulate --concurrency 8
 //
-// La Channel limita a 120 peticiones por minuto por usuario. Para medirla hay que
-// levantarla con RateLimiting__RequestsPerMinute alto; si no, el resultado muestra
-// sobre todo 429, que tambien es un dato.
+// --scenario corre solo los escenarios cuyo nombre contiene ese texto. Dos procesos a
+// la vez —uno simulando y otro leyendo— miden cuanto le cuesta la simulacion al resto
+// de las peticiones, que es la contencion que describe TD-06.
+//
+// La Channel limita por usuario: 120 peticiones por minuto, y aparte las descargas y
+// las simulaciones de reglas. Para medirla hay que levantarla con los tres limites muy
+// altos: una lectura cacheada rinde decenas de miles de peticiones por segundo, y con
+// 100 000 por minuto la ventana se agota en el primer escenario y los siguientes miden 429.
+//   RateLimiting__RequestsPerMinute=100000000
+//   RateLimiting__ExportsPerMinute=10000000
+//   RateLimiting__RulesSimulationsPerMinute=10000000
+// La columna 429 tiene que quedar en cero; si no, ese escenario no midio lo que dice.
 
 var options = LoadOptions.Parse(args);
 
@@ -81,10 +91,38 @@ if (channelAvailable)
         () => channel.GetAsync(new Uri($"/api/applications/{Pick(eaiCodes)}/explain", UriKind.Relative))));
     scenarios.Add(new("Channel · GET /api/ingestion",
         () => channel.GetAsync(new Uri("/api/ingestion", UriKind.Relative))));
+
+    // Las seis preguntas puntuan y proyectan todo el portafolio en cada llamada.
+    scenarios.Add(new("Channel · GET /api/insights",
+        () => channel.GetAsync(new Uri("/api/insights", UriKind.Relative))));
+
+    // Las descargas recorren el portafolio completo, no una pagina.
+    scenarios.Add(new("Channel · GET /api/portfolio/export.csv",
+        () => channel.GetAsync(new Uri("/api/portfolio/export.csv", UriKind.Relative))));
+    scenarios.Add(new("Channel · GET /api/roadmap/export.csv (por pais)",
+        () => channel.GetAsync(new Uri("/api/roadmap/export.csv?groupBy=country", UriKind.Relative))));
+
+    // Comparar reglas calcula el portafolio con las dos versiones; con la misma version
+    // en los dos lados el costo es el mismo y la prueba no depende de haber publicado.
+    scenarios.Add(new("Channel · GET /api/admin/rules/compare",
+        () => channel.GetAsync(new Uri($"/api/admin/rules/compare?from={activeRules}&to={activeRules}", UriKind.Relative))));
+    scenarios.Add(new("Channel · GET /api/admin/rules/compare/export.csv",
+        () => channel.GetAsync(new Uri($"/api/admin/rules/compare/export.csv?from={activeRules}&to={activeRules}", UriKind.Relative))));
 }
 else
 {
     Console.WriteLine("Channel no disponible con sesion de desarrollo: se omiten sus escenarios.");
+}
+
+if (options.Scenario is { } filter)
+{
+    scenarios.RemoveAll(s => !s.Name.Contains(filter, StringComparison.OrdinalIgnoreCase));
+
+    if (scenarios.Count == 0)
+    {
+        Console.WriteLine($"Ningun escenario contiene '{filter}'.");
+        return 2;
+    }
 }
 
 var results = new List<ScenarioResult>();
@@ -249,7 +287,7 @@ internal sealed record ScenarioResult(
         => sorted.Length == 0 ? 0 : sorted[Math.Max(0, (int)Math.Ceiling(quantile * sorted.Length) - 1)];
 }
 
-internal sealed record LoadOptions(Uri SystemUrl, Uri ChannelUrl, string ServiceToken, TimeSpan Duration, int Concurrency)
+internal sealed record LoadOptions(Uri SystemUrl, Uri ChannelUrl, string ServiceToken, TimeSpan Duration, int Concurrency, string? Scenario)
 {
     public static LoadOptions Parse(string[] args)
     {
@@ -266,6 +304,7 @@ internal sealed record LoadOptions(Uri SystemUrl, Uri ChannelUrl, string Service
             Environment.GetEnvironmentVariable("MODSCORE_SERVICE_TOKEN")
                 ?? "dev-only-service-token-not-for-any-real-environment",
             TimeSpan.FromSeconds(int.Parse(Value("--duration") ?? "15", CultureInfo.InvariantCulture)),
-            int.Parse(Value("--concurrency") ?? "16", CultureInfo.InvariantCulture));
+            int.Parse(Value("--concurrency") ?? "16", CultureInfo.InvariantCulture),
+            Value("--scenario"));
     }
 }

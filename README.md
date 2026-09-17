@@ -37,7 +37,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-694 pruebas .NET: 214 del motor, 178 de contratos y 302 de API. Las dos que importan más
+696 pruebas .NET: 214 del motor, 178 de contratos y 304 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **EAI 14381 = 79,67:** ejemplo trabajado del BRD, derivado desde datos crudos por el
@@ -229,9 +229,26 @@ lo creado salvo capturas e imágenes. Ver [docs/runbooks/respaldo-en-git.md](doc
 dotnet run --project tools/Modernization.LoadTest -- --duration 15 --concurrency 16
 ```
 
-Mide la capa System directamente y la Channel con una sesión de desarrollo. La
-Channel limita a 120 peticiones por minuto por usuario: para medirla hay que
-levantarla con `RateLimiting__RequestsPerMinute` alto.
+Mide la capa System directamente y la Channel con una sesión de desarrollo: pantallas,
+las seis preguntas, las descargas y la comparación de reglas. La Channel limita por usuario,
+así que para medirla hay que levantarla con los límites **muy** altos —con 100 000 por
+minuto la ventana se agota en el primer escenario y el resto mide 429—:
+
+```bash
+RateLimiting__RequestsPerMinute=100000000 RateLimiting__ExportsPerMinute=10000000 RateLimiting__RulesSimulationsPerMinute=10000000 dotnet run -c Release --project src/channel/Modernization.ChannelApi
+```
+
+La columna 429 del resultado tiene que quedar en cero.
+
+`--scenario <texto>` corre solo los escenarios cuyo nombre lo contiene. Para medir como en
+un pod pequeño —la capa System fijada a dos núcleos, simulaciones solas y lecturas mientras
+simulan—:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools/Modernization.LoadTest/medir-en-dos-nucleos.ps1
+```
+
+Con la capa System y la herramienta compiladas antes en Release.
 
 ## Correr sobre archivos en vez de datos generados
 

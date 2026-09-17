@@ -52,7 +52,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
   - Contract test between the C# view models and the TypeScript types.
   - Git repository with backup scripts, and a portable package to test on other machines.
 - **Tests**:
-  - 694 .NET tests: 214 engine, 178 contracts, 302 API.
+  - 696 .NET tests: 214 engine, 178 contracts, 304 API.
   - 39 SPA unit tests.
   - 22 end-to-end scenarios: 10 flows and 12 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
   - Zero vulnerable packages, and `npm audit` is clean.
@@ -64,7 +64,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 | Scoring rules (business) | SR-01 … SR-15 | SR-01, SR-03, SR-07 must be confirmed before scores are published to the organization (P0/P1). [scoring-decisions.md](scoring-decisions.md) is the same content written for the conversation with the business owner |
 | Platform and architecture | PA-01 … PA-09 | PA-01 (target and database engine) and PA-02 (authentication through APIM) are P0 |
 | Security | SEC-01 … SEC-24 | SEC-19 and SEC-20 are P0 (SEC-21 was decided on 2026-09-15); ASVS partials are P1; H-16/H-17/H-20/H-21 deferred to the last phase by decision |
-| Technical debt | TD-01 … TD-15 | None blocks; TD-06 and TD-09 are P1. TD-05 done and TD-04 automated on 2026-09-15 |
+| Technical debt | TD-01 … TD-15 | None blocks. TD-05 done and TD-04 automated on 2026-09-15; TD-06, TD-08 and TD-09 closed on 2026-09-16 |
 | Product follow-ups | PF-01 … PF-06 | No |
 | Data that would sharpen the portfolio answers | DQ-01 … DQ-07 | No. The six questions are already answered with today's sources; these make two of the answers real instead of indicative |
 | Operations | OP-01 … OP-05 | No. The first push was done on 2026-09-15; OP-04 (branch protection and repository settings) is P1 |
@@ -113,10 +113,10 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 | TD-03 | OpenAPI-generated client replaced by a contract test | Technical debt | P3 | Development | Decision needed |
 | TD-04 | Visual QA and accessibility audit of the new screens | Quality | P1 | UX + development | Automated part done (2026-09-15); manual walkthrough open |
 | TD-05 | End-to-end tests in CI | Quality | P1 | DevSecOps | Done (2026-09-15) |
-| TD-06 | Simulation latency under concurrency | Performance | P1 | Development | Open |
+| TD-06 | Simulation latency under concurrency | Performance | P1 | Development | Done (2026-09-16): criterion met on 2 cores without a code change; re-measure on the real pod |
 | TD-07 | History performance with the database adapter | Performance | P2 | Development | Open |
-| TD-08 | Load test coverage of Channel, exports and comparison | Performance | P2 | Development | Open |
-| TD-09 | Language sweep does not cover the new endpoints | Quality | P1 | Development | Open |
+| TD-08 | Load test coverage of Channel, exports and comparison | Performance | P2 | Development | Done (2026-09-16) |
+| TD-09 | Language sweep does not cover the new endpoints | Quality | P1 | Development | Done (2026-09-16) |
 | TD-10 | CSV of a draft's impact | Product / debt | P3 | Development | Open |
 | TD-11 | Mixed line endings in the repository | Hygiene | P3 | Development | Decision needed |
 | TD-12 | Lock files and runtime-specific publish | Supply chain | P3 | Development | Mitigated |
@@ -769,6 +769,20 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
   - Simulation is rate-limited to 10 per minute per user, so real concurrency is low.
 - **Work:** measure on target hardware with realistic concurrency; if needed, bound `MaxDegreeOfParallelism` in `RulesImpactSimulator.ScoreAll` and in the plan summary.
 - **Acceptance criteria:** p95 under 500 ms with 8 concurrent simulations on target hardware. **Effort:** S.
+- **Resolution (2026-09-16) — measured, and the proposed fix was discarded:**
+  - The target hardware does not exist yet (PA-01), so the System layer was pinned to **2 cores** with `DOTNET_PROCESSOR_COUNT=2` and processor affinity, the shape of a small pod. The load tool ran on the other cores so it did not measure itself. Release build, generated portfolio of 200 applications, 20 s per scenario, single runs.
+  - Two measurements each: 8 concurrent simulations alone, and 8 concurrent score reads **while** 8 simulations run — the contention this item was worried about.
+
+    | System layer | Simulations alone p50 / p95 / p99 | Reads during simulations p95 / p99 |
+    |---|---|---|
+    | 16 cores, current code | 56 / 107 / 134 ms | 1.6 / 13.2 ms |
+    | 2 cores, current code | 156 / **329** / 490 ms | 1.1 / 14.5 ms |
+    | 2 cores, parallelism bounded to 1 | 161 / 432 / 609 ms | 1.2 / 16.8 ms |
+    | 16 cores, bounded to 4 | 55 / 102 / 118 ms | 2.4 / 13.3 ms |
+
+  - **The criterion is met without changing code:** p95 329 ms on 2 cores. Reads stay near 1 ms at p95 in every case, so parallel scoring does not starve other requests.
+  - **Bounding the parallelism did not help** — on 2 cores it made simulations slower and left reads unchanged — so it was reverted rather than kept as an unproven "defensive" change.
+  - `tools/Modernization.LoadTest` now accepts `--scenario` to run one scenario, and `medir-en-dos-nucleos.ps1` reproduces the whole measurement. **Run it again on the real pod once PA-01 is decided**; that is the only open part.
 
 ### TD-07 — History performance with the database adapter
 
@@ -788,6 +802,24 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
   - No scenarios for exports or comparison.
 - **Work:** add Channel export and comparison scenarios; document the rate-limit settings.
 - **Effort:** S.
+- **Resolution (2026-09-16):**
+  - New Channel scenarios: the six portfolio questions (`/api/insights`), both CSV downloads (portfolio, and roadmap by country), and the rules comparison with its CSV.
+  - `--scenario <text>` runs only the matching scenarios.
+  - Rate limits documented in the tool header. **100,000 requests per minute is not enough:** a cached read serves tens of thousands of requests per second, empties the window in the first scenario, and every later scenario measures 429s. The first run of this item made exactly that mistake. The documented values are 100,000,000 requests, 10,000,000 exports and 10,000,000 rules simulations per minute, and the 429 column must read zero for a result to count.
+  - First measurement (Release, generated portfolio of 200 applications, 16 cores, 8 concurrent users, 10 s per scenario, single run; 0 errors and 0 429 in every scenario):
+
+    | Channel scenario | req/s | p50 | p95 | p99 |
+    |---|---:|---:|---:|---:|
+    | `GET /api/portfolio` (page of 25) | 93 | 88 ms | 119 ms | 154 ms |
+    | `GET /api/applications/{eai}/explain` | 9,702 | 0.8 ms | 1.1 ms | 1.7 ms |
+    | `GET /api/ingestion` | 11,530 | 0.7 ms | 0.9 ms | 1.5 ms |
+    | `GET /api/insights` | 123 | 64 ms | 89 ms | 98 ms |
+    | `GET /api/portfolio/export.csv` | 132 | 59 ms | 83 ms | 97 ms |
+    | `GET /api/roadmap/export.csv` by country | 171 | 45 ms | 67 ms | 78 ms |
+    | `GET /api/admin/rules/compare` | 160 | 49 ms | 69 ms | 81 ms |
+    | `GET /api/admin/rules/compare/export.csv` | 158 | 50 ms | 70 ms | 84 ms |
+
+  - **Observation, not an item yet:** the portfolio page is the slowest read, slower than the six questions or a full export, although it returns 25 rows. It is still well within an interactive budget; worth a look if the real portfolio is much larger than 200 applications.
 
 ### TD-09 — Language sweep does not cover the new endpoints
 
@@ -795,6 +827,12 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
 - **Context:** Phase 11's `LanguageContractTests` crawls Channel responses and fails on Spanish text. The comparison, timeline and simulation-with-application responses were added later and are not in the crawl. The CSV headers are English, but the rule notes embedded in comparisons come from the ruleset (English).
 - **Work:** add the new endpoints and the CSV bodies to the sweep.
 - **Acceptance criteria:** sweep covers every Channel GET endpoint. **Effort:** S.
+- **Resolution (2026-09-16):**
+  - The sweep now covers **every Channel endpoint**: rules administration, a published version, the comparison (whole portfolio and one application), the timeline, the six portfolio questions, the draft simulation (whole portfolio and one application), step-up with a foreign destination and logout — plus the error paths of each.
+  - **CSV bodies** are swept too: the portfolio export (with and without filters), the roadmap export for all seven groupings, and the rules comparison export. Columns written by the person who uploaded or published (label, reason) are skipped, exactly as the JSON sweep skips those properties.
+  - The happy paths must answer 200 and the CSVs `text/csv`: a sweep that received 403 on everything would pass without reading anything.
+  - Two tests check the CSV collector itself — it finds Spanish in a header and in a quoted field, and ignores a label column — so the sweep cannot silently turn into a no-op.
+  - Result: no Spanish text anywhere.
 
 ### TD-10 — CSV of a draft's impact
 

@@ -1,6 +1,6 @@
 # Traspaso — Modernization Score Platform
 
-**Fecha:** 2026-09-15 · **Estado:** fases 00 a 13 entregadas; Fase 14 en curso · **Siguiente:** terminar la Fase 14 en un entorno de prueba y decisiones de negocio en paralelo
+**Fecha:** 2026-09-18 · **Estado:** fases 00 a 13 entregadas; 14 y 15 en curso; dashboard ejecutivo con D1 y D2 entregadas · **Siguiente:** calibrar con el negocio las definiciones provisionales del dashboard, terminar la Fase 14 en un entorno de prueba
 
 Este documento permite que otra persona —o otra sesión— retome el proyecto sin haber
 estado en él. No reemplaza al plan ([PLAN.md](PLAN.md)) ni a los ADR: dice qué hay, dónde
@@ -39,15 +39,16 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | Fase 15 — autenticación con APIM | **En curso** (PLAN §8.8). Elegida la opción C con A ([ADR 0022](docs/adr/0022-la-credencial-entre-capas-es-conectable.md)): la credencial entre capas es conectable, la capa System valida un JWT de APIM y hay un modo `Both` para cambiar sin corte. Falta el emisor real; el cambio está en [su runbook](docs/runbooks/paso-a-apim.md) |
 | Fase 14 — verificación de seguridad | **En curso** (PLAN §8.7). Cerrados SEC-06 (evento 4214), SEC-07 (`Uploads:RetainVersions`) y SEC-12 (ADR 0021); SEC-14 aceptado con controles compensatorios; accesibilidad y e2e en el CI. Los once parciales que quedan necesitan cluster, IdP, ingress y gestor de secretos: ver [runbook de verificación](docs/runbooks/verificacion-asvs.md) |
 | Las seis preguntas (pantalla 09) | Entregada el 2026-09-16 (PLAN §8.9, [ADR 0023](docs/adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md)). Salud, prioridades, complejidad, riesgo, obsolescencia y resiliencia en `/insights`, con los mismos filtros. Ningún dato nuevo hizo falta; lo que mejoraría el esfuerzo y el valor de negocio está en PENDING-ITEMS como DQ-01 a DQ-07 |
-| Pruebas | **696 .NET** (214 motor · 178 contratos · 304 API) · **39 unitarias** de la SPA · **22 de punta a punta** con Playwright (10 de flujo y 12 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-09-16 |
+| Dashboard ejecutivo | D1 y D2 entregadas el 2026-09-18 (PLAN §8.10, [ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md)). `/dashboard`, primera pestaña: *Portfolio Health & Risk Intelligence*, con cinco indicadores, seis paneles y un detalle común. Lo que la propuesta deja en TBD tiene un default en `contracts/dashboard-v1.json`, marcado como provisional. Cinco filtros nuevos en todas las pantallas: CRE, Region, App Status, Primary Capability y EAI Code. Faltan D3 (diccionario y edición desde el portal) y D4 (fuentes nuevas) |
+| Pruebas | **737 .NET** (242 motor · 178 contratos · 317 API) · **47 unitarias** de la SPA · **30 de punta a punta** con Playwright (14 de flujo y 16 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-09-18 |
 | Dependencias | Cero paquetes vulnerables (`dotnet list package --vulnerable`), `npm audit` limpio |
 | CI | GitHub Actions en verde desde la corrida #5 (`55cf36f`, 2026-09-15), que pasó los 7 jobs: backend, SPA, gitleaks, OSV, CodeQL C# y JS/TS, e imágenes con Trivy v0.74.0 y Checkov. CodeQL sin hallazgos altos. Tras acelerarlo, la corrida #6 (`148c6ce`) tardó 7 min 3 s en lugar de 9 min 54 s; CodeQL C# sigue marcando el total (6 min 58 s). Antes hubo que corregir el lint, CodeQL en repositorio privado (`upload: never`, `actions: read`), la versión de Trivy y el UID de los pods. Para acortarlo: gitleaks y OSV están en `seguridad.yml` y corren en cada push; `ci.yml` se salta los cambios que solo tocan documentación; CodeQL C# compila solo `src/` sin los analizadores de Roslyn; hay caché de NuGet, y el job de imágenes no espera a los demás |
 | ASVS L2 | 106 cumple · 11 parciales · 3 pendientes · 10 IdP o N/A. Los parciales dependen de un entorno real |
 | Hallazgos | Fase 08: 23 (19 cerrados, H-16 parcial, H-17/H-20/H-21 pendientes). Revisión 09–13: 7 (6 cerrados, 1 aceptado) |
 | Git | Repositorio **privado** <https://github.com/camilarodriguez10/modscore1>, rama `main`. Guarda todo lo creado —el `.zip` portable, el estado local de `data/`, los scripts de las sesiones (`tools/sesiones/`) y la copia del plan (`docs/plan/`)— salvo las capturas del BRD y las imágenes. Los commits usan el correo de la cuenta. Cada push se confirma antes |
 | Memo de decisiones | <https://claude.ai/artifact/Gp7c9gHv5kTSdGETPfeCi5> (version 1, del 2026-09-16): las once reglas de scoring que el negocio tiene que confirmar, con evidencia y opciones. Fuente de verdad: [docs/scoring-decisions.md](docs/scoring-decisions.md); copia publicada en `docs/plan/scoring-decisions.html` |
-| Artefacto del plan | <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> (versión 18, del 2026-09-16, con la pantalla 09 y el estado de la Fase 15; copia en `docs/plan/modscore-plan.html`, que hay que reemplazar al republicar; enlace anterior del mismo artefacto: <https://claude.ai/code/artifact/25507d1f-40a6-4e74-8c43-0337dbb63358>) |
-| Paquete portable | `artifacts/modscore-portable-win-x64-selfcontained-20260916-1524.zip` (93,2 MB autocontenido, SHA-256 `f4b322f4eb772003b53a990b280a3280fb2000be1a1206cb0030550c4bc31b0a`), versionado en el repositorio; se regenera con `tools/portable/build-portable.ps1`. Verificado el 2026-09-16, ya con la pantalla 09: descomprimido y arrancado con `start.ps1`; las dos capas escuchan solo en `127.0.0.1`, con CSP estricta; los **22 escenarios e2e pasan contra él**. El anterior se borra: cada paquete queda para siempre en la historia del repositorio. **El `.zip` versionado se generó antes de que el paquete llevara `GUIA-PASO-A-PASO.txt`**; el próximo build ya la incluye, y hasta entonces la guía está en [docs/guia-localhost.md](docs/guia-localhost.md) |
+| Artefacto del plan | <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> (versión 19, del 2026-09-18, con el dashboard ejecutivo; copia en `docs/plan/modscore-plan.html`, que hay que reemplazar al republicar; enlace anterior del mismo artefacto: <https://claude.ai/code/artifact/25507d1f-40a6-4e74-8c43-0337dbb63358>) |
+| Paquete portable | `artifacts/modscore-portable-win-x64-selfcontained-20260918-0503.zip` (93,3 MB autocontenido, SHA-256 `236832c2a123902b566c7d1a2397bbe175d63ddda26464490fac4abf11e65429`), versionado en el repositorio; se regenera con `tools/portable/build-portable.ps1`. Verificado el 2026-09-18, ya con el dashboard y con `GUIA-PASO-A-PASO.txt` dentro: descomprimido y arrancado con `start.ps1`; los **30 escenarios e2e pasan contra él**. El paquete tiene el límite real de 120 peticiones por minuto por usuario, y la suite completa lo supera en un minuto (la prueba de reglas recibe 429): para correrla, arrancarlo con los límites de `playwright.config.ts` (`RateLimiting__RequestsPerMinute=100000` y los otros tres) en el entorno. Con el límite real pasan en dos tandas. `start.ps1` espera un Enter para detenerse: en segundo plano, darle una entrada que quede abierta. El anterior se borra: cada paquete queda para siempre en la historia del repositorio |
 
 ---
 
@@ -218,12 +219,52 @@ Pedido del 2026-09-16. Detalle en PLAN §8.9 y en
 
 ---
 
+## 6ter. El dashboard ejecutivo
+
+Pedido del 2026-09-18, a partir de la propuesta *EA Data & Insights – MVP Proposal* y su
+mockup (16 capturas, fuera del repositorio; la marca de la empresa no va al sitio).
+Detalle en PLAN §8.10 y en
+[ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md).
+
+| Pregunta | Panel | Con qué |
+|---|---|---|
+| ¿Qué tan sano está? | 1 | Mapa de calor capacidad × región, país, CIO o disposición; dona de tramos; tendencia por carga |
+| ¿Qué modernizar primero? | 2 | Matriz criticidad (0–3) × oportunidad (0–3), burbuja = Risk Score; top 10 |
+| ¿Dónde reducir complejidad? | 3 | Treemap de seis dimensiones (dos sin fuente) y cuatro oportunidades |
+| ¿Dónde se concentra el riesgo? | 4 | El mismo mapa midiendo riesgo; top 5; índice de concentración 0–1 |
+| ¿Qué causa la obsolescencia? | 5 | Puntos perdidos agrupados en conceptos; EOS/EOL esperan a TLM |
+| ¿Dónde faltan defensas? | 6 | Recuperación y vulnerabilidad operacional; disponibilidad, dependencias y puntos únicos de falla esperan su fuente |
+
+**Piezas:** `contracts/dashboard-v1.json` (embebido en `Modernization.Insights`),
+`DashboardRules`, `DashboardModel` y `DashboardAnalyzer` (función pura);
+`DashboardEndpoints` en la capa System (`GET /system/dashboard`, con la tendencia de
+`PortfolioService.GetDashboardTrendAsync`); `GET /api/dashboard` en la Channel;
+`FilterParameters` en las dos capas (`[AsParameters]`), que reemplaza la lista de
+parámetros de filtro repetida en cada endpoint; en la SPA,
+`routes/DashboardPage.tsx`, `components/dashboard/charts.tsx` y `panels.tsx`, e
+`i18n/dashboard.ts`.
+
+**Cuidados:**
+
+- El eje (`axis`) se valida **en la Channel** contra `DashboardOptions.Axes`, además de
+  en la System: si solo lo validara la System, su 400 llegaría a la Channel como error y
+  saldría como 500.
+- Las dimensiones sin fuente viajan con `status: "needs-data"` y números en null. No
+  rellenarlas con un cero: un cero es una medición.
+- Con los datos dummy los defaults saturan: *duplicate technologies* y *technology
+  proliferation* marcan a las 250 aplicaciones, la fila de criticidad «Alta» queda vacía y
+  el 77 % tiene huecos de resiliencia. Es calibración pendiente, no un error.
+- Cada panel abre el mismo detalle con un `predicate` sobre `applications`: un filtro
+  nuevo en un panel no necesita otra llamada al API.
+
+---
+
 ## 7. Comandos frecuentes
 
 | Para | Comando |
 |---|---|
 | Pruebas .NET | `dotnet test ModernizationScore.slnx` |
-| Pruebas de la SPA | `npm --prefix src/web run lint` (el CI lo exige) · `npm --prefix src/web test` · `npm --prefix src/web run test:e2e` (22 escenarios, 12 de ellos de accesibilidad) |
+| Pruebas de la SPA | `npm --prefix src/web run lint` (el CI lo exige) · `npm --prefix src/web test` · `npm --prefix src/web run test:e2e` (30 escenarios, 16 de ellos de accesibilidad) |
 | Pruebas contra el paquete portable | Con `start.ps1 -NoBrowser` corriendo, desde `src/web`: `MODSCORE_E2E_BASE_URL=http://localhost:5100 npx playwright test` |
 | Tipos de la SPA | `npx --prefix src/web tsc -b` (desde `src/web`: `npx tsc -b`) |
 | Vulnerabilidades | `dotnet list ModernizationScore.slnx package --vulnerable --include-transitive` · `npm --prefix src/web audit --audit-level=moderate` |
@@ -343,6 +384,12 @@ Pedido del 2026-09-16. Detalle en PLAN §8.9 y en
 - axe encuentra lo que la revisión a ojo no: un color atenuado a 4,42:1 y colores de estado
   usados como letra a 1,65:1. Los colores de marca y los de texto son dos cosas distintas y
   conviene que sean dos tokens distintos.
+- **Playwright reutiliza los servidores que ya estén corriendo** (`reuseExistingServer`
+  fuera del CI). Si se levantaron a mano para mirar la pantalla, no tienen los límites de
+  tasa holgados de la configuración, y la suite falla al azar —cada corrida en una prueba
+  distinta—. Apagarlos antes de correr las e2e.
+- Atenuar con `opacity` un texto de estado lo deja bajo 4,5:1: los tokens `*-text` sobre su
+  `*-wash` pasan con lo justo (4,6:1). En el dashboard lo encontró axe en tres lugares.
 - La verificación local tiene que incluir `npm run lint`, porque el CI lo exige. En la Fase 13
   no se corrió y se escapó un BOM literal en una expresión regular de `e2e/support.ts`
   (`no-irregular-whitespace`); se corrigió escribiendo `\uFEFF`.

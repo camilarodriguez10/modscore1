@@ -5,4 +5,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Modernization.Roadmap\Modernization.Roadmap.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\..\contracts\dashboard-v1.json" LogicalName="dashboard-v1.json" />
+  </ItemGroup>
 </Project>

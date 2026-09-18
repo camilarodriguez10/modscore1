@@ -81,6 +81,12 @@ public sealed class ScreenComposer(SystemApiClient system)
             GroupBy(scores, filtered, a => a.Cio),
             GroupBy(scores, filtered, a => a.Disposition),
             GroupBy(scores, filtered, a => a.Roadmap),
+
+            // Los cuatro del dashboard ejecutivo: tambien son las opciones de su filtro.
+            GroupBy(scores, filtered, a => a.Cre),
+            GroupBy(scores, filtered, a => a.Region),
+            GroupBy(scores, filtered, a => a.ApplicationStatus),
+            GroupBy(scores, filtered, a => a.PrimaryBusinessCapability),
             rows,
             applications.Page,
             applications.PageSize,

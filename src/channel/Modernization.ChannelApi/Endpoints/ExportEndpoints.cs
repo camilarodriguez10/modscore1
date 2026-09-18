@@ -45,31 +45,16 @@ public static class ExportEndpoints
         HttpContext context,
         ExportComposer exports,
         ILoggerFactory loggers,
-        CancellationToken cancellationToken,
-        string? lob = null,
-        string? country = null,
-        string? cio = null,
-        string? disposition = null,
-        string? roadmap = null,
-        string? band = null,
-        bool? criticalOnly = null)
+        [AsParameters] FilterParameters filters,
+        CancellationToken cancellationToken)
     {
-        if (ChannelEndpoints.InvalidFilters(lob, country, cio, disposition, roadmap, band) is { } problem)
+        if (ChannelEndpoints.InvalidFilters(filters) is { } problem)
         {
             return problem;
         }
 
         var file = await exports.PortfolioAsync(
-            new ApplicationQuery
-            {
-                Lob = lob,
-                Country = country,
-                Cio = cio,
-                Disposition = disposition,
-                Roadmap = roadmap,
-                Band = band,
-                CriticalOnly = criticalOnly,
-            },
+            filters.ToQuery(),
             cancellationToken).ConfigureAwait(false);
 
         return Deliver(context, loggers, "portfolio", file);
@@ -79,15 +64,9 @@ public static class ExportEndpoints
         HttpContext context,
         ExportComposer exports,
         ILoggerFactory loggers,
+        [AsParameters] FilterParameters filters,
         CancellationToken cancellationToken,
-        string? groupBy = null,
-        string? lob = null,
-        string? country = null,
-        string? cio = null,
-        string? disposition = null,
-        string? roadmap = null,
-        string? band = null,
-        bool? criticalOnly = null)
+        string? groupBy = null)
     {
         if (groupBy is not null && !ChannelEndpoints.Groupings.Contains(groupBy, StringComparer.OrdinalIgnoreCase))
         {
@@ -98,22 +77,13 @@ public static class ExportEndpoints
                 $"The available groupings are: {string.Join(", ", ChannelEndpoints.Groupings)}.");
         }
 
-        if (ChannelEndpoints.InvalidFilters(lob, country, cio, disposition, roadmap, band) is { } problem)
+        if (ChannelEndpoints.InvalidFilters(filters) is { } problem)
         {
             return problem;
         }
 
         var file = await exports.RoadmapAsync(
-            new ApplicationQuery
-            {
-                Lob = lob,
-                Country = country,
-                Cio = cio,
-                Disposition = disposition,
-                Roadmap = roadmap,
-                Band = band,
-                CriticalOnly = criticalOnly,
-            },
+            filters.ToQuery(),
             groupBy,
             cancellationToken).ConfigureAwait(false);
 

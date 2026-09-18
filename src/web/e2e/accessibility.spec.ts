@@ -8,6 +8,7 @@ import { signIn } from './support';
  * las que dejan a alguien fuera, no un detalle de estilo.
  */
 const screens = [
+  { name: 'dashboard', path: '/dashboard' },
   { name: 'portfolio', path: '/' },
   { name: 'calculation of the BRD example', path: '/applications/14381/calculation' },
   { name: 'insights', path: '/insights' },

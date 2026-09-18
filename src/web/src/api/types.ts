@@ -51,6 +51,10 @@ export interface PortfolioView {
   byCio: readonly GroupSummaryView[];
   byDisposition: readonly GroupSummaryView[];
   byRoadmap: readonly GroupSummaryView[];
+  byCre: readonly GroupSummaryView[];
+  byRegion: readonly GroupSummaryView[];
+  byStatus: readonly GroupSummaryView[];
+  byCapability: readonly GroupSummaryView[];
   applications: readonly PortfolioRowView[];
   page: number;
   pageSize: number;
@@ -247,6 +251,12 @@ export interface PortfolioFilters {
   lob?: string | undefined;
   country?: string | undefined;
   cio?: string | undefined;
+  cre?: string | undefined;
+  region?: string | undefined;
+  status?: string | undefined;
+  capability?: string | undefined;
+  /** Codigo EAI exacto. */
+  eai?: string | undefined;
   disposition?: string | undefined;
   roadmap?: string | undefined;
   /** Codigo de tramo: "critical", "at-risk", "acceptable" o "solid". */
@@ -901,4 +911,209 @@ export interface InsightsOptionsView {
   significantUserBase: number;
   duplicateThreshold: number;
   topCount: number;
+}
+
+
+// ------------------------------------------------------------ Dashboard
+
+/**
+ * El dashboard ejecutivo del portafolio filtrado. Todo llega calculado: la pantalla
+ * pinta, y el detalle de cada panel filtra las mismas filas de `applications`.
+ */
+export interface DashboardView {
+  rulesetVersion: string;
+  definitionsVersion: string;
+  /** "provisional" mientras el negocio no confirme las definiciones (ADR 0024). */
+  definitionsStatus: string;
+  capturedAt: string;
+  trend: readonly DashboardTrendPoint[];
+  sources: readonly DashboardSource[];
+  dashboard: PortfolioDashboard;
+}
+
+export interface DashboardTrendPoint {
+  versionId: string;
+  label: string;
+  capturedAt: string;
+  applications: number;
+  healthScore: number | null;
+  atRiskShare: number | null;
+}
+
+export interface DashboardSource {
+  key: string;
+  connected: boolean;
+}
+
+export interface PortfolioDashboard {
+  kpis: readonly DashboardKpi[];
+  matrix: DashboardHeatmap;
+  health: DashboardHealth;
+  prioritization: DashboardPrioritization;
+  complexity: DashboardComplexity;
+  risk: DashboardRisk;
+  obsolescence: DashboardObsolescence;
+  resilience: DashboardResilience;
+  applications: readonly DashboardApplication[];
+}
+
+/** `value` es el numero grande; `count` de `base` es lo que ese numero mide. */
+export interface DashboardKpi {
+  key: string;
+  value: number | null;
+  count: number;
+  base: number;
+  share: number;
+  level: string | null;
+}
+
+export interface DashboardHeatmap {
+  axis: string;
+  rows: readonly string[];
+  columns: readonly string[];
+  cells: readonly DashboardHeatmapCell[];
+}
+
+export interface DashboardHeatmapCell {
+  row: string;
+  column: string;
+  applications: number;
+  averageScore: number;
+  band: string;
+  averageRisk: number | null;
+  riskLevel: string | null;
+  riskMass: number;
+}
+
+export interface DashboardHealth {
+  applications: number;
+  averageScore: number;
+  medianScore: number;
+  dataCoverage: number;
+  bands: readonly BandShareView[];
+  requiringIntervention: number;
+  interventionShare: number;
+}
+
+export interface DashboardPrioritization {
+  points: readonly DashboardMatrixPoint[];
+  top: readonly DashboardMatrixPoint[];
+  candidates: number;
+  outsideMatrix: number;
+  /** Minimos del cuadrante de candidatos, con la regla vigente. */
+  minCriticality: number;
+  minOpportunity: number;
+}
+
+/** Criticidad y oportunidad van de 0 (baja) a 3 (muy alta). */
+export interface DashboardMatrixPoint {
+  eaiCode: string;
+  applicationName: string;
+  criticality: number;
+  opportunity: number;
+  riskScore: number | null;
+  riskLevel: string | null;
+  uplift: number;
+  weeks: number;
+  roadmapName: string | null;
+  candidate: boolean;
+}
+
+export interface DashboardComplexity {
+  dimensions: readonly DashboardComplexityDimension[];
+  opportunities: readonly DashboardComplexityOpportunity[];
+}
+
+/** `status`: "provisional" o "needs-data"; sin fuente, los numeros son null. */
+export interface DashboardComplexityDimension {
+  key: string;
+  status: string;
+  applications: number | null;
+  share: number | null;
+  portfolioShare: number | null;
+}
+
+export interface DashboardComplexityOpportunity {
+  key: string;
+  count: number;
+}
+
+export interface DashboardRisk {
+  averageRisk: number | null;
+  hotspots: readonly DashboardHotspot[];
+  concentrationIndex: number;
+  concentrationLevel: string;
+}
+
+export interface DashboardHotspot {
+  eaiCode: string;
+  applicationName: string;
+  capability: string | null;
+  riskScore: number;
+  riskLevel: string;
+}
+
+export interface DashboardObsolescence {
+  factors: readonly DashboardObsolescenceFactor[];
+  currencyDrivenShare: number;
+  averageCurrency: number | null;
+  withCurrency: number;
+}
+
+export interface DashboardObsolescenceFactor {
+  key: string;
+  status: string;
+  currency: boolean;
+  lostPoints: number;
+  share: number;
+  applicationsAffected: number;
+}
+
+export interface DashboardResilience {
+  dimensions: readonly DashboardResilienceDimension[];
+  overall: readonly DashboardLevelShare[];
+  exposed: number;
+  exposedShare: number;
+  withData: number;
+}
+
+export interface DashboardResilienceDimension {
+  key: string;
+  status: string;
+  withData: number;
+  levels: readonly DashboardLevelShare[];
+}
+
+export interface DashboardLevelShare {
+  level: string;
+  applications: number;
+  share: number;
+}
+
+/** Una fila del detalle: los mismos campos en todos los paneles. */
+export interface DashboardApplication {
+  eaiCode: string;
+  applicationName: string;
+  region: string | null;
+  country: string | null;
+  cio: string | null;
+  cre: string | null;
+  capability: string | null;
+  status: string | null;
+  critical: boolean;
+  disposition: string | null;
+  roadmap: string | null;
+  score: number;
+  band: string;
+  riskScore: number | null;
+  riskLevel: string | null;
+  currency: number | null;
+  legacy: boolean;
+  criticality: number;
+  opportunity: number | null;
+  candidate: boolean;
+  resilience: string | null;
+  recovery: string | null;
+  operational: string | null;
+  complexity: readonly string[];
 }

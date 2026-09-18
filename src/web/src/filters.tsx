@@ -19,6 +19,8 @@ import { bandCode, bandLabel } from './i18n/notices';
  * permita (ADR 0012).
  */
 
+// Los cinco ultimos son los del dashboard del Modernization Score. Van al final
+// para que un enlace guardado antes se siga escribiendo igual.
 export const FILTER_KEYS = [
   'country',
   'lob',
@@ -27,6 +29,11 @@ export const FILTER_KEYS = [
   'roadmap',
   'band',
   'critical',
+  'region',
+  'cre',
+  'capability',
+  'status',
+  'eai',
 ] as const;
 
 export type FilterKey = (typeof FILTER_KEYS)[number];
@@ -41,6 +48,11 @@ export const FILTER_LABELS: Record<FilterKey, string> = {
   roadmap: 'Roadmap',
   band: 'Score band',
   critical: 'Criticality',
+  region: 'Region',
+  cre: 'CRE',
+  capability: 'Primary capability',
+  status: 'App status',
+  eai: 'EAI code',
 };
 
 const STORAGE_KEY = 'modscore.filters';
@@ -94,6 +106,11 @@ export function toApiFilters(
     roadmap: filters.roadmap,
     band: filters.band,
     criticalOnly: filters.critical === 'true' ? true : undefined,
+    region: filters.region,
+    cre: filters.cre,
+    capability: filters.capability,
+    status: filters.status,
+    eai: filters.eai,
     page,
     pageSize,
   };
@@ -265,6 +282,10 @@ export function useFilterOptions() {
       disposition: keys(query.data?.byDisposition),
       roadmap: keys(query.data?.byRoadmap),
       band: (query.data?.distribution ?? []).map((b) => b.band),
+      region: keys(query.data?.byRegion),
+      cre: keys(query.data?.byCre),
+      capability: keys(query.data?.byCapability),
+      status: keys(query.data?.byStatus),
     };
   }, [query.data]);
 }
@@ -286,9 +307,18 @@ export function FilterBar() {
       className="flex flex-col gap-2.5 rounded-md border border-rule bg-surface px-4 py-3"
     >
       <div className="flex flex-wrap items-end gap-3">
+        <Select filterKey="region" value={filters.region ?? ''} options={options.region} onChange={set} />
         <Select filterKey="country" value={filters.country ?? ''} options={options.country} onChange={set} />
-        <Select filterKey="lob" value={filters.lob ?? ''} options={options.lob} onChange={set} />
         <Select filterKey="cio" value={filters.cio ?? ''} options={options.cio} onChange={set} />
+        <Select filterKey="cre" value={filters.cre ?? ''} options={options.cre} onChange={set} />
+        <Select
+          filterKey="capability"
+          value={filters.capability ?? ''}
+          options={options.capability}
+          onChange={set}
+        />
+        <Select filterKey="status" value={filters.status ?? ''} options={options.status} onChange={set} />
+        <Select filterKey="lob" value={filters.lob ?? ''} options={options.lob} onChange={set} />
         <Select
           filterKey="disposition"
           value={filters.disposition ?? ''}
@@ -297,6 +327,7 @@ export function FilterBar() {
         />
         <Select filterKey="roadmap" value={filters.roadmap ?? ''} options={options.roadmap} onChange={set} />
         <Select filterKey="band" value={filters.band ?? ''} options={options.band} onChange={set} />
+        <EaiFilter value={filters.eai ?? ''} onChange={(value) => set('eai', value)} />
 
         <label className="flex items-center gap-2 pb-1.5 text-[13px] text-ink-2">
           <input
@@ -382,6 +413,35 @@ export function ActiveFilters() {
         View the filtered portfolio
       </Link>
     </div>
+  );
+}
+
+/**
+ * El codigo EAI se escribe, no se elige: con cientos de aplicaciones una lista no
+ * sirve. Se aplica al salir del campo o con Enter, no con cada tecla.
+ */
+function EaiFilter({ value, onChange }: { value: string; onChange: (value: string | undefined) => void }) {
+  const apply = (raw: string) => {
+    const next = raw.trim();
+    if (next !== value) onChange(next || undefined);
+  };
+
+  return (
+    <label className="flex flex-col gap-1">
+      <Label>{FILTER_LABELS.eai}</Label>
+      <input
+        key={value}
+        defaultValue={value}
+        inputMode="numeric"
+        placeholder="Any"
+        maxLength={100}
+        onBlur={(event) => apply(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') apply(event.currentTarget.value);
+        }}
+        className="w-[7rem] rounded-sm border border-rule bg-surface px-2 py-1.5 font-mono text-[13px] text-ink"
+      />
+    </label>
   );
 }
 

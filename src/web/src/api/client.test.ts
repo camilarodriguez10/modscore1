@@ -95,4 +95,17 @@ describe('api client', () => {
     );
     expect(fetchMock.mock.calls[1]?.[0]).toBe('/api/insights');
   });
+
+  it('asks for the dashboard with the new filters and the heatmap axis', async () => {
+    const fetchMock = respond(200, {});
+
+    await api.dashboard({ region: 'LATAM', capability: 'Claims Management', status: 'Active', eai: '14381' }, 'cio');
+    await api.dashboard({ cre: 'B. Cardoso' }, 'country');
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      '/api/dashboard?region=LATAM&capability=Claims+Management&status=Active&eai=14381&axis=cio',
+    );
+    // El eje por defecto no se escribe: el enlace queda igual al de antes.
+    expect(fetchMock.mock.calls[1]?.[0]).toBe('/api/dashboard?cre=B.+Cardoso');
+  });
 });

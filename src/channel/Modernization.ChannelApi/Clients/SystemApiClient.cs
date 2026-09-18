@@ -175,6 +175,27 @@ public sealed class SystemApiClient(HttpClient http, IHttpClientFactory clients)
         return GetRequiredAsync<InsightsResponse>(url, cancellationToken);
     }
 
+    /// <summary>
+    /// El dashboard ejecutivo sobre el mismo recorte que el inventario. El eje del mapa
+    /// de calor viaja aparte: es una forma de mirar, no un filtro.
+    /// </summary>
+    public Task<DashboardResponse> GetDashboardAsync(
+        ApplicationQuery? query = null,
+        string? axis = null,
+        CancellationToken cancellationToken = default)
+    {
+        var parts = new List<string>(query?.FilterParts() ?? []);
+
+        if (!string.IsNullOrWhiteSpace(axis))
+        {
+            parts.Add("axis=" + Uri.EscapeDataString(axis));
+        }
+
+        var url = parts.Count == 0 ? "/system/dashboard" : "/system/dashboard?" + string.Join('&', parts);
+
+        return GetRequiredAsync<DashboardResponse>(url, cancellationToken);
+    }
+
     public Task<LeverCatalogResponse?> GetLeversAsync(string eaiCode, CancellationToken cancellationToken = default)
         => GetOrNullAsync<LeverCatalogResponse>(
             $"/system/applications/{Uri.EscapeDataString(eaiCode)}/whatif/levers",
@@ -430,6 +451,11 @@ public sealed record ApplicationQuery
     public string? Lob { get; init; }
     public string? Country { get; init; }
     public string? Cio { get; init; }
+    public string? Cre { get; init; }
+    public string? Region { get; init; }
+    public string? Status { get; init; }
+    public string? Capability { get; init; }
+    public string? EaiCode { get; init; }
     public string? Disposition { get; init; }
     public string? Roadmap { get; init; }
 
@@ -446,12 +472,17 @@ public sealed record ApplicationQuery
     /// </summary>
     internal IReadOnlyList<string> FilterParts()
     {
-        var parts = new List<string>(6);
+        var parts = new List<string>(12);
 
         // Todo valor de usuario se codifica antes de entrar a la URL.
         Add(parts, "lob", Lob);
         Add(parts, "country", Country);
         Add(parts, "cio", Cio);
+        Add(parts, "cre", Cre);
+        Add(parts, "region", Region);
+        Add(parts, "status", Status);
+        Add(parts, "capability", Capability);
+        Add(parts, "eai", EaiCode);
         Add(parts, "disposition", Disposition);
         Add(parts, "roadmap", Roadmap);
         Add(parts, "band", Band);

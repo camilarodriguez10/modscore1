@@ -51,10 +51,11 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
   - SPA unit tests and end-to-end tests.
   - Contract test between the C# view models and the TypeScript types.
   - Git repository with backup scripts, and a portable package to test on other machines.
+- **Executive dashboard** (2026-09-18, phases D1 and D2): `/dashboard`, *Portfolio Health & Risk Intelligence*, built from the *EA Data & Insights – MVP Proposal*. Five KPIs, one panel per portfolio question and one shared detail table. Every definition the proposal leaves open has a default in `contracts/dashboard-v1.json`, flagged as provisional on screen (DD-01 … DD-07). Five more filters on every screen: CRE, Region, App Status, Primary Capability and EAI Code.
 - **Tests**:
-  - 696 .NET tests: 214 engine, 178 contracts, 304 API.
-  - 39 SPA unit tests.
-  - 22 end-to-end scenarios: 10 flows and 12 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
+  - 737 .NET tests: 242 engine, 178 contracts, 317 API.
+  - 47 SPA unit tests.
+  - 30 end-to-end scenarios: 14 flows and 16 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
   - Zero vulnerable packages, and `npm audit` is clean.
 
 ### What needs the team
@@ -65,8 +66,9 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 | Platform and architecture | PA-01 … PA-09 | PA-01 (target and database engine) and PA-02 (authentication through APIM) are P0 |
 | Security | SEC-01 … SEC-24 | SEC-19 and SEC-20 are P0 (SEC-21 was decided on 2026-09-15); ASVS partials are P1; H-16/H-17/H-20/H-21 deferred to the last phase by decision |
 | Technical debt | TD-01 … TD-15 | None blocks. TD-05 done and TD-04 automated on 2026-09-15; TD-06, TD-08 and TD-09 closed on 2026-09-16 |
-| Product follow-ups | PF-01 … PF-06 | No |
+| Product follow-ups | PF-01 … PF-08 | No |
 | Data that would sharpen the portfolio answers | DQ-01 … DQ-07 | No. The six questions are already answered with today's sources; these make two of the answers real instead of indicative |
+| Executive dashboard definitions | DD-01 … DD-07 | Not for production, but DD-01 … DD-03 should be settled before the dashboard is shown to leadership as more than a draft: they drive the headline KPIs and the prioritization matrix |
 | Operations | OP-01 … OP-05 | No. The first push was done on 2026-09-15; OP-04 (branch protection and repository settings) is P1 |
 
 ### All items at a glance
@@ -129,6 +131,8 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 | PF-04 | Excel (XLSX) exports | Product | P3 | Product | Decision needed |
 | PF-05 | Compare rules for a group of applications (LOB, country) | Product | P3 | Product | Open |
 | PF-06 | Rules change history per application | Product | P3 | Product | Open |
+| PF-07 | KPI dictionary and portal editing of the dashboard definitions (dashboard phase D3) | Product | P2 | Product + enterprise architecture | Open |
+| PF-08 | EA Value Evidence Register | Product | P3 | Enterprise architecture | Decision needed |
 | DQ-01 | Application class column, as the business words the question | Data | P2 | EAI master owner + enterprise architecture | Decision needed |
 | DQ-02 | Estimated cost or effort per application | Data / product | P1 | Application owners + finance | Decision needed |
 | DQ-03 | Business value of an application (revenue, volume, tier) | Data / product | P2 | Business owners | Decision needed |
@@ -136,6 +140,13 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 | DQ-05 | End-of-life and end-of-support dates of components | Data | P2 | RPT / architecture repository owner | Decision needed |
 | DQ-06 | Incident and availability history | Data | P2 | Operations | Decision needed |
 | DQ-07 | Hosting and migration status beyond the cloud flags | Data | P3 | Platform | Decision needed |
+| DD-01 | Currency Score and the legacy threshold X | Dashboard definitions | P1 | CMT owner + enterprise architecture | Decision needed |
+| DD-02 | Risk Score formula and risk levels | Dashboard definitions | P1 | Enterprise architecture + security | Decision needed |
+| DD-03 | Criticality, opportunity and the candidate quadrant | Dashboard definitions | P1 | Business owner of the score + enterprise architecture | Decision needed |
+| DD-04 | Complexity dimensions and their thresholds | Dashboard definitions | P2 | Enterprise architecture | Decision needed |
+| DD-05 | Resilience levels (Stability Scoring concepts) | Dashboard definitions | P2 | Operations + resilience owner | Decision needed |
+| DD-06 | Health band names and cut-offs: mockup vs model | Dashboard definitions | P2 | Business owner of the score | Decision needed |
+| DD-07 | Tech Debt KPI, and whether the dashboard becomes the home page | Dashboard definitions | P3 | Product | Decision needed |
 | OP-01 | Runbook walkthrough with operations | Operations | P1 | Operations | Open |
 | OP-02 | Backups of the data volume and the rules store | Operations | P1 | Operations | Open |
 | OP-03 | Upload retention policy | Operations / compliance | P1 | Data owners + compliance | Decision needed |
@@ -909,6 +920,7 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
 
 ### PF-03 — Currency Score KPI
 - **Priority:** P3 · **Owner:** product · **Status:** Blocked by SR-02
+- **Update 2026-09-18:** the executive dashboard already shows a provisional Currency Score (share of *Modern* components reported by CMT). Settling SR-02 and DD-01 settles this item too.
 - **Effort:** S–M.
 
 ### PF-04 — Excel (XLSX) exports
@@ -925,6 +937,19 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
 - **Priority:** P3 · **Owner:** product · **Status:** Open
 - **Context:** An application's screen could list how each published rules version changed its score. It would reuse the comparison.
 - **Effort:** S.
+
+### PF-07 — KPI dictionary and portal editing of the dashboard definitions
+- **Priority:** P2 · **Owner:** product + enterprise architecture · **Status:** Open
+- **Context:** Step 3 of the MVP proposal asks for a KPI dictionary: owner, definition, formula, source, frequency and quality control for each indicator. The definitions live today in `contracts/dashboard-v1.json` and change with a deployment.
+- **Proposal (dashboard phase D3):** one page per indicator with those six fields, and the definitions file as a new section of the versioned rules, edited from the portal with the same draft → impact → publish flow.
+- **Acceptance criteria:** no indicator without its six fields; changing a threshold from the portal moves the dashboard without a deployment.
+- **Effort:** M.
+
+### PF-08 — EA Value Evidence Register
+- **Priority:** P3 · **Owner:** enterprise architecture · **Status:** Decision needed
+- **Context:** Step 7 of the MVP proposal: a register of architecture decisions and the value they delivered. It is a recording and tracking tool, not a view over the current sources, so it was left out of the dashboard plan (PLAN §8.10).
+- **Question:** is it in scope for this platform, and who records the evidence?
+- **Effort:** M–L; it needs its own plan.
 
 ---
 
@@ -978,6 +1003,75 @@ roadmap catalog. Nothing below blocks an answer; each item turns one answer from
 - **Context:** The sources carry `Cloud Indicator`, `Cloud Type`, `Cloud Vendor` and `Containerized`. A migration state (on-premises, IaaS, PaaS, SaaS, in flight, with a target date) would let the obsolescence and priority answers separate "old and staying" from "old and already being replaced".
 - **What it changes:** avoids proposing work on applications a migration will retire anyway.
 - **Effort:** S–M.
+
+---
+
+## 5ter. Executive dashboard definitions
+
+The executive dashboard (`/dashboard`, PLAN §8.10) follows the *EA Data & Insights – MVP
+Proposal (DRAFT)*. The proposal fixes the shape of each panel but leaves many definitions
+open: "*Rules & Matrix to be defined globally*", "*Currency Score < X*", "*see available
+concepts for Currency / Stability Scoring*", and several TBD dimensions. Each one has a
+default in `contracts/dashboard-v1.json` so the dashboard works today, and the screen marks
+it as provisional. The reasoning is in
+[ADR 0024](adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md).
+
+The figures quoted below come from the dummy portfolio (250 applications, seven
+capabilities, three countries). They are not findings about the real portfolio; they show
+where a default saturates or leaves a level empty.
+
+### DD-01 — Currency Score and the legacy threshold X
+- **Priority:** P1 · **Owner:** CMT owner + enterprise architecture · **Status:** Decision needed
+- **Context:** The proposal defines *Legacy Platforms* as "Currency Score < X", and the *Currency Exposure* KPI stands in for EOS/EOL until TLM is a source. Neither the Currency Score nor X is defined (see SR-02).
+- **Default:** Currency Score = share of *Modern* components among all components CMT reports for the application; legacy below 50.
+- **On dummy data:** 36 % of the applications with CMT data are legacy (82 of 230).
+- **Question:** is the Currency Score this ratio, or a weighted score of the currency concepts? What is X?
+- **Acceptance criteria:** a written definition and X, entered in `currency` of the definitions file.
+- **Effort:** S if it is a ratio or a threshold; M if it is a new formula.
+
+### DD-02 — Risk Score formula and risk levels
+- **Priority:** P1 · **Owner:** enterprise architecture + security · **Status:** Decision needed
+- **Context:** Question 4 draws a 0–100 Risk Score per application, in a heatmap and as bubble size. It is not the risk index of the Insights screen, which ranks groups by weighted counts.
+- **Default:** the *Modernization Risk Vectors* pillar inverted and rescaled: (100 − pillar) ÷ 80 × 100. Levels from the mockup: below 40 low, 40–59 moderate, 60–79 high, 80 and above critical. The concentration index is the share of total risk carried by the top 20 % of heatmap cells.
+- **Question:** is the pillar the right base, or should the Risk Score combine SCA flaws, Kenna and currency with its own weights? Are the mockup levels final?
+- **Effort:** S for levels; M for a new formula.
+
+### DD-03 — Criticality, opportunity and the candidate quadrant
+- **Priority:** P1 · **Owner:** business owner of the score + enterprise architecture · **Status:** Decision needed
+- **Context:** Question 2 plots business criticality against modernization opportunity, with "*Rules & Matrix to be defined globally*".
+- **Default:** criticality 0–3. Very high: critical and broad; high: critical; medium: broad; low: the rest. Broad means a significant user base (the roadmap catalog threshold) or three or more capabilities. Opportunity 0–3 from the uplift of the application's own roadmap: below 5, 5–10, 10–20, 20 and above. Candidates: both at high or very high.
+- **On dummy data:** the *high* criticality row is empty, because every critical application is also broad.
+- **Question:** which attributes define criticality (a tier from the business would replace the proxy, DQ-03), and does opportunity include effort once DQ-02 exists?
+- **Effort:** S for thresholds; M if new attributes are needed.
+
+### DD-04 — Complexity dimensions and their thresholds
+- **Priority:** P2 · **Owner:** enterprise architecture · **Status:** Decision needed
+- **Context:** Question 3 asks for six dimensions. The refinement defines two (*Legacy Platforms* = Currency Score < X; *Tech Debt* = open technical debts); the rest are TBD.
+- **Default:** legacy platforms (DD-01); duplicate technologies = a capability with three or more applications in the same country; technical debt = Tech Debt Score in its worst band, because the open-debts source does not exist yet; technology proliferation = a capability written in three or more languages. *Shared dependencies* and *other complexity* wait for a source (DQ-04).
+- **On dummy data:** duplicate technologies and technology proliferation mark all 250 applications: at these thresholds, seven capabilities across three countries cannot be told apart.
+- **Question:** the definition and threshold of each dimension, and whether *application class* (DQ-01) replaces the capability.
+- **Effort:** S for thresholds; M per new source.
+
+### DD-05 — Resilience levels (Stability Scoring concepts)
+- **Priority:** P2 · **Owner:** operations + resilience owner · **Status:** Decision needed
+- **Context:** Question 6 refers to "available concepts for Stability Scoring", which did not arrive.
+- **Default:** recovery from DR scope and RTO (moderate from 24 h, high from 48 h, critical without DR); operational vulnerability from the operational score (below 80, 60 and 40) and monitoring; the application takes its worst dimension. Availability, critical dependencies and single points of failure wait for a source (DQ-06, DQ-04).
+- **On dummy data:** 77 % of the applications with data have high or critical gaps.
+- **Question:** the Stability Scoring concepts and their cut-offs.
+- **Effort:** S–M.
+
+### DD-06 — Health band names and cut-offs: mockup vs model
+- **Priority:** P2 · **Owner:** business owner of the score · **Status:** Decision needed
+- **Context:** The mockup uses *Healthy 80–100, Monitor 60–79, At Risk 40–59, Critical < 40*. The platform uses the model bands (*Solid 85–100, Acceptable 70–85, At risk 50–70, Critical 20–50*), which the rest of the site shows too.
+- **Default:** the model bands, so the dashboard and the other screens agree.
+- **Question:** adopt the mockup bands everywhere, keep the model bands, or use the mockup bands only on the dashboard (not recommended: "At risk" would mean two things on one site).
+- **Effort:** S.
+
+### DD-07 — Tech Debt KPI, and whether the dashboard becomes the home page
+- **Priority:** P3 · **Owner:** product · **Status:** Decision needed
+- **Context:** The refinement leaves the Tech Debt KPI in doubt and Governance Adoption out. The dashboard is the first tab, but `/` still opens the portfolio grid.
+- **Default:** five KPIs without Tech Debt; the portfolio stays at `/`.
+- **Effort:** S.
 
 ---
 

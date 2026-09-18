@@ -129,6 +129,15 @@ export function useInsights(
   });
 }
 
+/** El dashboard ejecutivo, con el filtro de la barra y el eje elegido. */
+export function useDashboard(filters: PortfolioFilters = {}, axis = 'country') {
+  return useQuery({
+    queryKey: ['dashboard', filters, axis],
+    queryFn: () => api.dashboard(filters, axis),
+    placeholderData: (previous) => previous,
+  });
+}
+
 export function useWhatIfLab(eaiCode: string) {
   return useQuery({
     queryKey: ['whatif', eaiCode],

@@ -36,28 +36,13 @@ public static class InsightsEndpoints
     private static async Task<IResult> GetInsights(
         PortfolioService portfolio,
         PortfolioScope scope,
+        [AsParameters] FilterParameters filters,
         CancellationToken cancellationToken,
-        string? lob = null,
-        string? country = null,
-        string? cio = null,
-        string? disposition = null,
-        string? roadmap = null,
-        string? band = null,
-        bool? criticalOnly = null,
         int? duplicates = null,
         int? top = null,
         DateOnly? startDate = null)
     {
-        var filter = new ApplicationFilter
-        {
-            Lob = lob,
-            Country = country,
-            Cio = cio,
-            Disposition = disposition,
-            Roadmap = roadmap,
-            Band = band,
-            CriticalOnly = criticalOnly,
-        };
+        var filter = filters.ToFilter();
 
         if (filter.Validate() is { } invalid)
         {

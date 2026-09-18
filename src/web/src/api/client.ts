@@ -1,6 +1,7 @@
 import type {
   ExplainView,
   LeverSelection,
+  DashboardView,
   InsightsView,
   LineageView,
   PortfolioFilters,
@@ -125,6 +126,11 @@ function buildFilterQuery(filters: PortfolioFilters): URLSearchParams {
   if (filters.roadmap) params.set('roadmap', filters.roadmap);
   if (filters.band) params.set('band', filters.band);
   if (filters.criticalOnly) params.set('criticalOnly', 'true');
+  if (filters.region) params.set('region', filters.region);
+  if (filters.cre) params.set('cre', filters.cre);
+  if (filters.capability) params.set('capability', filters.capability);
+  if (filters.status) params.set('status', filters.status);
+  if (filters.eai) params.set('eai', filters.eai);
 
   return params;
 }
@@ -205,6 +211,17 @@ export const api = {
     if (groupBy) params.set('groupBy', groupBy);
 
     return request<PortfolioRoadmapView>(`/api/roadmap${withQuery(params)}`);
+  },
+
+  /**
+   * El dashboard ejecutivo. El eje del mapa de calor viaja aparte de los filtros:
+   * es una forma de mirar, no un recorte.
+   */
+  dashboard: (filters: PortfolioFilters = {}, axis?: string) => {
+    const params = buildFilterQuery(filters);
+    if (axis && axis !== 'country') params.set('axis', axis);
+
+    return request<DashboardView>(`/api/dashboard${withQuery(params)}`);
   },
 
   /**

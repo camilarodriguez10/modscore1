@@ -45,7 +45,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-696 pruebas .NET: 214 del motor, 178 de contratos y 304 de API. Las dos que importan más
+737 pruebas .NET: 242 del motor, 178 de contratos y 317 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **EAI 14381 = 79,67:** ejemplo trabajado del BRD, derivado desde datos crudos por el
@@ -56,8 +56,8 @@ reproducen los casos documentados:
 TypeScript difieren.
 
 ```bash
-npm --prefix src/web test          # 39 pruebas unitarias (Vitest)
-npm --prefix src/web run test:e2e  # 22 escenarios: 10 de flujo y 12 de accesibilidad (axe)
+npm --prefix src/web test          # 47 pruebas unitarias (Vitest)
+npm --prefix src/web run test:e2e  # 30 escenarios: 14 de flujo y 16 de accesibilidad (axe)
 ```
 
 Las de punta a punta usan el Microsoft Edge instalado (no descargan navegadores) y levantan
@@ -96,7 +96,10 @@ fases anteriores (`/aplicaciones/…`, `/datos`) redirigen a las nuevas (`/appli
 `/data`), así que un enlace guardado no se rompe.
 
 Los filtros viven en la URL, así que una vista filtrada se comparte copiando el
-enlace: `/roadmap?country=Mexico&groupBy=cio`. Cada estadística es un filtro —un clic
+enlace: `/roadmap?country=Mexico&groupBy=cio`. Son los del dashboard del Modernization
+Score: `region`, `country`, `cio`, `cre`, `capability` (capacidad primaria), `status`
+(estado de la aplicación), `eai` (código EAI), `critical`, más `lob`, `disposition`,
+`roadmap` y `band`. Cada estadística es un filtro —un clic
 en «Mexico» acota todas las pantallas— y el filtro sigue puesto al cambiar de menú.
 Un filtro solo acota dentro del alcance del usuario: quien abre el enlace ve lo que
 su alcance permite, nunca más.
@@ -104,6 +107,35 @@ su alcance permite, nunca más.
 En **Datos**, los exports se suben con cualquier nombre: cada archivo se reconoce por
 su encabezado. Si un encabezado encaja en dos fuentes, la pantalla muestra lo que leyó
 y deja asignar la fuente a mano.
+
+## El dashboard ejecutivo
+
+La pestaña **Dashboard** (`/dashboard`, la primera del menú) es la vista para dirección,
+*Portfolio Health & Risk Intelligence*. Responde una pregunta —dónde se concentra el
+riesgo y la oportunidad de modernización, por qué, y qué decisión de arquitectura hace
+falta— con cinco indicadores y un panel por cada una de las seis preguntas:
+
+| Panel | Qué muestra |
+|---|---|
+| Indicadores | Health Score, aplicaciones en riesgo, candidatas a modernizar, exposición de *currency* (EOS/EOL redefinido) y huecos de resiliencia, con su tendencia por carga |
+| 1 · Salud | Mapa de calor de capacidad primaria contra región, país, CIO o disposición objetivo; reparto por tramo; tendencia |
+| 2 · Prioridad | Matriz criticidad × oportunidad (burbuja = riesgo) y el top 10 |
+| 3 · Complejidad | Seis dimensiones en un treemap —las que aún no tienen fuente, punteadas— y cuatro oportunidades de reducción |
+| 4 · Riesgo | El mismo mapa de calor midiendo riesgo, el top 5 y el índice de concentración |
+| 5 · Obsolescencia | Qué conceptos explican los puntos perdidos y cuánto pesa la vigencia tecnológica |
+| 6 · Resiliencia | Nivel por dimensión y por aplicación; las dimensiones sin fuente se dicen como tales |
+
+Cada celda, burbuja, barra o indicador abre el mismo detalle lateral, con los mismos
+campos en todos los paneles. El eje del mapa de calor viaja en la URL junto a los
+filtros: `/dashboard?region=LATAM&axis=cio`.
+
+**Las definiciones son provisionales.** Lo que la propuesta deja por definir —Currency
+Score y su umbral, Risk Score, niveles de criticidad y oportunidad, cortes de resiliencia—
+tiene un default en `contracts/dashboard-v1.json`, y la pantalla lo marca con un chip.
+El porqué de cada default está en
+[ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md) y las
+decisiones abiertas, en [PLAN.md §8.10](PLAN.md). El mismo análisis está en
+`GET /api/dashboard`.
 
 ## Las seis preguntas del portafolio
 
@@ -344,6 +376,7 @@ HANDOFF.md                      traspaso completo del contexto
 | 14 Verificación de seguridad (ASVS L2) | en curso: hecho lo que no necesita un entorno real (PLAN §8.7) |
 | 15 Autenticación con APIM | en curso: código listo y probado con dobles; falta el emisor real (PLAN §8.8) |
 | Pantalla 09 — las seis preguntas | entregada (PLAN §8.9) |
+| Dashboard ejecutivo | D1 y D2 entregadas; D3 (diccionario y edición desde el portal) y D4 (fuentes nuevas) planificadas (PLAN §8.10) |
 | 16 Escala y operación | planificada |
 | 17 Hallazgos de infraestructura (H-16, H-17, H-20, H-21) | planificada, al final por decisión |
 

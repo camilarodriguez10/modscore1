@@ -71,6 +71,9 @@ public static class ChannelEndpoints
         api.MapGet("/roadmap", GetPortfolioRoadmap)
             .WithSummary("Pantalla 06 — el portafolio visto por disposition y roadmap.");
 
+        api.MapGet("/dashboard", GetDashboard)
+            .WithSummary("Dashboard ejecutivo — las seis preguntas en una vista, con los mismos filtros.");
+
         api.MapGet("/insights", GetInsights)
             .WithSummary("Pantalla 09 — las seis preguntas del portafolio, con los mismos filtros.");
 
@@ -174,14 +177,8 @@ public static class ChannelEndpoints
 
     private static async Task<IResult> GetPortfolio(
         ScreenComposer composer,
+        [AsParameters] FilterParameters filters,
         CancellationToken cancellationToken,
-        string? lob = null,
-        string? country = null,
-        string? cio = null,
-        string? disposition = null,
-        string? roadmap = null,
-        string? band = null,
-        bool? criticalOnly = null,
         int page = 1,
         int pageSize = 50)
     {
@@ -194,24 +191,13 @@ public static class ChannelEndpoints
                 $"'page' must be 1 or greater and 'pageSize' must be between 1 and {MaxPageSize}.");
         }
 
-        if (InvalidFilters(lob, country, cio, disposition, roadmap, band) is { } problem)
+        if (InvalidFilters(filters) is { } problem)
         {
             return problem;
         }
 
         var view = await composer.ComposePortfolioAsync(
-            new ApplicationQuery
-            {
-                Lob = lob,
-                Country = country,
-                Cio = cio,
-                Disposition = disposition,
-                Roadmap = roadmap,
-                Band = band,
-                CriticalOnly = criticalOnly,
-                Page = page,
-                PageSize = pageSize,
-            },
+            filters.ToQuery(page, pageSize),
             cancellationToken).ConfigureAwait(false);
 
         return Results.Ok(view);
@@ -223,15 +209,13 @@ public static class ChannelEndpoints
     /// aplica sobre un conjunto ya recortado, asi que ninguna combinacion de estos
     /// parametros amplia lo que se ve (ADR 0012).
     /// </summary>
-    internal static IResult? InvalidFilters(
-        string? lob,
-        string? country,
-        string? cio,
-        string? disposition,
-        string? roadmap,
-        string? band)
+    internal static IResult? InvalidFilters(FilterParameters filters)
     {
-        if (new[] { lob, country, cio, disposition, roadmap, band }.Any(f => f is { Length: > MaxFilterLength }))
+        ArgumentNullException.ThrowIfNull(filters);
+
+        var band = filters.Band;
+
+        if (filters.TextValues.Any(f => f is { Length: > MaxFilterLength }))
         {
             return ApiProblem.Create(
                 StatusCodes.Status400BadRequest,
@@ -448,33 +432,18 @@ public static class ChannelEndpoints
     /// </summary>
     private static async Task<IResult> GetInsights(
         SystemApiClient system,
+        [AsParameters] FilterParameters filters,
         CancellationToken cancellationToken,
-        string? lob = null,
-        string? country = null,
-        string? cio = null,
-        string? disposition = null,
-        string? roadmap = null,
-        string? band = null,
-        bool? criticalOnly = null,
         int? duplicates = null,
         int? top = null)
     {
-        if (InvalidFilters(lob, country, cio, disposition, roadmap, band) is { } problem)
+        if (InvalidFilters(filters) is { } problem)
         {
             return problem;
         }
 
         var insights = await system.GetInsightsAsync(
-            new ApplicationQuery
-            {
-                Lob = lob,
-                Country = country,
-                Cio = cio,
-                Disposition = disposition,
-                Roadmap = roadmap,
-                Band = band,
-                CriticalOnly = criticalOnly,
-            },
+            filters.ToQuery(),
             duplicates,
             top,
             cancellationToken).ConfigureAwait(false);
@@ -482,17 +451,42 @@ public static class ChannelEndpoints
         return Results.Ok(insights);
     }
 
+    /// <summary>
+    /// El dashboard ejecutivo. Igual que las seis preguntas, la capa Channel no calcula
+    /// nada: valida los filtros, pregunta y entrega.
+    /// </summary>
+    private static async Task<IResult> GetDashboard(
+        SystemApiClient system,
+        [AsParameters] FilterParameters filters,
+        CancellationToken cancellationToken,
+        string? axis = null)
+    {
+        if (InvalidFilters(filters) is { } problem)
+        {
+            return problem;
+        }
+
+        // El eje se valida en el borde, como los filtros: un eje desconocido es un 400
+        // para quien lo pidio, no un fallo de la capa System que se vuelva un 500.
+        if (axis is not null && !Modernization.Insights.DashboardOptions.Axes.Contains(axis, StringComparer.Ordinal))
+        {
+            return ApiProblem.Create(
+                StatusCodes.Status400BadRequest,
+                "invalid-axis",
+                "Invalid axis",
+                $"The heatmap axes are: {string.Join(", ", Modernization.Insights.DashboardOptions.Axes)}.");
+        }
+
+        var dashboard = await system.GetDashboardAsync(filters.ToQuery(), axis, cancellationToken).ConfigureAwait(false);
+
+        return Results.Ok(dashboard);
+    }
+
     private static async Task<IResult> GetPortfolioRoadmap(
         RoadmapComposer composer,
+        [AsParameters] FilterParameters filters,
         CancellationToken cancellationToken,
-        string? groupBy = null,
-        string? lob = null,
-        string? country = null,
-        string? cio = null,
-        string? disposition = null,
-        string? roadmap = null,
-        string? band = null,
-        bool? criticalOnly = null)
+        string? groupBy = null)
     {
         if (groupBy is not null && !Groupings.Contains(groupBy, StringComparer.OrdinalIgnoreCase))
         {
@@ -503,22 +497,13 @@ public static class ChannelEndpoints
                 $"The available groupings are: {string.Join(", ", Groupings)}.");
         }
 
-        if (InvalidFilters(lob, country, cio, disposition, roadmap, band) is { } problem)
+        if (InvalidFilters(filters) is { } problem)
         {
             return problem;
         }
 
         var view = await composer.ComposePortfolioAsync(
-            new ApplicationQuery
-            {
-                Lob = lob,
-                Country = country,
-                Cio = cio,
-                Disposition = disposition,
-                Roadmap = roadmap,
-                Band = band,
-                CriticalOnly = criticalOnly,
-            },
+            filters.ToQuery(),
             groupBy,
             cancellationToken).ConfigureAwait(false);
 

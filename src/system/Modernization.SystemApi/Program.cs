@@ -247,6 +247,7 @@ app.MapSystemEndpoints();
 app.MapWhatIfEndpoints();
 app.MapRoadmapEndpoints();
 app.MapInsightsEndpoints();
+app.MapDashboardEndpoints();
 app.MapIngestionEndpoints();
 app.MapRulesEndpoints();
 

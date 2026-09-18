@@ -20,6 +20,21 @@ public sealed record ApplicationFilter
     public string? Lob { get; init; }
     public string? Country { get; init; }
     public string? Cio { get; init; }
+
+    /// <summary>Director de arquitectura (CRE / AD Director) del maestro EAI.</summary>
+    public string? Cre { get; init; }
+
+    public string? Region { get; init; }
+
+    /// <summary>Estado de la aplicacion en el maestro EAI: "Active", "Sunset"...</summary>
+    public string? Status { get; init; }
+
+    /// <summary>Capacidad de negocio primaria (L1 Business Capability).</summary>
+    public string? Capability { get; init; }
+
+    /// <summary>Codigo EAI exacto: la vista de una sola aplicacion dentro del filtro.</summary>
+    public string? EaiCode { get; init; }
+
     public string? Disposition { get; init; }
     public string? Roadmap { get; init; }
 
@@ -41,7 +56,7 @@ public sealed record ApplicationFilter
     /// <summary>Motivo por el que el filtro es invalido, o null si esta bien formado.</summary>
     public string? Validate()
     {
-        foreach (var value in new[] { Lob, Country, Cio, Disposition, Roadmap, Band })
+        foreach (var value in new[] { Lob, Country, Cio, Cre, Region, Status, Capability, EaiCode, Disposition, Roadmap, Band })
         {
             if (value is { Length: > MaxLength })
             {
@@ -64,6 +79,11 @@ public sealed record ApplicationFilter
         return Matches(application.Lob, Lob)
             && Matches(application.Country, Country)
             && Matches(application.Cio, Cio)
+            && Matches(application.Cre, Cre)
+            && Matches(application.Region, Region)
+            && Matches(application.ApplicationStatus, Status)
+            && Matches(application.PrimaryBusinessCapability, Capability)
+            && Matches(application.EaiCode, EaiCode)
             && MatchesMaps(
                 application.Disposition?.ToString(),
                 application.Disposition is { } disposition ? MapsNames.Display(disposition) : null,

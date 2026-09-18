@@ -77,15 +77,9 @@ public static class RoadmapEndpoints
     private static async Task<IResult> GetPortfolio(
         PortfolioService portfolio,
         PortfolioScope scope,
+        [AsParameters] FilterParameters filters,
         CancellationToken cancellationToken,
         string? groupBy = null,
-        string? lob = null,
-        string? country = null,
-        string? cio = null,
-        string? disposition = null,
-        string? roadmap = null,
-        string? band = null,
-        bool? criticalOnly = null,
         DateOnly? startDate = null)
     {
         if (!TryReadGrouping(groupBy, out var grouping))
@@ -97,16 +91,7 @@ public static class RoadmapEndpoints
                 "Unknown grouping. Options: portfolio, application, country, cio, lob, disposition, roadmap.");
         }
 
-        var filter = new ApplicationFilter
-        {
-            Lob = lob,
-            Country = country,
-            Cio = cio,
-            Disposition = disposition,
-            Roadmap = roadmap,
-            Band = band,
-            CriticalOnly = criticalOnly,
-        };
+        var filter = filters.ToFilter();
 
         if (filter.Validate() is { } invalid)
         {

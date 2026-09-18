@@ -563,6 +563,8 @@ tests corre igual contra el tercer adaptador.
 | **14 — Verificación de seguridad (ASVS L2)** 🟡 | EN CURSO | Lo que no necesita infraestructura, hecho el 2026-09-15 (ver 8.7): pipeline verde, auditoría de validaciones rechazadas, retención de cargas, decisión sobre validación de esquema, controles compensatorios de aislamiento, y accesibilidad y e2e en el CI. Falta el entorno de prueba para los once parciales restantes y la revisión por otra persona | **Parcial:** ASVS pasa de 103 a 106 cumple y de 14 a 11 parciales; los que quedan dependen de cluster, IdP, ingress y gestor de secretos |
 | **15 — Autenticación con APIM** 🟡 | EN CURSO | Opción C con A elegida el 2026-09-16 ([ADR 0022](docs/adr/0022-la-credencial-entre-capas-es-conectable.md)): credencial conectable, validación del JWT en la capa System, modo `Both` para cambiar sin corte, reautenticación de APIM y alcance desde grupos (ver 8.8) | **Parcial:** el código está probado con dobles; cerrar H-16 espera a que APIM emita los tokens y el secreto salga del gestor |
 | **Pantalla 09 — las seis preguntas** ✅ | ENTREGADA | Pedida el 2026-09-16, fuera de la numeración de fases: salud, prioridades, complejidad, riesgo, obsolescencia y resiliencia en una vista con los mismos filtros (ver 8.9) | **Cumplido:** las seis se responden con las fuentes actuales; 14 pruebas del analizador, 14 de API, 4 de Vitest y 4 de punta a punta, más accesibilidad en claro y oscuro |
+| **Dashboard ejecutivo — D1 y D2** ✅ | ENTREGADA | Pedido el 2026-09-18 a partir de la propuesta EA Data & Insights: *Portfolio Health & Risk Intelligence* en `/dashboard`, con cinco indicadores, seis paneles, un detalle común y cinco filtros nuevos (ver 8.10) | **Cumplido:** 28 pruebas del analizador, 13 más en la suite de API, 8 de Vitest y 6 de punta a punta; axe sin violaciones serias en claro y oscuro. Las definiciones abiertas quedan como defaults provisionales (ADR 0024, DD-01 a DD-07) |
+| Dashboard ejecutivo — D3 y D4 | PLANIFICADA | Diccionario de indicadores y edición de las definiciones desde el portal (PF-07); fuentes nuevas: TLM, resiliencia, deudas técnicas, application class, dependencias | Ningún indicador sin sus seis campos; cada fuente encendida convierte un bloque «sin dato» en una medición |
 | **16 — Escala y operación** | 3 sem | Destino y motor de base (RFC-07), Redis, réplicas, respaldos, retención, SIEM, notificaciones de reglas | Dos réplicas por capa bajo carga; restauración probada; alertas activas |
 | **17 — Hallazgos de infraestructura** | 2 sem | **Al final por decisión del 2026-09-14:** H-16, H-17, H-20, H-21 | ASVS 2.10.1, 3.3.4, 7.3.3, 12.4.2 y 14.1.5 cumplen |
 
@@ -1020,6 +1022,89 @@ de Playwright más la revisión con axe en claro y oscuro.
 del roadmap y no de la aplicación, y el valor de negocio es un proxy de tres atributos.
 Los datos que lo cambiarían están en [docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md) como
 **DQ-01 a DQ-07**, con qué respuesta mejora cada uno.
+
+### 8.10 Dashboard ejecutivo — Portfolio Health & Risk Intelligence (plan del 2026-09-18)
+
+**Origen.** La propuesta *EA Data & Insights – MVP Proposal (DRAFT)*, su mockup y sus
+refinamientos, recibidos como 16 capturas. Las capturas quedan fuera del repositorio, igual
+que las del BRD, y la marca de la empresa no se lleva al sitio.
+
+**La pregunta ejecutiva:** *dónde se concentra el riesgo del portafolio y la oportunidad de
+modernización, por qué existe, y qué decisión de arquitectura hace falta.* El dashboard la
+responde con las mismas seis preguntas de la pantalla 09, pero en una sola vista para
+dirección: cinco indicadores arriba, seis paneles, y un detalle al hacer clic que muestra
+los mismos campos en todos los paneles. El mockup tiene siete indicadores; Tech Debt queda a
+decisión y Governance Adoption, fuera.
+
+**Lo que dicen los refinamientos, y que se toma como decidido:**
+
+| Elemento | Refinamiento |
+|---|---|
+| Filtros | Los del dashboard del Modernization Score: CIO, CRE, Region, Country, EAI Code, App Status, Primary Capability y Critical App |
+| Indicadores | Health Score, Apps at Risk y Modernization Candidates, **sí**. EOS/EOL y Resilience, **redefinidos** según sus paneles. Tech Debt, **en duda**. Governance Adoption, **fuera** |
+| Pregunta 1 | Mapa de calor de **Primary Capability contra Region, Country, CIO o Target Disposition**; detalle al hacer clic, **igual en todos los paneles** |
+| Pregunta 2 | Matriz criticidad × oportunidad, tamaño = riesgo. «Rules & Matrix to be defined globally» |
+| Pregunta 3 | Seis dimensiones: *Legacy Platforms* = Currency Score < X; *Tech Debt* = deudas técnicas abiertas; el resto TBD |
+| Pregunta 4 | El mismo mapa de calor de la pregunta 1, midiendo riesgo |
+| Pregunta 5 | Explicar qué causa el riesgo, no solo un score; según los conceptos de **Currency Scoring** |
+| Pregunta 6 | Resiliencia como dimensión propia, según los conceptos de **Stability Scoring** |
+
+**Qué se reutiliza y qué cambia:**
+
+| Panel | Se reutiliza | Se ajusta o es nuevo | Dato que falta |
+|---|---|---|---|
+| Encabezado | Filtros en la URL (ADR 0016), alcance sobre los datos (ADR 0012) | Cinco filtros más: CRE, Region, EAI Code, App Status, Primary Capability | — |
+| Indicadores | Score, tramos, historia de cargas | Cinco indicadores con su tendencia por carga | — |
+| 1 · Salud | Promedio, mediana, tramos, historia | Mapa de calor capacidad × eje elegible; dona de tramos; tendencia | — |
+| 2 · Prioridad | Uplift del roadmap con el motor de what-if | Matriz de burbujas y top 10 con niveles de criticidad, oportunidad y riesgo | Esfuerzo por aplicación (DQ-02) |
+| 3 · Complejidad | Duplicados por país, lenguajes, Eliminate activas | Treemap de seis dimensiones y cuatro oportunidades de reducción | Dependencias compartidas (DQ-04), deudas técnicas abiertas, application class (DQ-01) |
+| 4 · Riesgo | Índice por grupo | Mapa de calor de riesgo, top 5 e índice de concentración de 0 a 1 | — |
+| 5 · Obsolescencia | Puntos perdidos por métrica | Agrupados en conceptos de ciclo de vida y vigencia tecnológica, con el % que explican | Fechas EOS/EOL: TLM (DQ-05) |
+| 6 · Resiliencia | DR, RTO/RPO, monitoreo, score operacional | Niveles por dimensión y por aplicación, distribución y titular | Disponibilidad, puntos únicos de falla, dependencias críticas (DQ-06, DQ-04) |
+| Pie | — | Fuentes conectadas y no conectadas, dichas con esas palabras | TLM, Architectural Assessments, ARB, Resiliency Data |
+
+**Definiciones provisionales.** Todo lo que la propuesta deja en TBD o remite a «conceptos
+disponibles» que no llegaron se implementa como **regla versionada con un default**, en
+`contracts/dashboard-v1.json`, y se documenta en el
+[ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md):
+
+| Concepto | Default | Por qué |
+|---|---|---|
+| Currency Score | % de componentes *Modern* sobre el total que reporta CMT | Es la lectura que SR-02 ya recomendaba: un KPI propio de CMT, fuera del Modernization Score |
+| Legacy Platforms | Currency Score < 50 | La X que pide el refinamiento |
+| Risk Score (0–100, alto = peor) | El pilar *Modernization Risk Vectors* invertido: (100 − pilar) ÷ 80 × 100 | La propuesta asigna ese pilar a la pregunta 4 |
+| Niveles de riesgo | 0–39 bajo · 40–59 moderado · 60–79 alto · 80–100 crítico | Los del mockup |
+| Criticidad de negocio | Muy alta: crítica y con base de usuarios o tres capacidades · Alta: crítica · Media: base de usuarios o tres capacidades · Baja: el resto | Los tres atributos que ya pondera la pantalla 09 |
+| Oportunidad de modernización | Uplift del propio roadmap: < 5 baja · 5–10 media · 10–20 alta · ≥ 20 muy alta | El único impacto medido que existe |
+| Modernization Candidates | Criticidad y oportunidad altas o muy altas: el cuadrante superior derecho | El mockup ubica ahí a los candidatos |
+| Índice de concentración de riesgo | Parte del riesgo total que cargan el 20 % de las celdas con más riesgo | 0,2 es riesgo parejo; 1,0 es todo en pocas celdas |
+| Niveles de resiliencia | Recuperación por DR y RTO; vulnerabilidad operacional por score operacional y monitoreo; el nivel de la aplicación es el peor de sus dimensiones | Los conceptos de Stability que ya tiene el modelo |
+
+**Fases:**
+
+| Fase | Contenido | Criterio de aceptación |
+|---|---|---|
+| **D1 · Modelo, definiciones y filtros** | `contracts/dashboard-v1.json`; `DashboardAnalyzer` como función pura en `Modernization.Insights`; `GET /system/dashboard` y `GET /api/dashboard`; los cinco filtros nuevos en las dos capas; tendencia por carga con el mismo filtro | Cada indicador y panel probado con un portafolio sintético; el alcance de un usuario limitado se respeta; contrato C#↔TS en verde |
+| **D2 · La pantalla** | `/dashboard` como primera pestaña; encabezado con la pregunta ejecutiva y los filtros; cinco indicadores; seis paneles; detalle lateral con los mismos campos en todos; pie de fuentes; claro y oscuro | e2e de las seis preguntas y del detalle; axe sin violaciones serias en claro y oscuro |
+| **D3 · Diccionario y gobierno de las definiciones** | Una página por indicador con dueño, definición, fórmula, fuente, frecuencia y control de calidad —lo que exige el paso 3 de la propuesta—; las definiciones de D1 editables desde el portal como sección nueva de las reglas versionadas | Ningún indicador sin sus seis campos; cambiar un umbral desde el portal mueve el dashboard sin desplegar |
+| **D4 · Fuentes nuevas** | TLM (EOS/EOL), datos de resiliencia, deudas técnicas abiertas, application class, dependencias | Cada fuente encendida convierte un bloque «sin dato» en una medición |
+
+**Estado al 2026-09-18: D1 y D2 entregadas.** El backend suma 28 pruebas del analizador y 13
+en la suite de API; la pantalla, 4 pruebas de flujo y 2 de accesibilidad con el detalle abierto, más
+el barrido de axe en claro y oscuro. axe encontró tres textos bajo 4,5:1 —atenuados con
+`opacity` o en tinta secundaria sobre una tesela teñida— y se corrigieron. D3 queda como
+PF-07 y el registro de evidencia de valor como PF-08, en `docs/PENDING-ITEMS.md`.
+
+**Fuera de este plan:** el *EA Value Evidence Register* (paso 7 de la propuesta), que es una
+herramienta de registro y seguimiento y merece su propio plan; el indicador de gobierno
+(N/A según el refinamiento); y lo que la propuesta deja fuera del MVP.
+
+**Decisiones abiertas, con el default ya implementado** (DD-01 a DD-07 en
+`docs/PENDING-ITEMS.md`, con lo que muestran los datos dummy): el Currency Score y su umbral X;
+la fórmula del Risk Score; los niveles de criticidad y oportunidad; si el indicador de Tech
+Debt se queda; si los tramos de salud adoptan los nombres y cortes del mockup (*Healthy
+80–100, Monitor 60–79, At Risk 40–59, Critical < 40*) o conservan los del modelo; y si el
+dashboard pasa a ser la página de inicio.
 
 ## 8bis. Ampliación solicitada — fases 10 a 12
 

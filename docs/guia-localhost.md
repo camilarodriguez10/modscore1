@@ -51,7 +51,7 @@ equipo con un pendrive, una carpeta compartida o como prefieras.
 archivo y escribe:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\modscore-portable-win-x64-selfcontained-20260916-1524.zip
+Get-FileHash -Algorithm SHA256 .\modscore-portable-win-x64-selfcontained-20260918-0503.zip
 ```
 
 El resultado tiene que coincidir con el SHA-256 que aparece en
@@ -106,7 +106,7 @@ entra con todos los permisos.
 
 ### Paso 5 · comprueba que quedó bien
 
-Tres comprobaciones de treinta segundos:
+Cuatro comprobaciones de treinta segundos:
 
 1. En **Portfolio** tiene que haber una tabla con unas 250 aplicaciones.
 2. Abre `http://localhost:5100/applications/14381/calculation`. El score de esa aplicación
@@ -114,6 +114,9 @@ Tres comprobaciones de treinta segundos:
    si ese número sale, el cálculo está bien de punta a punta.
 3. Abre **Insights** en el menú. Tienen que aparecer las seis preguntas del portafolio, la
    primera con el promedio y la mediana.
+4. Abre **Dashboard**, la primera pestaña. Arriba dice *Portfolio Health & Risk
+   Intelligence*, debajo hay cinco indicadores y, al bajar, seis paneles numerados. Un clic en
+   cualquier indicador abre a la derecha la lista de aplicaciones que cuenta.
 
 ### Paso 6 · para detenerlo
 
@@ -249,12 +252,13 @@ siguientes veces arrancan en segundos.
 
 ### Paso 5 · entra y comprueba
 
-Abre <http://localhost:5173> y pulsa **Sign in**. Luego, las mismas tres comprobaciones del
+Abre <http://localhost:5173> y pulsa **Sign in**. Luego, las mismas cuatro comprobaciones del
 camino A:
 
 1. Portfolio con unas 250 aplicaciones.
 2. `http://localhost:5173/applications/14381/calculation` da **79.67**.
 3. **Insights** muestra las seis preguntas.
+4. **Dashboard** muestra cinco indicadores y seis paneles.
 
 ### Paso 6 · para detenerlo
 
@@ -405,10 +409,10 @@ se identifica la causa.
 
 ### Paso 6 · entra y comprueba
 
-Abre <http://localhost:5100>, pulsa **Sign in**, y haz las tres comprobaciones del
+Abre <http://localhost:5100>, pulsa **Sign in**, y haz las cuatro comprobaciones del
 [paso 5 del camino A](#paso-5--comprueba-que-quedó-bien) cambiando nada más que el puerto:
-Portfolio con ~250 aplicaciones, `/applications/14381/calculation` con **79.67**, e
-**Insights** con las seis preguntas.
+Portfolio con ~250 aplicaciones, `/applications/14381/calculation` con **79.67**,
+**Insights** con las seis preguntas y **Dashboard** con cinco indicadores y seis paneles.
 
 ### Paso 7 · para detenerlo
 
@@ -544,6 +548,7 @@ registro de Windows ni instala servicios.
 - [ ] Portfolio muestra ~250 aplicaciones.
 - [ ] `/applications/14381/calculation` da **79.67**.
 - [ ] **Insights** responde las seis preguntas.
+- [ ] **Dashboard** muestra cinco indicadores y seis paneles, y un clic abre el detalle.
 - [ ] Al detener, ninguna ventana queda abierta y los puertos quedan libres.
 
 ---

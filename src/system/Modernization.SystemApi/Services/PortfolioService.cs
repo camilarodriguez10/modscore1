@@ -4,6 +4,7 @@ using Modernization.Domain.Sources;
 using Modernization.Rules;
 using Modernization.Scoring.Engine;
 using Modernization.Security;
+using Modernization.SystemApi.Contracts;
 
 namespace Modernization.SystemApi.Services;
 
@@ -320,6 +321,55 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
         return points;
     }
 
+    /// <summary>
+    /// Salud del portafolio en cada carga, con el mismo filtro que el dashboard: el score
+    /// promedio y la parte que esta en los dos tramos de abajo.
+    /// </summary>
+    /// <remarks>
+    /// Cada carga se filtra con sus propios atributos: si una aplicacion cambio de pais,
+    /// sus puntos anteriores siguen al pais de entonces, igual que la historia de siempre.
+    /// </remarks>
+    public async Task<IReadOnlyList<DashboardTrendPoint>> GetDashboardTrendAsync(
+        PortfolioScope scope,
+        ApplicationFilter filter,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(scope);
+        ArgumentNullException.ThrowIfNull(filter);
+
+        var model = await rules.GetCurrentAsync(cancellationToken).ConfigureAwait(false);
+        var versions = await OrderedVersionsAsync(model, cancellationToken).ConfigureAwait(false);
+        var all = await PointsOfAllAsync(model, versions, cancellationToken).ConfigureAwait(false);
+        var points = new List<DashboardTrendPoint>(versions.Count);
+
+        for (var index = 0; index < versions.Count; index++)
+        {
+            var version = versions[index];
+            var visible = all[index]
+                .Where(p => p.Score is not null
+                    && scope.Allows(p.Lob, p.Country, p.Cio)
+                    && filter.MatchesAttributes(p.Attributes)
+                    && ScoreBands.Matches(p.Score.Value, filter.Band))
+                .ToList();
+
+            var atRisk = visible.Count(p => ScoreBands.Of(p.Score!.Value) is "critical" or "at-risk");
+
+            points.Add(new DashboardTrendPoint(
+                version.Id,
+                version.Label,
+                version.CapturedAt,
+                visible.Count,
+                visible.Count == 0
+                    ? null
+                    : Math.Round(visible.Average(p => p.Score!.Value), 2, MidpointRounding.AwayFromZero),
+                visible.Count == 0
+                    ? null
+                    : Math.Round(atRisk / (decimal)visible.Count * 100m, 2, MidpointRounding.AwayFromZero)));
+        }
+
+        return points;
+    }
+
     // -----------------------------------------------------------------------
 
     private static bool Allows(PortfolioScope scope, ApplicationSnapshot application)
@@ -507,11 +557,34 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
                 application.Country,
                 application.Cio,
                 score,
-                weight));
+                weight,
+                AttributesOf(application)));
         }
 
         return points;
     }
+
+    /// <summary>
+    /// Solo los atributos por los que se filtra, para que la tendencia del dashboard use
+    /// el mismo <see cref="ApplicationFilter"/> que la pantalla sin guardar la aplicacion
+    /// completa de cada carga en memoria.
+    /// </summary>
+    private static ApplicationSnapshot AttributesOf(ApplicationSnapshot application) => new()
+    {
+        EaiCode = application.EaiCode,
+        ApplicationName = application.ApplicationName,
+        CapturedAt = application.CapturedAt,
+        Lob = application.Lob,
+        Country = application.Country,
+        Cio = application.Cio,
+        Cre = application.Cre,
+        Region = application.Region,
+        ApplicationStatus = application.ApplicationStatus,
+        PrimaryBusinessCapability = application.PrimaryBusinessCapability,
+        CriticalApplicationIndicator = application.CriticalApplicationIndicator,
+        Disposition = application.Disposition,
+        Roadmap = application.Roadmap,
+    };
 
     /// <summary>Lo minimo de una aplicacion en una version para dibujar su serie.</summary>
     private sealed record VersionPoint(
@@ -520,7 +593,8 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
         string? Country,
         string? Cio,
         decimal? Score,
-        decimal? Weight);
+        decimal? Weight,
+        ApplicationSnapshot Attributes);
 
     /// <summary>Los scores de un snapshot calculados con unas reglas concretas.</summary>
     private sealed class ScoreCache(string rulesId)

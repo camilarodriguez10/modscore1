@@ -51,14 +51,8 @@ public static class SystemEndpoints
     private static async Task<IResult> GetApplications(
         PortfolioService portfolio,
         PortfolioScope scope,
+        [AsParameters] FilterParameters filters,
         CancellationToken cancellationToken,
-        string? lob = null,
-        string? country = null,
-        string? cio = null,
-        string? disposition = null,
-        string? roadmap = null,
-        string? band = null,
-        bool? criticalOnly = null,
         int page = 1,
         int pageSize = 50)
     {
@@ -71,16 +65,7 @@ public static class SystemEndpoints
                 $"'page' must be 1 or greater and 'pageSize' must be between 1 and {MaxPageSize}.");
         }
 
-        var filter = new ApplicationFilter
-        {
-            Lob = lob,
-            Country = country,
-            Cio = cio,
-            Disposition = disposition,
-            Roadmap = roadmap,
-            Band = band,
-            CriticalOnly = criticalOnly,
-        };
+        var filter = filters.ToFilter();
 
         if (filter.Validate() is { } invalid)
         {

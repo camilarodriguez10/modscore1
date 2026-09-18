@@ -1,0 +1,70 @@
+{
+  "version": "dashboard-v1",
+  "status": "provisional",
+  "description": "Definitions behind the executive dashboard (Portfolio Health & Risk Intelligence). The proposal leaves these as TBD or points to 'available concepts' for Currency and Stability scoring; every value here is a default until the business confirms it (ADR 0024).",
+
+  "currency": {
+    "note": "Currency Score = share of Modern components over every component CMT reports (Modern, Heritage, Obsolete, Not Approved). SR-02 already recommended a CMT-based KPI outside the Modernization Score.",
+    "legacyBelow": 50
+  },
+
+  "risk": {
+    "note": "Risk Score 0-100, higher is worse: the Modernization Risk Vectors pillar inverted, (100 - pillar) / 80 x 100. Levels as in the mockup.",
+    "pillar": "risk",
+    "moderateFrom": 40,
+    "highFrom": 60,
+    "criticalFrom": 80
+  },
+
+  "opportunity": {
+    "note": "Modernization opportunity = points the application's own roadmap adds to its score (what-if engine). Applications leaving the portfolio or without a plan stay out of the matrix.",
+    "mediumFrom": 5,
+    "highFrom": 10,
+    "veryHighFrom": 20
+  },
+
+  "criticality": {
+    "note": "Very high: critical and (significant user base or broad capabilities). High: critical. Medium: significant user base or broad capabilities. Low: the rest. The significant user base comes from the roadmap catalog.",
+    "broadCapabilities": 3
+  },
+
+  "candidates": {
+    "note": "Modernization candidates = the top-right quadrant of the matrix. Levels: 0 low, 1 medium, 2 high, 3 very high.",
+    "minCriticality": 2,
+    "minOpportunity": 2
+  },
+
+  "complexity": {
+    "note": "Duplicate technologies: the same primary capability in the same country at least this many times. Technology proliferation: one capability written in at least this many languages.",
+    "duplicateThreshold": 3,
+    "languageThreshold": 3
+  },
+
+  "concentration": {
+    "note": "Risk Concentration Index = share of the total risk held by the riskiest fifth of the capability x axis cells. 0.2 is an even spread; 1.0 is all the risk in a few cells.",
+    "topShare": 0.2,
+    "moderateFrom": 0.4,
+    "highFrom": 0.6,
+    "criticalFrom": 0.8
+  },
+
+  "resilience": {
+    "note": "Recovery: outside the DR scope is high (critical if the application is critical); inside it, the lower bound of the RTO range decides. Operational vulnerabilities: the worst of the operational score and monitoring coverage. The application's level is the worst of its dimensions.",
+    "recoveryModerateFromHours": 24,
+    "recoveryHighFromHours": 48,
+    "operationalModerateBelow": 80,
+    "operationalHighBelow": 60,
+    "operationalCriticalBelow": 40
+  },
+
+  "obsolescence": [
+    { "key": "lifecycle", "currency": true, "metrics": [ "productStrategy" ] },
+    { "key": "components", "currency": true, "metrics": [ "archValue" ] },
+    { "key": "technologyCurrency", "currency": true, "metrics": [ "rawTech" ] },
+    { "key": "openSource", "currency": true, "metrics": [ "oss" ] },
+    { "key": "technicalDebt", "currency": false, "metrics": [ "techDebt" ] },
+    { "key": "vulnerabilities", "currency": false, "metrics": [ "sca.critical", "sca.high", "sca.medium", "sca.low" ] },
+    { "key": "hostRisk", "currency": false, "metrics": [ "kenna" ] },
+    { "key": "controls", "currency": false, "metrics": [ "mfa", "dr.inScope", "api.native", "monitoring", "operational" ] }
+  ]
+}

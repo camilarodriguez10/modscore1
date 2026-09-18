@@ -308,7 +308,7 @@ pre em{color:var(--ink-3);font-style:normal}
     <div class="mast-meta">
       <span>Base documental · <b>34 capturas: BRD + dashboard Power BI v1.3 + archivos fuente</b></span>
       <span>Ruleset · <b>v1.3</b></span>
-      <span>Fases 00–13 entregadas · 14 y 15 en curso · <b>694 pruebas .NET, 39 unitarias y 22 e2e en verde</b></span>
+      <span>Fases 00–13 entregadas · 14 y 15 en curso · dashboard ejecutivo · <b>737 pruebas .NET, 47 unitarias y 30 e2e en verde</b></span>
       <span>Duración estimada · <b>16 semanas</b></span>
     </div>
   </div>
@@ -824,6 +824,7 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
     <div class="screen"><span class="i">08</span><div><div class="t">Cargas <span class="req">req. 8 · 9</span></div><div class="d">Subir los archivos del período y recalcular el portafolio, con el veredicto de cada archivo — filas leídas, filas rechazadas y el motivo — el historial de versiones publicadas y la evolución del score del portafolio a lo largo de las cargas. Desde la Fase 10, Cargas y Linaje son las dos pestañas de la pantalla Datos, con un selector de carga compartido.</div></div></div>
     <div class="screen"><span class="i">09</span><div><div class="t">Admin · Rulesets</div><div class="d">Comparación de versiones de ruleset, simulación del impacto en todo el portafolio antes de publicar, e historial de overrides con su justificación.</div></div></div>
     <div class="screen key"><span class="i">10</span><div><div class="t">Insights — las seis preguntas <span class="req">req. 4 · 6</span></div><div class="d">Qué tan sano está el portafolio, qué modernizar primero según impacto y esfuerzo, dónde reducir complejidad, dónde se concentra el riesgo tecnológico, qué causa la obsolescencia y dónde faltan defensas de continuidad. Una sola llamada, el mismo filtro que el resto del sitio, y cada número con su aritmética a la vista.</div></div></div>
+    <div class="screen key"><span class="i">11</span><div><div class="t">Dashboard — Portfolio Health &amp; Risk Intelligence</div><div class="d">La vista para dirección, según la propuesta <em>EA Data &amp; Insights</em>: la pregunta ejecutiva, cinco indicadores con tendencia por carga y un panel por pregunta —mapa de calor de capacidad primaria contra región, país, CIO o disposición; matriz criticidad × oportunidad; treemap de complejidad; concentración del riesgo; causas de la obsolescencia; huecos de resiliencia—. Cada celda, burbuja o barra abre el mismo detalle. Las definiciones abiertas se marcan como provisionales.</div></div></div>
   </div>
 
   <h4>Seguridad del frontend</h4>
@@ -973,6 +974,8 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
         <tr class="shipped"><td class="mono">14</td><td>Verificación de seguridad</td><td><span class="done">EN CURSO</span></td><td>Pipeline en verde; auditoría de validaciones rechazadas, retención de cargas, decisión sobre validación de esquema, aislamiento de terceros y accesibilidad en el CI. Quedan los once parciales que necesitan un entorno real</td></tr>
         <tr class="shipped"><td class="mono">15</td><td>Autenticación con APIM</td><td><span class="done">EN CURSO</span></td><td>Elegida la opción C con A: la credencial entre capas es conectable, la capa System valida el JWT y hay un modo <span class="mono">Both</span> para cambiar sin corte. El código está probado con dobles; <strong>falta el emisor real</strong></td></tr>
         <tr class="shipped"><td class="mono">—</td><td>Pantalla 09 · las seis preguntas</td><td><span class="done">ENTREGADA</span></td><td><strong>Las seis preguntas de gestión se responden con las fuentes actuales</strong> · salud, prioridades, complejidad, riesgo, obsolescencia y resiliencia con los mismos filtros · 14 pruebas del analizador, 15 de API y 8 de la SPA</td></tr>
+        <tr class="shipped"><td class="mono">—</td><td>Dashboard ejecutivo · D1 y D2</td><td><span class="done">ENTREGADA</span></td><td><strong>Portfolio Health &amp; Risk Intelligence en una vista</strong> · cinco indicadores, seis paneles y un detalle común · cinco filtros nuevos en todo el sitio · definiciones provisionales versionadas (ADR 0024) · 28 pruebas del analizador, 13 de API, 8 de la SPA y 6 de punta a punta</td></tr>
+        <tr><td class="mono">—</td><td>Dashboard ejecutivo · D3 y D4</td><td><div class="dur"><i style="width:48px"></i><span>3 sem</span></div></td><td>Diccionario de indicadores con dueño, fórmula, fuente, frecuencia y control de calidad; definiciones editables desde el portal; fuentes nuevas —TLM, resiliencia, deudas técnicas, application class, dependencias—</td></tr>
         <tr><td class="mono">16</td><td>Escala y operación</td><td><div class="dur"><i style="width:48px"></i><span>3 sem</span></div></td><td>Destino y motor de base, Redis, dos réplicas por capa, respaldos, SIEM y notificaciones de reglas</td></tr>
         <tr><td class="mono">17</td><td>Hallazgos de infraestructura</td><td><div class="dur"><i style="width:32px"></i><span>2 sem</span></div></td><td>Al final, por decisión: identidad de carga de trabajo (H-16), firma de imágenes y logs inmutables (H-17), sesiones activas (H-20) y antivirus en cargas (H-21)</td></tr>
       </tbody>
@@ -984,7 +987,7 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
 
   <div class="ship">
     <div class="h">Criterio de aceptación cumplido</div>
-    <p><strong>694 pruebas .NET en verde</strong> en quince proyectos, más 39 unitarias y 22 de punta a punta en la SPA —diez de flujo y doce de accesibilidad—, cero paquetes vulnerables —ya con EF Core y SQLite dentro—, y el build compila con todas las reglas de seguridad del analizador como errores. El motor reproduce exactamente los dos casos documentados: <span class="mono">EAI 14381 = 79,67</span> y <span class="mono">EAI 10969 = 79,61</span>, métrica por métrica.</p>
+    <p><strong>737 pruebas .NET en verde</strong>, más 47 unitarias y 30 de punta a punta en la SPA —catorce de flujo y dieciséis de accesibilidad—, cero paquetes vulnerables —ya con EF Core y SQLite dentro—, y el build compila con todas las reglas de seguridad del analizador como errores. El motor reproduce exactamente los dos casos documentados: <span class="mono">EAI 14381 = 79,67</span> y <span class="mono">EAI 10969 = 79,61</span>, métrica por métrica.</p>
     <p>El 14381 se reproduce <strong>extremo a extremo</strong>: generador → puerto <code>ISourceReader</code> → ensamblado → motor → <code>system-api</code> → <code>channel-api</code> → SPA. Cada eslabón de esa cadena está cubierto por tests, y el último se ve en pantalla.</p>
   </div>
 
@@ -1337,6 +1340,34 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
 
   <div class="note">El ejemplo que dio el negocio —<em>“más de X aplicaciones con la misma application class por país”</em>— se responde hoy con la capacidad de negocio primaria del maestro EAI, que es lo más cercano que existe en las fuentes. Los siete datos que afinarían las respuestas —clase de aplicación, costo o esfuerzo, valor de negocio, dependencias, fechas de fin de soporte, historial de incidentes y estado de migración— están en <code>docs/PENDING-ITEMS.md</code> como <strong>DQ-01 a DQ-07</strong>, cada uno con qué respuesta mejora.</div>
 
+  <h3>Dashboard ejecutivo — Portfolio Health &amp; Risk Intelligence</h3>
+  <div class="ship">
+    <div class="h">Pedido el 18 de septiembre · D1 y D2 entregadas</div>
+    <p>La propuesta <em>EA Data &amp; Insights – MVP Proposal</em> pide una vista para dirección que responda <strong>dónde se concentra el riesgo del portafolio y la oportunidad de modernización, por qué existe y qué decisión de arquitectura hace falta</strong>. El dashboard la responde con las mismas seis preguntas, ahora con la forma del mockup, <strong>reutilizando el motor, el what-if, la historia de cargas, los filtros en la URL y el alcance sobre los datos</strong>. Lo nuevo es un analizador puro, un archivo de definiciones y la pantalla.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:24%">Panel</th><th>Qué muestra</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Indicadores</strong></td><td>Health Score, aplicaciones en riesgo, candidatas a modernizar, exposición de <em>currency</em> (EOS/EOL redefinido) y huecos de resiliencia, cada uno como «tantas de tantas» y con tendencia por carga. Tech Debt queda a decisión; Governance, fuera</td></tr>
+        <tr><td><strong>1 · ¿Qué tan sano?</strong></td><td>Mapa de calor de capacidad primaria contra región, país, CIO o disposición objetivo; reparto por tramo; tendencia</td></tr>
+        <tr><td><strong>2 · ¿Qué primero?</strong></td><td>Matriz criticidad × oportunidad de 0 a 3, con la burbuja del tamaño del riesgo y el cuadrante de candidatas resaltado con la regla vigente; top 10</td></tr>
+        <tr><td><strong>3 · ¿Dónde simplificar?</strong></td><td>Treemap de seis dimensiones —las que no tienen fuente, punteadas— y cuatro oportunidades: racionalizar, estandarizar, consolidar, retirar</td></tr>
+        <tr><td><strong>4 · ¿Dónde está el riesgo?</strong></td><td>El mismo mapa de calor midiendo riesgo de 0 a 100, las cinco aplicaciones con más riesgo y un índice de concentración de 0 a 1</td></tr>
+        <tr><td><strong>5 · ¿Qué causa la obsolescencia?</strong></td><td>Los conceptos que explican los puntos perdidos y cuánto pesa la vigencia tecnológica; EOS y EOL esperan a TLM</td></tr>
+        <tr><td><strong>6 · ¿Dónde faltan defensas?</strong></td><td>Recuperación y vulnerabilidad operacional por aplicación; disponibilidad, dependencias críticas y puntos únicos de falla, dichos como «sin fuente»</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="rfc">
+    <b class="tag">Definiciones provisionales</b>
+    Lo que la propuesta deja por definir —«<em>Rules &amp; Matrix to be defined globally</em>», «<em>Currency Score &lt; X</em>», los conceptos de Currency y Stability Scoring que no llegaron— tiene un <strong>default versionado</strong> en <code>contracts/dashboard-v1.json</code>, y la pantalla lo marca con un chip. Currency Score = % de componentes <em>Modern</em> en CMT, legacy bajo 50; Risk Score = el pilar de riesgo invertido, con los niveles del mockup (40 · 60 · 80); criticidad y oportunidad de 0 a 3; candidatas = ambas altas o muy altas. El porqué de cada uno está en el ADR 0024, y las decisiones, como <strong>DD-01 a DD-07</strong> en <code>docs/PENDING-ITEMS.md</code>.
+  </div>
+
+  <div class="note">Con los datos dummy los defaults <strong>saturan</strong>: <em>duplicate technologies</em> y <em>technology proliferation</em> marcan a las 250 aplicaciones —siete capacidades en tres países no alcanzan para distinguirlas—, la fila de criticidad «Alta» queda vacía porque toda crítica es también de base amplia, y el 77 % tiene huecos de resiliencia. No es un error del cálculo: son umbrales que el negocio tiene que calibrar sobre el portafolio real. Queda fuera el <em>EA Value Evidence Register</em>, que es una herramienta de registro y merece su propio plan (PF-08).</div>
+
   <h3>Estructura del repositorio</h3>
   <pre>modernization-score/
 ├─ <b>Directory.Packages.props</b>        <em>versiones centralizadas</em>
@@ -1344,6 +1375,7 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
 ├─ docs/           adr/ · security/ · runbooks/
 ├─ <b>contracts/</b>
 │  ├─ ruleset-v1.3.json            <em>pesos, bandas, estrategias</em>
+│  ├─ <b>dashboard-v1.json</b>           <em>definiciones provisionales del dashboard ✓</em>
 │  └─ sources/*.schema.json        <em>contratos de columnas por fuente</em>
 ├─ data/dummy/                     <em>CSV generados, listos para la Fase 2</em>
 ├─ <b>data/history/&lt;id&gt;/</b>              <em>una carga publicada = una versión ✓</em>
@@ -1351,7 +1383,7 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
 │  ├─ shared/
 │  │  ├─ <b>Modernization.Domain/</b>            <em>modelo canónico + puertos ✓</em>
 │  │  ├─ <b>Modernization.Scoring.Engine/</b>    <em>motor puro — el activo crítico ✓</em>
-│  │  ├─ <b>Modernization.Insights/</b>         <em>las seis preguntas, función pura ✓</em>
+│  │  ├─ <b>Modernization.Insights/</b>         <em>las seis preguntas y el dashboard, funciones puras ✓</em>
 │  │  └─ Modernization.Security/
 │  ├─ channel/
 │  │  └─ Modernization.ChannelApi/       <em>BFF / orquestador</em>

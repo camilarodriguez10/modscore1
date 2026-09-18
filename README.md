@@ -34,6 +34,11 @@ agrega `-p:UseAppHost=false` —así solo corre `dotnet.exe`— y deja que la ca
 el sitio con `ASPNETCORE_WEBROOT`: es el camino C de la
 [guía paso a paso](docs/guia-localhost.md).
 
+Desde la app de Claude, `.claude/launch.json` tiene las tres piezas —`system`, `channel` y
+`web`— con esas variables y `-p:UseAppHost=false`. **Arrancar la System primero y la Channel
+cuando la System ya responda:** la Channel referencia el proyecto de la System, y si las dos
+compilan a la vez se pisan el mismo `.dll` (`CS2012`, archivo en uso).
+
 La SPA se abre en <http://localhost:5173>. El botón de login usa el esquema de
 desarrollo, que **no autentica a nadie**: solo existe para trabajar sin un
 proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
@@ -343,8 +348,9 @@ referencia deja de dar 79,67.
 
 ```
 contracts/ruleset-v1.3.json     18 métricas: pesos, bandas y procedencia — reglas como datos
+contracts/dashboard-v1.json     definiciones provisionales del dashboard ejecutivo
 data/dummy/                     los ocho CSV generados
-src/shared/                     dominio, motor de scoring, what-if, roadmap, insights, reglas, seguridad
+src/shared/                     dominio, motor de scoring, what-if, roadmap, insights y dashboard, reglas, seguridad
 src/system/                     capa System: reglas de negocio + fuentes
 src/channel/                    capa Channel: BFF, composición por pantalla y exportaciones
 src/web/                        SPA React 19 · pruebas unitarias en src/ · e2e/ con Playwright

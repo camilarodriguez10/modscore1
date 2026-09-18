@@ -29,6 +29,15 @@ no ser privado.
 | image_67214081 | Archivo `0809 MONITOREO` (Agent, APM, Monitoring, Synthetics) |
 | image_67214593 | Archivo `0809 OSS_Score_by_EAI_3` (incluye una fila con EAI Code 0) |
 
+## Capturas de la propuesta del dashboard ejecutivo
+
+Las 16 capturas de *EA Data & Insights – MVP Proposal (DRAFT)*, su mockup y sus
+refinamientos (2026-09-18) **no están en el repositorio**, ni siquiera en
+`docs/brd/capturas/`: llevan la marca de la empresa. Lo que se tomó de ellas —la pregunta
+ejecutiva, los seis paneles, los refinamientos y lo que quedó abierto— está escrito en
+PLAN §8.10 y en el
+[ADR 0024](../adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md).
+
 ## Incluirlas en el repositorio
 
 Solo si el repositorio remoto es privado y el negocio lo autoriza:

@@ -390,7 +390,7 @@ Regla general cuando la métrica **ya tiene dato**: `Δ = 0.8 × w × (v' − v)
 | Gráficos | Recharts + SVG propio | **SVG propio** ([ADR 0006](docs/adr/0006-spa-sin-libreria-de-graficos.md)) |
 | Estilos | Tailwind CSS 4 + Radix UI | Tailwind CSS 4, componentes propios accesibles |
 | Cliente API | Generado desde OpenAPI | **Tipos a mano con prueba de contrato**: `ViewModelContractTests` falla si un modelo de vista C# y su interfaz TypeScript difieren en cualquier sentido |
-| Tests | Vitest + Testing Library + Playwright | **Vitest** (lógica pura, sin DOM) + **Playwright** (22 escenarios: 10 de flujo y 12 de accesibilidad con axe; Edge en local, Chromium en el CI) |
+| Tests | Vitest + Testing Library + Playwright | **Vitest** (lógica pura, sin DOM) + **Playwright** (30 escenarios: 14 de flujo y 16 de accesibilidad con axe; Edge en local, Chromium en el CI) |
 | Carga | — | Pantallas de administración cargadas bajo demanda (`lazy` + `Suspense`) |
 
 > *Corrección del plan.* Se prometía usar **Actions + `useActionState`**, **`use()`** con Suspense y el **compilador** de React 19. No se usan: las mutaciones de TanStack Query cubren los estados pendientes y no hubo tablas con costo de render medible. Queda como decisión abierta TD-02 en [docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md).

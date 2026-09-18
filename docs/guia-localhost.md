@@ -277,7 +277,7 @@ dotnet test ModernizationScore.slnx
 npm --prefix src/web test
 ```
 
-Deben terminar en verde: 696 pruebas .NET y 39 de la interfaz.
+Deben terminar en verde: 737 pruebas .NET y 47 de la interfaz.
 
 ---
 

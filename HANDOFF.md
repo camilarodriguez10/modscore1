@@ -48,7 +48,7 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | Git | Repositorio **privado** <https://github.com/camilarodriguez10/modscore1>, rama `main`. Guarda todo lo creado —el `.zip` portable, el estado local de `data/`, los scripts de las sesiones (`tools/sesiones/`) y la copia del plan (`docs/plan/`)— salvo las capturas del BRD y las imágenes. Los commits usan el correo de la cuenta. Cada push se confirma antes |
 | Memo de decisiones | <https://claude.ai/artifact/Gp7c9gHv5kTSdGETPfeCi5> (version 1, del 2026-09-16): las once reglas de scoring que el negocio tiene que confirmar, con evidencia y opciones. Fuente de verdad: [docs/scoring-decisions.md](docs/scoring-decisions.md); copia publicada en `docs/plan/scoring-decisions.html` |
 | Artefacto del plan | <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> (versión 19, del 2026-09-18, con el dashboard ejecutivo; copia en `docs/plan/modscore-plan.html`, que hay que reemplazar al republicar; enlace anterior del mismo artefacto: <https://claude.ai/code/artifact/25507d1f-40a6-4e74-8c43-0337dbb63358>) |
-| Paquete portable | `artifacts/modscore-portable-win-x64-selfcontained-20260918-0503.zip` (93,3 MB autocontenido, SHA-256 `236832c2a123902b566c7d1a2397bbe175d63ddda26464490fac4abf11e65429`), versionado en el repositorio; se regenera con `tools/portable/build-portable.ps1`. Verificado el 2026-09-18, ya con el dashboard y con `GUIA-PASO-A-PASO.txt` dentro: descomprimido y arrancado con `start.ps1`; los **30 escenarios e2e pasan contra él**. El paquete tiene el límite real de 120 peticiones por minuto por usuario, y la suite completa lo supera en un minuto (la prueba de reglas recibe 429): para correrla, arrancarlo con los límites de `playwright.config.ts` (`RateLimiting__RequestsPerMinute=100000` y los otros tres) en el entorno. Con el límite real pasan en dos tandas. `start.ps1` espera un Enter para detenerse: en segundo plano, darle una entrada que quede abierta. El anterior se borra: cada paquete queda para siempre en la historia del repositorio |
+| Paquete portable | `artifacts/modscore-portable-win-x64-selfcontained-20260918-0503.zip` (93,3 MB autocontenido, SHA-256 `236832c2a123902b566c7d1a2397bbe175d63ddda26464490fac4abf11e65429`), versionado en el repositorio; se regenera con `tools/portable/build-portable.ps1`. Verificado el 2026-09-18, ya con el dashboard y con `GUIA-PASO-A-PASO.txt` dentro: descomprimido y arrancado con `start.ps1`; los **30 escenarios e2e pasan contra él**. El paquete tiene el límite real de 120 peticiones por minuto por usuario, y la suite completa lo supera en un minuto (la prueba de reglas recibe 429): para correrla, arrancarlo con los límites de `playwright.config.ts` (`RateLimiting__RequestsPerMinute=100000` y los otros tres) en el entorno. Con el límite real pasan en dos tandas. `start.ps1` espera un Enter para detenerse: en segundo plano, darle una entrada que quede abierta. El `README.txt` de este `.zip` todavía no lista Dashboard ni Insights en «Qué probar»: se agregaron después del build y llegan con el próximo; la guía que lleva dentro sí comprueba las dos. El anterior se borra: cada paquete queda para siempre en la historia del repositorio |
 
 ---
 
@@ -272,6 +272,7 @@ parámetros de filtro repetida en cada endpoint; en la SPA,
 | Paquete portable | `powershell -ExecutionPolicy Bypass -File tools/portable/build-portable.ps1` |
 | Respaldo | `powershell -ExecutionPolicy Bypass -File tools/git/backup.ps1 -Message "…" -Verify` |
 | Datos dummy | `dotnet run --project tools/Modernization.DummyData -- data/dummy` |
+| Levantarlo desde la app de Claude | `.claude/launch.json`: `system`, `channel` y `web`, en ese orden y esperando a que la System responda antes de arrancar la Channel |
 | Levantarlo en otro equipo | Guía paso a paso, para alguien que no conoce el proyecto: [docs/guia-localhost.md](docs/guia-localhost.md). En un equipo que bloquea `.exe` sin firmar, su **camino C**: `dotnet run ... -p:UseAppHost=false` y la Channel sirviendo el sitio con `ASPNETCORE_WEBROOT` |
 
 ---
@@ -390,6 +391,10 @@ parámetros de filtro repetida en cada endpoint; en la SPA,
   distinta—. Apagarlos antes de correr las e2e.
 - Atenuar con `opacity` un texto de estado lo deja bajo 4,5:1: los tokens `*-text` sobre su
   `*-wash` pasan con lo justo (4,6:1). En el dashboard lo encontró axe en tres lugares.
+- **No compilar la System y la Channel a la vez.** La Channel referencia el proyecto de la
+  System; si las dos arrancan juntas con `dotnet run`, ambas escriben
+  `Modernization.SystemApi.dll` en `obj/` y una falla con `CS2012` (archivo en uso, a veces
+  por Defender). Arrancar la System, esperar a que responda y después la Channel.
 - La verificación local tiene que incluir `npm run lint`, porque el CI lo exige. En la Fase 13
   no se corrió y se escapó un BOM literal en una expresión regular de `e2e/support.ts`
   (`no-irregular-whitespace`); se corrigió escribiendo `\uFEFF`.

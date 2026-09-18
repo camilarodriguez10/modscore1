@@ -6,7 +6,7 @@ repositorio que cada una resume.
 
 | Copia | Artefacto | Fuente de verdad |
 |---|---|---|
-| [modscore-plan.html](modscore-plan.html) | Version 18, del 2026-09-16, con la pantalla 09 y el estado de la Fase 15: <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> | [PLAN.md](../../PLAN.md) |
+| [modscore-plan.html](modscore-plan.html) | Version 19, del 2026-09-18, con el dashboard ejecutivo (D1 y D2): <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> | [PLAN.md](../../PLAN.md) |
 | [scoring-decisions.html](scoring-decisions.html) | Version 1, del 2026-09-16, las once reglas que el negocio tiene que confirmar: <https://claude.ai/artifact/Gp7c9gHv5kTSdGETPfeCi5> | [docs/scoring-decisions.md](../scoring-decisions.md) |
 
 Para actualizar un artefacto desde otra sesion: leerlo por su URL, editar la version que

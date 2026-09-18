@@ -38,6 +38,9 @@ aplicación solo con `dotnet.exe` y usa de este `.zip` únicamente la carpeta
 
 ## Qué probar
 
+- **Dashboard**: cinco indicadores y seis paneles; cambiar el eje del mapa de calor y hacer
+  clic en una celda, una burbuja o un indicador para abrir el detalle.
+- **Insights**: las seis preguntas del portafolio, con los mismos filtros.
 - **Portfolio**: filtros desde los gráficos, navegación con el filtro puesto, **Download CSV**.
 - **Cálculo** de una aplicación: `/applications/14381/calculation` debe dar **79,67**.
 - **What-if** y **plan futuro** de una aplicación.

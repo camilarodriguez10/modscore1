@@ -2,6 +2,27 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "system",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run", "--project", "src/system/Modernization.SystemApi", "--no-launch-profile", "-p:UseAppHost=false",
+        "-e", "ASPNETCORE_ENVIRONMENT=Development",
+        "-e", "ASPNETCORE_URLS=http://localhost:5101",
+        "-e", "DataSource__Provider=Dummy"
+      ],
+      "port": 5101
+    },
+    {
+      "name": "channel",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run", "--project", "src/channel/Modernization.ChannelApi", "--no-launch-profile", "-p:UseAppHost=false",
+        "-e", "ASPNETCORE_ENVIRONMENT=Development",
+        "-e", "ASPNETCORE_URLS=http://localhost:5100"
+      ],
+      "port": 5100
+    },
+    {
       "name": "web",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "src/web", "run", "dev"],

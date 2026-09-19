@@ -1,5 +1,8 @@
+import { createContext, useContext } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useInsights } from '../api/hooks';
+import { DefinitionsContext, ExplanationBlock, useDefinitions } from '../components/Explanation';
+import { insightsExplanation } from '../i18n/analytics';
 import type {
   ComplexityClusterView,
   ModernizationCandidateView,
@@ -36,7 +39,6 @@ import {
 /** Cuantas aplicaciones con la misma capacidad en un pais ya son una concentracion. */
 const DUPLICATE_OPTIONS = [2, 3, 4, 5] as const;
 
-const DEFAULT_DUPLICATES = 3;
 const TOP = 10;
 
 const COMPLEXITY_LABELS: Record<string, string> = {
@@ -64,12 +66,16 @@ export function InsightsPage() {
   const [params, setParams] = useSearchParams();
   const { filters, toggle, search } = useFilters();
 
-  const duplicates = DUPLICATE_OPTIONS.find((n) => String(n) === params.get('duplicates')) ?? DEFAULT_DUPLICATES;
+  // Sin parametro en la URL decide el servidor, con el valor de las definiciones vigentes.
+  const chosen = DUPLICATE_OPTIONS.find((n) => String(n) === params.get('duplicates'));
   const riskBy = RISK_GROUPINGS.some((g) => g.key === params.get('riskBy'))
     ? params.get('riskBy')!
     : 'lob';
 
-  const { data, isPending, error } = useInsights(toApiFilters(filters), { duplicates, top: TOP });
+  const { data, isPending, error } = useInsights(
+    toApiFilters(filters),
+    chosen === undefined ? { top: TOP } : { duplicates: chosen, top: TOP },
+  );
 
   const setParam = (key: string, value: string, fallback: string) => {
     const next = new URLSearchParams(params);
@@ -93,7 +99,13 @@ export function InsightsPage() {
     );
   }
 
+  const duplicates = chosen ?? data.options.duplicateThreshold;
+  const defaultDuplicates =
+    data.definitions.parameters.find((p) => p.key === 'insights.duplicateDefault')?.value ?? duplicates;
+
   return (
+    <DefinitionsContext.Provider value={data.definitions}>
+    <HealthyScoreContext.Provider value={data.options.healthyScore}>
     <div className="flex flex-col gap-4">
       <header>
         <Label>Insights</Label>
@@ -118,7 +130,7 @@ export function InsightsPage() {
       <Complexity
         clusters={data.complexity}
         duplicates={duplicates}
-        onDuplicates={(value) => setParam('duplicates', String(value), String(DEFAULT_DUPLICATES))}
+        onDuplicates={(value) => setParam('duplicates', String(value), String(defaultDuplicates))}
       />
 
       <Risk
@@ -133,6 +145,26 @@ export function InsightsPage() {
 
       <Resilience gaps={data.resilience} search={search} />
     </div>
+    </HealthyScoreContext.Provider>
+    </DefinitionsContext.Provider>
+  );
+}
+
+/** El umbral sano del catalogo, para la explicacion de la pregunta 1. */
+const HealthyScoreContext = createContext(70);
+
+/** Como se calcula una pregunta, con las definiciones vigentes. */
+function InsightsExplanation({ question }: { question: number }) {
+  const definitions = useDefinitions();
+  const healthyScore = useContext(HealthyScoreContext);
+
+  if (!definitions) return null;
+
+  return (
+    <ExplanationBlock
+      explanation={insightsExplanation(question, definitions, healthyScore)}
+      definitions={definitions}
+    />
   );
 }
 
@@ -197,6 +229,7 @@ function Health({ health, healthyScore }: { health: PortfolioHealthView; healthy
           </p>
         )}
       </div>
+      <InsightsExplanation question={1} />
     </Card>
   );
 }
@@ -212,10 +245,13 @@ function Priorities({
   search: string;
   significantUserBase: number;
 }) {
+  const capabilitiesFrom =
+    useDefinitions()?.parameters.find((p) => p.key === 'insights.businessWeight.capabilitiesFrom')?.value ?? 3;
+
   return (
     <Card
       title="Which applications should be modernized first?"
-      subtitle={`Impact against effort: the uplift comes from running the application's own roadmap, the weeks from its milestones, and the business weight from being critical, serving ${significantUserBase.toLocaleString('en-US')}+ users or covering three or more capabilities.`}
+      subtitle={`Impact against effort: the uplift comes from running the application's own roadmap, the weeks from its milestones, and the business weight from being critical, serving ${significantUserBase.toLocaleString('en-US')}+ users or covering ${capabilitiesFrom} or more capabilities.`}
     >
       {candidates.length === 0 ? (
         <p className="px-4 py-6 text-[13px] text-ink-2">
@@ -287,6 +323,7 @@ function Priorities({
           </table>
         </div>
       )}
+      <InsightsExplanation question={2} />
     </Card>
   );
 }
@@ -368,6 +405,7 @@ function Complexity({
           ))}
         </ul>
       )}
+      <InsightsExplanation question={3} />
     </Card>
   );
 }
@@ -485,6 +523,7 @@ function Risk({
           </table>
         </div>
       )}
+      <InsightsExplanation question={4} />
     </Card>
   );
 }
@@ -579,6 +618,7 @@ function Obsolescence({ drivers }: { drivers: readonly ObsolescenceDriverView[] 
           this question before any modernization does.
         </p>
       )}
+      <InsightsExplanation question={5} />
     </Card>
   );
 }
@@ -652,6 +692,7 @@ function Resilience({ gaps, search }: { gaps: ResilienceGapsView; search: string
           ))}
         </ul>
       )}
+      <InsightsExplanation question={6} />
     </Card>
   );
 }

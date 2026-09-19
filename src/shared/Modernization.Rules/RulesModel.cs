@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Modernization.Domain;
 using Modernization.Domain.Rules;
+using Modernization.Insights;
 using Modernization.Roadmap;
 using Modernization.Scoring.Engine;
 using Modernization.WhatIf;
@@ -34,10 +35,12 @@ public sealed record RulesVersionInfo
 /// Un juego completo de reglas y los motores construidos con el.
 /// </summary>
 /// <remarks>
-/// Ruleset, palancas y roadmap se versionan juntos porque dependen entre si: los
-/// objetivos de las palancas salen de las bandas del ruleset, y la proyeccion de
-/// cada roadmap sale de sus palancas. Publicar solo una parte podria dejar un
-/// roadmap proyectando con una palanca que el laboratorio ya no ofrece.
+/// Ruleset, palancas, roadmap y definiciones de las seis preguntas se versionan
+/// juntos porque dependen entre si: los objetivos de las palancas salen de las bandas
+/// del ruleset, la proyeccion de cada roadmap sale de sus palancas, y el dashboard lee
+/// el pilar de riesgo, las metricas y la base de usuarios del resto (ADR 0025).
+/// Publicar solo una parte podria dejar un roadmap proyectando con una palanca que el
+/// laboratorio ya no ofrece.
 /// <para>
 /// Es inmutable. Cambiar las reglas es construir otro modelo y reemplazarlo de una
 /// vez: una peticion en curso termina con las reglas con que empezo.
@@ -59,15 +62,29 @@ public sealed class RulesModel
         },
         RulesetCatalog.Default,
         LeverSettings.Default,
-        RoadmapCatalog.Default));
+        RoadmapCatalog.Default,
+        DashboardRules.Default));
 
-    /// <exception cref="RulesException">Las tres partes no son coherentes entre si.</exception>
+    /// <summary>Con las definiciones de fabrica de las seis preguntas.</summary>
+    /// <exception cref="RulesException">Las partes no son coherentes entre si.</exception>
     public RulesModel(RulesVersionInfo info, Ruleset ruleset, LeverSettings levers, RoadmapCatalog roadmap)
+        : this(info, ruleset, levers, roadmap, DashboardRules.Default)
+    {
+    }
+
+    /// <exception cref="RulesException">Las partes no son coherentes entre si.</exception>
+    public RulesModel(
+        RulesVersionInfo info,
+        Ruleset ruleset,
+        LeverSettings levers,
+        RoadmapCatalog roadmap,
+        DashboardRules analytics)
     {
         ArgumentNullException.ThrowIfNull(info);
         ArgumentNullException.ThrowIfNull(ruleset);
         ArgumentNullException.ThrowIfNull(levers);
         ArgumentNullException.ThrowIfNull(roadmap);
+        ArgumentNullException.ThrowIfNull(analytics);
 
         try
         {
@@ -97,10 +114,32 @@ public sealed class RulesModel
             }
         }
 
+        // Las definiciones nombran partes del ruleset: el pilar que se invierte para el
+        // riesgo y las metricas que explican la obsolescencia. Una clave que no existe no
+        // falla en ningun calculo, deja un panel en cero sin decir por que.
+        if (analytics.Problems() is { Count: > 0 } problems)
+        {
+            throw new RulesException("Las definiciones de las seis preguntas no son coherentes: " + string.Join(", ", problems));
+        }
+
+        if (!ruleset.Pillars.Any(p => string.Equals(p.Key, analytics.Risk.Pillar, StringComparison.Ordinal)))
+        {
+            throw new RulesException($"El pilar de riesgo '{analytics.Risk.Pillar}' no existe en el ruleset.");
+        }
+
+        foreach (var metric in analytics.Obsolescence.SelectMany(g => g.Metrics))
+        {
+            if (!ruleset.Metrics.Any(m => string.Equals(m.Key, metric, StringComparison.Ordinal)))
+            {
+                throw new RulesException($"La metrica '{metric}' de obsolescencia no existe en el ruleset.");
+            }
+        }
+
         Info = info;
         Ruleset = ruleset;
         Levers = levers;
         Roadmap = roadmap;
+        Analytics = analytics;
         WhatIf = new WhatIfEngine(Engine, LeverCatalog);
         Planner = new RoadmapPlanner(roadmap, WhatIf, Engine);
         Analyzer = new PortfolioRoadmapAnalyzer(roadmap, Planner);
@@ -118,6 +157,9 @@ public sealed class RulesModel
     public LeverSettings Levers { get; }
 
     public RoadmapCatalog Roadmap { get; }
+
+    /// <summary>Las definiciones con que se responden las seis preguntas.</summary>
+    public DashboardRules Analytics { get; }
 
     public ScoringEngine Engine { get; }
 
@@ -137,7 +179,7 @@ public sealed class RulesModel
     {
         ArgumentNullException.ThrowIfNull(info);
 
-        return new RulesModel(info, Ruleset with { Version = info.Id }, Levers, Roadmap with { Version = info.Id });
+        return new RulesModel(info, Ruleset with { Version = info.Id }, Levers, Roadmap with { Version = info.Id }, Analytics);
     }
 
     /// <summary>Reconstruye y valida una version guardada.</summary>
@@ -161,6 +203,12 @@ public sealed class RulesModel
                 ? null
                 : JsonSerializer.Deserialize<RulesImpactSummary>(stored.Impact, RulesJson.Options);
 
+            // Las versiones anteriores a que las definiciones viajaran con las reglas no
+            // las traen: usan las de fabrica.
+            var analytics = string.IsNullOrWhiteSpace(stored.Analytics)
+                ? DashboardRules.Default
+                : DashboardRules.Parse(stored.Analytics);
+
             return new RulesModel(
                 new RulesVersionInfo
                 {
@@ -174,9 +222,11 @@ public sealed class RulesModel
                 },
                 ruleset,
                 levers,
-                roadmap);
+                roadmap,
+                analytics);
         }
-        catch (Exception ex) when (ex is JsonException or RulesetException or RoadmapException or ArgumentException)
+        catch (Exception ex) when (ex is JsonException or RulesetException or RoadmapException or ArgumentException
+            or DashboardRulesException)
         {
             throw new RulesException($"La version de reglas '{stored.Id}' guardada no es valida: {ex.Message}", ex);
         }
@@ -202,6 +252,7 @@ public sealed class RulesModel
             Roadmap = Roadmap.ToJson(),
             Changes = JsonSerializer.Serialize(Info.Changes, RulesJson.Options),
             Impact = Info.Impact is null ? string.Empty : JsonSerializer.Serialize(Info.Impact, RulesJson.Options),
+            Analytics = Analytics.ToJson(),
         };
     }
 }

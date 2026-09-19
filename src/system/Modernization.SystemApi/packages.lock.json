@@ -145,6 +145,7 @@
       "modernization.rules": {
         "type": "Project",
         "dependencies": {
+          "Modernization.Insights": "[1.0.0, )",
           "Modernization.Roadmap": "[1.0.0, )"
         }
       },

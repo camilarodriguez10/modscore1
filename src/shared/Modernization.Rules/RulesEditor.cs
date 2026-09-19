@@ -1,5 +1,6 @@
 using System.Globalization;
 using Modernization.Domain;
+using Modernization.Insights;
 using Modernization.Roadmap;
 using Modernization.Scoring.Engine;
 using Modernization.WhatIf;
@@ -46,6 +47,7 @@ public static class RulesEditor
         var ruleset = ApplyMetrics(basis.Ruleset, draft.Metrics, errors);
         var levers = ApplyLevers(basis.LeverCatalog, draft.Levers, errors);
         var roadmap = ApplyRoadmap(basis.Roadmap, basis.LeverCatalog, levers, draft.Roadmap, errors);
+        var analytics = ApplyAnalytics(basis.Analytics, draft.Analytics, errors);
 
         if (errors.Count > 0)
         {
@@ -60,7 +62,8 @@ public static class RulesEditor
                 basis.Info with { BasedOn = basis.Id, PublishedAt = null, Changes = [], Impact = null, IsBuiltIn = false },
                 ruleset,
                 levers,
-                roadmap);
+                roadmap,
+                analytics);
         }
         catch (RulesException)
         {
@@ -500,6 +503,131 @@ public static class RulesEditor
 
         type = Enum.Parse<RoadmapType>(key);
         return true;
+    }
+
+    // ------------------------------------------ definiciones de las seis preguntas
+
+    /// <summary>
+    /// Valores por clave del catalogo y areas. Cada valor se revisa contra su rango; las
+    /// reglas entre valores —niveles en orden— se revisan al final, sobre el resultado.
+    /// </summary>
+    private static DashboardRules ApplyAnalytics(DashboardRules basis, AnalyticsDraft? draft, List<Notice> errors)
+    {
+        if (draft is null)
+        {
+            return basis;
+        }
+
+        if (draft.Values is { Count: > RulesLimits.MaxAnalyticsValues })
+        {
+            errors.Add(Notice.Of(NoticeCodes.RulesTooLarge, ("part", "analytics"), ("max", RulesLimits.MaxAnalyticsValues)));
+            return basis;
+        }
+
+        if (draft.Areas is { } drafts && drafts.Count > AnalyticsCatalog.Areas.Count)
+        {
+            errors.Add(Notice.Of(NoticeCodes.RulesTooLarge, ("part", "analyticsAreas"), ("max", AnalyticsCatalog.Areas.Count)));
+            return basis;
+        }
+
+        var before = errors.Count;
+        var rules = ApplyAnalyticsValues(basis, draft.Values, errors);
+        rules = ApplyAnalyticsAreas(rules, draft.Areas, errors);
+
+        // Solo con valores validos tiene sentido mirar si van en orden.
+        if (errors.Count == before)
+        {
+            foreach (var problem in rules.Problems())
+            {
+                errors.Add(Notice.Of(NoticeCodes.RulesAnalyticsInconsistent, ("rule", problem)));
+            }
+        }
+
+        return rules;
+    }
+
+    private static DashboardRules ApplyAnalyticsValues(
+        DashboardRules basis,
+        IReadOnlyDictionary<string, decimal>? values,
+        List<Notice> errors)
+    {
+        var rules = basis;
+        var position = 0;
+
+        foreach (var (key, value) in values ?? new Dictionary<string, decimal>())
+        {
+            position++;
+
+            if (AnalyticsCatalog.Find(key) is not { } parameter)
+            {
+                errors.Add(Notice.Of(NoticeCodes.RulesAnalyticsUnknown, ("position", position)));
+                continue;
+            }
+
+            if (!parameter.Accepts(value))
+            {
+                errors.Add(Notice.Of(
+                    NoticeCodes.RulesAnalyticsValue,
+                    ("parameter", parameter.Key),
+                    ("min", parameter.Min),
+                    ("max", parameter.Max),
+                    ("decimals", parameter.Decimals)));
+                continue;
+            }
+
+            rules = parameter.Set(rules, value);
+        }
+
+        return rules;
+    }
+
+    private static DashboardRules ApplyAnalyticsAreas(
+        DashboardRules basis,
+        IReadOnlyList<AnalyticsAreaDraft>? drafts,
+        List<Notice> errors)
+    {
+        if (drafts is not { Count: > 0 })
+        {
+            return basis;
+        }
+
+        var areas = AnalyticsCatalog.Areas.ToDictionary(key => key, basis.AreaOf, StringComparer.Ordinal);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+
+        for (var index = 0; index < drafts.Count; index++)
+        {
+            var area = drafts[index];
+
+            if (area is null || !AnalyticsCatalog.Areas.Contains(area.Key, StringComparer.Ordinal))
+            {
+                errors.Add(Notice.Of(NoticeCodes.RulesAnalyticsArea, ("position", index + 1)));
+                continue;
+            }
+
+            if (!seen.Add(area.Key))
+            {
+                errors.Add(Notice.Of(NoticeCodes.RulesDuplicate, ("item", area.Key)));
+                continue;
+            }
+
+            if (!AnalyticsArea.Statuses.Contains(area.Status, StringComparer.Ordinal))
+            {
+                errors.Add(Notice.Of(NoticeCodes.RulesAnalyticsStatus, ("area", area.Key)));
+                continue;
+            }
+
+            var owner = string.IsNullOrWhiteSpace(area.Owner) ? null : area.Owner.Trim();
+
+            if (!AnalyticsArea.IsOwner(owner))
+            {
+                errors.Add(Notice.Of(NoticeCodes.RulesAnalyticsOwner, ("area", area.Key), ("max", AnalyticsArea.MaxOwnerLength)));
+                continue;
+            }
+
+            areas[area.Key] = new AnalyticsArea(area.Status, owner);
+        }
+
+        return basis with { Areas = areas };
     }
 
     // ------------------------------------------------------------- valores

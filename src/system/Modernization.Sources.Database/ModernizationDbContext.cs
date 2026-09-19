@@ -103,6 +103,8 @@ public sealed class ModernizationDbContext(DbContextOptions<ModernizationDbConte
             entity.Property(v => v.Roadmap).Metadata.SetMaxLength(null);
             entity.Property(v => v.Changes).Metadata.SetMaxLength(null);
             entity.Property(v => v.Impact).Metadata.SetMaxLength(null);
+            entity.Property(v => v.Analytics).Metadata.SetMaxLength(null);
+            entity.Property(v => v.Analytics).HasDefaultValue(string.Empty);
         });
 
         Source<EaiRecord>(modelBuilder, "eai_master", entity =>

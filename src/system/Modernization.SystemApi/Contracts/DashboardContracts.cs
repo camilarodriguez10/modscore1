@@ -14,7 +14,8 @@ public sealed record DashboardResponse(
     DateTimeOffset CapturedAt,
     IReadOnlyList<DashboardTrendPoint> Trend,
     IReadOnlyList<DashboardSource> Sources,
-    PortfolioDashboard Dashboard)
+    PortfolioDashboard Dashboard,
+    AnalyticsDocument Definitions)
 {
     /// <summary>
     /// Las fuentes que cita la propuesta del dashboard. Las conectadas son las que la

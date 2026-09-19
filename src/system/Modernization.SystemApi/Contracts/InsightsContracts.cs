@@ -20,14 +20,17 @@ public sealed record InsightsResponse(
     IReadOnlyList<RiskConcentrationResponse> Risk,
     IReadOnlyList<ObsolescenceDriverResponse> Obsolescence,
     ResilienceGapsResponse Resilience,
-    InsightsOptionsResponse Options)
+    InsightsOptionsResponse Options,
+    AnalyticsDocument Definitions)
 {
     public static InsightsResponse From(
         string rulesetVersion,
         DateTimeOffset capturedAt,
-        PortfolioInsights insights)
+        PortfolioInsights insights,
+        AnalyticsDocument definitions)
     {
         ArgumentNullException.ThrowIfNull(insights);
+        ArgumentNullException.ThrowIfNull(definitions);
 
         return new InsightsResponse(
             rulesetVersion,
@@ -38,7 +41,8 @@ public sealed record InsightsResponse(
             [.. insights.Risk.Select(RiskConcentrationResponse.From)],
             [.. insights.Obsolescence.Select(ObsolescenceDriverResponse.From)],
             ResilienceGapsResponse.From(insights.Resilience),
-            InsightsOptionsResponse.From(insights.Options));
+            InsightsOptionsResponse.From(insights.Options),
+            definitions);
     }
 }
 

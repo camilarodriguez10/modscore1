@@ -1,11 +1,10 @@
 {
   "version": "dashboard-v1",
-  "status": "provisional",
-  "description": "Definitions behind the executive dashboard (Portfolio Health & Risk Intelligence). The proposal leaves these as TBD or points to 'available concepts' for Currency and Stability scoring; every value here is a default until the business confirms it (ADR 0024).",
+  "description": "Definitions behind the six portfolio questions: the executive dashboard (Portfolio Health & Risk Intelligence) and the Insights screen. These are the factory values; every number below travels with each rules version and is edited from the portal (ADR 0024, ADR 0025).",
 
   "currency": {
-    "note": "Currency Score = share of Modern components over every component CMT reports (Modern, Heritage, Obsolete, Not Approved). SR-02 already recommended a CMT-based KPI outside the Modernization Score.",
-    "legacyBelow": 50
+    "note": "Currency Score = the score CMT delivers: Raw_Tech_Score from the Currency Model Detail Report, 0-100, computed per component from its end-of-life date (decided 2026-09-18). A 0 is no data, as in the score model. Legacy platform = Currency Score below the threshold; 60 is where the BRD's lowest band (0-59) ends.",
+    "legacyBelow": 60
   },
 
   "risk": {
@@ -13,7 +12,8 @@
     "pillar": "risk",
     "moderateFrom": 40,
     "highFrom": 60,
-    "criticalFrom": 80
+    "criticalFrom": 80,
+    "hotspotCount": 5
   },
 
   "opportunity": {
@@ -31,13 +31,15 @@
   "candidates": {
     "note": "Modernization candidates = the top-right quadrant of the matrix. Levels: 0 low, 1 medium, 2 high, 3 very high.",
     "minCriticality": 2,
-    "minOpportunity": 2
+    "minOpportunity": 2,
+    "topCount": 10
   },
 
   "complexity": {
-    "note": "Duplicate technologies: the same primary capability in the same country at least this many times. Technology proliferation: one capability written in at least this many languages.",
+    "note": "Duplicate technologies: the same primary capability in the same country at least this many times. Technology proliferation: one capability written in at least this many languages. Technical debt: the mapped Tech Debt Score at or below this score (20 is the BRD's worst band).",
     "duplicateThreshold": 3,
-    "languageThreshold": 3
+    "languageThreshold": 3,
+    "techDebtMappedAtMost": 20
   },
 
   "concentration": {
@@ -66,5 +68,22 @@
     { "key": "vulnerabilities", "currency": false, "metrics": [ "sca.critical", "sca.high", "sca.medium", "sca.low" ] },
     { "key": "hostRisk", "currency": false, "metrics": [ "kenna" ] },
     { "key": "controls", "currency": false, "metrics": [ "mfa", "dr.inScope", "api.native", "monitoring", "operational" ] }
-  ]
+  ],
+
+  "insights": {
+    "businessWeight": { "critical": 1, "significantUsers": 0.5, "broadCapabilities": 0.25, "capabilitiesFrom": 3 },
+    "riskIndex": { "criticalFlaw": 3, "highFlaw": 1, "weakKenna": 5, "weakKennaFrom": 670, "obsoleteComponent": 2, "exposedCritical": 10 },
+    "lowOperationalBelow": 60,
+    "duplicateDefault": 3
+  },
+
+  "areas": {
+    "currency": { "status": "provisional", "owner": "CMT owner" },
+    "prioritization": { "status": "provisional", "owner": "Enterprise Architecture" },
+    "complexity": { "status": "provisional", "owner": "Enterprise Architecture" },
+    "risk": { "status": "provisional", "owner": "Enterprise Architecture" },
+    "obsolescence": { "status": "provisional", "owner": "Enterprise Architecture" },
+    "resilience": { "status": "provisional", "owner": "Operations" },
+    "insights": { "status": "provisional", "owner": "Enterprise Architecture" }
+  }
 }

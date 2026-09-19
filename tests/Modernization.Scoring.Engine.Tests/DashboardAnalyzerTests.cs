@@ -36,8 +36,80 @@ public sealed class DashboardAnalyzerTests
 
         Assert.Equal("dashboard-v1", rules.Version);
         Assert.Equal("provisional", rules.Status);
-        Assert.Equal(50m, rules.Currency.LegacyBelow);
+        Assert.Equal(60m, rules.Currency.LegacyBelow);
         Assert.Equal("risk", rules.Risk.Pillar);
+        Assert.Empty(rules.Problems());
+        Assert.All(AnalyticsCatalog.Areas, area => Assert.Equal(AnalyticsArea.Provisional, rules.AreaOf(area).Status));
+        Assert.Equal("CMT owner", rules.AreaOf(AnalyticsCatalog.Currency).Owner);
+    }
+
+    [Fact]
+    public void AgreeingEveryAreaMakesTheDefinitionsAgreed()
+    {
+        var rules = DashboardRules.Default with
+        {
+            Areas = AnalyticsCatalog.Areas.ToDictionary(key => key, _ => new AnalyticsArea(AnalyticsArea.Agreed)),
+        };
+
+        Assert.Equal(AnalyticsArea.Agreed, rules.Status);
+    }
+
+    /// <summary>
+    /// Cada parámetro del catálogo lee y escribe el mismo campo: si un Set apuntara a otro
+    /// campo, el portal cambiaría un umbral y el cálculo usaría otro.
+    /// </summary>
+    [Fact]
+    public void EveryCatalogParameterReadsWhatItWrites()
+    {
+        foreach (var parameter in AnalyticsCatalog.Parameters)
+        {
+            var current = parameter.Get(DashboardRules.Default);
+            Assert.True(parameter.Accepts(current), parameter.Key);
+
+            foreach (var value in new[] { parameter.Min, parameter.Max })
+            {
+                var changed = parameter.Set(DashboardRules.Default, value);
+                Assert.Equal(value, parameter.Get(changed));
+
+                // Y solo ese: el resto de los parámetros no se mueve.
+                foreach (var other in AnalyticsCatalog.Parameters.Where(p => p.Key != parameter.Key))
+                {
+                    Assert.Equal(other.Get(DashboardRules.Default), other.Get(changed));
+                }
+            }
+        }
+
+        Assert.Equal(
+            AnalyticsCatalog.Parameters.Count,
+            AnalyticsCatalog.Parameters.Select(p => p.Key).Distinct(StringComparer.Ordinal).Count());
+        Assert.All(AnalyticsCatalog.Parameters, p => Assert.Contains(p.Area, AnalyticsCatalog.Areas));
+    }
+
+    [Fact]
+    public void TheDocumentListsEveryParameterAndAreaWithItsValue()
+    {
+        var document = AnalyticsDocument.From(DashboardRules.Default, 1000);
+
+        Assert.Equal(AnalyticsCatalog.Parameters.Select(p => p.Key), document.Parameters.Select(p => p.Key));
+        Assert.Equal(AnalyticsCatalog.Areas, document.Areas.Select(a => a.Key));
+        Assert.Equal(60m, document.Parameters.Single(p => p.Key == "currency.legacyBelow").Value);
+        Assert.Equal(1000, document.SignificantUserBase);
+    }
+
+    [Fact]
+    public void TheDefinitionsSurviveTheirOwnStorageFormat()
+    {
+        var changed = DashboardRules.Default with
+        {
+            Currency = DashboardRules.Default.Currency with { LegacyBelow = 55.5m },
+            Areas = new Dictionary<string, AnalyticsArea> { ["risk"] = new(AnalyticsArea.Agreed, "Security") },
+        };
+
+        var read = DashboardRules.Parse(changed.ToJson());
+
+        Assert.Equal(55.5m, read.Currency.LegacyBelow);
+        Assert.Equal(new AnalyticsArea(AnalyticsArea.Agreed, "Security"), read.AreaOf("risk"));
+        Assert.Equal(AnalyticsArea.Provisional, read.AreaOf("currency").Status);
     }
 
     /// <summary>Un grupo de obsolescencia con una métrica mal escrita no sumaría nada, en silencio.</summary>
@@ -72,7 +144,7 @@ public sealed class DashboardAnalyzerTests
             """;
 
         var error = Assert.Throws<DashboardRulesException>(() => DashboardRules.Parse(json));
-        Assert.Contains("riesgo", error.Message, StringComparison.Ordinal);
+        Assert.Contains("risk.levels", error.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -120,7 +192,7 @@ public sealed class DashboardAnalyzerTests
         var dashboard = Analyze();
         var currency = dashboard.Kpis.Single(k => k.Key == "currency");
 
-        // Solo 7001 tiene menos de la mitad de sus componentes modernos.
+        // Solo 7001 tiene un Currency Score de CMT bajo 60.
         Assert.Equal(1, currency.Count);
         Assert.Equal(11, currency.Base);
         Assert.True(dashboard.Applications.Single(a => a.EaiCode == "7001").Legacy);
@@ -398,11 +470,73 @@ public sealed class DashboardAnalyzerTests
         Assert.Empty(dashboard.Matrix.Cells);
     }
 
-    // ------------------------------------------------------------------------
+    // ------------------------------------------------ parámetros configurables
 
-    private PortfolioDashboard Analyze(DashboardOptions? options = null)
+    /// <summary>El Currency Score es el de CMT; un 0 es falta de dato, como en el modelo.</summary>
+    [Fact]
+    public void ACurrencyScoreOfZeroIsNoData()
     {
         var applications = Portfolio();
+        applications[0] = applications[0] with { RawTechScore = 0m };
+
+        var dashboard = Analyze(applications: applications);
+        var currency = dashboard.Kpis.Single(k => k.Key == "currency");
+
+        Assert.Null(dashboard.Applications.Single(a => a.EaiCode == applications[0].EaiCode).Currency);
+        Assert.Equal(10, currency.Base);
+    }
+
+    [Fact]
+    public void TheLegacyThresholdComesFromTheDefinitions()
+    {
+        // Con 90, las que tienen 80 también son legadas.
+        var rules = DashboardRules.Default with { Currency = DashboardRules.Default.Currency with { LegacyBelow = 90m } };
+
+        var currency = Analyze(rules: rules).Kpis.Single(k => k.Key == "currency");
+
+        Assert.Equal(11, currency.Count);
+    }
+
+    [Fact]
+    public void TheListsAreAsLongAsTheDefinitionsSay()
+    {
+        var rules = DashboardRules.Default with
+        {
+            Risk = DashboardRules.Default.Risk with { HotspotCount = 2 },
+            Candidates = DashboardRules.Default.Candidates with { TopCount = 3 },
+        };
+
+        var dashboard = Analyze(rules: rules);
+
+        Assert.Equal(2, dashboard.Risk.Hotspots.Count);
+        Assert.Equal(3, dashboard.Prioritization.Top.Count);
+    }
+
+    [Fact]
+    public void HighTechnicalDebtFollowsItsThreshold()
+    {
+        var applications = Portfolio();
+        applications[0] = applications[0] with { TechDebtScore = 1m };
+
+        // 1 cae en la banda 0,1-2,4, que puntúa 60: no es deuda alta con el corte de 20.
+        Assert.DoesNotContain("technicalDebt", Analyze(applications: applications).Applications[0].Complexity);
+
+        var rules = DashboardRules.Default with
+        {
+            Complexity = DashboardRules.Default.Complexity with { TechDebtMappedAtMost = 60m },
+        };
+
+        Assert.Contains("technicalDebt", Analyze(rules: rules, applications: applications).Applications[0].Complexity);
+    }
+
+    // ------------------------------------------------------------------------
+
+    private PortfolioDashboard Analyze(
+        DashboardOptions? options = null,
+        DashboardRules? rules = null,
+        List<ApplicationSnapshot>? applications = null)
+    {
+        applications ??= Portfolio();
         var scores = applications.Select(a => _engine.Calculate(a)).ToList();
         var plans = applications.Select(a => _planner.Build(a, Start)).ToList();
 
@@ -410,7 +544,7 @@ public sealed class DashboardAnalyzerTests
             applications,
             scores,
             plans,
-            DashboardRules.Default,
+            rules ?? DashboardRules.Default,
             options ?? new DashboardOptions(SignificantUserBase: 1000));
     }
 
@@ -447,9 +581,9 @@ public sealed class DashboardAnalyzerTests
         App("5001", "Shadow Tool", "Chile", "Quoting", critical: false, users: 15, kenna: 90, scaCritical: 0,
             disposition: null, roadmap: null),
 
-        // Legada por componentes: uno moderno de cinco.
+        // Legada: CMT le da un Currency Score de 20.
         App("7001", "Mainframe Bridge", "Mexico", "Payments", critical: false, users: 300, kenna: 400, scaCritical: 0,
-            disposition: ApplicationDisposition.Tolerate, roadmap: RoadmapType.Rehost, modern: 1, obsolete: 4),
+            disposition: ApplicationDisposition.Tolerate, roadmap: RoadmapType.Rehost, modern: 1, obsolete: 4, rawTech: 20m),
     ];
 
     private static ApplicationSnapshot App(
@@ -469,7 +603,8 @@ public sealed class DashboardAnalyzerTests
         string? language = "Java",
         string? rto = "4-24 hrs.",
         int modern = 5,
-        int obsolete = 0) => new()
+        int obsolete = 0,
+        decimal rawTech = 80m) => new()
         {
             EaiCode = eaiCode,
             ApplicationName = name,
@@ -491,7 +626,7 @@ public sealed class DashboardAnalyzerTests
             ScaFlaws = new ScaFlawCounts { Critical = scaCritical, High = scaCritical * 2, Medium = 0, Low = 0 },
             UtilizesMfa = true,
             OpenSourceScore = 70m,
-            RawTechScore = 80m,
+            RawTechScore = rawTech,
             ArchitecturalValue = new ArchitecturalValue { ModernCount = modern, HeritageCount = 0, ObsoleteCount = obsolete },
             ProductStrategy = new ProductStrategy { InvestCount = 1, TolerateCount = 1 },
             TechDebtScore = null,

@@ -75,14 +75,21 @@ public static class InsightsEndpoints
             }
         }
 
+        // Pesos y umbrales del analisis: viajan con las reglas vigentes (ADR 0025).
+        var definitions = rules.Analytics;
         var options = new InsightsOptions(
             rules.Roadmap.Parameters.HealthyScore,
             rules.Roadmap.Parameters.SignificantUserBase,
-            duplicates ?? 3,
-            top ?? 10);
+            duplicates ?? definitions.Insights.DuplicateDefault,
+            top ?? 10,
+            definitions.Insights);
 
         var insights = InsightsAnalyzer.Analyze(applications, scores, plans, options);
 
-        return Results.Ok(InsightsResponse.From(rules.Info.Id, snapshot.CapturedAt, insights));
+        return Results.Ok(InsightsResponse.From(
+            rules.Info.Id,
+            snapshot.CapturedAt,
+            insights,
+            AnalyticsDocument.From(definitions, rules.Roadmap.Parameters.SignificantUserBase)));
     }
 }

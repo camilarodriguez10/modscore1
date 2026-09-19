@@ -24,6 +24,7 @@ public abstract class RulesStoreContract
         Roadmap = "{\"version\":\"" + id + "\"}",
         Changes = "[]",
         Impact = string.Empty,
+        Analytics = "{\"version\":\"" + id + "\"}",
     };
 
     [Fact]

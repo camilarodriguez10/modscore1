@@ -32,7 +32,10 @@ public sealed class RulesEditorTests
             [.. document.Roadmap.Roadmaps.Select(r => new RoadmapPathDraft(
                 r.Key,
                 r.Levers,
-                [.. r.Milestones.Select(m => m.Weeks)]))]));
+                [.. r.Milestones.Select(m => m.Weeks)]))]),
+        new AnalyticsDraft(
+            document.Analytics.Parameters.ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal),
+            [.. document.Analytics.Areas.Select(a => new AnalyticsAreaDraft(a.Key, a.Status, a.Owner))]));
 
     [Fact]
     public void AnEmptyDraftIsValidAndChangesNothing()

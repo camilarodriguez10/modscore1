@@ -148,6 +148,42 @@ public sealed class InsightsAnalyzerTests
         Assert.True(lob.InternetFacingCritical >= 1);
     }
 
+    /// <summary>
+    /// Kenna va de 0 a 1000 y más alto es peor. Hasta el 2026-09-18 se contaba al revés
+    /// —Kenna menor que 50— y las aplicaciones con el mejor riesgo de host sumaban.
+    /// </summary>
+    [Fact]
+    public void WeakVulnerabilityManagementIsAHighKennaScore()
+    {
+        var insights = Analyze();
+
+        var claims = Assert.Single(insights.Risk, r => r.Grouping == "capability" && r.Dimension == "Claims");
+        Assert.Equal(1, claims.WeakVulnerabilityManagement);
+
+        // Ninguna otra llega a 670.
+        Assert.All(
+            insights.Risk.Where(r => r.Grouping == "capability" && r.Dimension != "Claims"),
+            r => Assert.Equal(0, r.WeakVulnerabilityManagement));
+    }
+
+    [Fact]
+    public void TheRiskIndexAndTheBusinessWeightComeFromTheDefinitions()
+    {
+        var rules = new InsightsRules
+        {
+            RiskIndex = new RiskIndexRules { CriticalFlaw = 0m, HighFlaw = 0m, WeakKenna = 0m, ObsoleteComponent = 0m, ExposedCritical = 1m },
+            BusinessWeight = new BusinessWeightRules { Critical = 3m, SignificantUsers = 0m, BroadCapabilities = 0m },
+        };
+
+        var insights = Analyze(new InsightsOptions(Rules: rules));
+
+        // Solo pesa la crítica expuesta: cada grupo listado vale lo que cuenta de ellas.
+        Assert.NotEmpty(insights.Risk);
+        Assert.All(insights.Risk, r => Assert.Equal(r.InternetFacingCritical, r.RiskIndex));
+
+        Assert.Equal(4m, insights.Priorities.Single(p => p.EaiCode == "2001").BusinessWeight);
+    }
+
     // --------------------------------- ¿qué está causando la obsolescencia?
 
     [Fact]
@@ -244,9 +280,10 @@ public sealed class InsightsAnalyzerTests
             App("1003", "Policy Servicing Portal", "Individual", "Chile", "Policy Servicing",
                 critical: false, users: 120, kenna: 300, scaCritical: 0, disposition: ApplicationDisposition.Tolerate, roadmap: RoadmapType.Rehost),
 
-            // Crítica, expuesta, con flaws y sin plan de recuperación ni monitoreo.
+            // Crítica, expuesta, con flaws, Kenna en la banda Critical/High y sin plan de
+            // recuperación ni monitoreo.
             App("2001", "Claims Core", "Individual", "Chile", "Claims",
-                critical: true, users: 5000, kenna: 20, scaCritical: 3, disposition: ApplicationDisposition.Invest, roadmap: RoadmapType.Reimagine,
+                critical: true, users: 5000, kenna: 900, scaCritical: 3, disposition: ApplicationDisposition.Invest, roadmap: RoadmapType.Reimagine,
                 internetFacing: true, disasterRecovery: false, monitoring: false, operational: 45m, rto: null, rpo: null),
 
             // Sanas, para que el promedio no sea todo rojo.

@@ -1,4 +1,5 @@
 import type { Notice } from '../api/types';
+import { areaName, constraintText, parameterLabel, statusLabel } from './analytics';
 
 /**
  * Catalogo de frases del sitio.
@@ -71,6 +72,8 @@ const DRAFT_PARTS: Record<string, string> = {
   levers: 'levers',
   roadmaps: 'roadmaps',
   roadmapLevers: 'levers in one roadmap',
+  analytics: 'definition values',
+  analyticsAreas: 'definition areas',
 };
 
 const EXPECTED_VALUE: Record<string, string> = {
@@ -248,6 +251,15 @@ const MESSAGES: Record<string, (a: Args) => string> = {
   'rules.invalid': () => 'The resulting rules are not consistent. Review the draft.',
   'rules.storeUnavailable': () =>
     'The rules store did not respond, so nothing was published. Scores keep using the active rules. Try again in a moment.',
+  'rules.analyticsUnknown': (a) => `Definition value #${a.position} does not exist in the catalog.`,
+  'rules.analyticsValue': (a) =>
+    `${parameterLabel(a.parameter ?? '')} must be between ${num(a.min)} and ${num(a.max)}` +
+    (a.decimals === '0' ? ', a whole number.' : `, with up to ${a.decimals} decimals.`),
+  'rules.analyticsInconsistent': (a) => constraintText(a.rule ?? ''),
+  'rules.analyticsArea': (a) => `Definition area #${a.position} does not exist.`,
+  'rules.analyticsStatus': (a) => `${areaName(a.area ?? '')}: the status must be provisional or agreed.`,
+  'rules.analyticsOwner': (a) =>
+    `${areaName(a.area ?? '')}: the owner is one line of up to ${a.max} characters, without control characters.`,
 
   'change.weight': (a) => `${a.metric}: weight ${num(a.from)} → ${num(a.to)}`,
   'change.bands': (a) => `${a.metric}: bands ${a.from} → ${a.to}`,
@@ -265,6 +277,11 @@ const MESSAGES: Record<string, (a: Args) => string> = {
     `${a.roadmap}, “${a.milestone}”: ${num(a.from)} → ${num(a.to)} ${plural(a.to, 'week')}`,
   'change.healthyScore': (a) => `Healthy score: ${num(a.from)} → ${num(a.to)}`,
   'change.userBase': (a) => `Significant user base: ${num(a.from)} → ${num(a.to)} users`,
+  'change.analytics': (a) => `${parameterLabel(a.parameter ?? '')}: ${num(a.from)} → ${num(a.to)}`,
+  'change.analyticsStatus': (a) =>
+    `${areaName(a.area ?? '')}: ${statusLabel(a.from ?? '').toLowerCase()} → ${statusLabel(a.to ?? '').toLowerCase()}`,
+  'change.analyticsOwner': (a) =>
+    `${areaName(a.area ?? '')}: owner ${a.from ? `“${a.from}”` : 'none'} → ${a.to ? `“${a.to}”` : 'none'}`,
 
   // -------------------------------------------------------------- insights
   'insights.criticalApplication': () => 'Critical application',

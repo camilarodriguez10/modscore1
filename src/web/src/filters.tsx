@@ -407,7 +407,7 @@ export function ActiveFilters() {
       </ul>
 
       <Link
-        to={{ pathname: '/', search }}
+        to={{ pathname: '/portfolio', search }}
         className="ml-auto text-[12.5px] text-accent underline-offset-2 hover:underline"
       >
         View the filtered portfolio

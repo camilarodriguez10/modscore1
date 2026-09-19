@@ -41,6 +41,12 @@ public sealed record StoredRulesVersion
 
     /// <summary>El impacto simulado al publicar.</summary>
     public required string Impact { get; init; }
+
+    /// <summary>
+    /// Definiciones de las seis preguntas (dashboard e Insights). Vacio en las versiones
+    /// publicadas antes del 2026-09-18, que usan los valores de fabrica.
+    /// </summary>
+    public string Analytics { get; init; } = string.Empty;
 }
 
 /// <summary>

@@ -78,6 +78,13 @@ public sealed partial class ViewModelContractTests
         [typeof(Insights.DashboardResilienceDimension)] = "DashboardResilienceDimension",
         [typeof(Insights.DashboardLevelShare)] = "DashboardLevelShare",
         [typeof(Insights.DashboardApplication)] = "DashboardApplication",
+        [typeof(Insights.AnalyticsDocument)] = "AnalyticsDocument",
+        [typeof(Insights.AnalyticsParameterValue)] = "AnalyticsParameterValue",
+        [typeof(Insights.AnalyticsAreaValue)] = "AnalyticsAreaValue",
+        [typeof(IndicatorShift)] = "IndicatorShift",
+        [typeof(RulesDraft)] = "RulesDraft",
+        [typeof(AnalyticsDraft)] = "AnalyticsDraft",
+        [typeof(AnalyticsAreaDraft)] = "AnalyticsAreaDraft",
     };
 
     [Fact]

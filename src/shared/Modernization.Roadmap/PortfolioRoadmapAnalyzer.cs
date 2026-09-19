@@ -31,18 +31,50 @@ public sealed class PortfolioRoadmapAnalyzer(RoadmapCatalog catalog, RoadmapPlan
     {
         ArgumentNullException.ThrowIfNull(applications);
 
-        var planned = new List<PlannedApplication>(applications.Count);
+        var plans = new List<ApplicationRoadmapPlan?>(applications.Count);
 
         foreach (var application in applications)
         {
             try
             {
-                planned.Add(new PlannedApplication(application, planner.Build(application, startDate)));
+                plans.Add(planner.Build(application, startDate));
             }
             catch (Scoring.Engine.RulesetException)
             {
                 // Una aplicacion cuyo dato no encaja en el ruleset no puede
                 // puntuarse; se omite del agregado en vez de tumbar la vista.
+                plans.Add(null);
+            }
+        }
+
+        return Summarize(applications, plans, grouping);
+    }
+
+    /// <summary>
+    /// El mismo resumen con los planes ya construidos, en el orden de las aplicaciones;
+    /// null donde la aplicacion no se pudo puntuar. Lo usa quien necesita los planes para
+    /// algo mas, como el impacto de un cambio de reglas: asi se construyen una sola vez.
+    /// </summary>
+    public PortfolioRoadmapSummary Summarize(
+        IReadOnlyList<ApplicationSnapshot> applications,
+        IReadOnlyList<ApplicationRoadmapPlan?> built,
+        RoadmapGrouping grouping = RoadmapGrouping.Portfolio)
+    {
+        ArgumentNullException.ThrowIfNull(applications);
+        ArgumentNullException.ThrowIfNull(built);
+
+        if (built.Count != applications.Count)
+        {
+            throw new ArgumentException("Tiene que haber un plan, o null, por aplicacion.", nameof(built));
+        }
+
+        var planned = new List<PlannedApplication>(applications.Count);
+
+        for (var index = 0; index < applications.Count; index++)
+        {
+            if (built[index] is { } plan)
+            {
+                planned.Add(new PlannedApplication(applications[index], plan));
             }
         }
 

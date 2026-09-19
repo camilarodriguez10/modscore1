@@ -44,15 +44,21 @@ public sealed class DashboardEndToEndTests(LayeredApiFixture fixture) : IClassFi
         Assert.Equal(5, dashboard.Resilience.Dimensions.Count);
     }
 
-    /// <summary>Quien lee el dashboard tiene que saber que las definiciones son provisionales.</summary>
+    /// <summary>
+    /// Quien lee el dashboard tiene que saber que las definiciones son provisionales, y con
+    /// que valores se calculo: las definiciones viajan con las reglas (ADR 0025).
+    /// </summary>
     [Fact]
     public async Task TheResponseSaysWhichDefinitionsItUsesAndWhichSourcesAreMissing()
     {
         var view = await GetAsync();
 
-        Assert.Equal("dashboard-v1", view.DefinitionsVersion);
+        Assert.Equal(view.RulesetVersion, view.DefinitionsVersion);
         Assert.Equal("provisional", view.DefinitionsStatus);
         Assert.NotEmpty(view.RulesetVersion);
+        Assert.Equal(Insights.AnalyticsCatalog.Parameters.Count, view.Definitions.Parameters.Count);
+        Assert.Equal(60m, view.Definitions.Parameters.Single(p => p.Key == "currency.legacyBelow").Value);
+        Assert.True(view.Definitions.SignificantUserBase > 0);
 
         Assert.Contains(view.Sources, s => s.Key == "eai" && s.Connected);
         Assert.Contains(view.Sources, s => s.Key == "tlm" && !s.Connected);

@@ -55,7 +55,10 @@ export function ExplainPage() {
           >
             What-If
           </Link>
-          <Link to="/" className="rounded-sm border border-rule px-3 py-1.5 text-[13px] text-ink-2 hover:bg-surface-2">
+          <Link
+            to="/portfolio"
+            className="rounded-sm border border-rule px-3 py-1.5 text-[13px] text-ink-2 hover:bg-surface-2"
+          >
             Portfolio
           </Link>
         </nav>

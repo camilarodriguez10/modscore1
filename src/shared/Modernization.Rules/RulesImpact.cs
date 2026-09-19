@@ -1,4 +1,6 @@
 using Modernization.Domain;
+using Modernization.Insights;
+using Modernization.Roadmap;
 using Modernization.Scoring.Engine;
 
 namespace Modernization.Rules;
@@ -15,6 +17,12 @@ public sealed record RulesImpactSummary(
 
 /// <summary>Cuantas aplicaciones hay en un tramo antes y despues del cambio.</summary>
 public sealed record BandShift(string Band, int Before, int After);
+
+/// <summary>
+/// Un indicador del dashboard antes y despues: su valor y cuantas aplicaciones cuenta.
+/// Un cambio en las definiciones no mueve ningun score, pero si estos numeros.
+/// </summary>
+public sealed record IndicatorShift(string Key, decimal? Before, decimal? After, int CountBefore, int CountAfter);
 
 /// <summary>Una aplicacion antes y despues. Null donde su dato no encaja en esas reglas.</summary>
 public sealed record ApplicationShift(
@@ -66,6 +74,9 @@ public sealed record RulesImpact
 
     public required int AlertsAfter { get; init; }
 
+    /// <summary>Los indicadores del dashboard sobre todo el portafolio, antes y despues.</summary>
+    public IReadOnlyList<IndicatorShift> Indicators { get; init; } = [];
+
     /// <summary>
     /// Todas las aplicaciones, antes y despues, en el orden de la carga. No viaja en la
     /// simulacion —son cientos de filas—: alimenta la exportacion del impacto.
@@ -79,12 +90,16 @@ public sealed record RulesImpact
 
 /// <summary>
 /// Lo que el impacto necesita de unas reglas sobre una carga: el score de cada
-/// aplicacion y el resumen de sus planes.
+/// aplicacion, el resumen de sus planes y los indicadores del dashboard.
 /// </summary>
 /// <remarks>
 /// Del lado de las reglas vigentes no cambia mientras no cambien ni las reglas ni la
 /// carga, asi que se calcula una vez y cada simulacion solo calcula el lado del
 /// borrador. En la medicion de la revision era la mitad del costo de simular.
+/// <para>
+/// El plan de cada aplicacion trae su score: se construye una sola vez y de ahi salen
+/// el score, el resumen del roadmap y el dashboard.
+/// </para>
 /// </remarks>
 public sealed class RulesImpactBaseline
 {
@@ -96,7 +111,8 @@ public sealed class RulesImpactBaseline
         DateOnly startDate,
         decimal?[] scores,
         decimal? projectedScore,
-        int alerts)
+        int alerts,
+        IReadOnlyList<DashboardKpi> indicators)
     {
         Applications = applications;
         Model = model;
@@ -104,6 +120,7 @@ public sealed class RulesImpactBaseline
         _scores = scores;
         ProjectedScore = projectedScore;
         Alerts = alerts;
+        Indicators = indicators;
     }
 
     public IReadOnlyList<ApplicationSnapshot> Applications { get; }
@@ -117,6 +134,9 @@ public sealed class RulesImpactBaseline
 
     /// <summary>Alertas de coherencia en todo el portafolio.</summary>
     public int Alerts { get; }
+
+    /// <summary>Los indicadores del dashboard sobre todo el portafolio.</summary>
+    public IReadOnlyList<DashboardKpi> Indicators { get; }
 
     /// <summary>
     /// True si sirve para estas reglas, esta carga y esta fecha. Compara instancias, no
@@ -137,16 +157,14 @@ public sealed class RulesImpactBaseline
         ArgumentNullException.ThrowIfNull(model);
 
         var scores = new decimal?[applications.Count];
+        var plans = new ApplicationRoadmapPlan?[applications.Count];
 
         for (var index = 0; index < applications.Count; index++)
         {
-            scores[index] = RulesImpactSimulator.Score(model, applications[index]);
+            (plans[index], scores[index]) = RulesImpactSimulator.Plan(model, applications[index], startDate);
         }
 
-        var plan = model.Analyzer.Summarize(applications, startDate);
-        decimal? projected = plan.Groups.Count == 0 ? null : plan.Groups[0].AverageProjectedScore;
-
-        return new RulesImpactBaseline(applications, model, startDate, scores, projected, plan.Alerts.Sum(a => a.Count));
+        return From(applications, model, startDate, scores, plans);
     }
 
     /// <summary>
@@ -162,12 +180,58 @@ public sealed class RulesImpactBaseline
         ArgumentNullException.ThrowIfNull(applications);
         ArgumentNullException.ThrowIfNull(model);
 
-        var planTask = Task.Run(() => model.Analyzer.Summarize(applications, startDate), cancellationToken);
-        var scores = RulesImpactSimulator.ScoreAll(model, applications, cancellationToken);
-        var plan = await planTask.ConfigureAwait(false);
-        decimal? projected = plan.Groups.Count == 0 ? null : plan.Groups[0].AverageProjectedScore;
+        var scores = new decimal?[applications.Count];
+        var plans = new ApplicationRoadmapPlan?[applications.Count];
 
-        return new RulesImpactBaseline(applications, model, startDate, scores, projected, plan.Alerts.Sum(a => a.Count));
+        await Task.Run(
+            () => Parallel.For(
+                0,
+                applications.Count,
+                new ParallelOptions { CancellationToken = cancellationToken },
+                index => (plans[index], scores[index]) = RulesImpactSimulator.Plan(model, applications[index], startDate)),
+            cancellationToken).ConfigureAwait(false);
+
+        return From(applications, model, startDate, scores, plans);
+    }
+
+    private static RulesImpactBaseline From(
+        IReadOnlyList<ApplicationSnapshot> applications,
+        RulesModel model,
+        DateOnly startDate,
+        decimal?[] scores,
+        ApplicationRoadmapPlan?[] plans)
+    {
+        var summary = model.Analyzer.Summarize(applications, plans);
+        decimal? projected = summary.Groups.Count == 0 ? null : summary.Groups[0].AverageProjectedScore;
+
+        // El dashboard mira las mismas aplicaciones que su pantalla: las que tienen score y plan.
+        var planned = new List<ApplicationSnapshot>(applications.Count);
+        var built = new List<ApplicationRoadmapPlan>(applications.Count);
+
+        for (var index = 0; index < applications.Count; index++)
+        {
+            if (plans[index] is { } plan)
+            {
+                planned.Add(applications[index]);
+                built.Add(plan);
+            }
+        }
+
+        var dashboard = DashboardAnalyzer.Analyze(
+            planned,
+            [.. built.Select(p => p.Baseline)],
+            built,
+            model.Analytics,
+            new DashboardOptions(SignificantUserBase: model.Roadmap.Parameters.SignificantUserBase));
+
+        return new RulesImpactBaseline(
+            applications,
+            model,
+            startDate,
+            scores,
+            projected,
+            summary.Alerts.Sum(a => a.Count),
+            dashboard.Kpis);
     }
 }
 
@@ -216,20 +280,24 @@ public static class RulesImpactSimulator
         return Build(baseline, candidate);
     }
 
-    internal static decimal?[] ScoreAll(
+    /// <summary>
+    /// El plan de una aplicacion y su score. Si el plan no se puede construir, el score
+    /// se calcula solo: una aplicacion sin plan sigue puntuando, como en su pantalla.
+    /// </summary>
+    internal static (ApplicationRoadmapPlan? Plan, decimal? Score) Plan(
         RulesModel model,
-        IReadOnlyList<ApplicationSnapshot> applications,
-        CancellationToken cancellationToken)
+        ApplicationSnapshot application,
+        DateOnly startDate)
     {
-        var scores = new decimal?[applications.Count];
-
-        Parallel.For(
-            0,
-            applications.Count,
-            new ParallelOptions { CancellationToken = cancellationToken },
-            index => scores[index] = Score(model, applications[index]));
-
-        return scores;
+        try
+        {
+            var plan = model.Planner.Build(application, startDate);
+            return (plan, plan.Baseline.EffectiveScore);
+        }
+        catch (RulesetException)
+        {
+            return (null, Score(model, application));
+        }
     }
 
     internal static decimal? Score(RulesModel model, ApplicationSnapshot application)
@@ -295,6 +363,11 @@ public static class RulesImpactSimulator
             ProjectedAfter = after.ProjectedScore,
             AlertsBefore = before.Alerts,
             AlertsAfter = after.Alerts,
+            Indicators = [.. before.Indicators.Select(kpi =>
+            {
+                var now = after.Indicators.FirstOrDefault(k => string.Equals(k.Key, kpi.Key, StringComparison.Ordinal));
+                return new IndicatorShift(kpi.Key, kpi.Value, now?.Value, kpi.Count, now?.Count ?? 0);
+            })],
             Shifts = shifts,
         };
     }

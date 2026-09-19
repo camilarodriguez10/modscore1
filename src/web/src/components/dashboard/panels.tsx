@@ -25,6 +25,8 @@ import {
   scaleShort,
 } from '../../i18n/dashboard';
 import { bandColor, fmt } from '../primitives';
+import { ExplanationBlock, useDefinitions } from '../Explanation';
+import { dashboardExplanation } from '../../i18n/analytics';
 import { Donut, Gauge, Heatmap, LevelBar, LevelChip, TrendLine, levelMark, levelText } from './charts';
 
 /** Lo que se abre en el detalle: un titulo y que filas entran. */
@@ -69,6 +71,8 @@ export function QuestionPanel({
   right?: ReactNode | undefined;
   children: ReactNode;
 }) {
+  const definitions = useDefinitions();
+
   return (
     <section
       aria-labelledby={`question-${number}`}
@@ -92,6 +96,9 @@ export function QuestionPanel({
         {right}
       </header>
       <div className="flex flex-1 flex-col gap-4 px-4 py-4">{children}</div>
+      {definitions && (
+        <ExplanationBlock explanation={dashboardExplanation(number, definitions)} definitions={definitions} />
+      )}
     </section>
   );
 }

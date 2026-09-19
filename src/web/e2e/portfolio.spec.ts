@@ -3,7 +3,7 @@ import { download, signIn } from './support';
 
 test.describe('portfolio', () => {
   test('a filter chosen from a chart travels with the URL across screens', async ({ page }) => {
-    await signIn(page);
+    await signIn(page, '/portfolio');
 
     await page.getByRole('button', { name: /^Mexico: / }).first().click();
     await expect(page).toHaveURL(/country=Mexico/);
@@ -15,7 +15,7 @@ test.describe('portfolio', () => {
   });
 
   test('the filtered portfolio downloads as CSV', async ({ page }) => {
-    await signIn(page, '/?country=Mexico');
+    await signIn(page, '/portfolio?country=Mexico');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('application');
 
     const { file, rows } = await download(page, () => page.getByRole('link', { name: 'Download CSV' }).click());

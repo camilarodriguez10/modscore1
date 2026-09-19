@@ -16,12 +16,6 @@ namespace Modernization.Insights;
 /// </remarks>
 public static class InsightsAnalyzer
 {
-    /// <summary>Kenna por debajo de esto cuenta como gestión de vulnerabilidades débil.</summary>
-    private const decimal WeakKennaScore = 50m;
-
-    /// <summary>Score operacional por debajo de esto cuenta como hueco de resiliencia.</summary>
-    private const decimal LowOperationalScore = 60m;
-
     public static PortfolioInsights Analyze(
         IReadOnlyList<ApplicationSnapshot> applications,
         IReadOnlyList<ScoreBreakdown> scores,
@@ -131,23 +125,24 @@ public static class InsightsAnalyzer
             }
 
             var evidence = new List<Notice>();
+            var weights = options.Rules.BusinessWeight;
             var weight = 1m;
 
             if (application.CriticalApplicationIndicator == true)
             {
-                weight += 1m;
+                weight += weights.Critical;
                 evidence.Add(Notice.Of(NoticeCodes.InsightsCriticalApplication));
             }
 
             if (application.UserCount is { } users && users >= options.SignificantUserBase)
             {
-                weight += 0.5m;
+                weight += weights.SignificantUsers;
                 evidence.Add(Notice.Of(NoticeCodes.InsightsLargeUserBase, ("users", users)));
             }
 
-            if (application.L1BusinessCapabilityCount is { } capabilities && capabilities >= 3)
+            if (application.L1BusinessCapabilityCount is { } capabilities && capabilities >= weights.CapabilitiesFrom)
             {
-                weight += 0.25m;
+                weight += weights.BroadCapabilities;
                 evidence.Add(Notice.Of(NoticeCodes.InsightsManyCapabilities, ("count", capabilities)));
             }
 
@@ -323,6 +318,7 @@ public static class InsightsAnalyzer
         };
 
         var concentrations = new List<RiskConcentration>();
+        var index = options.Rules.RiskIndex;
 
         foreach (var (name, of) in groupings)
         {
@@ -334,7 +330,10 @@ public static class InsightsAnalyzer
 
                 var criticalFlaws = members.Sum(a => a.ScaFlaws?.Critical ?? 0);
                 var highFlaws = members.Sum(a => a.ScaFlaws?.High ?? 0);
-                var weakKenna = members.Count(a => a.KennaScore is { } k && k < WeakKennaScore);
+                // Kenna va de 0 a 1000 y mas alto es peor (bandas del BRD). Hasta el
+                // 2026-09-18 se contaba al reves —Kenna < 50—, y las aplicaciones con el mejor
+                // riesgo de host sumaban como si fueran las peores.
+                var weakKenna = members.Count(a => a.KennaScore is { } k && k >= index.WeakKennaFrom);
                 var obsolete = members.Sum(a =>
                     (a.ArchitecturalValue?.ObsoleteCount ?? 0) + (a.ArchitecturalValue?.NotApprovedForUseCount ?? 0));
                 var exposed = members.Count(a => a.InternetFacing == true && a.CriticalApplicationIndicator == true);
@@ -348,9 +347,10 @@ public static class InsightsAnalyzer
                 // Indice para ordenar, no para comparar contra otro portafolio: un flaw
                 // critico pesa mas que uno alto, y una aplicacion critica expuesta pesa
                 // como varios flaws porque el riesgo no es solo el conteo.
-                var index = (criticalFlaws * 3m) + (highFlaws * 1m) + (weakKenna * 5m) + (obsolete * 2m) + (exposed * 10m);
+                var value = (criticalFlaws * index.CriticalFlaw) + (highFlaws * index.HighFlaw) + (weakKenna * index.WeakKenna)
+                    + (obsolete * index.ObsoleteComponent) + (exposed * index.ExposedCritical);
 
-                if (index <= 0m)
+                if (value <= 0m)
                 {
                     continue;
                 }
@@ -365,7 +365,7 @@ public static class InsightsAnalyzer
                     obsolete,
                     exposed,
                     scores.Count == 0 ? 0m : Round(scores.Average()),
-                    Round(index)));
+                    Round(value)));
             }
         }
 
@@ -469,7 +469,7 @@ public static class InsightsAnalyzer
                 }
             }
 
-            if (application.OperationalScore is { } operational && operational < LowOperationalScore)
+            if (application.OperationalScore is { } operational && operational < options.Rules.LowOperationalBelow)
             {
                 gaps.Add(Notice.Of(NoticeCodes.InsightsGapOperational, ("score", Round(operational))));
                 lowOperational++;

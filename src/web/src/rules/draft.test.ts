@@ -92,6 +92,17 @@ const document: RulesDocument = {
       },
     ],
   },
+  analytics: {
+    parameters: [
+      { key: 'currency.legacyBelow', area: 'currency', kind: 'score', value: 60, min: 0.01, max: 100, decimals: 2 },
+      { key: 'risk.hotspotCount', area: 'risk', kind: 'count', value: 5, min: 1, max: 50, decimals: 0 },
+    ],
+    areas: [
+      { key: 'currency', status: 'provisional', owner: 'CMT owner' },
+      { key: 'risk', status: 'provisional', owner: null },
+    ],
+    significantUserBase: 500,
+  },
 };
 
 const baseline = () => draftFrom(editorFrom(document, 'v1.3'), document).draft;
@@ -152,6 +163,46 @@ describe('draftFrom', () => {
     editor.paths.Refactor!.levers = ['mfa.enable', 'arch.modernize'];
 
     expect(countChanges(draftFrom(editor, document).draft, baseline())).toBe(0);
+  });
+
+  it('sends every definition and area, and counts their edits', () => {
+    const editor = editorFrom(document, 'v1.3');
+    editor.analytics['currency.legacyBelow'] = '55.5';
+    editor.areas.currency = { status: 'agreed', owner: ' CMT owner ' };
+    editor.areas.risk = { status: 'provisional', owner: 'Security' };
+
+    const { draft, invalid } = draftFrom(editor, document);
+
+    expect(invalid.size).toBe(0);
+    expect(draft.analytics?.values).toEqual({ 'currency.legacyBelow': 55.5, 'risk.hotspotCount': 5 });
+    expect(draft.analytics?.areas).toEqual([
+      { key: 'currency', status: 'agreed', owner: 'CMT owner' },
+      { key: 'risk', status: 'provisional', owner: 'Security' },
+    ]);
+    // El valor, el estado de currency y el dueno de risk; el espacio del dueno no cuenta.
+    expect(countChanges(draft, baseline())).toBe(3);
+  });
+
+  it('requires whole numbers where the definition has no decimals', () => {
+    const editor = editorFrom(document, 'v1.3');
+    editor.analytics['risk.hotspotCount'] = '5.5';
+    editor.analytics['currency.legacyBelow'] = 'sixty';
+
+    expect([...draftFrom(editor, document).invalid].sort()).toEqual([
+      'analytics.currency.legacyBelow',
+      'analytics.risk.hotspotCount',
+    ]);
+  });
+
+  it('reads an editor saved before the definitions existed', () => {
+    const old = editorFrom(document, 'v1.3') as Partial<ReturnType<typeof editorFrom>>;
+    delete old.analytics;
+    delete old.areas;
+
+    const { draft, invalid } = draftFrom(old as ReturnType<typeof editorFrom>, document);
+
+    expect(invalid.size).toBe(0);
+    expect(countChanges(draft, baseline())).toBe(0);
   });
 
   it('takes the structure from the document, never from a saved editor', () => {

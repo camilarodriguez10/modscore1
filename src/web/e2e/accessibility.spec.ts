@@ -8,13 +8,15 @@ import { signIn } from './support';
  * las que dejan a alguien fuera, no un detalle de estilo.
  */
 const screens = [
-  { name: 'dashboard', path: '/dashboard' },
-  { name: 'portfolio', path: '/' },
+  { name: 'dashboard', path: '/' },
+  { name: 'portfolio', path: '/portfolio' },
+  { name: 'definitions', path: '/definitions' },
   { name: 'calculation of the BRD example', path: '/applications/14381/calculation' },
   { name: 'insights', path: '/insights' },
   { name: 'roadmap', path: '/roadmap' },
   { name: 'data', path: '/data' },
   { name: 'rules administration', path: '/admin/rules' },
+  { name: 'portfolio analytics administration', path: '/admin/rules?tab=analytics' },
 ];
 
 for (const scheme of ['light', 'dark'] as const) {

@@ -7,5 +7,8 @@
          construye con ellos el modelo candidato y lo simula con el mismo codigo que
          calcula el score vigente. -->
     <ProjectReference Include="..\Modernization.Roadmap\Modernization.Roadmap.csproj" />
+    <!-- Las definiciones de las seis preguntas (dashboard e Insights) viajan con cada
+         version de reglas y se editan con el mismo borrador (ADR 0025). -->
+    <ProjectReference Include="..\Modernization.Insights\Modernization.Insights.csproj" />
   </ItemGroup>
 </Project>

@@ -603,6 +603,38 @@ export interface RulesDocument {
   metrics: readonly RulesMetric[];
   levers: readonly RulesLever[];
   roadmap: RulesRoadmap;
+  analytics: AnalyticsDocument;
+}
+
+/**
+ * Las definiciones de las seis preguntas (ADR 0025): cada parametro con su valor y su
+ * rango, y cada area con su estado y su dueno. Lo edita el administrador y lo reciben
+ * el dashboard e Insights para explicar sus calculos con los numeros que usaron.
+ */
+export interface AnalyticsDocument {
+  parameters: readonly AnalyticsParameterValue[];
+  areas: readonly AnalyticsAreaValue[];
+  /** Del roadmap, no se edita aqui: la criticidad y el peso de negocio dependen de el. */
+  significantUserBase: number;
+}
+
+export interface AnalyticsParameterValue {
+  /** Clave del catalogo, como `currency.legacyBelow`. La interfaz la nombra. */
+  key: string;
+  area: string;
+  /** score · share · points · weight · level · count · hours · kenna */
+  kind: string;
+  value: number;
+  min: number;
+  max: number;
+  decimals: number;
+}
+
+export interface AnalyticsAreaValue {
+  key: string;
+  /** "provisional" o "agreed". */
+  status: string;
+  owner: string | null;
 }
 
 export interface RulesLimitsView {
@@ -663,6 +695,16 @@ export interface RulesImpact {
   projectedAfter: number | null;
   alertsBefore: number;
   alertsAfter: number;
+  /** Los indicadores del dashboard sobre todo el portafolio, antes y despues. */
+  indicators: readonly IndicatorShift[];
+}
+
+export interface IndicatorShift {
+  key: string;
+  before: number | null;
+  after: number | null;
+  countBefore: number;
+  countAfter: number;
 }
 
 export interface RulesSimulationView {
@@ -689,6 +731,19 @@ export interface RulesDraft {
   metrics: readonly MetricDraft[];
   levers: readonly LeverDraft[];
   roadmap: RoadmapDraft;
+  analytics: AnalyticsDraft | null;
+}
+
+/** Valores por clave del catalogo y el estado y dueno de cada area. */
+export interface AnalyticsDraft {
+  values: Readonly<Record<string, number>> | null;
+  areas: readonly AnalyticsAreaDraft[] | null;
+}
+
+export interface AnalyticsAreaDraft {
+  key: string;
+  status: string;
+  owner: string | null;
 }
 
 export interface MetricDraft {
@@ -808,6 +863,8 @@ export interface InsightsView {
   obsolescence: readonly ObsolescenceDriverView[];
   resilience: ResilienceGapsView;
   options: InsightsOptionsView;
+  /** Pesos y umbrales vigentes: la pantalla explica sus calculos con ellos. */
+  definitions: AnalyticsDocument;
 }
 
 /** Que tan sano esta el portafolio. `dataCoverage` es el peso del modelo que tuvo dato. */
@@ -923,12 +980,14 @@ export interface InsightsOptionsView {
 export interface DashboardView {
   rulesetVersion: string;
   definitionsVersion: string;
-  /** "provisional" mientras el negocio no confirme las definiciones (ADR 0024). */
+  /** "provisional" mientras alguna area lo sea; "agreed" cuando el negocio confirmo todas. */
   definitionsStatus: string;
   capturedAt: string;
   trend: readonly DashboardTrendPoint[];
   sources: readonly DashboardSource[];
   dashboard: PortfolioDashboard;
+  /** Las definiciones vigentes, con que se explica cada panel. */
+  definitions: AnalyticsDocument;
 }
 
 export interface DashboardTrendPoint {

@@ -63,7 +63,7 @@ export function OverviewPage() {
             Future plan
           </Link>
           <Link
-            to="/"
+            to="/portfolio"
             className="rounded-sm border border-rule px-3 py-1.5 text-[13px] text-ink-2 hover:bg-surface-2"
           >
             Portfolio

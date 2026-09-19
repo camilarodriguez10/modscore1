@@ -7,6 +7,8 @@ import { bandLabel, countOf } from '../i18n/notices';
 import { AXIS_KEYS, kpiSub, kpiTitle, levelLabel, scaleLabel, sourceName } from '../i18n/dashboard';
 import { BandChip, Card, QueryError, Spinner, fmt } from '../components/primitives';
 import { LevelChip, TrendLine, levelText } from '../components/dashboard/charts';
+import { DefinitionsContext, ExplanationBlock } from '../components/Explanation';
+import { dashboardExplanation } from '../i18n/analytics';
 import {
   ComplexityPanel,
   HealthPanel,
@@ -23,7 +25,8 @@ import {
  * Responde la pregunta ejecutiva con las seis preguntas de la propuesta del MVP, en
  * una vista y con el filtro de la barra. La pantalla no calcula: pinta lo que llega y,
  * al hacer clic en cualquier celda, burbuja, barra o indicador, abre el mismo detalle
- * filtrado de otra forma (PLAN §8.10, ADR 0024).
+ * filtrado de otra forma (PLAN §8.10, ADR 0024). Es la pagina de inicio, y cada panel
+ * explica su calculo con las definiciones vigentes (ADR 0025).
  */
 export function DashboardPage() {
   const [params, setParams] = useSearchParams();
@@ -46,6 +49,7 @@ export function DashboardPage() {
   const { dashboard } = data;
 
   return (
+    <DefinitionsContext.Provider value={data.definitions}>
     <div className="flex flex-col gap-4">
       <Header view={data} />
 
@@ -58,6 +62,13 @@ export function DashboardPage() {
       ) : (
         <>
           <Indicators kpis={dashboard.kpis} trend={data.trend} onSelect={setSelection} />
+          <div className="rounded-md border border-rule bg-surface [&>details]:border-t-0">
+            <ExplanationBlock
+              explanation={dashboardExplanation(0, data.definitions)}
+              definitions={data.definitions}
+              title="How the indicators are calculated"
+            />
+          </div>
 
           <div className="grid gap-4 xl:grid-cols-2">
             <HealthPanel view={data} axis={axis} onAxis={setAxis} onSelect={setSelection} />
@@ -81,6 +92,7 @@ export function DashboardPage() {
         />
       )}
     </div>
+    </DefinitionsContext.Provider>
   );
 }
 
@@ -92,6 +104,7 @@ function Header({ view }: { view: DashboardView }) {
     month: 'short',
     day: 'numeric',
   });
+  const provisional = view.definitions.areas.filter((area) => area.status !== 'agreed').length;
 
   return (
     <header className="flex flex-col gap-3">
@@ -104,13 +117,19 @@ function Header({ view }: { view: DashboardView }) {
         </div>
         <p className="font-mono text-[11px] text-ink-3">
           Rules {view.rulesetVersion} · data of {captured} ·{' '}
-          <span
-            className="rounded-sm px-1.5 py-0.5 font-semibold"
-            style={{ color: 'var(--app-warning-text)', background: 'var(--app-warning-wash)' }}
-            title="Every threshold of this dashboard is a default until the business confirms it (ADR 0024)"
+          <Link
+            to="/definitions"
+            className="rounded-sm px-1.5 py-0.5 font-semibold underline-offset-2 hover:underline"
+            style={
+              provisional > 0
+                ? { color: 'var(--app-warning-text)', background: 'var(--app-warning-wash)' }
+                : { color: 'var(--app-good-text)', background: 'var(--app-good-wash)' }
+            }
           >
-            {view.definitionsStatus === 'provisional' ? 'Provisional definitions' : 'Definitions'} ({view.definitionsVersion})
-          </span>
+            {provisional > 0
+              ? `${provisional} of ${view.definitions.areas.length} definition areas provisional`
+              : 'All definitions agreed'}
+          </Link>
         </p>
       </div>
 

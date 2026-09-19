@@ -97,6 +97,7 @@ public sealed class DatabaseRulesStore(IDbContextFactory<ModernizationDbContext>
                 Roadmap = version.Roadmap,
                 Changes = version.Changes,
                 Impact = version.Impact,
+                Analytics = version.Analytics,
             });
 
             await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
@@ -142,6 +143,7 @@ public sealed class DatabaseRulesStore(IDbContextFactory<ModernizationDbContext>
         Roadmap = row.Roadmap,
         Changes = row.Changes,
         Impact = row.Impact,
+        Analytics = row.Analytics,
     };
 }
 
@@ -168,4 +170,10 @@ public sealed class RulesVersionRow
     public required string Changes { get; set; }
 
     public required string Impact { get; set; }
+
+    /// <summary>
+    /// Definiciones de las seis preguntas. Vacio en las versiones publicadas antes de la
+    /// migracion que agrego la columna: esas usan los valores de fabrica.
+    /// </summary>
+    public string Analytics { get; set; } = string.Empty;
 }

@@ -35,6 +35,12 @@ export interface PathEdit {
   weeks: string[];
 }
 
+/** Estado y dueno de un area de definiciones. */
+export interface AreaEdit {
+  status: string;
+  owner: string;
+}
+
 export interface Editor {
   /** La version sobre la que se preparo. Publicar exige que siga siendo la vigente. */
   basedOn: string;
@@ -45,6 +51,9 @@ export interface Editor {
   healthyScore: string;
   userBase: string;
   paths: Record<string, PathEdit>;
+  /** Definiciones de las seis preguntas, por clave del catalogo. */
+  analytics: Record<string, string>;
+  areas: Record<string, AreaEdit>;
   reason: string;
 }
 
@@ -87,6 +96,10 @@ export function editorFrom(document: RulesDocument, basedOn: string, restoredFro
         path.key,
         { levers: [...path.levers], weeks: path.milestones.map((m) => text(m.weeks)) },
       ]),
+    ),
+    analytics: Object.fromEntries(document.analytics.parameters.map((p) => [p.key, text(p.value)])),
+    areas: Object.fromEntries(
+      document.analytics.areas.map((area) => [area.key, { status: area.status, owner: area.owner ?? '' }]),
     ),
     reason: '',
   };
@@ -163,6 +176,22 @@ export function draftFrom(editor: Editor, document: RulesDocument): { draft: Rul
         };
       }),
     },
+    analytics: {
+      values: Object.fromEntries(
+        document.analytics.parameters.map((parameter) => [
+          parameter.key,
+          parameter.decimals === 0
+            ? whole(`analytics.${parameter.key}`, editor.analytics?.[parameter.key] ?? text(parameter.value))
+            : number(`analytics.${parameter.key}`, editor.analytics?.[parameter.key] ?? text(parameter.value)),
+        ]),
+      ),
+      areas: document.analytics.areas.map((area) => {
+        const edit = editor.areas?.[area.key];
+        const owner = (edit?.owner ?? area.owner ?? '').trim();
+
+        return { key: area.key, status: edit?.status ?? area.status, owner: owner === '' ? null : owner };
+      }),
+    },
   };
 
   return { draft, invalid };
@@ -192,6 +221,15 @@ export function flatten(draft: RulesDraft): Map<string, string> {
   for (const path of draft.roadmap.roadmaps) {
     values.set(`${path.key}.levers`, [...path.levers].sort().join(','));
     path.milestoneWeeks.forEach((weeks, i) => values.set(`${path.key}.week${i}`, text(weeks)));
+  }
+
+  for (const [key, value] of Object.entries(draft.analytics?.values ?? {})) {
+    values.set(`analytics.${key}`, text(value));
+  }
+
+  for (const area of draft.analytics?.areas ?? []) {
+    values.set(`area.${area.key}.status`, area.status);
+    values.set(`area.${area.key}.owner`, area.owner ?? '');
   }
 
   return values;

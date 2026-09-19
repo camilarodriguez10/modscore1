@@ -43,14 +43,21 @@ public sealed record PortfolioInsights
 /// edita desde el portal: cambiar ahí qué es "sano" cambia también este análisis.
 /// <c>DuplicateThreshold</c> es a partir de cuántas aplicaciones una coincidencia ya es
 /// una concentración, y <c>TopCount</c> cuántos elementos devuelve cada lista.
+/// <c>Rules</c> son los pesos y umbrales del análisis, que viajan con las reglas
+/// versionadas y se editan desde el portal (ADR 0025).
 /// </remarks>
 public sealed record InsightsOptions(
     decimal HealthyScore = 70m,
     int SignificantUserBase = 1000,
     int DuplicateThreshold = 3,
-    int TopCount = 10)
+    int TopCount = 10,
+    InsightsRules? Rules = null)
 {
     public const int MaxTopCount = 50;
+
+    /// <summary>No viaja en la respuesta: la pantalla recibe las definiciones completas aparte.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public InsightsRules Rules { get; init; } = Rules ?? new InsightsRules();
 
     public InsightsOptions Sane() => this with
     {

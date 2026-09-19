@@ -194,7 +194,7 @@ public static class DashboardAnalyzer
             .ThenByDescending(p => p.RiskScore ?? -1m)
             .ThenByDescending(p => p.Uplift)
             .ThenBy(p => p.EaiCode, StringComparer.Ordinal)
-            .Take(10)
+            .Take(rules.Candidates.TopCount)
             .ToList();
 
         return new DashboardPrioritization(
@@ -303,7 +303,7 @@ public static class DashboardAnalyzer
         var hotspots = risks
             .OrderByDescending(f => f.RiskScore)
             .ThenBy(f => f.Application.EaiCode, StringComparer.Ordinal)
-            .Take(5)
+            .Take(rules.Risk.HotspotCount)
             .Select(f => new DashboardHotspot(
                 f.Application.EaiCode,
                 f.Application.ApplicationName,
@@ -513,7 +513,7 @@ public static class DashboardAnalyzer
                 Currency = currency,
                 Legacy = currency < rules.Currency.LegacyBelow,
                 HighTechDebt = breakdown.Metrics.Any(m =>
-                    m.MetricKey == "techDebt" && m.MappedScore is { } mapped && mapped <= 20m),
+                    m.MetricKey == "techDebt" && m.MappedScore is { } mapped && mapped <= rules.Complexity.TechDebtMappedAtMost),
                 Criticality = criticality,
                 Opportunity = opportunity,
                 Uplift = uplift is { } u ? Math.Round(u, 2, MidpointRounding.AwayFromZero) : 0m,
@@ -587,18 +587,14 @@ public static class DashboardAnalyzer
             return Math.Round(Math.Clamp(risk, 0m, 100m), 2, MidpointRounding.AwayFromZero);
         }
 
-        /// <summary>La parte moderna de los componentes que reporta CMT.</summary>
+        /// <summary>
+        /// El Currency Score es el que entrega CMT: el <c>Raw_Tech_Score</c> del Currency
+        /// Model Detail Report. Un 0 es falta de dato, como en el modelo de score (ADR 0019).
+        /// </summary>
         private static decimal? CurrencyOf(ApplicationSnapshot application)
-        {
-            var value = application.ArchitecturalValue;
-
-            if (value is null || value.TotalCount == 0)
-            {
-                return null;
-            }
-
-            return Math.Round((value.ModernCount ?? 0) / (decimal)value.TotalCount * 100m, 2, MidpointRounding.AwayFromZero);
-        }
+            => application.RawTechScore is { } score and > 0m
+                ? Math.Round(score, 2, MidpointRounding.AwayFromZero)
+                : null;
 
         private static int CriticalityOf(ApplicationSnapshot application, DashboardRules rules, DashboardOptions options)
         {

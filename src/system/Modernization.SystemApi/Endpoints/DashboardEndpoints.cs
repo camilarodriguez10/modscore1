@@ -84,7 +84,8 @@ public static class DashboardEndpoints
             }
         }
 
-        var definitions = DashboardRules.Default;
+        // Las definiciones viajan con las reglas vigentes y se editan desde el portal.
+        var definitions = rules.Analytics;
         var dashboard = DashboardAnalyzer.Analyze(
             applications,
             scores,
@@ -96,11 +97,12 @@ public static class DashboardEndpoints
 
         return Results.Ok(new DashboardResponse(
             rules.Info.Id,
-            definitions.Version,
+            rules.Info.Id,
             definitions.Status,
             snapshot.CapturedAt,
             trend,
             DashboardResponse.KnownSources,
-            dashboard));
+            dashboard,
+            AnalyticsDocument.From(definitions, rules.Roadmap.Parameters.SignificantUserBase)));
     }
 }

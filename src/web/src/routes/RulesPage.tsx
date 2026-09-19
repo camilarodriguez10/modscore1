@@ -23,6 +23,16 @@ import {
   pillarName,
 } from '../components/primitives';
 import { bandLabel, countOf, formatNotice } from '../i18n/notices';
+import { kpiTitle } from '../i18n/dashboard';
+import {
+  AREA_KEYS,
+  areaName,
+  areaQuestion,
+  formatParameter,
+  parameterHelp,
+  parameterLabel,
+  unitOf,
+} from '../i18n/analytics';
 import {
   countChanges,
   draftFrom,
@@ -43,16 +53,18 @@ import {
  * confia en nada de el: vuelve a validar y a simular al publicar. Lo que queda
  * registrado es el impacto que calculo el servidor, no el que se vio aqui.
  *
- * Solo se editan valores: pesos, bandas, puntajes, que palancas se ofrecen y los
- * parametros del roadmap. Que metricas existen y de donde leen su dato es codigo.
+ * Solo se editan valores: pesos, bandas, puntajes, que palancas se ofrecen, los
+ * parametros del roadmap y las definiciones de las seis preguntas (ADR 0025). Que
+ * metricas existen y de donde leen su dato es codigo.
  */
 
-type Tab = 'formula' | 'levers' | 'roadmap' | 'versions';
+type Tab = 'formula' | 'levers' | 'roadmap' | 'analytics' | 'versions';
 
 const TABS: readonly { key: Tab; label: string }[] = [
   { key: 'formula', label: 'Score formula' },
   { key: 'levers', label: 'What-if levers' },
   { key: 'roadmap', label: 'Roadmap' },
+  { key: 'analytics', label: 'Portfolio analytics' },
   { key: 'versions', label: 'Versions' },
 ];
 
@@ -262,7 +274,7 @@ function RulesWorkspace({
             {published.impact?.averageDelta !== null && published.impact?.averageDelta !== undefined && (
               <> The portfolio average moved {signed(published.impact.averageDelta)} points.</>
             )}{' '}
-            <Link to="/" className="text-accent underline-offset-2 hover:underline">
+            <Link to="/portfolio" className="text-accent underline-offset-2 hover:underline">
               View the portfolio
             </Link>
           </p>
@@ -323,6 +335,7 @@ function RulesWorkspace({
       )}
       {tab === 'levers' && <LeversTab view={view} editor={editor} invalid={invalid} update={update} />}
       {tab === 'roadmap' && <RoadmapTab view={view} editor={editor} invalid={invalid} update={update} />}
+      {tab === 'analytics' && <AnalyticsTab view={view} editor={editor} invalid={invalid} update={update} />}
       {tab === 'versions' && (
         <VersionsTab view={view} onRestore={restore} restoring={loadVersion.isPending ? loadVersion.variables : null} />
       )}
@@ -514,6 +527,43 @@ function ImpactSummary({ impact }: { impact: RulesImpact }) {
           {impact.alertsBefore} → {impact.alertsAfter}
         </Stat>
       </dl>
+
+      {impact.indicators.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[30rem] text-left text-[13px]">
+            <caption className="mb-1.5 text-left">
+              <Label>Dashboard indicators, whole portfolio</Label>
+            </caption>
+            <thead className="text-[11px] text-ink-3 uppercase">
+              <tr>
+                <th className="py-1 font-medium">Indicator</th>
+                <th className="py-1 text-right font-medium">Before</th>
+                <th className="py-1 text-right font-medium">After</th>
+              </tr>
+            </thead>
+            <tbody>
+              {impact.indicators.map((indicator) => {
+                const unit = indicator.key === 'health' ? '' : ' %';
+                const show = (value: number | null) => (value === null ? '—' : `${fmt(value)}${unit}`);
+                const moved = indicator.before !== indicator.after || indicator.countBefore !== indicator.countAfter;
+
+                return (
+                  <tr key={indicator.key} className="border-t border-rule">
+                    <td className="py-1.5">{kpiTitle(indicator.key)}</td>
+                    <td className="tnum py-1.5 text-right font-mono">{show(indicator.before)}</td>
+                    <td className={`tnum py-1.5 text-right font-mono ${moved ? 'font-semibold' : ''}`}>
+                      {show(indicator.after)}
+                      {indicator.key !== 'health' && (
+                        <span className="ml-1.5 text-ink-3">({countOf(indicator.countAfter, 'app')})</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {impact.noLongerScored > 0 && (
         <p className="text-[13px]" style={{ color: 'var(--app-critical-text)' }}>
@@ -1264,5 +1314,131 @@ function TabButton({
     >
       {children}
     </button>
+  );
+}
+
+// -------------------------------------------------- definiciones (ADR 0025)
+
+/**
+ * Las definiciones con que se responden las seis preguntas: el umbral de cada nivel,
+ * cuantas filas lista cada panel, los pesos de Insights, y el estado y el dueno de cada
+ * area. No mueven ningun score: la simulacion muestra como se mueven los indicadores
+ * del dashboard. La lista sale del documento, asi que un parametro nuevo aparece aqui
+ * sin tocar la pantalla.
+ */
+function AnalyticsTab({
+  view,
+  editor,
+  invalid,
+  update,
+}: {
+  view: RulesAdminView;
+  editor: Editor;
+  invalid: Set<string>;
+  update: Update;
+}) {
+  const { analytics } = view.document;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="max-w-[90ch] text-[13px] text-ink-2">
+        The values the dashboard and the Insights screen use to answer the six questions. They change no score; the
+        simulation shows how the dashboard indicators move. Mark an area as agreed when the business confirms it:
+        the dashboard stops calling it provisional. The significant user base ({fmt(analytics.significantUserBase, 0)}{' '}
+        users) is edited in the Roadmap tab.{' '}
+        <Link to="/definitions" className="text-accent underline underline-offset-2">
+          See how each value is used
+        </Link>
+      </p>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        {AREA_KEYS.map((area) => {
+          const parameters = analytics.parameters.filter((p) => p.area === area);
+          const current = analytics.areas.find((a) => a.key === area);
+          const edit = editor.areas?.[area] ?? { status: current?.status ?? 'provisional', owner: current?.owner ?? '' };
+
+          const setArea = (change: Partial<{ status: string; owner: string }>) =>
+            update((next) => {
+              next.areas = { ...(next.areas ?? {}), [area]: { ...edit, ...change } };
+            });
+
+          return (
+            <Card key={area} title={areaName(area)} subtitle={areaQuestion(area)}>
+              <div className="flex flex-col gap-4 px-4 py-3.5">
+                <div className="flex flex-wrap items-end gap-4">
+                  <label className="flex flex-col gap-1">
+                    <Label>Status</Label>
+                    <select
+                      value={edit.status}
+                      onChange={(event) => setArea({ status: event.target.value })}
+                      className="rounded-sm border border-rule bg-surface px-2 py-1 text-[13px] text-ink"
+                    >
+                      <option value="provisional">Provisional</option>
+                      <option value="agreed">Agreed by the business</option>
+                    </select>
+                  </label>
+                  <label className="flex min-w-[12rem] flex-1 flex-col gap-1">
+                    <Label>Owner</Label>
+                    <input
+                      type="text"
+                      value={edit.owner}
+                      maxLength={60}
+                      onChange={(event) => setArea({ owner: event.target.value })}
+                      className="rounded-sm border border-rule bg-surface px-2 py-1 text-[13px] text-ink"
+                    />
+                  </label>
+                </div>
+
+                {area === 'currency' && (
+                  <p className="text-[12.5px] text-ink-2">
+                    The Currency Score is the score CMT delivers (Raw_Tech_Score, Currency Model Detail Report). Its
+                    source is fixed; the threshold is yours.
+                  </p>
+                )}
+                {area === 'obsolescence' && (
+                  <p className="text-[12.5px] text-ink-2">
+                    The concepts and the metrics each one groups are part of the code. Only the status and the owner
+                    are edited here.
+                  </p>
+                )}
+
+                {parameters.length > 0 && (
+                  <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
+                    {parameters.map((parameter) => {
+                      const id = `analytics.${parameter.key}`;
+                      const value = editor.analytics?.[parameter.key] ?? String(parameter.value);
+
+                      return (
+                        <div key={parameter.key} className="flex flex-col gap-1">
+                          <NumberField
+                            label={parameterLabel(parameter.key)}
+                            value={value}
+                            invalid={invalid.has(id)}
+                            width="w-24"
+                            onChange={(next) =>
+                              update((draft) => {
+                                draft.analytics = { ...(draft.analytics ?? {}), [parameter.key]: next };
+                              })
+                            }
+                          />
+                          <p className="text-[11.5px] leading-snug text-ink-2">
+                            {parameterHelp(parameter.key)} Range {formatParameter({ ...parameter, value: parameter.min })}
+                            {' – '}
+                            {formatParameter({ ...parameter, value: parameter.max })} ({unitOf(parameter.kind)}).
+                            {String(parameter.value) !== value && (
+                              <> Published: {formatParameter(parameter)}.</>
+                            )}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
   );
 }

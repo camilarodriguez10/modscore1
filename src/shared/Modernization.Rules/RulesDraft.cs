@@ -18,7 +18,8 @@ namespace Modernization.Rules;
 public sealed record RulesDraft(
     IReadOnlyList<MetricDraft>? Metrics = null,
     IReadOnlyList<LeverDraft>? Levers = null,
-    RoadmapDraft? Roadmap = null);
+    RoadmapDraft? Roadmap = null,
+    AnalyticsDraft? Analytics = null);
 
 /// <summary>
 /// Una metrica editada. Bandas, casos y compuestos solo se aceptan en la metrica
@@ -42,6 +43,17 @@ public sealed record RoadmapDraft(
 
 /// <summary>Un roadmap editado: las palancas que entrega y la duracion de cada hito, en orden.</summary>
 public sealed record RoadmapPathDraft(string Key, IReadOnlyList<string> Levers, IReadOnlyList<int> MilestoneWeeks);
+
+/// <summary>
+/// Las definiciones de las seis preguntas editadas: valores por clave del catalogo y el
+/// estado y dueno de cada area. Lo que no aparece conserva lo que tenia.
+/// </summary>
+public sealed record AnalyticsDraft(
+    IReadOnlyDictionary<string, decimal>? Values = null,
+    IReadOnlyList<AnalyticsAreaDraft>? Areas = null);
+
+/// <summary>Un area editada: "provisional" o "agreed", y quien responde por ella.</summary>
+public sealed record AnalyticsAreaDraft(string Key, string Status, string? Owner = null);
 
 /// <summary>
 /// Topes de un borrador. Autenticado —y hasta administrador— no significa
@@ -73,4 +85,7 @@ public static class RulesLimits
 
     /// <summary>Cuantas versiones anteriores se listan.</summary>
     public const int MaxListedVersions = 50;
+
+    /// <summary>Valores de definiciones en un borrador. El catalogo tiene 37.</summary>
+    public const int MaxAnalyticsValues = 64;
 }

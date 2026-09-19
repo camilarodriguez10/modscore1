@@ -19,7 +19,7 @@ const QUESTIONS = [
 
 test.describe('dashboard', () => {
   test('the executive question and the six questions are on one screen', async ({ page }) => {
-    await signIn(page, '/dashboard');
+    await signIn(page, '/');
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Portfolio Health & Risk Intelligence');
     await expect(page.getByText('Where is the highest concentration of portfolio risk')).toBeVisible();
@@ -32,7 +32,7 @@ test.describe('dashboard', () => {
   });
 
   test('an indicator opens the detail, and Escape closes it', async ({ page }) => {
-    await signIn(page, '/dashboard');
+    await signIn(page, '/');
 
     await page.getByRole('button', { name: /Applications at risk/ }).click();
 
@@ -46,7 +46,7 @@ test.describe('dashboard', () => {
   });
 
   test('the heatmap axis and the new filters travel in the URL', async ({ page }) => {
-    await signIn(page, '/dashboard');
+    await signIn(page, '/');
 
     await page.getByRole('group', { name: 'Heatmap axis' }).first().getByRole('button', { name: 'CIO' }).click();
     await expect(page).toHaveURL(/axis=cio/);
@@ -60,17 +60,40 @@ test.describe('dashboard', () => {
     await expect(page).toHaveURL(/capability=/);
   });
 
-  test('the dashboard is the first tab of the site', async ({ page }) => {
+  test('the dashboard is the home page and the first tab of the site', async ({ page }) => {
     await signIn(page);
 
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Portfolio Health & Risk Intelligence');
     const tabs = page.getByRole('banner').getByRole('navigation').getByRole('link');
     await expect(tabs.first()).toHaveText('Dashboard');
+  });
+
+  test('the old dashboard address still works and keeps its filters', async ({ page }) => {
+    await signIn(page, '/dashboard?axis=cio');
+
+    await expect(page).toHaveURL(/\/\?axis=cio$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Portfolio Health & Risk Intelligence');
+  });
+
+  test('each panel explains its calculation with the values in force', async ({ page }) => {
+    await signIn(page, '/');
+
+    const risk = page.getByRole('region', { name: 'Where is technology risk concentrated?' });
+    await risk.getByText('How this is calculated').click();
+    await expect(risk.getByText(/moderate from 40, high from 60, critical from 80/)).toBeVisible();
+    await expect(risk.getByText('Provisional', { exact: true })).toBeVisible();
+
+    await page.getByText('How the indicators are calculated').click();
+    await expect(page.getByText(/Currency Score below 60/).first()).toBeVisible();
+
+    await risk.getByRole('link', { name: 'See every definition' }).click();
+    await expect(page).toHaveURL(/\/definitions#risk$/);
   });
 
   for (const colorScheme of ['light', 'dark'] as const) {
     test(`the open detail has no serious accessibility violations in ${colorScheme} mode`, async ({ page }) => {
       await page.emulateMedia({ colorScheme });
-      await signIn(page, '/dashboard');
+      await signIn(page, '/');
       await page.getByRole('button', { name: /Modernization candidates/ }).click();
       await expect(page.getByRole('dialog')).toBeVisible();
 

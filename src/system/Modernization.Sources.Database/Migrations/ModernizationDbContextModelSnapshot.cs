@@ -97,6 +97,12 @@ namespace Modernization.Sources.Database.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Analytics")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("");
+
                     b.Property<string>("BasedOn")
                         .HasMaxLength(16)
                         .HasColumnType("TEXT");

@@ -10,6 +10,7 @@ import { RoadmapPage } from './routes/RoadmapPage';
 import { PortfolioRoadmapPage } from './routes/PortfolioRoadmapPage';
 import { InsightsPage } from './routes/InsightsPage';
 import { DashboardPage } from './routes/DashboardPage';
+import { DefinitionsPage } from './routes/DefinitionsPage';
 import { DataPage } from './routes/DataPage';
 import { Spinner } from './components/primitives';
 import { RulesChangedNotice } from './components/RulesChangedNotice';
@@ -22,18 +23,24 @@ const RulesComparePage = lazy(() =>
 );
 
 /** Las pantallas donde el filtro actua. En el resto se muestra, pero sin controles. */
-const FILTERED_ROUTES = new Set(['/', '/dashboard', '/insights', '/roadmap']);
+const FILTERED_ROUTES = new Set(['/', '/portfolio', '/insights', '/roadmap']);
+
+/** Pantallas sobre las reglas, no sobre un recorte del portafolio: el filtro no se muestra. */
+const UNFILTERED_ROUTES = ['/admin', '/definitions'];
 
 export function App() {
   return (
     <Routes>
       <Route element={<Shell />}>
-        <Route index element={<PortfolioPage />} />
+        {/* El dashboard es la pagina de inicio desde el 2026-09-18 (ADR 0025). */}
+        <Route index element={<DashboardPage />} />
+        <Route path="portfolio" element={<PortfolioPage />} />
+        <Route path="definitions" element={<DefinitionsPage />} />
         <Route path="applications/:eaiCode" element={<OverviewPage />} />
         <Route path="applications/:eaiCode/calculation" element={<ExplainPage />} />
         <Route path="applications/:eaiCode/what-if" element={<WhatIfPage />} />
         <Route path="applications/:eaiCode/roadmap" element={<RoadmapPage />} />
-        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="dashboard" element={<LegacyDashboard />} />
         <Route path="insights" element={<InsightsPage />} />
         <Route path="roadmap" element={<PortfolioRoadmapPage />} />
         <Route path="data" element={<DataPage />} />
@@ -66,6 +73,13 @@ export function App() {
       </Route>
     </Routes>
   );
+}
+
+/** `/dashboard` fue la direccion del dashboard antes de ser la pagina de inicio. */
+function LegacyDashboard() {
+  const { search } = useLocation();
+
+  return <Navigate to={`/${search}`} replace />;
 }
 
 function LegacyApplication({ suffix }: { suffix: string }) {
@@ -171,10 +185,10 @@ function Workspace({ name, canAdministerRules }: { name: string; canAdministerRu
 
           {/* Cada enlace lleva el filtro consigo: cambiar de menu no lo pierde. */}
           <nav className="flex gap-1">
-            <Tab to="/dashboard" search={search}>
+            <Tab to="/" search={search}>
               Dashboard
             </Tab>
-            <Tab to="/" search={search}>
+            <Tab to="/portfolio" search={search}>
               Portfolio
             </Tab>
             <Tab to="/insights" search={search}>
@@ -185,6 +199,9 @@ function Workspace({ name, canAdministerRules }: { name: string; canAdministerRu
             </Tab>
             <Tab to="/data" search={search}>
               Data
+            </Tab>
+            <Tab to="/definitions" search="">
+              Definitions
             </Tab>
             {/* Solo a quien administra reglas. El servidor lo exige igual: esto solo
                 evita ofrecer una pantalla que responderia 403. */}
@@ -205,7 +222,7 @@ function Workspace({ name, canAdministerRules }: { name: string; canAdministerRu
         {/* Las reglas son de todo el portafolio: un filtro ahi no acota nada. */}
         {FILTERED_ROUTES.has(pathname) ? (
           <FilterBar />
-        ) : pathname.startsWith('/admin') ? null : (
+        ) : UNFILTERED_ROUTES.some((route) => pathname.startsWith(route)) ? null : (
           <ActiveFilters />
         )}
         <Outlet />

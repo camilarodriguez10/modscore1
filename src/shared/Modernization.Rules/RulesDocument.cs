@@ -1,4 +1,5 @@
 using Modernization.Domain;
+using Modernization.Insights;
 using Modernization.Scoring.Engine;
 
 namespace Modernization.Rules;
@@ -19,7 +20,8 @@ public sealed record RulesDocument(
     IReadOnlyList<RulesPillar> Pillars,
     IReadOnlyList<RulesMetric> Metrics,
     IReadOnlyList<RulesLever> Levers,
-    RulesRoadmap Roadmap)
+    RulesRoadmap Roadmap,
+    AnalyticsDocument Analytics)
 {
     public static RulesDocument From(RulesModel model)
     {
@@ -67,7 +69,8 @@ public sealed record RulesDocument(
                     MapsNames.Display(r.Disposition),
                     r.RemovesFromPortfolio,
                     r.Levers,
-                    [.. r.Milestones.Select(m => new RulesMilestone(m.Name, m.Owner, m.Weeks))]))]));
+                    [.. r.Milestones.Select(m => new RulesMilestone(m.Name, m.Owner, m.Weeks))]))]),
+            AnalyticsDocument.From(model.Analytics, model.Roadmap.Parameters.SignificantUserBase));
     }
 
     private static string KindName(MappingKind kind) => kind switch

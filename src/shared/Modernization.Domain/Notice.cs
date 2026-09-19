@@ -199,6 +199,15 @@ public static class NoticeCodes
     public const string RulesInvalid = "rules.invalid";
     public const string RulesStoreUnavailable = "rules.storeUnavailable";
 
+    // Definiciones de las seis preguntas (ADR 0025). "parameter", "area" y "rule" son
+    // claves del catalogo; la interfaz las nombra.
+    public const string RulesAnalyticsUnknown = "rules.analyticsUnknown";
+    public const string RulesAnalyticsValue = "rules.analyticsValue";
+    public const string RulesAnalyticsInconsistent = "rules.analyticsInconsistent";
+    public const string RulesAnalyticsArea = "rules.analyticsArea";
+    public const string RulesAnalyticsStatus = "rules.analyticsStatus";
+    public const string RulesAnalyticsOwner = "rules.analyticsOwner";
+
     public const string ChangeWeight = "change.weight";
     public const string ChangeBands = "change.bands";
     public const string ChangeCase = "change.case";
@@ -209,6 +218,9 @@ public static class NoticeCodes
     public const string ChangeMilestoneWeeks = "change.milestoneWeeks";
     public const string ChangeHealthyScore = "change.healthyScore";
     public const string ChangeUserBase = "change.userBase";
+    public const string ChangeAnalytics = "change.analytics";
+    public const string ChangeAnalyticsStatus = "change.analyticsStatus";
+    public const string ChangeAnalyticsOwner = "change.analyticsOwner";
 
     // Analisis del portafolio (las seis preguntas). La interfaz redacta la frase.
     public const string InsightsCriticalApplication = "insights.criticalApplication";

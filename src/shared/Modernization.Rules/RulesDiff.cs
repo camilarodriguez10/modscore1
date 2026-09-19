@@ -1,5 +1,6 @@
 using System.Globalization;
 using Modernization.Domain;
+using Modernization.Insights;
 using Modernization.Scoring.Engine;
 
 namespace Modernization.Rules;
@@ -21,8 +22,44 @@ internal static class RulesDiff
         CompareMetrics(before.Ruleset, after.Ruleset, changes);
         CompareLevers(before, after, changes);
         CompareRoadmap(before, after, changes);
+        CompareAnalytics(before.Analytics, after.Analytics, changes);
 
         return changes;
+    }
+
+    /// <summary>Cada parametro por su clave del catalogo, y cada area por su estado y su dueno.</summary>
+    private static void CompareAnalytics(DashboardRules before, DashboardRules after, List<Notice> changes)
+    {
+        foreach (var parameter in AnalyticsCatalog.Parameters)
+        {
+            var old = parameter.Get(before);
+            var now = parameter.Get(after);
+
+            if (old != now)
+            {
+                changes.Add(Notice.Of(NoticeCodes.ChangeAnalytics, ("parameter", parameter.Key), ("from", old), ("to", now)));
+            }
+        }
+
+        foreach (var key in AnalyticsCatalog.Areas)
+        {
+            var old = before.AreaOf(key);
+            var now = after.AreaOf(key);
+
+            if (!string.Equals(old.Status, now.Status, StringComparison.Ordinal))
+            {
+                changes.Add(Notice.Of(NoticeCodes.ChangeAnalyticsStatus, ("area", key), ("from", old.Status), ("to", now.Status)));
+            }
+
+            if (!string.Equals(old.Owner ?? string.Empty, now.Owner ?? string.Empty, StringComparison.Ordinal))
+            {
+                changes.Add(Notice.Of(
+                    NoticeCodes.ChangeAnalyticsOwner,
+                    ("area", key),
+                    ("from", old.Owner ?? string.Empty),
+                    ("to", now.Owner ?? string.Empty)));
+            }
+        }
     }
 
     private static void CompareMetrics(Ruleset before, Ruleset after, List<Notice> changes)

@@ -37,7 +37,7 @@ frases: ordena y cuenta. Mismo portafolio, mismo resultado.
 | Salud | Promedio y mediana de los scores, reparto por tramo, cobertura de dato (peso del modelo que tuvo valor) y cuántas críticas están bajo el umbral sano del catálogo de roadmaps. |
 | Prioridad | `uplift` = score proyectado − score actual, con el motor de what-if sobre el roadmap de la aplicación. `weeks` = suma de las semanas de sus hitos. `businessWeight` = 1 + 1 si es crítica + 0,5 si supera la base de usuarios significativa + 0,25 si cubre tres o más capacidades. `impact` = uplift × peso; el orden es `impact ÷ weeks`. |
 | Complejidad | Cuatro formas: misma capacidad y mismo país a partir de N aplicaciones; misma capacidad resuelta en N países; marcadas `Eliminate` y todavía activas; una capacidad escrita en N lenguajes. N es ajustable desde la pantalla (2 a 5). |
-| Riesgo | Por LOB, país, CIO y capacidad. `índice` = críticos×3 + altos×1 + Kenna<50×5 + componentes obsoletos o no aprobados×2 + críticas expuestas a internet×10. |
+| Riesgo | Por LOB, país, CIO y capacidad. `índice` = críticos×3 + altos×1 + Kenna≥670×5 + componentes obsoletos o no aprobados×2 + críticas expuestas a internet×10. Hasta el 2026-09-18 decía Kenna<50, al revés de la escala de Kenna (más alto es peor); se corrigió en el ADR 0025, y desde entonces todos estos pesos son parámetros editables. |
 | Obsolescencia | Por métrica con peso: `puntos perdidos` = peso × (100 − score mapeado) ÷ 100, sumado en todo el portafolio. El peso que quedó fuera por falta de dato va en su propia columna. |
 | Resiliencia | Fuera del alcance de DR, sin monitoreo, score operacional bajo 60, sin RTO o RPO declarados. Los dos primeros contadores miran solo aplicaciones críticas. |
 

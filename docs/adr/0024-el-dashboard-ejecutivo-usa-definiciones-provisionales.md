@@ -1,6 +1,11 @@
 # ADR 0024 — El dashboard ejecutivo usa definiciones provisionales, versionadas y dichas
 
-**Estado:** aceptada · **Fecha:** 2026-09-18
+**Estado:** aceptada, completada por el [ADR 0025](0025-las-definiciones-viajan-con-las-reglas.md) · **Fecha:** 2026-09-18
+
+> **Actualización del mismo día (ADR 0025).** El Currency Score es el que entrega CMT
+> (`Raw_Tech_Score`), no el porcentaje de componentes *Modern*; *legacy* arranca en 60. Las
+> definiciones ya no se cambian desplegando: viajan con cada versión de reglas y se editan
+> desde el portal. El dashboard es la página de inicio.
 
 ## Contexto
 

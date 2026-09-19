@@ -51,7 +51,7 @@ equipo con un pendrive, una carpeta compartida o como prefieras.
 archivo y escribe:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\modscore-portable-win-x64-selfcontained-20260918-0503.zip
+Get-FileHash -Algorithm SHA256 .\modscore-portable-win-x64-selfcontained-20260918-1912.zip
 ```
 
 El resultado tiene que coincidir con el SHA-256 que aparece en
@@ -108,15 +108,17 @@ entra con todos los permisos.
 
 Cuatro comprobaciones de treinta segundos:
 
-1. En **Portfolio** tiene que haber una tabla con unas 250 aplicaciones.
+1. Al entrar se abre el **Dashboard**, la página de inicio. En la pestaña **Portfolio**
+   tiene que haber una tabla con unas 250 aplicaciones.
 2. Abre `http://localhost:5100/applications/14381/calculation`. El score de esa aplicación
    tiene que ser exactamente **79.67**. Es el ejemplo trabajado del documento de negocio:
    si ese número sale, el cálculo está bien de punta a punta.
 3. Abre **Insights** en el menú. Tienen que aparecer las seis preguntas del portafolio, la
    primera con el promedio y la mediana.
-4. Abre **Dashboard**, la primera pestaña. Arriba dice *Portfolio Health & Risk
+4. Vuelve a **Dashboard**, la primera pestaña. Arriba dice *Portfolio Health & Risk
    Intelligence*, debajo hay cinco indicadores y, al bajar, seis paneles numerados. Un clic en
-   cualquier indicador abre a la derecha la lista de aplicaciones que cuenta.
+   cualquier indicador abre a la derecha la lista de aplicaciones que cuenta, y
+   *How this is calculated*, al pie de cada panel, explica el cálculo con los valores vigentes.
 
 ### Paso 6 · para detenerlo
 

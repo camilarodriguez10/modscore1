@@ -390,7 +390,7 @@ Regla general cuando la métrica **ya tiene dato**: `Δ = 0.8 × w × (v' − v)
 | Gráficos | Recharts + SVG propio | **SVG propio** ([ADR 0006](docs/adr/0006-spa-sin-libreria-de-graficos.md)) |
 | Estilos | Tailwind CSS 4 + Radix UI | Tailwind CSS 4, componentes propios accesibles |
 | Cliente API | Generado desde OpenAPI | **Tipos a mano con prueba de contrato**: `ViewModelContractTests` falla si un modelo de vista C# y su interfaz TypeScript difieren en cualquier sentido |
-| Tests | Vitest + Testing Library + Playwright | **Vitest** (lógica pura, sin DOM) + **Playwright** (30 escenarios: 14 de flujo y 16 de accesibilidad con axe; Edge en local, Chromium en el CI) |
+| Tests | Vitest + Testing Library + Playwright | **Vitest** (lógica pura, sin DOM) + **Playwright** (40 escenarios: 19 de flujo y 21 de accesibilidad con axe; Edge en local, Chromium en el CI) |
 | Carga | — | Pantallas de administración cargadas bajo demanda (`lazy` + `Suspense`) |
 
 > *Corrección del plan.* Se prometía usar **Actions + `useActionState`**, **`use()`** con Suspense y el **compilador** de React 19. No se usan: las mutaciones de TanStack Query cubren los estados pendientes y no hubo tablas con costo de render medible. Queda como decisión abierta TD-02 en [docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md).
@@ -563,8 +563,9 @@ tests corre igual contra el tercer adaptador.
 | **14 — Verificación de seguridad (ASVS L2)** 🟡 | EN CURSO | Lo que no necesita infraestructura, hecho el 2026-09-15 (ver 8.7): pipeline verde, auditoría de validaciones rechazadas, retención de cargas, decisión sobre validación de esquema, controles compensatorios de aislamiento, y accesibilidad y e2e en el CI. Falta el entorno de prueba para los once parciales restantes y la revisión por otra persona | **Parcial:** ASVS pasa de 103 a 106 cumple y de 14 a 11 parciales; los que quedan dependen de cluster, IdP, ingress y gestor de secretos |
 | **15 — Autenticación con APIM** 🟡 | EN CURSO | Opción C con A elegida el 2026-09-16 ([ADR 0022](docs/adr/0022-la-credencial-entre-capas-es-conectable.md)): credencial conectable, validación del JWT en la capa System, modo `Both` para cambiar sin corte, reautenticación de APIM y alcance desde grupos (ver 8.8) | **Parcial:** el código está probado con dobles; cerrar H-16 espera a que APIM emita los tokens y el secreto salga del gestor |
 | **Pantalla 09 — las seis preguntas** ✅ | ENTREGADA | Pedida el 2026-09-16, fuera de la numeración de fases: salud, prioridades, complejidad, riesgo, obsolescencia y resiliencia en una vista con los mismos filtros (ver 8.9) | **Cumplido:** las seis se responden con las fuentes actuales; 14 pruebas del analizador, 14 de API, 4 de Vitest y 4 de punta a punta, más accesibilidad en claro y oscuro |
-| **Dashboard ejecutivo — D1 y D2** ✅ | ENTREGADA | Pedido el 2026-09-18 a partir de la propuesta EA Data & Insights: *Portfolio Health & Risk Intelligence* en `/dashboard`, con cinco indicadores, seis paneles, un detalle común y cinco filtros nuevos (ver 8.10) | **Cumplido:** 28 pruebas del analizador, 13 más en la suite de API, 8 de Vitest y 6 de punta a punta; axe sin violaciones serias en claro y oscuro. Las definiciones abiertas quedan como defaults provisionales (ADR 0024, DD-01 a DD-07) |
-| Dashboard ejecutivo — D3 y D4 | PLANIFICADA | Diccionario de indicadores y edición de las definiciones desde el portal (PF-07); fuentes nuevas: TLM, resiliencia, deudas técnicas, application class, dependencias | Ningún indicador sin sus seis campos; cada fuente encendida convierte un bloque «sin dato» en una medición |
+| **Dashboard ejecutivo — D1 y D2** ✅ | ENTREGADA | Pedido el 2026-09-18 a partir de la propuesta EA Data & Insights: *Portfolio Health & Risk Intelligence*, hoy la página de inicio (`/`), con cinco indicadores, seis paneles, un detalle común y cinco filtros nuevos (ver 8.10) | **Cumplido:** 28 pruebas del analizador, 13 más en la suite de API, 8 de Vitest y 6 de punta a punta; axe sin violaciones serias en claro y oscuro. Las definiciones abiertas quedan como defaults provisionales (ADR 0024, DD-01 a DD-07) |
+| **Dashboard ejecutivo — D3** ✅ | ENTREGADA | Diccionario de indicadores (*Definitions*), explicación de cada cálculo en el dashboard y en Insights, y las 37 definiciones editables desde el portal con las reglas versionadas ([ADR 0025](docs/adr/0025-las-definiciones-viajan-con-las-reglas.md)) | **Cumplido:** ningún indicador sin sus seis campos; una prueba de API publica un umbral desde el portal y el dashboard se mueve sin desplegar |
+| Dashboard ejecutivo — D4 | PLANIFICADA | Fuentes nuevas: TLM, resiliencia, deudas técnicas, application class, dependencias | Cada fuente encendida convierte un bloque «sin dato» en una medición |
 | **16 — Escala y operación** | 3 sem | Destino y motor de base (RFC-07), Redis, réplicas, respaldos, retención, SIEM, notificaciones de reglas | Dos réplicas por capa bajo carga; restauración probada; alertas activas |
 | **17 — Hallazgos de infraestructura** | 2 sem | **Al final por decisión del 2026-09-14:** H-16, H-17, H-20, H-21 | ASVS 2.10.1, 3.3.4, 7.3.3, 12.4.2 y 14.1.5 cumplen |
 
@@ -1064,14 +1065,16 @@ decisión y Governance Adoption, fuera.
 | Pie | — | Fuentes conectadas y no conectadas, dichas con esas palabras | TLM, Architectural Assessments, ARB, Resiliency Data |
 
 **Definiciones provisionales.** Todo lo que la propuesta deja en TBD o remite a «conceptos
-disponibles» que no llegaron se implementa como **regla versionada con un default**, en
-`contracts/dashboard-v1.json`, y se documenta en el
-[ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md):
+disponibles» que no llegaron se implementa como **regla versionada con un default**. Los
+valores de fábrica están en `contracts/dashboard-v1.json` y se documentan en el
+[ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md); desde el
+[ADR 0025](docs/adr/0025-las-definiciones-viajan-con-las-reglas.md) viajan con cada versión de
+reglas y se editan desde *Rules → Portfolio analytics*, con estado y dueño por área:
 
 | Concepto | Default | Por qué |
 |---|---|---|
-| Currency Score | % de componentes *Modern* sobre el total que reporta CMT | Es la lectura que SR-02 ya recomendaba: un KPI propio de CMT, fuera del Modernization Score |
-| Legacy Platforms | Currency Score < 50 | La X que pide el refinamiento |
+| Currency Score | **Decidido el 2026-09-18:** el score que entrega CMT, `Raw_Tech_Score` del Currency Model Detail Report (0–100); un 0 es falta de dato | El negocio lo definió así; es el único score de CMT |
+| Legacy Platforms | Currency Score < 60 | La X del refinamiento; 60 es donde termina la banda más baja del BRD (0–59) |
 | Risk Score (0–100, alto = peor) | El pilar *Modernization Risk Vectors* invertido: (100 − pilar) ÷ 80 × 100 | La propuesta asigna ese pilar a la pregunta 4 |
 | Niveles de riesgo | 0–39 bajo · 40–59 moderado · 60–79 alto · 80–100 crítico | Los del mockup |
 | Criticidad de negocio | Muy alta: crítica y con base de usuarios o tres capacidades · Alta: crítica · Media: base de usuarios o tres capacidades · Baja: el resto | Los tres atributos que ya pondera la pantalla 09 |
@@ -1092,19 +1095,39 @@ disponibles» que no llegaron se implementa como **regla versionada con un defau
 **Estado al 2026-09-18: D1 y D2 entregadas.** El backend suma 28 pruebas del analizador y 13
 en la suite de API; la pantalla, 4 pruebas de flujo y 2 de accesibilidad con el detalle abierto, más
 el barrido de axe en claro y oscuro. axe encontró tres textos bajo 4,5:1 —atenuados con
-`opacity` o en tinta secundaria sobre una tesela teñida— y se corrigieron. D3 queda como
-PF-07 y el registro de evidencia de valor como PF-08, en `docs/PENDING-ITEMS.md`.
+`opacity` o en tinta secundaria sobre una tesela teñida— y se corrigieron. El registro de
+evidencia de valor queda como PF-08, en `docs/PENDING-ITEMS.md`.
+
+**D3 entregada el mismo día ([ADR 0025](docs/adr/0025-las-definiciones-viajan-con-las-reglas.md)).**
+Con tres definiciones del negocio: el Currency Score es el que entrega CMT, el dashboard es la
+página de inicio (`/`; el inventario pasa a `/portfolio`) y los cálculos de las seis
+preguntas son paramétricos y se configuran desde el sitio.
+
+- **Qué se edita:** 37 parámetros en siete áreas —currency, priorización, complejidad,
+  riesgo, obsolescencia, resiliencia y la pantalla Insights—, cada área con estado
+  (*provisional* o *agreed*) y dueño. Viajan como cuarta parte de cada versión de reglas y
+  heredan borrador, simulación, reautenticación, auditoría, comparación y vuelta atrás.
+- **Qué muestra la simulación:** los cinco indicadores del dashboard antes y después. Una
+  definición no mueve ningún score.
+- **Qué explica el sitio:** cada panel del dashboard y de Insights tiene «How this is
+  calculated», con los valores vigentes. La pantalla *Definitions* es el diccionario de
+  indicadores: definición y fórmula, datos, valores, dueño, estado, frecuencia y cobertura.
+- **Corrección:** el índice de riesgo de Insights contaba Kenna **< 50** como gestión débil;
+  Kenna va de 0 a 1000 y más alto es peor. Ahora es Kenna ≥ 670 y es un parámetro.
+- **Pruebas:** 28 más en el motor, 5 más en la API, 11 más en Vitest y 10 escenarios e2e más,
+  con axe en las pantallas nuevas y con una explicación abierta.
 
 **Fuera de este plan:** el *EA Value Evidence Register* (paso 7 de la propuesta), que es una
 herramienta de registro y seguimiento y merece su propio plan; el indicador de gobierno
 (N/A según el refinamiento); y lo que la propuesta deja fuera del MVP.
 
-**Decisiones abiertas, con el default ya implementado** (DD-01 a DD-07 en
-`docs/PENDING-ITEMS.md`, con lo que muestran los datos dummy): el Currency Score y su umbral X;
+**Decisiones abiertas, con el default ya implementado** (DD-01 a DD-08 en
+`docs/PENDING-ITEMS.md`, con lo que muestran los datos dummy): el umbral X del Currency Score;
 la fórmula del Risk Score; los niveles de criticidad y oportunidad; si el indicador de Tech
 Debt se queda; si los tramos de salud adoptan los nombres y cortes del mockup (*Healthy
-80–100, Monitor 60–79, At Risk 40–59, Critical < 40*) o conservan los del modelo; y si el
-dashboard pasa a ser la página de inicio.
+80–100, Monitor 60–79, At Risk 40–59, Critical < 40*) o conservan los del modelo; y si las
+definiciones necesitan un rol propio. Todas menos una fórmula nueva se cierran publicando
+desde el portal, sin desplegar.
 
 ## 8bis. Ampliación solicitada — fases 10 a 12
 

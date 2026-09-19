@@ -308,7 +308,7 @@ pre em{color:var(--ink-3);font-style:normal}
     <div class="mast-meta">
       <span>Base documental · <b>34 capturas: BRD + dashboard Power BI v1.3 + archivos fuente</b></span>
       <span>Ruleset · <b>v1.3</b></span>
-      <span>Fases 00–13 entregadas · 14 y 15 en curso · dashboard ejecutivo · <b>737 pruebas .NET, 47 unitarias y 30 e2e en verde</b></span>
+      <span>Fases 00–13 entregadas · 14 y 15 en curso · dashboard ejecutivo · <b>770 pruebas .NET, 58 unitarias y 40 e2e en verde</b></span>
       <span>Duración estimada · <b>16 semanas</b></span>
     </div>
   </div>
@@ -824,7 +824,8 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
     <div class="screen"><span class="i">08</span><div><div class="t">Cargas <span class="req">req. 8 · 9</span></div><div class="d">Subir los archivos del período y recalcular el portafolio, con el veredicto de cada archivo — filas leídas, filas rechazadas y el motivo — el historial de versiones publicadas y la evolución del score del portafolio a lo largo de las cargas. Desde la Fase 10, Cargas y Linaje son las dos pestañas de la pantalla Datos, con un selector de carga compartido.</div></div></div>
     <div class="screen"><span class="i">09</span><div><div class="t">Admin · Rulesets</div><div class="d">Comparación de versiones de ruleset, simulación del impacto en todo el portafolio antes de publicar, e historial de overrides con su justificación.</div></div></div>
     <div class="screen key"><span class="i">10</span><div><div class="t">Insights — las seis preguntas <span class="req">req. 4 · 6</span></div><div class="d">Qué tan sano está el portafolio, qué modernizar primero según impacto y esfuerzo, dónde reducir complejidad, dónde se concentra el riesgo tecnológico, qué causa la obsolescencia y dónde faltan defensas de continuidad. Una sola llamada, el mismo filtro que el resto del sitio, y cada número con su aritmética a la vista.</div></div></div>
-    <div class="screen key"><span class="i">11</span><div><div class="t">Dashboard — Portfolio Health &amp; Risk Intelligence</div><div class="d">La vista para dirección, según la propuesta <em>EA Data &amp; Insights</em>: la pregunta ejecutiva, cinco indicadores con tendencia por carga y un panel por pregunta —mapa de calor de capacidad primaria contra región, país, CIO o disposición; matriz criticidad × oportunidad; treemap de complejidad; concentración del riesgo; causas de la obsolescencia; huecos de resiliencia—. Cada celda, burbuja o barra abre el mismo detalle. Las definiciones abiertas se marcan como provisionales.</div></div></div>
+    <div class="screen key"><span class="i">11</span><div><div class="t">Dashboard — Portfolio Health &amp; Risk Intelligence <span class="req">inicio</span></div><div class="d">La página de inicio y la vista para dirección, según la propuesta <em>EA Data &amp; Insights</em>: la pregunta ejecutiva, cinco indicadores con tendencia por carga y un panel por pregunta —mapa de calor de capacidad primaria contra región, país, CIO o disposición; matriz criticidad × oportunidad; treemap de complejidad; concentración del riesgo; causas de la obsolescencia; huecos de resiliencia—. Cada celda, burbuja o barra abre el mismo detalle, y cada panel explica su cálculo con los valores vigentes.</div></div></div>
+    <div class="screen key"><span class="i">12</span><div><div class="t">Definitions y Portfolio analytics</div><div class="d">El diccionario de indicadores —definición y fórmula, datos, valores en vigor, dueño, estado, frecuencia y cobertura— y la pestaña de reglas donde el administrador edita las 37 definiciones de las seis preguntas, con borrador, simulación de los indicadores y publicación.</div></div></div>
   </div>
 
   <h4>Seguridad del frontend</h4>
@@ -975,7 +976,8 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
         <tr class="shipped"><td class="mono">15</td><td>Autenticación con APIM</td><td><span class="done">EN CURSO</span></td><td>Elegida la opción C con A: la credencial entre capas es conectable, la capa System valida el JWT y hay un modo <span class="mono">Both</span> para cambiar sin corte. El código está probado con dobles; <strong>falta el emisor real</strong></td></tr>
         <tr class="shipped"><td class="mono">—</td><td>Pantalla 09 · las seis preguntas</td><td><span class="done">ENTREGADA</span></td><td><strong>Las seis preguntas de gestión se responden con las fuentes actuales</strong> · salud, prioridades, complejidad, riesgo, obsolescencia y resiliencia con los mismos filtros · 14 pruebas del analizador, 15 de API y 8 de la SPA</td></tr>
         <tr class="shipped"><td class="mono">—</td><td>Dashboard ejecutivo · D1 y D2</td><td><span class="done">ENTREGADA</span></td><td><strong>Portfolio Health &amp; Risk Intelligence en una vista</strong> · cinco indicadores, seis paneles y un detalle común · cinco filtros nuevos en todo el sitio · definiciones provisionales versionadas (ADR 0024) · 28 pruebas del analizador, 13 de API, 8 de la SPA y 6 de punta a punta</td></tr>
-        <tr><td class="mono">—</td><td>Dashboard ejecutivo · D3 y D4</td><td><div class="dur"><i style="width:48px"></i><span>3 sem</span></div></td><td>Diccionario de indicadores con dueño, fórmula, fuente, frecuencia y control de calidad; definiciones editables desde el portal; fuentes nuevas —TLM, resiliencia, deudas técnicas, application class, dependencias—</td></tr>
+        <tr class="shipped"><td class="mono">—</td><td>Dashboard ejecutivo · D3</td><td><span class="done">ENTREGADA</span></td><td><strong>Cambiar un umbral desde el portal mueve el dashboard sin desplegar</strong> · 37 definiciones con estado y dueño por área, versionadas con las reglas (ADR 0025) · diccionario de indicadores · cada panel explica su cálculo · dashboard como página de inicio · Currency Score de CMT</td></tr>
+        <tr><td class="mono">—</td><td>Dashboard ejecutivo · D4</td><td><div class="dur"><i style="width:32px"></i><span>2 sem</span></div></td><td>Fuentes nuevas —TLM, resiliencia, deudas técnicas, application class, dependencias—: cada una convierte un bloque «sin dato» en una medición</td></tr>
         <tr><td class="mono">16</td><td>Escala y operación</td><td><div class="dur"><i style="width:48px"></i><span>3 sem</span></div></td><td>Destino y motor de base, Redis, dos réplicas por capa, respaldos, SIEM y notificaciones de reglas</td></tr>
         <tr><td class="mono">17</td><td>Hallazgos de infraestructura</td><td><div class="dur"><i style="width:32px"></i><span>2 sem</span></div></td><td>Al final, por decisión: identidad de carga de trabajo (H-16), firma de imágenes y logs inmutables (H-17), sesiones activas (H-20) y antivirus en cargas (H-21)</td></tr>
       </tbody>
@@ -987,7 +989,7 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
 
   <div class="ship">
     <div class="h">Criterio de aceptación cumplido</div>
-    <p><strong>737 pruebas .NET en verde</strong>, más 47 unitarias y 30 de punta a punta en la SPA —catorce de flujo y dieciséis de accesibilidad—, cero paquetes vulnerables —ya con EF Core y SQLite dentro—, y el build compila con todas las reglas de seguridad del analizador como errores. El motor reproduce exactamente los dos casos documentados: <span class="mono">EAI 14381 = 79,67</span> y <span class="mono">EAI 10969 = 79,61</span>, métrica por métrica.</p>
+    <p><strong>770 pruebas .NET en verde</strong>, más 58 unitarias y 40 de punta a punta en la SPA —diecinueve de flujo y veintiuna de accesibilidad—, cero paquetes vulnerables —ya con EF Core y SQLite dentro—, y el build compila con todas las reglas de seguridad del analizador como errores. El motor reproduce exactamente los dos casos documentados: <span class="mono">EAI 14381 = 79,67</span> y <span class="mono">EAI 10969 = 79,61</span>, métrica por métrica.</p>
     <p>El 14381 se reproduce <strong>extremo a extremo</strong>: generador → puerto <code>ISourceReader</code> → ensamblado → motor → <code>system-api</code> → <code>channel-api</code> → SPA. Cada eslabón de esa cadena está cubierto por tests, y el último se ve en pantalla.</p>
   </div>
 
@@ -1342,8 +1344,9 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
 
   <h3>Dashboard ejecutivo — Portfolio Health &amp; Risk Intelligence</h3>
   <div class="ship">
-    <div class="h">Pedido el 18 de septiembre · D1 y D2 entregadas</div>
+    <div class="h">Pedido el 18 de septiembre · D1, D2 y D3 entregadas</div>
     <p>La propuesta <em>EA Data &amp; Insights – MVP Proposal</em> pide una vista para dirección que responda <strong>dónde se concentra el riesgo del portafolio y la oportunidad de modernización, por qué existe y qué decisión de arquitectura hace falta</strong>. El dashboard la responde con las mismas seis preguntas, ahora con la forma del mockup, <strong>reutilizando el motor, el what-if, la historia de cargas, los filtros en la URL y el alcance sobre los datos</strong>. Lo nuevo es un analizador puro, un archivo de definiciones y la pantalla.</p>
+    <p>El mismo día el negocio decidió tres cosas: <strong>el Currency Score es el que entrega CMT</strong> (<code>Raw_Tech_Score</code>), <strong>el dashboard es la página de inicio</strong>, y <strong>los cálculos de las seis preguntas se configuran desde el sitio</strong>. Las definiciones pasaron a ser una cuarta parte de cada versión de reglas, con estado y dueño por área, y cada panel explica qué considera y cómo calcula.</p>
   </div>
 
   <div class="tw">
@@ -1362,11 +1365,11 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
   </div>
 
   <div class="rfc">
-    <b class="tag">Definiciones provisionales</b>
-    Lo que la propuesta deja por definir —«<em>Rules &amp; Matrix to be defined globally</em>», «<em>Currency Score &lt; X</em>», los conceptos de Currency y Stability Scoring que no llegaron— tiene un <strong>default versionado</strong> en <code>contracts/dashboard-v1.json</code>, y la pantalla lo marca con un chip. Currency Score = % de componentes <em>Modern</em> en CMT, legacy bajo 50; Risk Score = el pilar de riesgo invertido, con los niveles del mockup (40 · 60 · 80); criticidad y oportunidad de 0 a 3; candidatas = ambas altas o muy altas. El porqué de cada uno está en el ADR 0024, y las decisiones, como <strong>DD-01 a DD-07</strong> en <code>docs/PENDING-ITEMS.md</code>.
+    <b class="tag">Definiciones configurables</b>
+    Lo que la propuesta deja por definir —«<em>Rules &amp; Matrix to be defined globally</em>», «<em>Currency Score &lt; X</em>», los conceptos de Currency y Stability Scoring que no llegaron— tiene un <strong>default</strong> que el administrador cambia desde <em>Rules → Portfolio analytics</em> y publica como una versión de reglas: <strong>decidir es publicar, no desplegar</strong>. Currency Score = el de CMT, legacy bajo 60; Risk Score = el pilar de riesgo invertido, con los niveles del mockup (40 · 60 · 80); criticidad y oportunidad de 0 a 3; candidatas = ambas altas o muy altas. Cada área queda <em>provisional</em> hasta que el negocio la marca como acordada. El porqué está en los ADR 0024 y 0025, y las decisiones, como <strong>DD-01 a DD-08</strong> en <code>docs/PENDING-ITEMS.md</code>.
   </div>
 
-  <div class="note">Con los datos dummy los defaults <strong>saturan</strong>: <em>duplicate technologies</em> y <em>technology proliferation</em> marcan a las 250 aplicaciones —siete capacidades en tres países no alcanzan para distinguirlas—, la fila de criticidad «Alta» queda vacía porque toda crítica es también de base amplia, y el 77 % tiene huecos de resiliencia. No es un error del cálculo: son umbrales que el negocio tiene que calibrar sobre el portafolio real. Queda fuera el <em>EA Value Evidence Register</em>, que es una herramienta de registro y merece su propio plan (PF-08).</div>
+  <div class="note">Con los datos dummy los defaults <strong>saturan</strong>: <em>duplicate technologies</em> y <em>technology proliferation</em> marcan a las 250 aplicaciones —siete capacidades en tres países no alcanzan para distinguirlas—, la fila de criticidad «Alta» queda vacía porque toda crítica es también de base amplia, y el 77 % tiene huecos de resiliencia. No es un error del cálculo: son umbrales que el negocio tiene que calibrar sobre el portafolio real, y ahora puede hacerlo desde el portal. Al pasar los pesos de Insights a parámetros apareció un error real —contaba Kenna &lt; 50 como gestión débil, al revés de su escala— y se corrigió a Kenna ≥ 670. Queda fuera el <em>EA Value Evidence Register</em>, que es una herramienta de registro y merece su propio plan (PF-08).</div>
 
   <h3>Estructura del repositorio</h3>
   <pre>modernization-score/
@@ -1375,7 +1378,7 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
 ├─ docs/           adr/ · security/ · runbooks/
 ├─ <b>contracts/</b>
 │  ├─ ruleset-v1.3.json            <em>pesos, bandas, estrategias</em>
-│  ├─ <b>dashboard-v1.json</b>           <em>definiciones provisionales del dashboard ✓</em>
+│  ├─ <b>dashboard-v1.json</b>           <em>valores de fábrica de las definiciones ✓</em>
 │  └─ sources/*.schema.json        <em>contratos de columnas por fuente</em>
 ├─ data/dummy/                     <em>CSV generados, listos para la Fase 2</em>
 ├─ <b>data/history/&lt;id&gt;/</b>              <em>una carga publicada = una versión ✓</em>

@@ -50,7 +50,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-737 pruebas .NET: 242 del motor, 178 de contratos y 317 de API. Las dos que importan más
+770 pruebas .NET: 270 del motor, 178 de contratos y 322 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **EAI 14381 = 79,67:** ejemplo trabajado del BRD, derivado desde datos crudos por el
@@ -61,8 +61,8 @@ reproducen los casos documentados:
 TypeScript difieren.
 
 ```bash
-npm --prefix src/web test          # 47 pruebas unitarias (Vitest)
-npm --prefix src/web run test:e2e  # 30 escenarios: 14 de flujo y 16 de accesibilidad (axe)
+npm --prefix src/web test          # 58 pruebas unitarias (Vitest)
+npm --prefix src/web run test:e2e  # 40 escenarios: 19 de flujo y 21 de accesibilidad (axe)
 ```
 
 Las de punta a punta usan el Microsoft Edge instalado (no descargan navegadores) y levantan
@@ -115,8 +115,10 @@ y deja asignar la fuente a mano.
 
 ## El dashboard ejecutivo
 
-La pestaña **Dashboard** (`/dashboard`, la primera del menú) es la vista para dirección,
-*Portfolio Health & Risk Intelligence*. Responde una pregunta —dónde se concentra el
+El **Dashboard** es la página de inicio (`/`) y la primera pestaña: la vista para
+dirección, *Portfolio Health & Risk Intelligence*. El inventario de aplicaciones está en
+**Portfolio** (`/portfolio`), y `/dashboard` redirige al inicio conservando los filtros.
+Responde una pregunta —dónde se concentra el
 riesgo y la oportunidad de modernización, por qué, y qué decisión de arquitectura hace
 falta— con cinco indicadores y un panel por cada una de las seis preguntas:
 
@@ -132,15 +134,26 @@ falta— con cinco indicadores y un panel por cada una de las seis preguntas:
 
 Cada celda, burbuja, barra o indicador abre el mismo detalle lateral, con los mismos
 campos en todos los paneles. El eje del mapa de calor viaja en la URL junto a los
-filtros: `/dashboard?region=LATAM&axis=cio`.
+filtros: `/?region=LATAM&axis=cio`.
 
-**Las definiciones son provisionales.** Lo que la propuesta deja por definir —Currency
-Score y su umbral, Risk Score, niveles de criticidad y oportunidad, cortes de resiliencia—
-tiene un default en `contracts/dashboard-v1.json`, y la pantalla lo marca con un chip.
-El porqué de cada default está en
-[ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md) y las
-decisiones abiertas, en [PLAN.md §8.10](PLAN.md). El mismo análisis está en
-`GET /api/dashboard`.
+**Cada panel explica su cálculo.** «How this is calculated», al pie de cada panel del
+dashboard y de cada pregunta de Insights, dice qué datos considera, cómo se calcula con los
+valores vigentes y qué falta medir. La pestaña **Definitions** (`/definitions`) es el
+diccionario de indicadores: para cada pregunta, la definición y la fórmula, los datos, los
+valores en vigor, el dueño y el estado del área, la frecuencia y cuánto del portafolio
+tiene el dato.
+
+**El Currency Score es el que entrega CMT:** el `Raw_Tech_Score` del Currency Model Detail
+Report, de 0 a 100. Una aplicación es *legacy* por debajo de 60 (editable).
+
+**Las definiciones se configuran desde el sitio.** Los 37 parámetros de las seis
+preguntas —umbrales, niveles, largo de las listas y los pesos de Insights— viajan con cada
+versión de reglas y se editan en **Rules → Portfolio analytics**, con estado (*provisional*
+o *agreed*) y dueño por área. Los valores de fábrica están en `contracts/dashboard-v1.json`.
+El porqué está en [ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md)
+y [ADR 0025](docs/adr/0025-las-definiciones-viajan-con-las-reglas.md); las decisiones
+abiertas, en [PLAN.md §8.10](PLAN.md) y en PENDING-ITEMS como DD-01 a DD-08. El mismo
+análisis está en `GET /api/dashboard`.
 
 ## Las seis preguntas del portafolio
 
@@ -186,9 +199,11 @@ La pantalla **Rules** ajusta el cálculo sin recompilar ni desplegar
 quien tiene el rol `ruleset.admin` y alcance sobre todo el portafolio. El usuario de
 desarrollo lo trae por defecto.
 
-1. **Editar** pesos, bandas, puntajes, palancas o parámetros del roadmap. El borrador se
-   guarda en la pestaña del navegador.
-2. **Simulate impact** recalcula todo el portafolio con las reglas nuevas, sin cambiar nada.
+1. **Editar** pesos, bandas, puntajes, palancas, parámetros del roadmap o, en **Portfolio
+   analytics**, las definiciones de las seis preguntas. El borrador se guarda en la pestaña
+   del navegador.
+2. **Simulate impact** recalcula todo el portafolio con las reglas nuevas, sin cambiar nada,
+   y muestra cómo se moverían los indicadores del dashboard.
 3. **Publish as a new version** pide un motivo y una autenticación de los últimos 10
    minutos. El resto de las réplicas toma la versión nueva en su siguiente comprobación.
 4. **Volver atrás:** Versions → Load into draft, y publicar
@@ -348,7 +363,7 @@ referencia deja de dar 79,67.
 
 ```
 contracts/ruleset-v1.3.json     18 métricas: pesos, bandas y procedencia — reglas como datos
-contracts/dashboard-v1.json     definiciones provisionales del dashboard ejecutivo
+contracts/dashboard-v1.json     valores de fábrica de las definiciones de las seis preguntas
 data/dummy/                     los ocho CSV generados
 src/shared/                     dominio, motor de scoring, what-if, roadmap, insights y dashboard, reglas, seguridad
 src/system/                     capa System: reglas de negocio + fuentes
@@ -382,7 +397,7 @@ HANDOFF.md                      traspaso completo del contexto
 | 14 Verificación de seguridad (ASVS L2) | en curso: hecho lo que no necesita un entorno real (PLAN §8.7) |
 | 15 Autenticación con APIM | en curso: código listo y probado con dobles; falta el emisor real (PLAN §8.8) |
 | Pantalla 09 — las seis preguntas | entregada (PLAN §8.9) |
-| Dashboard ejecutivo | D1 y D2 entregadas; D3 (diccionario y edición desde el portal) y D4 (fuentes nuevas) planificadas (PLAN §8.10) |
+| Dashboard ejecutivo | D1, D2 y D3 entregadas: página de inicio, diccionario y definiciones editables desde el portal; D4 (fuentes nuevas) planificada (PLAN §8.10) |
 | 16 Escala y operación | planificada |
 | 17 Hallazgos de infraestructura (H-16, H-17, H-20, H-21) | planificada, al final por decisión |
 

@@ -7,7 +7,7 @@ repositorio que cada una resume.
 | Copia | Artefacto | Fuente de verdad |
 |---|---|---|
 | [modscore-plan.html](modscore-plan.html) | Version 19, del 2026-09-18, con el dashboard ejecutivo (D1 y D2): <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> | [PLAN.md](../../PLAN.md) |
-| [scoring-decisions.html](scoring-decisions.html) | Version 1, del 2026-09-16, las once reglas que el negocio tiene que confirmar: <https://claude.ai/artifact/Gp7c9gHv5kTSdGETPfeCi5> | [docs/scoring-decisions.md](../scoring-decisions.md) |
+| [scoring-decisions.html](scoring-decisions.html) | Version 2, del 2026-09-18 (la pregunta 9, Currency Score, respondida), las once reglas que el negocio tiene que confirmar: <https://claude.ai/artifact/Gp7c9gHv5kTSdGETPfeCi5> | [docs/scoring-decisions.md](../scoring-decisions.md) |
 
 Para actualizar un artefacto desde otra sesion: leerlo por su URL, editar la version que
 devuelve y publicar con la misma URL. Despues, reemplazar esta copia. El archivo que

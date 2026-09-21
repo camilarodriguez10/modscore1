@@ -180,7 +180,7 @@ Este camino sirve para tocar el código y ver los cambios al vuelo.
 | Herramienta | Versión | Dónde |
 |---|---|---|
 | **.NET SDK 10** | 10.0 o superior | <https://dotnet.microsoft.com/download/dotnet/10.0> |
-| **Node.js** | 22 o superior | <https://nodejs.org> |
+| **Node.js** | 22.12 o superior (o 20.19+) | <https://nodejs.org> |
 
 Comprueba que quedaron instaladas (cierra y vuelve a abrir la terminal después de
 instalar):
@@ -193,7 +193,8 @@ dotnet --version
 node --version
 ```
 
-El primero tiene que decir `10.x.x` y el segundo `v22.x` o superior. Si dicen «no se
+El primero tiene que decir `10.x.x` y el segundo `v22.12` o superior (sirve también `v20.19`
+o superior de la serie 20). Con un Node más viejo el sitio no arranca. Si dicen «no se
 reconoce el comando», la instalación no agregó la herramienta al `PATH`: reinicia la
 terminal, y si sigue igual, reinicia el equipo.
 
@@ -214,14 +215,35 @@ cd modscore1
 
 ### Paso 3 · prepara el sitio
 
-Una sola vez, para bajar las dependencias del frontend:
+Una sola vez, desde la carpeta del proyecto, para bajar las dependencias del frontend. **Sin
+este paso, la terminal 3 falla con `"vite" no se reconoce como un comando interno o
+externo`.**
 
-```bash
-npm --prefix src/web install
+En `cmd`:
+
+```bat
+npm --prefix src\web ci --ignore-scripts
+dir src\web\node_modules\.bin\vite.cmd
 ```
 
-Tarda uno o dos minutos. Al terminar no debe haber ningún `vulnerabilities` distinto de
-cero.
+En PowerShell (con `npm.cmd`: `npm` a secas es un script que la política suele bloquear):
+
+```powershell
+npm.cmd --prefix src\web ci --ignore-scripts
+Test-Path src\web\node_modules\.bin\vite.cmd
+```
+
+En macOS o Linux:
+
+```bash
+npm --prefix src/web ci --ignore-scripts
+```
+
+Tarda uno o dos minutos. Tiene que terminar con `found 0 vulnerabilities`, y la segunda línea
+tiene que **encontrar** `vite.cmd` (en PowerShell, responder `True`). Si no lo encuentra, la
+instalación falló: lee el error y busca en [Problemas frecuentes](#problemas-frecuentes).
+`ci` instala exactamente las versiones del archivo de bloqueo, las mismas que se auditaron;
+`--ignore-scripts` impide que un paquete ejecute código al instalarse.
 
 ### Paso 4 · levanta las tres piezas
 
@@ -264,10 +286,16 @@ dotnet run --project src/channel/Modernization.ChannelApi -- --environment Devel
 
 Espera a ver `Now listening on: http://localhost:5100`.
 
-**Terminal 3 — el sitio:**
+**Terminal 3 — el sitio.** En cmd, macOS o Linux:
 
 ```bash
 npm --prefix src/web run dev
+```
+
+En PowerShell:
+
+```powershell
+npm.cmd --prefix src\web run dev
 ```
 
 Espera a ver `Local: http://localhost:5173/`.
@@ -447,7 +475,7 @@ compilar mientras no cambie el código.
 Con Node instalado:
 
 ```bat
-npm --prefix src\web install
+npm --prefix src\web ci --ignore-scripts
 ```
 
 ```bat
@@ -541,7 +569,11 @@ permite ver.
 | Ves la página de login y `Sign in` no hace nada | La capa Channel no está en entorno `Development` | Caminos B y C: la línea de la Channel también necesita `--environment Development` |
 | Al ejecutar un `.exe` a mano dice que no lo encuentra | Windows no busca en la carpeta actual | Escribe `.\Modernization.SystemApi.exe`, y hazlo **desde la carpeta de esa capa** |
 | La ventana negra se cerró y los puertos siguen ocupados | Los procesos quedaron vivos | Camino A: `taskkill /IM Modernization.SystemApi.exe /F` y lo mismo con `Modernization.ChannelApi.exe`. Caminos B y C, donde el proceso se llama `dotnet.exe`: `netstat -ano \| findstr :5100` da el número de proceso, y `taskkill /PID <número> /F` lo cierra |
-| Página en blanco tras actualizar el código | Faltan dependencias nuevas del sitio | `npm --prefix src/web install` otra vez |
+| Página en blanco tras actualizar el código | Faltan dependencias nuevas del sitio | Repite el [paso 3 del camino B](#paso-3--prepara-el-sitio) |
+| `"vite" no se reconoce como un comando interno o externo` | Faltan las dependencias del sitio: el paso 3 del camino B no se hizo, falló o se hizo en otra carpeta | Desde la carpeta del proyecto, repite el paso 3 y comprueba que existe `src\web\node_modules\.bin\vite.cmd`. Si no vas a cambiar la interfaz, puedes saltarte Node: la Channel sirve el sitio ya compilado con `--webroot` (camino C, paso 5) |
+| `npm.ps1 no se puede cargar ... la ejecución de scripts está deshabilitada` | En PowerShell, `npm` es un script que la política bloquea | Escribe `npm.cmd` en lugar de `npm` |
+| El `npm ci` termina con `ECONNRESET`, `ETIMEDOUT`, `E403`, `self-signed certificate` o `unable to get local issuer certificate` | La red de la empresa no deja llegar al registro de npm | Pide a soporte el proxy o el registro interno de npm. Mientras tanto, usa la Channel sirviendo el sitio con `--webroot` (camino C), que no necesita Node |
+| Vite avisa que la versión de Node no es compatible, o `crypto.hash is not a function` | Node anterior a 22.12 (o a 20.19) | Instala Node 22.12 o superior y repite el paso 3 |
 | `dotnet test` falla con «el archivo está siendo usado por otro proceso» | La aplicación está corriendo | Detén las tres piezas antes de compilar o probar |
 | Todo iba bien y dejó de arrancar tras mover la carpeta | Ruta dentro de OneDrive o demasiado larga | Muévela a algo como `C:\modscore` |
 

@@ -16,10 +16,11 @@ Tres procesos: la capa **System** en el puerto 5101, la capa **Channel** en el 5
 **SPA** en el 5173. Se compila una vez y después se abren **tres ventanas, en este orden**,
 cada una abierta mientras se usa la aplicación.
 
-- Las dos variables de las capas **no son opcionales**: sin `ASPNETCORE_ENVIRONMENT=Development`
-  la capa arranca como producción y se detiene a propósito (pide `AllowedHosts` y secretos
-  reales), y sin `ASPNETCORE_URLS` escucha en el 5000. Valen solo en la ventana donde se
-  escriben.
+- El entorno y el puerto van **como argumentos de la aplicación**, después de `--`:
+  `-- --environment Development --urls http://localhost:5101`. Así la línea es la misma en
+  cmd, PowerShell y Git Bash. Sin `--environment Development` la capa arranca como
+  producción y se detiene a propósito (`'AllowedHosts' debe listar los hosts del servicio`);
+  sin `--urls`, escucha en el 5000.
 - **La System primero, y la Channel cuando la System ya responda.** Compilar antes, aparte, evita
   que las dos ventanas compilen a la vez: la Channel referencia el proyecto de la System, y
   si compilan juntas se pisan el mismo `.dll` (`CS2012`, archivo en uso).
@@ -27,6 +28,8 @@ cada una abierta mientras se usa la aplicación.
   (en PowerShell, `npm.cmd` en lugar de `npm`).
 
 Los ejemplos suponen el repositorio en `C:\modscore1`; cambia esa ruta si está en otro lado.
+Las líneas de `dotnet` son idénticas en cmd y en PowerShell; solo cambia cómo se entra a la
+carpeta (`cd /d` en cmd, `Set-Location` en PowerShell).
 
 ### En cmd
 
@@ -43,21 +46,17 @@ Tiene que terminar con `0 Errores` (o `0 Error(s)`).
 
 ```bat
 cd /d C:\modscore1
-set "ASPNETCORE_ENVIRONMENT=Development"
-set "ASPNETCORE_URLS=http://localhost:5101"
-dotnet run --no-build --project src\system\Modernization.SystemApi
+dotnet run --no-build --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101
 ```
 
-Antes de seguir, en otra ventana: `curl http://localhost:5101/health` tiene que responder
-`{"status":"healthy"}`.
+Tiene que aparecer `Hosting environment: Development`. Antes de seguir, en otra ventana:
+`curl http://localhost:5101/health` tiene que responder `{"status":"healthy"}`.
 
 **Ventana 2 — capa Channel:**
 
 ```bat
 cd /d C:\modscore1
-set "ASPNETCORE_ENVIRONMENT=Development"
-set "ASPNETCORE_URLS=http://localhost:5100"
-dotnet run --no-build --project src\channel\Modernization.ChannelApi
+dotnet run --no-build --project src\channel\Modernization.ChannelApi -- --environment Development --urls http://localhost:5100
 ```
 
 **Ventana 3 — la SPA:**
@@ -82,9 +81,7 @@ dotnet build src\channel\Modernization.ChannelApi
 
 ```powershell
 Set-Location C:\modscore1
-$env:ASPNETCORE_ENVIRONMENT = 'Development'
-$env:ASPNETCORE_URLS = 'http://localhost:5101'
-dotnet run --no-build --project src\system\Modernization.SystemApi
+dotnet run --no-build --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101
 ```
 
 Comprobarla desde otra ventana: `Invoke-RestMethod http://localhost:5101/health`.
@@ -93,9 +90,7 @@ Comprobarla desde otra ventana: `Invoke-RestMethod http://localhost:5101/health`
 
 ```powershell
 Set-Location C:\modscore1
-$env:ASPNETCORE_ENVIRONMENT = 'Development'
-$env:ASPNETCORE_URLS = 'http://localhost:5100'
-dotnet run --no-build --project src\channel\Modernization.ChannelApi
+dotnet run --no-build --project src\channel\Modernization.ChannelApi -- --environment Development --urls http://localhost:5100
 ```
 
 **Ventana 3 — la SPA:**
@@ -108,6 +103,10 @@ npm.cmd --prefix src\web run dev
 `npm.cmd` y no `npm`: en Windows PowerShell, `npm` resuelve a `npm.ps1`, que la política de
 ejecución de scripts suele bloquear. Abrir el sitio: `Start-Process http://localhost:5173/`.
 
+> **No pegues comandos `set "..."` de cmd en PowerShell.** Ahí `set` no define una variable de
+> entorno: crea una de PowerShell que la aplicación no ve, sin dar error, y la capa arranca
+> como producción. Con los argumentos de arriba no hace falta ninguna variable.
+
 ### En Git Bash
 
 ```bash
@@ -115,11 +114,11 @@ dotnet build src/channel/Modernization.ChannelApi
 ```
 
 ```bash
-ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5101 dotnet run --no-build --project src/system/Modernization.SystemApi
+dotnet run --no-build --project src/system/Modernization.SystemApi -- --environment Development --urls http://localhost:5101
 ```
 
 ```bash
-ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5100 dotnet run --no-build --project src/channel/Modernization.ChannelApi
+dotnet run --no-build --project src/channel/Modernization.ChannelApi -- --environment Development --urls http://localhost:5100
 ```
 
 ```bash
@@ -128,22 +127,26 @@ npm --prefix src/web run dev
 
 ### Variantes
 
-- **Sin Node, la Channel sirve el sitio:** se omite la ventana 3 y, en la ventana 2, antes de
-  `dotnet run`, se agrega `set "ASPNETCORE_WEBROOT=C:\modscore\channel\wwwroot"` (en
-  PowerShell, `$env:ASPNETCORE_WEBROOT = 'C:\modscore\channel\wwwroot'`), con la
-  carpeta `wwwroot` del paquete portable. El sitio queda en <http://localhost:5100/>.
-- **Si el equipo no deja ejecutar `.exe` sin firmar:** agregar `-p:UseAppHost=false` al final
-  del `dotnet build` y de cada `dotnet run`. Así quien ejecuta es `dotnet.exe`. Es el camino C
-  de la [guía paso a paso](docs/guia-localhost.md).
-- **Datos de archivos en lugar de generados:** en la ventana 1,
-  `set "DataSource__Provider=File"` y `set "DataSource__Directory=%CD%\data\history"` (ver
-  [Correr sobre archivos](#correr-sobre-archivos-en-vez-de-datos-generados)).
+Se agregan argumentos al final de la línea de la ventana que corresponde:
+
+| Variante | Qué cambia |
+|---|---|
+| **Sin Node: la Channel sirve el sitio** | Se omite la ventana 3 y en la ventana 2 se agrega `--webroot C:\modscore\channel\wwwroot` (la carpeta `wwwroot` del paquete portable). El sitio queda en <http://localhost:5100/> |
+| **El equipo no deja ejecutar `.exe` sin firmar** | `-p:UseAppHost=false` al final del `dotnet build` y, en cada `dotnet run`, **antes** del `--`. Así quien ejecuta es `dotnet.exe`. Es el camino C de la [guía](docs/guia-localhost.md) |
+| **Datos de archivos en lugar de generados** | En la ventana 1: `--DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\history` (ver [Correr sobre archivos](#correr-sobre-archivos-en-vez-de-datos-generados)) |
+| **Otros puertos** | Cambiar el número en `--urls`; si cambia la System, la Channel necesita `--SystemApi:BaseUrl=http://localhost:<puerto>` |
+
+Ejemplo del camino C completo, ventana 2:
+
+```bat
+dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore\channel\wwwroot
+```
+
 - **Paquete portable, sin el código:** los comandos para cmd y PowerShell están en
   [tools/portable/README.md](tools/portable/README.md), que viaja dentro del `.zip` como
   `README.txt`.
 - **Desde la app de Claude:** `.claude/launch.json` tiene las tres piezas —`system`,
-  `channel` y `web`—, con esas variables y `-p:UseAppHost=false`. Arrancar `system`, esperar a
-  que responda y después `channel`.
+  `channel` y `web`—. Arrancar `system`, esperar a que responda y después `channel`.
 
 **Detener:** `Ctrl + C` en cada ventana. Si un puerto queda ocupado:
 `netstat -ano | findstr :5101` da el número de proceso al final de la línea, y

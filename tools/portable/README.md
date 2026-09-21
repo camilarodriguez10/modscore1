@@ -92,108 +92,82 @@ Ejemplo en cmd: `.\start.cmd -Data File -NoBrowser`. En PowerShell:
 
 Sirve si el equipo no deja correr scripts pero sí los `.exe` del paquete, o para ver los
 mensajes de cada capa por separado. Son **dos ventanas**, en este orden, y cada una se
-deja abierta. Las variables (`set` o `$env:`) valen solo para la ventana donde se escriben.
+deja abierta mientras se usa la aplicación.
+
+El entorno, el puerto y la dirección de la capa System van **como argumentos del programa**,
+no como variables. Así la línea del programa es **idéntica en cmd y en PowerShell**; solo
+cambia la forma de entrar a la carpeta.
+
+> **No pegues comandos `set "..."` en PowerShell.** En PowerShell, `set` no define una
+> variable de entorno: crea una variable de PowerShell que el programa no ve, sin dar error.
+> La capa arranca entonces como producción y se detiene con `'AllowedHosts' debe listar los
+> hosts del servicio (entorno 'Production')`. Con los argumentos de abajo eso no pasa.
 
 A mano, las capas usan el token de desarrollo de sus `appsettings.Development.json` en lugar
 de uno nuevo por arranque. Da lo mismo en un equipo de prueba: las dos escuchan solo en
 `127.0.0.1`.
 
-### En cmd
-
-**Ventana 1 — capa System:**
+**Ventana 1 — capa System.** En cmd:
 
 ```bat
 cd /d C:\modscore\system
-set "ASPNETCORE_ENVIRONMENT=Development"
-set "ASPNETCORE_URLS=http://127.0.0.1:5101"
-.\Modernization.SystemApi.exe
+.\Modernization.SystemApi.exe --environment Development --urls http://127.0.0.1:5101
 ```
 
-Tiene que aparecer `Now listening on: http://127.0.0.1:5101`. Antes de abrir la ventana 2,
-comprueba en otra ventana (o en el navegador, con la misma dirección) que responde:
+En PowerShell:
 
-```bat
-curl http://127.0.0.1:5101/health
+```powershell
+Set-Location C:\modscore\system
+.\Modernization.SystemApi.exe --environment Development --urls http://127.0.0.1:5101
 ```
 
-Tiene que decir `{"status":"healthy"}`.
+Tiene que aparecer `Now listening on: http://127.0.0.1:5101` y `Hosting environment:
+Development`. Antes de abrir la ventana 2, comprueba desde otra ventana que responde: en cmd,
+`curl http://127.0.0.1:5101/health`; en PowerShell, `Invoke-RestMethod http://127.0.0.1:5101/health`.
+Tiene que decir `healthy`.
 
-**Ventana 2 — capa Channel, que además sirve el sitio:**
+**Ventana 2 — capa Channel, que además sirve el sitio.** En cmd:
 
 ```bat
 cd /d C:\modscore\channel
-set "ASPNETCORE_ENVIRONMENT=Development"
-set "ASPNETCORE_URLS=http://127.0.0.1:5100"
-set "SystemApi__BaseUrl=http://127.0.0.1:5101"
-.\Modernization.ChannelApi.exe
+.\Modernization.ChannelApi.exe --environment Development --urls http://127.0.0.1:5100 --SystemApi:BaseUrl=http://127.0.0.1:5101
 ```
 
-Cuando aparezca `Now listening on: http://127.0.0.1:5100`, abre el sitio:
-
-```bat
-start http://localhost:5100/
-```
-
-### En PowerShell
-
-**Ventana 1 — capa System:**
-
-```powershell
-Set-Location C:\modscore\system
-$env:ASPNETCORE_ENVIRONMENT = 'Development'
-$env:ASPNETCORE_URLS = 'http://127.0.0.1:5101'
-.\Modernization.SystemApi.exe
-```
-
-Comprobarla desde otra ventana de PowerShell:
-
-```powershell
-Invoke-RestMethod http://127.0.0.1:5101/health
-```
-
-**Ventana 2 — capa Channel:**
+En PowerShell:
 
 ```powershell
 Set-Location C:\modscore\channel
-$env:ASPNETCORE_ENVIRONMENT = 'Development'
-$env:ASPNETCORE_URLS = 'http://127.0.0.1:5100'
-$env:SystemApi__BaseUrl = 'http://127.0.0.1:5101'
-.\Modernization.ChannelApi.exe
+.\Modernization.ChannelApi.exe --environment Development --urls http://127.0.0.1:5100 --SystemApi:BaseUrl=http://127.0.0.1:5101
 ```
 
-Abrir el sitio:
+Cuando aparezca `Now listening on: http://127.0.0.1:5100`, abre el sitio: `start http://localhost:5100/`
+en cmd, o `Start-Process http://localhost:5100/` en PowerShell.
 
-```powershell
-Start-Process http://localhost:5100/
-```
+| Argumento | Para qué |
+|---|---|
+| `--environment Development` | Arranca como entorno de desarrollo: lee `appsettings.Development.json` y habilita el usuario de desarrollo. Sin esto arranca como producción y se detiene a propósito |
+| `--urls http://127.0.0.1:5101` | El puerto y la interfaz donde escucha. Sin esto escucharía en el 5000 |
+| `--SystemApi:BaseUrl=http://127.0.0.1:5101` | Dónde encuentra la Channel a la System |
 
 ### Con datos de archivos en lugar de generados
 
-Solo cambia la **ventana 1**: dos variables más, antes de arrancar el programa. La carpeta
-`data` guarda las cargas y las reglas publicadas.
+Solo cambia la **ventana 1**: dos argumentos más. La carpeta `data` guarda las cargas y las
+reglas publicadas; se crea una vez.
 
-**cmd:**
+En cmd:
 
 ```bat
-cd /d C:\modscore\system
-set "ASPNETCORE_ENVIRONMENT=Development"
-set "ASPNETCORE_URLS=http://127.0.0.1:5101"
-set "DataSource__Provider=File"
-set "DataSource__Directory=C:\modscore\data"
 if not exist C:\modscore\data mkdir C:\modscore\data
-.\Modernization.SystemApi.exe
+cd /d C:\modscore\system
+.\Modernization.SystemApi.exe --environment Development --urls http://127.0.0.1:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore\data
 ```
 
-**PowerShell:**
+En PowerShell:
 
 ```powershell
-Set-Location C:\modscore\system
-$env:ASPNETCORE_ENVIRONMENT = 'Development'
-$env:ASPNETCORE_URLS = 'http://127.0.0.1:5101'
-$env:DataSource__Provider = 'File'
-$env:DataSource__Directory = 'C:\modscore\data'
 New-Item -ItemType Directory -Force C:\modscore\data | Out-Null
-.\Modernization.SystemApi.exe
+Set-Location C:\modscore\system
+.\Modernization.SystemApi.exe --environment Development --urls http://127.0.0.1:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore\data
 ```
 
 Después, en el sitio, **Data → Upload files**: elegir los ocho CSV de `C:\modscore\samples` y
@@ -201,9 +175,9 @@ Después, en el sitio, **Data → Upload files**: elegir los ocho CSV de `C:\mod
 
 ### Con otros puertos
 
-Si el 5100 o el 5101 están ocupados, cambia los números en las tres líneas que los nombran:
-`ASPNETCORE_URLS` de la ventana 1, y `ASPNETCORE_URLS` y `SystemApi__BaseUrl` de la ventana 2.
-Por ejemplo, 5201 para la System y 5200 para la Channel.
+Si el 5100 o el 5101 están ocupados, cambia los números en los tres argumentos que los nombran:
+`--urls` de la ventana 1, y `--urls` y `--SystemApi:BaseUrl` de la ventana 2. Por ejemplo,
+5201 para la System y 5200 para la Channel.
 
 ## 4. Detener
 
@@ -237,57 +211,34 @@ El camino C de `GUIA-PASO-A-PASO.txt` levanta la aplicación desde el código so
 `dotnet.exe`, y de este `.zip` usa únicamente la carpeta `channel\wwwroot`, que son archivos
 estáticos. Necesita el .NET SDK 10 y el repositorio (en el ejemplo, en `C:\modscore1`).
 
-**cmd — compilar una vez:**
+Las líneas de `dotnet` son idénticas en cmd y en PowerShell. Para entrar a la carpeta: en
+cmd, `cd /d C:\modscore1`; en PowerShell, `Set-Location C:\modscore1`.
+
+**Compilar una vez:**
 
 ```bat
 cd /d C:\modscore1
 dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false
 ```
 
-**cmd — ventana 1, System:**
+**Ventana 1 — System:**
 
 ```bat
 cd /d C:\modscore1
-set "ASPNETCORE_ENVIRONMENT=Development"
-set "ASPNETCORE_URLS=http://localhost:5101"
-dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false
+dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5101
 ```
 
-**cmd — ventana 2, Channel sirviendo el sitio del paquete:**
+**Ventana 2 — Channel, sirviendo el sitio del paquete:**
 
 ```bat
 cd /d C:\modscore1
-set "ASPNETCORE_ENVIRONMENT=Development"
-set "ASPNETCORE_URLS=http://localhost:5100"
-set "ASPNETCORE_WEBROOT=C:\modscore\channel\wwwroot"
-dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false
+dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore\channel\wwwroot
 ```
 
-**PowerShell — lo mismo:**
-
-```powershell
-Set-Location C:\modscore1
-dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false
-```
-
-```powershell
-Set-Location C:\modscore1
-$env:ASPNETCORE_ENVIRONMENT = 'Development'
-$env:ASPNETCORE_URLS = 'http://localhost:5101'
-dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false
-```
-
-```powershell
-Set-Location C:\modscore1
-$env:ASPNETCORE_ENVIRONMENT = 'Development'
-$env:ASPNETCORE_URLS = 'http://localhost:5100'
-$env:ASPNETCORE_WEBROOT = 'C:\modscore\channel\wwwroot'
-dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false
-```
-
-Luego se abre <http://localhost:5100/>. `-p:UseAppHost=false` hace que quien ejecuta sea
-`dotnet.exe` y no un `.exe` propio del proyecto; va también en `dotnet run`, porque sin él
-`--no-build` busca ese `.exe`.
+Luego se abre <http://localhost:5100/>. Lo que va antes de `--` es para `dotnet`; lo que va
+después, para la aplicación. `-p:UseAppHost=false` hace que quien ejecuta sea `dotnet.exe` y no
+un `.exe` propio del proyecto; va también en `dotnet run`, porque sin él `--no-build` busca ese
+`.exe`. `--webroot` le dice a la Channel dónde están los archivos del sitio.
 
 ## Qué probar
 

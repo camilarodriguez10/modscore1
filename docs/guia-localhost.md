@@ -228,39 +228,38 @@ cero.
 Necesitas **tres terminales abiertas a la vez**, en la carpeta del proyecto. En cada una,
 los comandos de tu sistema, y **en este orden**.
 
-> **Las dos variables no son opcionales.** Sin `ASPNETCORE_ENVIRONMENT=Development` la capa
-> arranca como si fuera producción y se detiene al instante con un error sobre
-> `AllowedHosts`: es a propósito, para que nadie publique la autenticación de desarrollo.
-> Sin `ASPNETCORE_URLS` escucha en el puerto 5000 y las capas no se encuentran.
+> **El entorno y el puerto no son opcionales**, y van **como argumentos, después de `--`**.
+> Sin `--environment Development` la capa arranca como si fuera producción y se detiene al
+> instante con un error sobre `AllowedHosts`: es a propósito, para que nadie publique la
+> autenticación de desarrollo. Sin `--urls` escucha en el puerto 5000 y las capas no se
+> encuentran. Escritos como argumentos, la línea es **la misma en cmd y en PowerShell**; no
+> hace falta ningún `set`, que en PowerShell no funciona (ver
+> [Problemas frecuentes](#problemas-frecuentes)).
 
-**Terminal 1 — capa System.** En Windows (`cmd`):
+**Terminal 1 — capa System.** En Windows, en cmd o en PowerShell:
 
 ```bat
-set "ASPNETCORE_ENVIRONMENT=Development"
-set "ASPNETCORE_URLS=http://localhost:5101"
-dotnet run --project src\system\Modernization.SystemApi
+dotnet run --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101
 ```
 
 En macOS o Linux:
 
 ```bash
-ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5101 dotnet run --project src/system/Modernization.SystemApi
+dotnet run --project src/system/Modernization.SystemApi -- --environment Development --urls http://localhost:5101
 ```
 
-Espera a ver `Now listening on: http://localhost:5101`.
+Espera a ver `Now listening on: http://localhost:5101` y `Hosting environment: Development`.
 
-**Terminal 2 — capa Channel.** En Windows (`cmd`):
+**Terminal 2 — capa Channel.** En Windows, en cmd o en PowerShell:
 
 ```bat
-set "ASPNETCORE_ENVIRONMENT=Development"
-set "ASPNETCORE_URLS=http://localhost:5100"
-dotnet run --project src\channel\Modernization.ChannelApi
+dotnet run --project src\channel\Modernization.ChannelApi -- --environment Development --urls http://localhost:5100
 ```
 
 En macOS o Linux:
 
 ```bash
-ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5100 dotnet run --project src/channel/Modernization.ChannelApi
+dotnet run --project src/channel/Modernization.ChannelApi -- --environment Development --urls http://localhost:5100
 ```
 
 Espera a ver `Now listening on: http://localhost:5100`.
@@ -373,15 +372,15 @@ sobre los mismos archivos y se pisen.
 
 ### Paso 5 · levanta las dos capas, sin volver a compilar
 
-Dos ventanas de `cmd`, **en este orden**. Copia cada bloque completo.
+Dos ventanas, **en este orden**. Copia cada bloque completo. La línea de `dotnet` es la misma
+en cmd y en PowerShell; en PowerShell, la primera línea es `Set-Location C:\modscore1` en vez
+de `cd /d C:\modscore1`.
 
 **Ventana 1 — capa System:**
 
 ```bat
 cd /d C:\modscore1
-set "ASPNETCORE_ENVIRONMENT=Development"
-set "ASPNETCORE_URLS=http://localhost:5101"
-dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false
+dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5101
 ```
 
 Tiene que aparecer `Now listening on: http://localhost:5101`. **Compruébalo antes de seguir**:
@@ -392,10 +391,7 @@ Si no, no abras la ventana 2 todavía: ve a [Si la System no levanta](#si-la-sys
 
 ```bat
 cd /d C:\modscore1
-set "ASPNETCORE_ENVIRONMENT=Development"
-set "ASPNETCORE_URLS=http://localhost:5100"
-set "ASPNETCORE_WEBROOT=C:\modscore-sitio\wwwroot"
-dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false
+dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore-sitio\wwwroot
 ```
 
 Tiene que aparecer `Now listening on: http://localhost:5100`.
@@ -411,7 +407,8 @@ Qué hace cada parte que no estaba en el camino B:
 |---|---|
 | `-p:UseAppHost=false` | Sin esto, `dotnet` fabrica un `Modernization.SystemApi.exe` propio y lo ejecuta, que es justo lo que la empresa bloquea. Con esto, quien ejecuta es `dotnet.exe`. Va **también** en `dotnet run`: sin él, `--no-build` busca ese `.exe`, que no existe |
 | `--no-build` | Arranca lo que compilaste en el paso 4, sin volver a compilar |
-| `ASPNETCORE_WEBROOT` | Le dice a la capa Channel dónde están los archivos del sitio, para servirlos ella misma en el puerto 5100. Por eso no hace falta Node ni una tercera ventana |
+| `--` | Lo que va antes es para `dotnet`; lo que va después, para la aplicación |
+| `--webroot` | Le dice a la capa Channel dónde están los archivos del sitio, para servirlos ella misma en el puerto 5100. Por eso no hace falta Node ni una tercera ventana |
 
 ### Si la System no levanta
 
@@ -419,8 +416,8 @@ Mira **las últimas líneas de la ventana 1**. Casi siempre dicen cuál de estos
 
 | Si la ventana dice | Qué pasa | Qué hacer |
 |---|---|---|
-| `'AllowedHosts' debe listar los hosts del servicio (entorno 'Production')` | Falta la variable de entorno en **esa** ventana | Repite el bloque completo de la ventana 1, con los dos `set` antes del `dotnet run` |
-| `An error occurred trying to start process '...\Modernization.SystemApi.exe'` seguido de `no puede encontrar el archivo` o `acceso denegado` | Al `dotnet run` le falta `-p:UseAppHost=false`, y busca un `.exe` que no existe o que la empresa bloquea | Copia de nuevo el bloque de la ventana 1 tal cual: el `-p:UseAppHost=false` va al final de la línea del `dotnet run` |
+| `'AllowedHosts' debe listar los hosts del servicio (entorno 'Production')` | La capa no recibió `--environment Development`: faltó el argumento, o se usó un bloque viejo con `set` pegado en PowerShell | Copia de nuevo el bloque de la ventana 1 tal cual, con `-- --environment Development --urls ...` al final de la línea del `dotnet run` |
+| `An error occurred trying to start process '...\Modernization.SystemApi.exe'` seguido de `no puede encontrar el archivo` o `acceso denegado` | Al `dotnet run` le falta `-p:UseAppHost=false`, y busca un `.exe` que no existe o que la empresa bloquea | Copia de nuevo el bloque de la ventana 1 tal cual: el `-p:UseAppHost=false` va en la línea del `dotnet run`, antes del `--` |
 | `Failed to bind to address http://localhost:5101` o `address already in use` | Otro programa, o una System anterior que quedó abierta, ocupa el puerto | `netstat -ano \| findstr :5101` da el número de proceso al final de la línea; `taskkill /PID <número> /F` lo cierra |
 | `The process cannot access the file ... because it is being used by another process` | Una System o Channel anterior sigue corriendo y tiene tomados los archivos | Cierra todas las ventanas de `cmd`, abre una nueva y repite desde el paso 4 |
 | `MSB1009` o `Couldn't find a project to run` | La carpeta del `cd /d` no es la del proyecto | `dir C:\modscore1\src\system` tiene que listar `Modernization.SystemApi`; corrige la ruta |
@@ -457,7 +454,7 @@ npm --prefix src\web install
 npm --prefix src\web run build
 ```
 
-y en la ventana 2 usa `set "ASPNETCORE_WEBROOT=C:\modscore1\src\web\dist"`. **Ojo:** la
+y en la ventana 2 usa `--webroot C:\modscore1\src\web\dist`. **Ojo:** la
 compilación ejecuta un `esbuild.exe` que viene dentro de las dependencias, y la misma
 política que bloquea los `.exe` del paquete puede bloquear ese. Por eso el camino C usa por
 defecto los archivos del `.zip`.
@@ -475,29 +472,24 @@ Para probar la carga de archivos de verdad:
 .\start.ps1 -Data File
 ```
 
-**Camino B** (en la terminal de la capa System, en lugar del comando del paso 4):
-
-```bash
-DataSource__Provider=File DataSource__Directory="$PWD/data/history" dotnet run --project src/system/Modernization.SystemApi
-```
-
-En Windows con PowerShell:
-
-```powershell
-$env:DataSource__Provider='File'; $env:DataSource__Directory="$PWD\data\history"; dotnet run --project src/system/Modernization.SystemApi
-```
-
-En Windows con `cmd` (caminos B y C), antes del `dotnet run` de la capa System:
+**Caminos B y C** (en la terminal de la capa System): dos argumentos más al final de la
+línea del `dotnet run`. En Windows, en cmd o en PowerShell:
 
 ```bat
-set "DataSource__Provider=File"
-set "DataSource__Directory=%CD%\data\history"
+dotnet run --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\history
+```
+
+(en el camino C, con `--no-build` y `-p:UseAppHost=false` antes del `--`, como en su paso 5).
+En macOS o Linux:
+
+```bash
+dotnet run --project src/system/Modernization.SystemApi -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory="$PWD/data/history"
 ```
 
 > **La ruta tiene que ser absoluta.** `dotnet run --project` arranca con la carpeta del
 > proyecto como raíz, así que una ruta relativa apunta a un directorio que no existe: el
-> portafolio aparece vacío, sin ningún error que lo explique. `%CD%` la vuelve absoluta
-> porque vale la carpeta en la que estás.
+> portafolio aparece vacío, sin ningún error que lo explique. Si el repositorio no está en
+> `C:\modscore1`, cambia esa parte de la ruta.
 
 Luego, en el sitio:
 
@@ -537,16 +529,16 @@ permite ver.
 | `No se puede cargar el archivo start.ps1 ... deshabilitada la ejecución de scripts` | Política de ejecución de PowerShell | `powershell -ExecutionPolicy Bypass -File .\start.ps1` |
 | «Windows protegió su PC» | SmartScreen: los binarios no están firmados | Más información → Ejecutar de todas formas |
 | «Este programa está bloqueado por una directiva de grupo», «el administrador del sistema bloqueó esta aplicación» o «acceso denegado» al abrir `start.cmd` o un `.exe` | La empresa no deja ejecutar programas sin firmar desde carpetas de usuario | Si el `.zip` llegó por internet o por correo, primero: clic derecho sobre el `.zip` → Propiedades → **Desbloquear**, y descomprímelo otra vez. Si sigue bloqueado, usa el **camino C** |
-| `Unhandled exception ... 'AllowedHosts' debe listar los hosts del servicio (entorno 'Production')` | Falta `ASPNETCORE_ENVIRONMENT=Development` en esa ventana | Escribe `set "ASPNETCORE_ENVIRONMENT=Development"` en la misma ventana, antes del `dotnet run`. Una variable puesta en otra ventana no vale |
+| `Unhandled exception ... 'AllowedHosts' debe listar los hosts del servicio (entorno 'Production')`, a veces con `DeploymentGuards.cs:line 32` y `Program.cs:line 214` | La capa arrancó como producción: no recibió el entorno de desarrollo. Lo más común es haber pegado un bloque de `cmd` con `set "..."` en **PowerShell** (la Terminal de Windows 11 abre PowerShell): ahí `set` crea una variable de PowerShell que el programa no ve, sin dar error | Usa los comandos con argumentos: al final de la línea, `--environment Development --urls http://localhost:5101` (después de `--` si es un `dotnet run`). Funcionan igual en cmd y en PowerShell. No hace falta tocar `AllowedHosts` |
 | `warn: ... Failed to determine the https port for redirect` | Solo un aviso: en local no hay HTTPS al que redirigir | Nada: la capa está funcionando. Si el sitio falla, la causa es otra; revisa primero que la System responda en <http://localhost:5101/health> |
-| `Now listening on: http://localhost:5000` | Falta `ASPNETCORE_URLS` en esa ventana | Detén con Ctrl + C, pon `set "ASPNETCORE_URLS=http://localhost:5101"` (o `5100` en la Channel) y vuelve a arrancar |
-| Camino C: `http://localhost:5100` responde 404 o una página vacía | `ASPNETCORE_WEBROOT` no apunta a una carpeta con `index.html` | `dir C:\modscore-sitio\wwwroot\index.html` tiene que encontrar el archivo; corrige la ruta y reinicia la ventana 2 |
+| `Now listening on: http://localhost:5000` | Faltó el argumento `--urls` | Detén con Ctrl + C y vuelve a arrancar con `--urls http://localhost:5101` (o `5100` en la Channel) al final de la línea |
+| Camino C: `http://localhost:5100` responde 404 o una página vacía | `--webroot` no apunta a una carpeta con `index.html` | `dir C:\modscore-sitio\wwwroot\index.html` tiene que encontrar el archivo; corrige la ruta y reinicia la ventana 2 |
 | `Failed to bind to address ... address already in use` | Otro programa ocupa 5100, 5101 o 5173 | Camino A: `.\start.ps1 -Port 5200`. Camino B: cierra lo que use el puerto (ver fila siguiente) |
 | Necesitas saber **quién** ocupa un puerto | — | Windows: `netstat -ano \| findstr :5100` y luego `tasklist \| findstr <PID>`. macOS/Linux: `lsof -i :5100` |
 | El sitio carga pero todo sale vacío o con error | La capa Channel está arriba, la System no | Mira la terminal 1: tiene que decir `Now listening on: http://localhost:5101` |
 | El sitio no carga («no se puede acceder a este sitio») | La capa Channel no está arriba | Mira la terminal 2, y arráncala después de la System |
 | `502` o `500` al entrar | Las dos capas no se están reconociendo | Deténlas todas y arráncalas en orden: System, Channel, sitio |
-| Ves la página de login y `Sign in` no hace nada | La capa Channel no está en entorno `Development` | Caminos B y C: la ventana de la Channel necesita su propio `set "ASPNETCORE_ENVIRONMENT=Development"` |
+| Ves la página de login y `Sign in` no hace nada | La capa Channel no está en entorno `Development` | Caminos B y C: la línea de la Channel también necesita `--environment Development` |
 | Al ejecutar un `.exe` a mano dice que no lo encuentra | Windows no busca en la carpeta actual | Escribe `.\Modernization.SystemApi.exe`, y hazlo **desde la carpeta de esa capa** |
 | La ventana negra se cerró y los puertos siguen ocupados | Los procesos quedaron vivos | Camino A: `taskkill /IM Modernization.SystemApi.exe /F` y lo mismo con `Modernization.ChannelApi.exe`. Caminos B y C, donde el proceso se llama `dotnet.exe`: `netstat -ano \| findstr :5100` da el número de proceso, y `taskkill /PID <número> /F` lo cierra |
 | Página en blanco tras actualizar el código | Faltan dependencias nuevas del sitio | `npm --prefix src/web install` otra vez |

@@ -48,7 +48,7 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | Git | Repositorio **privado** <https://github.com/camilarodriguez10/modscore1>, rama `main`. Guarda todo lo creado —el `.zip` portable, el estado local de `data/`, los scripts de las sesiones (`tools/sesiones/`) y la copia del plan (`docs/plan/`)— salvo las capturas del BRD y las imágenes. Los commits usan el correo de la cuenta. Cada push se confirma antes |
 | Memo de decisiones | <https://claude.ai/artifact/Gp7c9gHv5kTSdGETPfeCi5> (versión 2, del 2026-09-18, con la pregunta 9 respondida): las once reglas de scoring que el negocio tiene que confirmar, con evidencia y opciones. Fuente de verdad: [docs/scoring-decisions.md](docs/scoring-decisions.md); copia publicada en `docs/plan/scoring-decisions.html` |
 | Artefacto del plan | <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> (versión 20, del 2026-09-18, con el dashboard ejecutivo y las definiciones configurables; copia en `docs/plan/modscore-plan.html`, que hay que reemplazar al republicar; enlace anterior del mismo artefacto: <https://claude.ai/code/artifact/25507d1f-40a6-4e74-8c43-0337dbb63358>) |
-| Paquete portable | `artifacts/modscore-portable-win-x64-selfcontained-20260921-1213.zip` (93,3 MB autocontenido, SHA-256 `0886a1a4f4773475d76dc7e3916eb57e6822882f5c2e5338adad71bd6ee0faf5`), versionado en el repositorio; se regenera con `tools/portable/build-portable.ps1`. Regenerado el 2026-09-21 para que su `README.txt` traiga los comandos directos de cmd y PowerShell (arrancar con el script, las dos capas a mano, datos de archivos, detener y el camino sin `.exe`), todos probados en las dos consolas; el código es el mismo con el que los **40 escenarios e2e pasaron contra el paquete** el 2026-09-18, y este pasó una prueba de humo (salud, sitio, sesión, dashboard y *Definitions*). El paquete tiene el límite real de 120 peticiones por minuto por usuario, y la suite completa lo supera en un minuto (la prueba de reglas recibe 429): para correrla, arrancarlo con los límites de `playwright.config.ts` (`RateLimiting__RequestsPerMinute=100000` y los otros tres) en el entorno. Con el límite real pasan en dos tandas. `start.ps1` espera un Enter para detenerse: en segundo plano, darle una entrada que quede abierta. El anterior se borra: cada paquete queda para siempre en la historia del repositorio |
+| Paquete portable | `artifacts/modscore-portable-win-x64-selfcontained-20260921-1301.zip` (93,3 MB autocontenido, SHA-256 `58a547837d7a3c9fe565bf57c26ff58feb6fb6dbc6c65de321a66d75b711f9e6`), versionado en el repositorio; se regenera con `tools/portable/build-portable.ps1`. Regenerado el 2026-09-21 para que su `README.txt` y su guía traigan comandos directos que pasan el entorno y el puerto como argumentos —la misma línea en cmd y en PowerShell— (arrancar con el script, las dos capas a mano, datos de archivos, detener y el camino sin `.exe`), todos probados en las dos consolas; el código es el mismo con el que los **40 escenarios e2e pasaron contra el paquete** el 2026-09-18, y este pasó una prueba de humo (salud, sitio, sesión, dashboard y *Definitions*). El paquete tiene el límite real de 120 peticiones por minuto por usuario, y la suite completa lo supera en un minuto (la prueba de reglas recibe 429): para correrla, arrancarlo con los límites de `playwright.config.ts` (`RateLimiting__RequestsPerMinute=100000` y los otros tres) en el entorno. Con el límite real pasan en dos tandas. `start.ps1` espera un Enter para detenerse: en segundo plano, darle una entrada que quede abierta. El anterior se borra: cada paquete queda para siempre en la historia del repositorio |
 
 ---
 
@@ -294,7 +294,7 @@ junto a ruleset, palancas y roadmap:
 | Respaldo | `powershell -ExecutionPolicy Bypass -File tools/git/backup.ps1 -Message "…" -Verify` |
 | Datos dummy | `dotnet run --project tools/Modernization.DummyData -- data/dummy` |
 | Levantarlo desde la app de Claude | `.claude/launch.json`: `system`, `channel` y `web`, en ese orden y esperando a que la System responda antes de arrancar la Channel |
-| Levantarlo en otro equipo | Guía paso a paso, para alguien que no conoce el proyecto: [docs/guia-localhost.md](docs/guia-localhost.md). En un equipo que bloquea `.exe` sin firmar, su **camino C**: `dotnet run ... -p:UseAppHost=false` y la Channel sirviendo el sitio con `ASPNETCORE_WEBROOT` |
+| Levantarlo en otro equipo | Guía paso a paso, para alguien que no conoce el proyecto: [docs/guia-localhost.md](docs/guia-localhost.md). En un equipo que bloquea `.exe` sin firmar, su **camino C**: `dotnet run ... -p:UseAppHost=false -- --environment Development --urls ... --webroot ...`, con la Channel sirviendo el sitio. Todos los comandos pasan el entorno y el puerto **como argumentos**, no como variables: la misma línea sirve en cmd y en PowerShell |
 
 ---
 
@@ -449,8 +449,17 @@ junto a ruleset, palancas y roadmap:
 - `dotnet run` ejecuta un `.exe` propio (el *apphost*) que crea en `bin`. En equipos que
   bloquean programas sin firmar ese `.exe` no abre, igual que los del paquete portable.
   `-p:UseAppHost=false` hace que ejecute `dotnet.exe` con la DLL. La SPA no necesita Node: la
-  capa Channel la sirve si `ASPNETCORE_WEBROOT` apunta a una carpeta con `index.html`, y el
-  `.zip` portable trae esa carpeta ya compilada en `channel\wwwroot`.
+  capa Channel la sirve si `--webroot` (o `ASPNETCORE_WEBROOT`) apunta a una carpeta con
+  `index.html`, y el `.zip` portable trae esa carpeta ya compilada en `channel\wwwroot`.
+- **Un bloque de `cmd` pegado en PowerShell no define variables de entorno.** En PowerShell,
+  `set "ASPNETCORE_ENVIRONMENT=Development"` es `Set-Variable`: crea una variable de PowerShell,
+  no da error, y el programa arranca como producción (`'AllowedHosts' debe listar los hosts del
+  servicio`, `DeploymentGuards.cs:line 32`, `Program.cs:line 214`). La Terminal de Windows 11
+  abre PowerShell por defecto, así que es el error más probable al seguir una guía de cmd. Lo
+  reportó quien usa la aplicación en otro equipo el 2026-09-21. Desde entonces los comandos
+  documentados pasan el entorno, el puerto y el resto como argumentos de la aplicación
+  (`--environment Development --urls ... --SystemApi:BaseUrl=... --webroot ...`, después de
+  `--` en un `dotnet run`), que se escriben igual en cmd, PowerShell y Git Bash.
 
 **Proceso y producto:**
 

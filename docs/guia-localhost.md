@@ -51,7 +51,13 @@ equipo con un pendrive, una carpeta compartida o como prefieras.
 archivo y escribe:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\modscore-portable-win-x64-selfcontained-20260918-1912.zip
+Get-FileHash -Algorithm SHA256 .\modscore-portable-*.zip
+```
+
+o, en `cmd`:
+
+```bat
+for %f in (modscore-portable-*.zip) do certutil -hashfile "%f" SHA256
 ```
 
 El resultado tiene que coincidir con el SHA-256 que aparece en
@@ -79,7 +85,24 @@ C:\modscore\
 
 ### Paso 3 · arráncalo
 
-Doble clic en **`start.cmd`**.
+Doble clic en **`start.cmd`**. O, si prefieres escribirlo, en una ventana de `cmd`:
+
+```bat
+cd /d C:\modscore
+.\start.cmd
+```
+
+o en una de PowerShell:
+
+```powershell
+Set-Location C:\modscore
+powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
+```
+
+El `.\` delante no es un adorno: en equipos con la política `NoDefaultCurrentDirectoryInExePath`,
+`cmd` no ejecuta nada de la carpeta actual sin él. Si el equipo no deja correr el script pero
+sí los `.exe`, el `README.txt` del paquete trae los comandos para arrancar las dos capas a
+mano, en cmd y en PowerShell.
 
 Se abre una ventana negra de consola. Verás algo así:
 
@@ -130,7 +153,8 @@ capas y se borra el token temporal que usan para hablar entre ellas.
 
 ### Opciones del arranque
 
-Abre PowerShell en `C:\modscore` y usa `start.ps1` en vez del doble clic:
+Abre PowerShell en `C:\modscore` y usa `start.ps1` en vez del doble clic (en `cmd`, las
+mismas opciones van después de `.\start.cmd`, por ejemplo `.\start.cmd -Data File`):
 
 | Comando | Para qué |
 |---|---|
@@ -509,6 +533,7 @@ permite ver.
 |---|---|---|
 | `dotnet` o `npm` «no se reconoce» | No están instalados o la terminal es anterior a la instalación | Cierra y abre la terminal; si sigue, reinicia el equipo |
 | La consola se cierra sola al instante | Doble clic sobre `start.ps1` en vez de `start.cmd` | Usa `start.cmd`, o abre PowerShell y ejecuta `.\start.ps1` |
+| `"start.cmd" no se reconoce como un comando interno o externo` (o lo mismo con un `.exe`), aunque el archivo está en esa carpeta | El equipo tiene la política `NoDefaultCurrentDirectoryInExePath`: `cmd` no busca programas en la carpeta actual | Escribe `.\start.cmd` (o `.\Modernization.SystemApi.exe`) |
 | `No se puede cargar el archivo start.ps1 ... deshabilitada la ejecución de scripts` | Política de ejecución de PowerShell | `powershell -ExecutionPolicy Bypass -File .\start.ps1` |
 | «Windows protegió su PC» | SmartScreen: los binarios no están firmados | Más información → Ejecutar de todas formas |
 | «Este programa está bloqueado por una directiva de grupo», «el administrador del sistema bloqueó esta aplicación» o «acceso denegado» al abrir `start.cmd` o un `.exe` | La empresa no deja ejecutar programas sin firmar desde carpetas de usuario | Si el `.zip` llegó por internet o por correo, primero: clic derecho sobre el `.zip` → Propiedades → **Desbloquear**, y descomprímelo otra vez. Si sigue bloqueado, usa el **camino C** |

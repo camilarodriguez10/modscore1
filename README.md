@@ -12,32 +12,143 @@ El plan completo está en [PLAN.md](PLAN.md). Las decisiones de arquitectura, en
 > sabido y con los problemas frecuentes, está en
 > [docs/guia-localhost.md](docs/guia-localhost.md).
 
-Tres procesos, en este orden. Las dos variables de las capas **no son opcionales**: sin
-`ASPNETCORE_ENVIRONMENT=Development` la capa arranca como producción y se detiene a propósito
-(pide `AllowedHosts` y secretos reales), y sin `ASPNETCORE_URLS` escucha en el 5000.
+Tres procesos: la capa **System** en el puerto 5101, la capa **Channel** en el 5100 y la
+**SPA** en el 5173. Se compila una vez y después se abren **tres ventanas, en este orden**,
+cada una abierta mientras se usa la aplicación.
+
+- Las dos variables de las capas **no son opcionales**: sin `ASPNETCORE_ENVIRONMENT=Development`
+  la capa arranca como producción y se detiene a propósito (pide `AllowedHosts` y secretos
+  reales), y sin `ASPNETCORE_URLS` escucha en el 5000. Valen solo en la ventana donde se
+  escriben.
+- **La System primero, y la Channel cuando la System ya responda.** Compilar antes, aparte, evita
+  que las dos ventanas compilen a la vez: la Channel referencia el proyecto de la System, y
+  si compilan juntas se pisan el mismo `.dll` (`CS2012`, archivo en uso).
+- La primera vez, instalar las dependencias del sitio: `npm --prefix src/web ci --ignore-scripts`
+  (en PowerShell, `npm.cmd` en lugar de `npm`).
+
+Los ejemplos suponen el repositorio en `C:\modscore1`; cambia esa ruta si está en otro lado.
+
+### En cmd
+
+**Compilar una vez:**
+
+```bat
+cd /d C:\modscore1
+dotnet build src\channel\Modernization.ChannelApi
+```
+
+Tiene que terminar con `0 Errores` (o `0 Error(s)`).
+
+**Ventana 1 — capa System:**
+
+```bat
+cd /d C:\modscore1
+set "ASPNETCORE_ENVIRONMENT=Development"
+set "ASPNETCORE_URLS=http://localhost:5101"
+dotnet run --no-build --project src\system\Modernization.SystemApi
+```
+
+Antes de seguir, en otra ventana: `curl http://localhost:5101/health` tiene que responder
+`{"status":"healthy"}`.
+
+**Ventana 2 — capa Channel:**
+
+```bat
+cd /d C:\modscore1
+set "ASPNETCORE_ENVIRONMENT=Development"
+set "ASPNETCORE_URLS=http://localhost:5100"
+dotnet run --no-build --project src\channel\Modernization.ChannelApi
+```
+
+**Ventana 3 — la SPA:**
+
+```bat
+cd /d C:\modscore1
+npm --prefix src\web run dev
+```
+
+Abrir el sitio: `start http://localhost:5173/`.
+
+### En PowerShell
+
+**Compilar una vez:**
+
+```powershell
+Set-Location C:\modscore1
+dotnet build src\channel\Modernization.ChannelApi
+```
+
+**Ventana 1 — capa System:**
+
+```powershell
+Set-Location C:\modscore1
+$env:ASPNETCORE_ENVIRONMENT = 'Development'
+$env:ASPNETCORE_URLS = 'http://localhost:5101'
+dotnet run --no-build --project src\system\Modernization.SystemApi
+```
+
+Comprobarla desde otra ventana: `Invoke-RestMethod http://localhost:5101/health`.
+
+**Ventana 2 — capa Channel:**
+
+```powershell
+Set-Location C:\modscore1
+$env:ASPNETCORE_ENVIRONMENT = 'Development'
+$env:ASPNETCORE_URLS = 'http://localhost:5100'
+dotnet run --no-build --project src\channel\Modernization.ChannelApi
+```
+
+**Ventana 3 — la SPA:**
+
+```powershell
+Set-Location C:\modscore1
+npm.cmd --prefix src\web run dev
+```
+
+`npm.cmd` y no `npm`: en Windows PowerShell, `npm` resuelve a `npm.ps1`, que la política de
+ejecución de scripts suele bloquear. Abrir el sitio: `Start-Process http://localhost:5173/`.
+
+### En Git Bash
 
 ```bash
-ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5101 dotnet run --project src/system/Modernization.SystemApi
+dotnet build src/channel/Modernization.ChannelApi
 ```
 
 ```bash
-ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5100 dotnet run --project src/channel/Modernization.ChannelApi
+ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5101 dotnet run --no-build --project src/system/Modernization.SystemApi
+```
+
+```bash
+ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5100 dotnet run --no-build --project src/channel/Modernization.ChannelApi
 ```
 
 ```bash
 npm --prefix src/web run dev
 ```
 
-En `cmd`, las variables van con `set "ASPNETCORE_ENVIRONMENT=Development"` en la misma
-ventana, antes del `dotnet run`. En un equipo que **no deja ejecutar `.exe` sin firmar**,
-agrega `-p:UseAppHost=false` —así solo corre `dotnet.exe`— y deja que la capa Channel sirva
-el sitio con `ASPNETCORE_WEBROOT`: es el camino C de la
-[guía paso a paso](docs/guia-localhost.md).
+### Variantes
 
-Desde la app de Claude, `.claude/launch.json` tiene las tres piezas —`system`, `channel` y
-`web`— con esas variables y `-p:UseAppHost=false`. **Arrancar la System primero y la Channel
-cuando la System ya responda:** la Channel referencia el proyecto de la System, y si las dos
-compilan a la vez se pisan el mismo `.dll` (`CS2012`, archivo en uso).
+- **Sin Node, la Channel sirve el sitio:** se omite la ventana 3 y, en la ventana 2, antes de
+  `dotnet run`, se agrega `set "ASPNETCORE_WEBROOT=C:\modscore\channel\wwwroot"` (en
+  PowerShell, `$env:ASPNETCORE_WEBROOT = 'C:\modscore\channel\wwwroot'`), con la
+  carpeta `wwwroot` del paquete portable. El sitio queda en <http://localhost:5100/>.
+- **Si el equipo no deja ejecutar `.exe` sin firmar:** agregar `-p:UseAppHost=false` al final
+  del `dotnet build` y de cada `dotnet run`. Así quien ejecuta es `dotnet.exe`. Es el camino C
+  de la [guía paso a paso](docs/guia-localhost.md).
+- **Datos de archivos en lugar de generados:** en la ventana 1,
+  `set "DataSource__Provider=File"` y `set "DataSource__Directory=%CD%\data\history"` (ver
+  [Correr sobre archivos](#correr-sobre-archivos-en-vez-de-datos-generados)).
+- **Paquete portable, sin el código:** los comandos para cmd y PowerShell están en
+  [tools/portable/README.md](tools/portable/README.md), que viaja dentro del `.zip` como
+  `README.txt`.
+- **Desde la app de Claude:** `.claude/launch.json` tiene las tres piezas —`system`,
+  `channel` y `web`—, con esas variables y `-p:UseAppHost=false`. Arrancar `system`, esperar a
+  que responda y después `channel`.
+
+**Detener:** `Ctrl + C` en cada ventana. Si un puerto queda ocupado:
+`netstat -ano | findstr :5101` da el número de proceso al final de la línea, y
+`taskkill /PID <número> /F` lo cierra (en PowerShell,
+`Get-NetTCPConnection -LocalPort 5101 -State Listen` y `Stop-Process -Id <número>`).
 
 La SPA se abre en <http://localhost:5173>. El botón de login usa el esquema de
 desarrollo, que **no autentica a nadie**: solo existe para trabajar sin un

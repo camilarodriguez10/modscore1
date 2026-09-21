@@ -56,22 +56,31 @@ El script levanta las dos capas, genera un token de servicio nuevo en cada arran
 el navegador en <http://localhost:5100/>. `Sign in` entra con el usuario de desarrollo, que
 tiene todos los permisos. **Para detener: Enter en esa misma ventana.**
 
+Con `-Data File`, la pantalla **Data** acepta cargas y lo cargado queda en `C:\modscore\data`.
+
 **cmd:**
 
 ```bat
 cd /d C:\modscore
-.\start.cmd
+.\start.cmd -Data File
 ```
 
 **PowerShell:**
 
 ```powershell
 Set-Location C:\modscore
-powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1 -Data File
 ```
 
 `-ExecutionPolicy Bypass` vale solo para ese proceso: no cambia la política del equipo.
-También funciona el doble clic en `start.cmd` desde el Explorador.
+
+**Sin `-Data File`** —o con doble clic en `start.cmd` desde el Explorador— arranca con 250
+aplicaciones generadas en memoria: sirve para mirar la aplicación al instante, pero **Data no
+acepta cargas** y avisa *The active adapter is 'Dummy'*.
+
+La primera vez con `-Data File` no hay datos: cada pantalla lo avisa y lleva a **Data**. Ahí,
+en **Upload files**, elegir los ocho CSV de `C:\modscore\samples` (o los propios) y
+**Upload and recalculate**.
 
 ### Opciones
 
@@ -80,7 +89,7 @@ Se agregan al final de la línea, igual en cmd (`.\start.cmd ...`) y en PowerShe
 
 | Opción | Qué hace |
 |---|---|
-| *(ninguna)* | 250 aplicaciones generadas en memoria (se pierden al detener) |
+| *(ninguna)* | 250 aplicaciones generadas en memoria (se pierden al detener). **Data no acepta cargas** |
 | `-Data File` | Carga de archivos: subir los CSV de `samples\` desde la pantalla **Data**. Las cargas y las reglas publicadas quedan en `data\` |
 | `-Port 5200` | Otro puerto (la capa System usa el siguiente) |
 | `-NoBrowser` | No abre el navegador |
@@ -107,18 +116,20 @@ A mano, las capas usan el token de desarrollo de sus `appsettings.Development.js
 de uno nuevo por arranque. Da lo mismo en un equipo de prueba: las dos escuchan solo en
 `127.0.0.1`.
 
-**Ventana 1 — capa System.** En cmd:
+**Ventana 1 — capa System**, con carga de archivos. En cmd:
 
 ```bat
+if not exist C:\modscore\data mkdir C:\modscore\data
 cd /d C:\modscore\system
-.\Modernization.SystemApi.exe --environment Development --urls http://127.0.0.1:5101
+.\Modernization.SystemApi.exe --environment Development --urls http://127.0.0.1:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore\data
 ```
 
 En PowerShell:
 
 ```powershell
+New-Item -ItemType Directory -Force C:\modscore\data | Out-Null
 Set-Location C:\modscore\system
-.\Modernization.SystemApi.exe --environment Development --urls http://127.0.0.1:5101
+.\Modernization.SystemApi.exe --environment Development --urls http://127.0.0.1:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore\data
 ```
 
 Tiene que aparecer `Now listening on: http://127.0.0.1:5101` y `Hosting environment:
@@ -148,30 +159,21 @@ en cmd, o `Start-Process http://localhost:5100/` en PowerShell.
 | `--environment Development` | Arranca como entorno de desarrollo: lee `appsettings.Development.json` y habilita el usuario de desarrollo. Sin esto arranca como producción y se detiene a propósito |
 | `--urls http://127.0.0.1:5101` | El puerto y la interfaz donde escucha. Sin esto escucharía en el 5000 |
 | `--SystemApi:BaseUrl=http://127.0.0.1:5101` | Dónde encuentra la Channel a la System |
+| `--DataSource:Provider=File` | Carga de archivos: la pantalla **Data** acepta los CSV |
+| `--DataSource:Directory=C:\modscore\data` | Dónde quedan las cargas y las reglas publicadas. Ruta absoluta |
 
-### Con datos de archivos en lugar de generados
+La primera vez no hay datos: en el sitio, **Data → Upload files**, elegir los ocho CSV de
+`C:\modscore\samples` y **Upload and recalculate**.
 
-Solo cambia la **ventana 1**: dos argumentos más. La carpeta `data` guarda las cargas y las
-reglas publicadas; se crea una vez.
+### Con datos generados, sin cargas
 
-En cmd:
+Solo cambia la **ventana 1**: sin los dos argumentos `--DataSource:...`. Arranca con 250
+aplicaciones inventadas en memoria, que se pierden al detener, y **Data no acepta cargas**.
 
 ```bat
-if not exist C:\modscore\data mkdir C:\modscore\data
 cd /d C:\modscore\system
-.\Modernization.SystemApi.exe --environment Development --urls http://127.0.0.1:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore\data
+.\Modernization.SystemApi.exe --environment Development --urls http://127.0.0.1:5101
 ```
-
-En PowerShell:
-
-```powershell
-New-Item -ItemType Directory -Force C:\modscore\data | Out-Null
-Set-Location C:\modscore\system
-.\Modernization.SystemApi.exe --environment Development --urls http://127.0.0.1:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore\data
-```
-
-Después, en el sitio, **Data → Upload files**: elegir los ocho CSV de `C:\modscore\samples` y
-**Upload and recalculate**.
 
 ### Con otros puertos
 
@@ -225,7 +227,7 @@ dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false
 
 ```bat
 cd /d C:\modscore1
-dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5101
+dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\local
 ```
 
 **Ventana 2 — Channel, sirviendo el sitio del paquete:**
@@ -238,7 +240,9 @@ dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHo
 Luego se abre <http://localhost:5100/>. Lo que va antes de `--` es para `dotnet`; lo que va
 después, para la aplicación. `-p:UseAppHost=false` hace que quien ejecuta sea `dotnet.exe` y no
 un `.exe` propio del proyecto; va también en `dotnet run`, porque sin él `--no-build` busca ese
-`.exe`. `--webroot` le dice a la Channel dónde están los archivos del sitio.
+`.exe`. `--webroot` le dice a la Channel dónde están los archivos del sitio. Los dos
+`--DataSource:...` encienden la carga de archivos; lo cargado queda en
+`C:\modscore1\data\local`, que git ignora.
 
 ## Qué probar
 
@@ -255,8 +259,9 @@ un `.exe` propio del proyecto; va también en `dotnet run`, porque sin él `--no
   dar **79,67**.
 - **What-if** y **plan futuro** de una aplicación.
 - **Roadmap** por dimensión y su **Download CSV**.
-- **Data**: con datos de archivos, subir los ocho CSV de `samples\`; la tendencia aparece
-  desde la segunda carga y marca los cambios de reglas.
+- **Data**: arrancando con `-Data File` (o a mano, con los dos `--DataSource:...`), subir los
+  ocho CSV de `samples\`; la tendencia aparece desde la segunda carga y marca los cambios de
+  reglas.
 - **Rules**: cambiar un peso, simular, **Compare your draft** con una aplicación, publicar.
   Tras publicar aparece el aviso de reglas nuevas.
 

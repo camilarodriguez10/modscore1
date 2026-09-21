@@ -36,6 +36,11 @@ docs/brd/capturas/
 *.[tT][iI][fF][fF]
 *.[iI][cC][oO]
 
+# Lo que se sube en la pantalla Data al correr en local, y las reglas que se publican ahi:
+# pueden ser datos reales del portafolio, asi que nunca entran al repositorio. En
+# cualquier nivel: una ruta relativa termina dentro de la carpeta del proyecto.
+**/data/local/
+
 # Secretos locales: nunca al repositorio.
 *.pfx
 *.p12

@@ -261,16 +261,21 @@ los comandos de tu sistema, y **en este orden**.
 **Terminal 1 — capa System.** En Windows, en cmd o en PowerShell:
 
 ```bat
-dotnet run --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101
+dotnet run --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\local
 ```
 
 En macOS o Linux:
 
 ```bash
-dotnet run --project src/system/Modernization.SystemApi -- --environment Development --urls http://localhost:5101
+dotnet run --project src/system/Modernization.SystemApi -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory="$PWD/data/local"
 ```
 
 Espera a ver `Now listening on: http://localhost:5101` y `Hosting environment: Development`.
+
+Los dos últimos argumentos encienden la **carga de archivos**: lo que subas en la pantalla
+Data queda en esa carpeta y sobrevive al reinicio. En Windows, si el proyecto no está en
+`C:\modscore1`, cambia la ruta por `<carpeta del proyecto>\data\local`; tiene que ser
+**absoluta** (ver [Cargar archivos](#cargar-archivos)).
 
 **Terminal 2 — capa Channel.** En Windows, en cmd o en PowerShell:
 
@@ -305,7 +310,9 @@ siguientes veces arrancan en segundos.
 
 ### Paso 5 · entra y comprueba
 
-Abre <http://localhost:5173> y pulsa **Sign in**. Luego, las mismas cuatro comprobaciones del
+Abre <http://localhost:5173> y pulsa **Sign in**. **La primera vez no hay datos**: cada
+pantalla lo avisa y te lleva a **Data**. Sube ahí los ocho CSV de `data\dummy`, como se
+explica en [Cargar archivos](#cargar-archivos). Luego, las mismas cuatro comprobaciones del
 camino A:
 
 1. Portfolio con unas 250 aplicaciones.
@@ -408,7 +415,7 @@ de `cd /d C:\modscore1`.
 
 ```bat
 cd /d C:\modscore1
-dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5101
+dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\local
 ```
 
 Tiene que aparecer `Now listening on: http://localhost:5101`. **Compruébalo antes de seguir**:
@@ -437,6 +444,7 @@ Qué hace cada parte que no estaba en el camino B:
 | `--no-build` | Arranca lo que compilaste en el paso 4, sin volver a compilar |
 | `--` | Lo que va antes es para `dotnet`; lo que va después, para la aplicación |
 | `--webroot` | Le dice a la capa Channel dónde están los archivos del sitio, para servirlos ella misma en el puerto 5100. Por eso no hace falta Node ni una tercera ventana |
+| `--DataSource:...` | Igual que en el camino B: carga de archivos, guardada en `C:\modscore1\data\local` |
 
 ### Si la System no levanta
 
@@ -460,7 +468,8 @@ se identifica la causa.
 
 ### Paso 6 · entra y comprueba
 
-Abre <http://localhost:5100>, pulsa **Sign in**, y haz las cuatro comprobaciones del
+Abre <http://localhost:5100> y pulsa **Sign in**. La primera vez, sube los ocho CSV de
+`data\dummy` en **Data** ([Cargar archivos](#cargar-archivos)). Luego, las cuatro comprobaciones del
 [paso 5 del camino A](#paso-5--comprueba-que-quedó-bien) cambiando nada más que el puerto:
 Portfolio con ~250 aplicaciones, `/applications/14381/calculation` con **79.67**,
 **Insights** con las seis preguntas y **Dashboard** con cinco indicadores y seis paneles.
@@ -489,46 +498,36 @@ defecto los archivos del `.zip`.
 
 ---
 
-## Probar con archivos en vez de datos generados
+## Cargar archivos
 
-Por defecto la aplicación inventa 250 aplicaciones en memoria, que se pierden al detenerla.
-Para probar la carga de archivos de verdad:
+La aplicación tiene dos modos de datos, y solo uno acepta cargas:
 
-**Camino A:**
+| Modo | Cómo se arranca | Data acepta cargas |
+|---|---|---|
+| **Archivos** | Caminos B y C tal como están arriba (`--DataSource:Provider=File --DataSource:Directory=...`); camino A con `.\start.cmd -Data File` | **Sí**. Cada carga queda como una versión y sobrevive al reinicio |
+| **Datos generados** | Camino A con doble clic; caminos B y C sin los dos argumentos `--DataSource:...` | No: 250 aplicaciones inventadas en memoria, que se pierden al detener |
 
-```powershell
-.\start.ps1 -Data File
-```
+Si Data dice *The active adapter is 'Dummy', which serves generated data*, estás en el
+segundo modo: detén la capa System y arráncala con la línea completa.
 
-**Caminos B y C** (en la terminal de la capa System): dos argumentos más al final de la
-línea del `dotnet run`. En Windows, en cmd o en PowerShell:
-
-```bat
-dotnet run --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\history
-```
-
-(en el camino C, con `--no-build` y `-p:UseAppHost=false` antes del `--`, como en su paso 5).
-En macOS o Linux:
-
-```bash
-dotnet run --project src/system/Modernization.SystemApi -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory="$PWD/data/history"
-```
+**Dónde queda lo cargado:** en los caminos B y C, en `C:\modscore1\data\local`, que git
+ignora para que ningún dato real llegue al repositorio (las reglas publicadas quedan en
+`.rules\`, dentro de la misma carpeta). En el camino A, en la carpeta `data\` del paquete.
 
 > **La ruta tiene que ser absoluta.** `dotnet run --project` arranca con la carpeta del
-> proyecto como raíz, así que una ruta relativa apunta a un directorio que no existe: el
-> portafolio aparece vacío, sin ningún error que lo explique. Si el repositorio no está en
-> `C:\modscore1`, cambia esa parte de la ruta.
+> proyecto como raíz, así que una ruta relativa apunta a un directorio dentro de `src\`: el
+> portafolio aparece vacío, sin ningún error que lo explique. Tampoco uses `data\history`,
+> que está versionada: lo que subas ahí quedaría para el próximo commit.
 
-Luego, en el sitio:
+**La primera carga.** Con la carpeta vacía, las pantallas dirán que no hay datos y te
+llevarán a **Data**. Es lo esperado, no un error. Luego:
 
-1. Entra en **Data**.
-2. Arrastra los ocho CSV (los de `samples\` en el paquete portable, o los de `data/dummy/`
-   en el repositorio). **No hace falta renombrarlos**: cada archivo se reconoce por su
-   encabezado.
-3. Pulsa publicar. La pantalla dice cuántas filas leyó, cuántas rechazó y por qué.
-
-La primera vez que arranques con archivos y sin ninguna carga, las pantallas dirán que no
-hay datos y te llevarán a **Data**. Es lo esperado, no un error.
+1. En **Upload files**, arrastra los ocho CSV (los de `samples\` en el paquete portable, o
+   los de `data\dummy` en el repositorio), o los tuyos. **No hace falta renombrarlos**: cada
+   archivo se reconoce por su encabezado. `eai_master.csv` es obligatorio.
+2. Pulsa **Upload and recalculate**. La pantalla dice cuántas filas leyó, cuántas rechazó y
+   por qué.
+3. Con los CSV de ejemplo, Portfolio muestra 250 aplicaciones y la 14381 da **79.67**.
 
 ---
 
@@ -552,6 +551,7 @@ permite ver.
 | Lo que ves | Qué pasa | Qué hacer |
 |---|---|---|
 | `dotnet` o `npm` «no se reconoce» | No están instalados o la terminal es anterior a la instalación | Cierra y abre la terminal; si sigue, reinicia el equipo |
+| En Data: `The active adapter is 'Dummy', which serves generated data. Uploading files requires the file or database adapter.` | La capa System arrancó sin carga de archivos | Caminos B y C: detén la ventana de la System y copia de nuevo su línea completa, con los dos `--DataSource:...`. Camino A: `.\start.cmd -Data File` |
 | La consola se cierra sola al instante | Doble clic sobre `start.ps1` en vez de `start.cmd` | Usa `start.cmd`, o abre PowerShell y ejecuta `.\start.ps1` |
 | `"start.cmd" no se reconoce como un comando interno o externo` (o lo mismo con un `.exe`), aunque el archivo está en esa carpeta | El equipo tiene la política `NoDefaultCurrentDirectoryInExePath`: `cmd` no busca programas en la carpeta actual | Escribe `.\start.cmd` (o `.\Modernization.SystemApi.exe`) |
 | `No se puede cargar el archivo start.ps1 ... deshabilitada la ejecución de scripts` | Política de ejecución de PowerShell | `powershell -ExecutionPolicy Bypass -File .\start.ps1` |
@@ -584,8 +584,8 @@ permite ver.
 1. Detén la aplicación (Enter en la consola, o Ctrl + C en las tres terminales).
 2. Borra la carpeta donde descomprimiste el paquete (camino A) o donde clonaste el
    repositorio (camino B).
-3. Si arrancaste con `-Data File`, ahí dentro está la carpeta `data\` con lo que hayas
-   cargado: se va con la carpeta.
+3. Lo que hayas cargado se va con esa carpeta: en el camino A está en `data\`, y en los
+   caminos B y C en `C:\modscore1\data\local` (si usaste otra ruta, bórrala aparte).
 
 No queda nada instalado ni registrado en el sistema: el paquete portable no toca el
 registro de Windows ni instala servicios.
@@ -596,6 +596,7 @@ registro de Windows ni instala servicios.
 
 - [ ] Las tres piezas arriba (o las dos del paquete portable).
 - [ ] `Sign in` entra sin pedir contraseña.
+- [ ] En los caminos B y C, Data acepta la primera carga con los CSV de `data\dummy`.
 - [ ] Portfolio muestra ~250 aplicaciones.
 - [ ] `/applications/14381/calculation` da **79.67**.
 - [ ] **Insights** responde las seis preguntas.

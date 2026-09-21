@@ -30,6 +30,11 @@ cada una abierta mientras se usa la aplicación.
 - **¿Solo vas a usar la aplicación, no a cambiar la interfaz?** No hace falta Node ni la
   ventana 3: la Channel sirve el sitio ya compilado del paquete portable (ver
   [Variantes](#variantes), «Sin Node»).
+- **La System arranca con carga de archivos** (`--DataSource:Provider=File`): la pantalla
+  **Data** acepta CSV, y lo que subas y las reglas que publiques quedan en
+  `C:\modscore1\data\local`. Git ignora esa carpeta porque puede tener datos reales. La
+  primera vez está vacía: ver [La primera carga](#la-primera-carga). Sin esos dos argumentos,
+  la System inventa 250 aplicaciones en memoria y **Data no acepta cargas**.
 
 Los ejemplos suponen el repositorio en `C:\modscore1`; cambia esa ruta si está en otro lado.
 Las líneas de `dotnet` son idénticas en cmd y en PowerShell; solo cambia cómo se entra a la
@@ -56,7 +61,7 @@ instalar, cuando cambia `src\web\package-lock.json`.
 
 ```bat
 cd /d C:\modscore1
-dotnet run --no-build --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101
+dotnet run --no-build --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\local
 ```
 
 Tiene que aparecer `Hosting environment: Development`. Antes de seguir, en otra ventana:
@@ -95,7 +100,7 @@ El último comando tiene que responder `True`.
 
 ```powershell
 Set-Location C:\modscore1
-dotnet run --no-build --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101
+dotnet run --no-build --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\local
 ```
 
 Comprobarla desde otra ventana: `Invoke-RestMethod http://localhost:5101/health`.
@@ -129,8 +134,11 @@ npm --prefix src/web ci --ignore-scripts
 ```
 
 ```bash
-dotnet run --no-build --project src/system/Modernization.SystemApi -- --environment Development --urls http://localhost:5101
+dotnet run --no-build --project src/system/Modernization.SystemApi -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory="$(pwd -W)/data/local"
 ```
+
+`pwd -W` da la ruta como la entiende Windows (`C:/modscore1`); `$PWD` daría `/c/modscore1`,
+que `dotnet` no reconoce.
 
 ```bash
 dotnet run --no-build --project src/channel/Modernization.ChannelApi -- --environment Development --urls http://localhost:5100
@@ -140,15 +148,30 @@ dotnet run --no-build --project src/channel/Modernization.ChannelApi -- --enviro
 npm --prefix src/web run dev
 ```
 
+### La primera carga
+
+La carpeta `data\local` empieza vacía, así que cada pantalla avisa que no hay datos y lleva a
+**Data**. Es lo esperado. Para cargar:
+
+1. En <http://localhost:5173/>, **Sign in**, y la pestaña **Data**.
+2. En **Upload files**, arrastrar los ocho CSV de `C:\modscore1\data\dummy` (datos de
+   ejemplo, 250 aplicaciones) o los propios. No hace falta renombrarlos: cada archivo se
+   reconoce por su encabezado. `eai_master.csv` es obligatorio.
+3. **Upload and recalculate**. La pantalla dice cuántas filas leyó y cuántas rechazó.
+
+Cada carga queda como una versión en **Upload history** y sobrevive al reinicio. Con los CSV
+de ejemplo, la aplicación 14381 tiene que dar **79.67**.
+
 ### Variantes
 
-Se agregan argumentos al final de la línea de la ventana que corresponde:
+Se agregan o quitan argumentos al final de la línea de la ventana que corresponde:
 
 | Variante | Qué cambia |
 |---|---|
 | **Sin Node: la Channel sirve el sitio** | Se omite la ventana 3 y en la ventana 2 se agrega `--webroot C:\modscore\channel\wwwroot` (la carpeta `wwwroot` del paquete portable). El sitio queda en <http://localhost:5100/> |
 | **El equipo no deja ejecutar `.exe` sin firmar** | `-p:UseAppHost=false` al final del `dotnet build` y, en cada `dotnet run`, **antes** del `--`. Así quien ejecuta es `dotnet.exe`. Es el camino C de la [guía](docs/guia-localhost.md) |
-| **Datos de archivos en lugar de generados** | En la ventana 1: `--DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\history` (ver [Correr sobre archivos](#correr-sobre-archivos-en-vez-de-datos-generados)) |
+| **Datos generados, sin cargas** | En la ventana 1, quitar `--DataSource:Provider=File --DataSource:Directory=...`: 250 aplicaciones inventadas en memoria, listas al instante, que se pierden al detener. Data no acepta cargas. Es lo que usan las pruebas e2e |
+| **Otra carpeta de datos** | Cambiar la ruta de `--DataSource:Directory`. **Siempre absoluta**: `dotnet run --project` arranca en la carpeta del proyecto, y una ruta relativa terminaría dentro de `src\system\...`. Nunca una carpeta versionada como `data\history`: lo subido quedaría para el próximo commit |
 | **Otros puertos** | Cambiar el número en `--urls`; si cambia la System, la Channel necesita `--SystemApi:BaseUrl=http://localhost:<puerto>` |
 
 Ejemplo del camino C completo, ventana 2:
@@ -161,12 +184,14 @@ dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHo
   [tools/portable/README.md](tools/portable/README.md), que viaja dentro del `.zip` como
   `README.txt`.
 - **Desde la app de Claude:** `.claude/launch.json` tiene las tres piezas —`system`,
-  `channel` y `web`—. Arrancar `system`, esperar a que responda y después `channel`.
+  `channel` y `web`—. Arrancar `system`, esperar a que responda y después `channel`. La
+  `system` también usa el adaptador de archivos sobre `data\local`.
 
 ### Si algo falla
 
 | Lo que ves | Qué pasa | Qué hacer |
 |---|---|---|
+| En Data: `The active adapter is 'Dummy', which serves generated data. Uploading files requires the file or database adapter.` | La ventana 1 arrancó sin `--DataSource:Provider=File --DataSource:Directory=...` | Detener la ventana 1 (`Ctrl + C`) y copiar de nuevo su línea completa |
 | `"vite" no se reconoce como un comando interno o externo` | Faltan las dependencias del sitio: no se corrió el `npm ci`, falló, o se corrió en otra carpeta | Desde la raíz del repositorio, el paso «una sola vez» de tu consola: `npm --prefix src\web ci --ignore-scripts` (en PowerShell, `npm.cmd`), y comprobar que existe `src\web\node_modules\.bin\vite.cmd` |
 | `npm.ps1 no se puede cargar ... la ejecución de scripts está deshabilitada` | En PowerShell, `npm` es un script que la política bloquea | Escribir `npm.cmd` en lugar de `npm` |
 | El `npm ci` termina con `ECONNRESET`, `ETIMEDOUT`, `E403`, `self-signed certificate` o `unable to get local issuer certificate` | La red de la empresa no deja llegar al registro de npm | Pedir a soporte el proxy o el registro interno de npm. Mientras tanto, usar la variante **sin Node** |
@@ -451,22 +476,25 @@ Con la capa System y la herramienta compiladas antes en Release.
 
 ## Correr sobre archivos en vez de datos generados
 
-```bash
-DataSource__Provider=File DataSource__Directory="$PWD/data/history" dotnet run --project src/system/Modernization.SystemApi
-```
+Es como arrancan los comandos de [Levantar el stack](#levantar-el-stack): la ventana 1 lleva
+`--DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\local`.
 
 Las rutas van absolutas: `dotnet run --project` arranca con la carpeta del proyecto
-como raíz, y una ruta relativa como `./data/history` apunta a un directorio que no
-existe —el portafolio aparece sin cargas, sin ningún error—.
+como raíz, y una ruta relativa como `.\data\local` termina dentro de
+`src\system\Modernization.SystemApi` —el portafolio aparece sin cargas, sin ningún error—.
 
-Con el adaptador de archivos, la pantalla **Cargas** permite subir los CSV y
+Con el adaptador de archivos, la pantalla **Data** permite subir los CSV y
 recalcular. Cada carga se publica como una versión consultable, y la evolución del
-score aparece en esa misma pantalla.
+score aparece en esa misma pantalla. Las reglas publicadas se guardan en `.rules\`, dentro
+de la misma carpeta.
 
 En el primer arranque no hay ninguna carga: las pantallas lo dicen y llevan a
-**Cargas**, que es la única que funciona sin datos. Para arrancar necesitas al menos una carga. La más simple: genera los dummy,
-cópialos a `data/history/<id>/` y escribe su `manifest.json` — o levanta el sistema
-con el adaptador Dummy, exporta, y sube los archivos por la interfaz.
+**Data**, que es la única que funciona sin datos. Los ocho CSV de `data\dummy` sirven para la
+primera (ver [La primera carga](#la-primera-carga)).
+
+`data\history` tiene dos cargas versionadas en el repositorio, de la verificación de la fase 8.
+Sirven para mirar la evolución del score sin cargar nada, pero no como carpeta de trabajo:
+lo que se suba ahí quedaría para el próximo commit.
 
 ## Correr sobre una base de datos
 

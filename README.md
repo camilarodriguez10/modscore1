@@ -12,6 +12,31 @@ El plan completo está en [PLAN.md](PLAN.md). Las decisiones de arquitectura, en
 > sabido y con los problemas frecuentes, está en
 > [docs/guia-localhost.md](docs/guia-localhost.md).
 
+### Requisitos: qué instalar antes
+
+| Cómo se levanta | Qué hay que tener instalado |
+|---|---|
+| **Paquete portable** (`.\start.cmd -Data File` o sus `.exe` a mano) | **Nada**: la variante autocontenida trae su propio .NET. Ver [tools/portable/README.md](tools/portable/README.md) |
+| **Desde el código**, con los comandos de abajo | **.NET SDK 10** (<https://dotnet.microsoft.com/download/dotnet/10.0>) y **Node.js 22.12 o superior**, o 20.19+ (<https://nodejs.org>) |
+| **Desde el código sin Node** (variante «Sin Node») | Solo el **.NET SDK 10**, más la carpeta `channel\wwwroot` del paquete portable |
+
+Hace falta el **SDK** de .NET, no solo el runtime: el runtime corre programas ya compilados,
+pero no compila. Para comprobarlo, en una terminal abierta después de instalar:
+
+```bat
+dotnet --list-sdks
+```
+
+```bat
+node --version
+```
+
+El primero tiene que listar una versión `10.x`, y el segundo decir `v22.12` o más. Si alguno
+responde «no se reconoce como un comando interno o externo», falta instalarlo, o la terminal
+se abrió antes de la instalación: ciérrala y abre otra.
+
+### Qué se levanta
+
 Tres procesos: la capa **System** en el puerto 5101, la capa **Channel** en el 5100 y la
 **SPA** en el 5173. Se compila una vez y después se abren **tres ventanas, en este orden**,
 cada una abierta mientras se usa la aplicación.

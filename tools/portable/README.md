@@ -254,6 +254,10 @@ un `.exe` propio del proyecto; va también en `dotnet run`, porque sin él `--no
 - **Rules → Portfolio analytics**: cambiar un umbral, simular y ver cómo se moverían los
   indicadores del dashboard.
 - **Insights**: las seis preguntas del portafolio, con los mismos filtros.
+- **Code** (paquetes generados desde el 2026-09-26): obsolescencia de runtimes, frameworks,
+  sistemas operativos, bases de datos y bibliotecas según los repositorios —de demostración,
+  y lo dice arriba—, con las fechas de fin de vida de endoflife.date; un clic en una
+  aplicación abre sus repositorios y de dónde sale su índice de riesgo.
 - **Portfolio**: filtros desde los gráficos, navegación con el filtro puesto, **Download CSV**.
 - **Cálculo** de una aplicación: <http://localhost:5100/applications/14381/calculation> debe
   dar **79,67**.

@@ -601,6 +601,9 @@ registro de Windows ni instala servicios.
 - [ ] `/applications/14381/calculation` da **79.67**.
 - [ ] **Insights** responde las seis preguntas.
 - [ ] **Dashboard** muestra cinco indicadores y seis paneles, y un clic abre el detalle.
+- [ ] **Code** avisa en ámbar que los repositorios son de demostración y muestra las fechas de
+      fin de vida de endoflife.date (caminos B y C; en el paquete portable, desde el generado
+      el 2026-09-26).
 - [ ] Al detener, ninguna ventana queda abierta y los puertos quedan libres.
 
 ---

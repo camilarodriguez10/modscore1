@@ -1,6 +1,6 @@
 # Traspaso — Modernization Score Platform
 
-**Fecha:** 2026-09-18 · **Estado:** fases 00 a 13 entregadas; 14 y 15 en curso; dashboard ejecutivo con D1, D2 y D3 entregadas · **Siguiente:** que el negocio confirme las definiciones desde el portal (DD-01 a DD-08) y las reglas P0 del score; terminar la Fase 14 en un entorno de prueba
+**Fecha:** 2026-09-26 · **Estado:** fases 00 a 13 entregadas; 14 y 15 en curso; dashboard ejecutivo con D1, D2 y D3 entregadas; pantalla Code (C1) entregada con datos de demostración · **Siguiente:** que el negocio confirme las definiciones desde el portal (DD-01 a DD-08) y las reglas P0 del score; aprobar la GitHub App y el mapeo de repositorios (GH-01, GH-02); terminar la Fase 14 en un entorno de prueba
 
 Este documento permite que otra persona —o otra sesión— retome el proyecto sin haber
 estado en él. No reemplaza al plan ([PLAN.md](PLAN.md)) ni a los ADR: dice qué hay, dónde
@@ -40,15 +40,16 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | Fase 14 — verificación de seguridad | **En curso** (PLAN §8.7). Cerrados SEC-06 (evento 4214), SEC-07 (`Uploads:RetainVersions`) y SEC-12 (ADR 0021); SEC-14 aceptado con controles compensatorios; accesibilidad y e2e en el CI. Los once parciales que quedan necesitan cluster, IdP, ingress y gestor de secretos: ver [runbook de verificación](docs/runbooks/verificacion-asvs.md) |
 | Las seis preguntas (pantalla 09) | Entregada el 2026-09-16 (PLAN §8.9, [ADR 0023](docs/adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md)). Salud, prioridades, complejidad, riesgo, obsolescencia y resiliencia en `/insights`, con los mismos filtros. Ningún dato nuevo hizo falta; lo que mejoraría el esfuerzo y el valor de negocio está en PENDING-ITEMS como DQ-01 a DQ-07 |
 | Dashboard ejecutivo | D1, D2 y D3 entregadas el 2026-09-18 (PLAN §8.10, [ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md), [ADR 0025](docs/adr/0025-las-definiciones-viajan-con-las-reglas.md)). La página de inicio (`/`): *Portfolio Health & Risk Intelligence*, con cinco indicadores, seis paneles y un detalle común; el inventario está en `/portfolio`. Currency Score = `Raw_Tech_Score` de CMT. Las 37 definiciones de las seis preguntas viajan con las reglas y se editan en *Rules → Portfolio analytics*; cada panel explica su cálculo y *Definitions* es el diccionario. Cinco filtros nuevos en todas las pantallas. Falta D4 (fuentes nuevas) |
-| Pruebas | **770 .NET** (270 motor · 178 contratos · 322 API) · **58 unitarias** de la SPA · **40 de punta a punta** con Playwright (19 de flujo y 21 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-09-18 |
+| Pantalla Code | C1 entregada el 2026-09-26 (PLAN §8.11, [ADR 0026](docs/adr/0026-el-analisis-de-codigo-llega-de-github-enterprise.md)). `/code`: componentes de cada repositorio contra su fin de vida (endoflife.date, foto versionada con 22 productos y 273 ciclos), bibliotecas con hallazgos, discrepancias con el Currency Score de CMT e índice de riesgo de código con detalle por aplicación. 14 parámetros nuevos (área `code`) editables desde el portal. **Repositorios de demostración** hasta integrar GitHub Enterprise (C2, GH-01 a GH-09) |
+| Pruebas | **828 .NET** (309 motor · 183 contratos · 336 API) · **63 unitarias** de la SPA · **49 de punta a punta** con Playwright (24 de flujo y 25 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-09-26 |
 | Dependencias | Cero paquetes vulnerables (`dotnet list package --vulnerable`), `npm audit` limpio |
 | CI | GitHub Actions en verde desde la corrida #5 (`55cf36f`, 2026-09-15), que pasó los 7 jobs: backend, SPA, gitleaks, OSV, CodeQL C# y JS/TS, e imágenes con Trivy v0.74.0 y Checkov. CodeQL sin hallazgos altos. Tras acelerarlo, la corrida #6 (`148c6ce`) tardó 7 min 3 s en lugar de 9 min 54 s; CodeQL C# sigue marcando el total (6 min 58 s). Antes hubo que corregir el lint, CodeQL en repositorio privado (`upload: never`, `actions: read`), la versión de Trivy y el UID de los pods. Para acortarlo: gitleaks y OSV están en `seguridad.yml` y corren en cada push; `ci.yml` se salta los cambios que solo tocan documentación; CodeQL C# compila solo `src/` sin los analizadores de Roslyn; hay caché de NuGet, y el job de imágenes no espera a los demás |
 | ASVS L2 | 106 cumple · 11 parciales · 3 pendientes · 10 IdP o N/A. Los parciales dependen de un entorno real |
 | Hallazgos | Fase 08: 23 (19 cerrados, H-16 parcial, H-17/H-20/H-21 pendientes). Revisión 09–13: 7 (6 cerrados, 1 aceptado) |
 | Git | Repositorio **privado** <https://github.com/camilarodriguez10/modscore1>, rama `main`. Guarda todo lo creado —el `.zip` portable, el estado local de `data/`, los scripts de las sesiones (`tools/sesiones/`) y la copia del plan (`docs/plan/`)— salvo las capturas del BRD y las imágenes. Los commits usan el correo de la cuenta. Cada push se confirma antes |
 | Memo de decisiones | <https://claude.ai/artifact/Gp7c9gHv5kTSdGETPfeCi5> (versión 2, del 2026-09-18, con la pregunta 9 respondida): las once reglas de scoring que el negocio tiene que confirmar, con evidencia y opciones. Fuente de verdad: [docs/scoring-decisions.md](docs/scoring-decisions.md); copia publicada en `docs/plan/scoring-decisions.html` |
-| Artefacto del plan | <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> (versión 20, del 2026-09-18, con el dashboard ejecutivo y las definiciones configurables; copia en `docs/plan/modscore-plan.html`, que hay que reemplazar al republicar; enlace anterior del mismo artefacto: <https://claude.ai/code/artifact/25507d1f-40a6-4e74-8c43-0337dbb63358>) |
-| Paquete portable | `artifacts/modscore-portable-win-x64-selfcontained-20260921-1301.zip` (93,3 MB autocontenido, SHA-256 `58a547837d7a3c9fe565bf57c26ff58feb6fb6dbc6c65de321a66d75b711f9e6`), versionado en el repositorio; se regenera con `tools/portable/build-portable.ps1`. Regenerado el 2026-09-21 para que su `README.txt` y su guía traigan comandos directos que pasan el entorno y el puerto como argumentos —la misma línea en cmd y en PowerShell— (arrancar con el script, las dos capas a mano, datos de archivos, detener y el camino sin `.exe`), todos probados en las dos consolas; el código es el mismo con el que los **40 escenarios e2e pasaron contra el paquete** el 2026-09-18, y este pasó una prueba de humo (salud, sitio, sesión, dashboard y *Definitions*). El paquete tiene el límite real de 120 peticiones por minuto por usuario, y la suite completa lo supera en un minuto (la prueba de reglas recibe 429): para correrla, arrancarlo con los límites de `playwright.config.ts` (`RateLimiting__RequestsPerMinute=100000` y los otros tres) en el entorno. Con el límite real pasan en dos tandas. `start.ps1` espera un Enter para detenerse: en segundo plano, darle una entrada que quede abierta. El anterior se borra: cada paquete queda para siempre en la historia del repositorio. **Su `GUIA-PASO-A-PASO.txt` tiene el paso 3 del camino B anterior** (`npm install` y Node 22): se corrigió el 2026-09-21 en `docs/guia-localhost.md` sin regenerar el paquete, para no sumar otros 93 MB al historial por un cambio de texto que solo afecta a quien trabaja desde el código. Llega con el próximo build |
+| Artefacto del plan | <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> (versión 21, del 2026-09-26, con la pantalla Code y la integración con GitHub Enterprise; copia en `docs/plan/modscore-plan.html`, que hay que reemplazar al republicar; enlace anterior del mismo artefacto: <https://claude.ai/code/artifact/25507d1f-40a6-4e74-8c43-0337dbb63358>) |
+| Paquete portable | `artifacts/modscore-portable-win-x64-selfcontained-20260921-1301.zip` (93,3 MB autocontenido, SHA-256 `58a547837d7a3c9fe565bf57c26ff58feb6fb6dbc6c65de321a66d75b711f9e6`), versionado en el repositorio; se regenera con `tools/portable/build-portable.ps1`. Regenerado el 2026-09-21 para que su `README.txt` y su guía traigan comandos directos que pasan el entorno y el puerto como argumentos —la misma línea en cmd y en PowerShell— (arrancar con el script, las dos capas a mano, datos de archivos, detener y el camino sin `.exe`), todos probados en las dos consolas; el código es el mismo con el que los **40 escenarios e2e pasaron contra el paquete** el 2026-09-18, y este pasó una prueba de humo (salud, sitio, sesión, dashboard y *Definitions*). El paquete tiene el límite real de 120 peticiones por minuto por usuario, y la suite completa lo supera en un minuto (la prueba de reglas recibe 429): para correrla, arrancarlo con los límites de `playwright.config.ts` (`RateLimiting__RequestsPerMinute=100000` y los otros tres) en el entorno. Con el límite real pasan en dos tandas. `start.ps1` espera un Enter para detenerse: en segundo plano, darle una entrada que quede abierta. El anterior se borra: cada paquete queda para siempre en la historia del repositorio. **Su `GUIA-PASO-A-PASO.txt` tiene el paso 3 del camino B anterior** (`npm install` y Node 22): se corrigió el 2026-09-21 en `docs/guia-localhost.md` sin regenerar el paquete, para no sumar otros 93 MB al historial por un cambio de texto que solo afecta a quien trabaja desde el código. Llega con el próximo build. **Tampoco trae la pantalla Code:** el 2026-09-26 se construyó un paquete con ella fuera del repositorio (`20260926-2120`, 93,5 MB, SHA-256 `5a42950ede65e841e2653e5c079b9b66ec139a7640e04c2a5aed73c6b5a19ff0`) y pasó los 49 escenarios e2e con los límites de prueba; no se versionó hasta decidir si vale sumar otros 93 MB al historial |
 
 ---
 
@@ -278,6 +279,54 @@ junto a ruleset, palancas y roadmap:
 - **El impacto construye cada plan una sola vez** (`RulesImpactSimulator.Plan`) y de él saca
   el score, el resumen del roadmap y los indicadores del dashboard.
 
+## 6quater. La pantalla Code
+
+Pedido del 2026-09-26: analizar el código de las aplicaciones desde GitHub Enterprise, sin
+configurar todavía la integración, con una vista de obsolescencia y riesgo por librerías,
+software y componentes y una fuente para el fin de vida. Detalle en PLAN §8.11 y en
+[ADR 0026](docs/adr/0026-el-analisis-de-codigo-llega-de-github-enterprise.md).
+
+**Piezas:**
+
+- **Dominio:** `Modernization.Domain/Code/CodeInventory.cs` —`RepositoryInventory`,
+  `RepositoryComponent` (producto con el identificador de endoflife.date), `RepositoryDependency`,
+  `CodeInventorySet` y el puerto `ICodeInventoryProvider`, con `NoCodeInventoryProvider`—.
+  Es la forma que entregará el recolector.
+- **Motor:** `EndOfLifeCatalog` (carga y valida `contracts/eol-catalog-v1.json`, cruza versión
+  con ciclo y calcula el estado contra una fecha), `CodeModel` y `CodeAnalyzer` (función
+  pura), y `CodeRules` dentro de `DashboardRules`, con sus 14 parámetros en
+  `AnalyticsCatalog` (área `code`, regla `code.levels`, tipo nuevo `months`).
+- **Fuentes:** `SampleCodeInventoryProvider` en `Modernization.Sources/Dummy`: repositorios
+  deterministas por EAI (semilla FNV-1a, no `GetHashCode`) a partir del portafolio vigente,
+  con caché por versión de carga.
+- **Capa System:** `CodeEndpoints` (`GET /system/code` con los filtros de siempre y
+  `GET /system/code/applications/{eai}`), `CodeContracts` y el registro en `Program.cs`
+  según `CodeInventory:Provider`.
+- **Capa Channel:** `GET /api/code` y `GET /api/code/applications/{eai}`, que validan y
+  entregan.
+- **SPA:** `routes/CodePage.tsx`, `i18n/code.ts`, `codeExplanation` en `i18n/analytics.ts`,
+  la sección *Code* de `DefinitionsPage.tsx` y la pestaña *Code* en la navegación.
+
+**Cuidados:**
+
+- **El catálogo se regenera, no se edita a mano:** `python tools/eol-catalog/build-eol-catalog.py`
+  baja un JSON por producto de la API de endoflife.date y escribe la foto con la fecha del
+  día. Después, `EndOfLifeCatalogTests`, que fija algunas fechas conocidas. En este equipo
+  Python no valida el certificado de endoflife.date (`CERTIFICATE_VERIFY_FAILED`) y `curl`
+  sí: se bajan los archivos con `curl` y se pasa `--from <carpeta>`. La verificación TLS no
+  se desactiva.
+- **El estado se evalúa contra hoy (UTC)**, no contra la carga: las pruebas del analizador
+  pasan la fecha, las de API comparan con `DateTime.UtcNow`.
+- **Un producto que el generador de demostración escribe mal no falla en ningún lado**:
+  aparece como *not assessable*. `EveryGeneratedComponentIsInTheCatalogButTheDeliberateGap`
+  lo impide; WebSphere falta del catálogo a propósito, para mostrar ese caso.
+- **Las versiones «actuales» del generador vencen.** El 2026-09-26 hubo que mover Node 18 y
+  20, Spring Boot 3.3 y 3.5, Angular 17 y 19 y Django 4.2 a la lista de viejas: ya estaban
+  vencidos. Al regenerar el catálogo conviene mirar la distribución por estado.
+- **`Sample` fuera de Development no arranca**, a propósito. Una prueba lo verifica.
+- **El índice es una suma sin tope**: una aplicación con muchos repositorios acumula más.
+  Si el negocio lo quiere normalizado, es código (GH-07).
+
 ---
 
 ## 7. Comandos frecuentes
@@ -285,7 +334,8 @@ junto a ruleset, palancas y roadmap:
 | Para | Comando |
 |---|---|
 | Pruebas .NET | `dotnet test ModernizationScore.slnx` |
-| Pruebas de la SPA | `npm --prefix src/web run lint` (el CI lo exige) · `npm --prefix src/web test` · `npm --prefix src/web run test:e2e` (40 escenarios, 21 de ellos de accesibilidad) |
+| Pruebas de la SPA | `npm --prefix src/web run lint` (el CI lo exige) · `npm --prefix src/web test` · `npm --prefix src/web run test:e2e` (49 escenarios, 25 de ellos de accesibilidad) |
+| Catálogo de fin de vida | `python tools/eol-catalog/build-eol-catalog.py` (o `--from <carpeta>` con los JSON bajados con `curl`), y después `dotnet test tests/Modernization.Scoring.Engine.Tests --filter EndOfLifeCatalog` |
 | Pruebas contra el paquete portable | Con `start.ps1 -NoBrowser` corriendo, desde `src/web`: `MODSCORE_E2E_BASE_URL=http://localhost:5100 npx playwright test` |
 | Tipos de la SPA | `npx --prefix src/web tsc -b` (desde `src/web`: `npx tsc -b`) |
 | Vulnerabilidades | `dotnet list ModernizationScore.slnx package --vulnerable --include-transitive` · `npm --prefix src/web audit --audit-level=moderate` |
@@ -459,6 +509,13 @@ junto a ruleset, palancas y roadmap:
   terminar datos reales. `data/history` sigue versionada con dos cargas de la fase 8: no es
   carpeta de trabajo. El paquete portable ya lo admitía con `-Data File`; ahora su README lo
   pone primero, y el doble clic sigue abriendo Dummy hasta que se decida cambiarlo.
+- **En Playwright, `getByLabel('LOB')` también encuentra el filtro CIO**: el nombre accesible
+  de un `select` incluye sus opciones, y una de ellas es «R. Villalobos». Para un filtro,
+  `getByRole('combobox', { name: /^LOB/ })`.
+- **En el panel del navegador, las capturas de una página larga salen en blanco** después de
+  desplazarse (la pantalla Code mide unos 7000 px). No es la página: el contenido se
+  verifica con el texto de la página o el árbol de accesibilidad, y la captura se toma
+  arriba o en el detalle.
 - **`"vite" no se reconoce como un comando interno o externo`** es siempre que faltan las
   dependencias del sitio: `npm run dev` busca `vite` en `src/web/node_modules/.bin`. Tres
   formas de llegar ahí, todas vistas: no correr la instalación, correrla en PowerShell con

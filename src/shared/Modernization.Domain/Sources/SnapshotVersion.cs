@@ -45,4 +45,10 @@ public sealed record ScoreHistoryPoint
 
     /// <summary>Peso disponible en esa version: explica un salto sin merito real.</summary>
     public required decimal? AvailableWeight { get; init; }
+
+    /// <summary>Currency Score de CMT en esa version. Null sin dato.</summary>
+    public decimal? Currency { get; init; }
+
+    /// <summary>Risk Score (0-100, mas alto es peor) en esa version. Null sin pilar de riesgo.</summary>
+    public decimal? RiskScore { get; init; }
 }

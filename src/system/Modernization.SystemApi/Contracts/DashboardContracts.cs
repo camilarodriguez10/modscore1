@@ -40,7 +40,9 @@ public sealed record DashboardResponse(
 
 /// <summary>
 /// La salud del portafolio filtrado en una carga. <c>HealthScore</c> y
-/// <c>AtRiskShare</c> son null cuando ninguna aplicacion de esa carga pasa el filtro.
+/// <c>AtRiskShare</c> son null cuando ninguna aplicacion de esa carga pasa el filtro;
+/// <c>Currency</c> (Currency Score promedio de CMT) y <c>RiskScore</c> (promedio), cuando
+/// ninguna tiene el dato.
 /// </summary>
 public sealed record DashboardTrendPoint(
     string VersionId,
@@ -48,7 +50,9 @@ public sealed record DashboardTrendPoint(
     DateTimeOffset CapturedAt,
     int Applications,
     decimal? HealthScore,
-    decimal? AtRiskShare);
+    decimal? AtRiskShare,
+    decimal? Currency = null,
+    decimal? RiskScore = null);
 
 /// <summary>Una fuente que usa el dashboard, conectada o no.</summary>
 public sealed record DashboardSource(string Key, bool Connected);

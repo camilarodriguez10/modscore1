@@ -100,6 +100,11 @@ public sealed partial class ViewModelContractTests
         [typeof(Insights.CodeRepository)] = "CodeRepository",
         [typeof(Insights.CodeComponent)] = "CodeComponent",
         [typeof(Insights.CodeDependency)] = "CodeDependency",
+        [typeof(CodeHistoryPoint)] = "CodeHistoryPoint",
+        [typeof(Insights.CodeHorizon)] = "CodeHorizon",
+        [typeof(Insights.CodeApplicationHorizon)] = "CodeApplicationHorizon",
+        [typeof(Insights.CodeSuggestion)] = "CodeSuggestion",
+        [typeof(Insights.CodeActionRow)] = "CodeActionRow",
     };
 
     [Fact]

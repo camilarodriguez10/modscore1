@@ -86,7 +86,8 @@
     "moderateFrom": 10,
     "highFrom": 25,
     "criticalFrom": 50,
-    "topLibraries": 12
+    "topLibraries": 12,
+    "topActions": 12
   },
 
   "areas": {

@@ -165,6 +165,7 @@ const PARAMETERS: Record<string, ParameterText> = {
   'code.highFrom': { label: 'High code risk from', help: 'Code risk index: a sum of points, with no cap.' },
   'code.criticalFrom': { label: 'Critical code risk from', help: 'Code risk index: a sum of points, with no cap.' },
   'code.topLibraries': { label: 'Libraries listed', help: 'How many libraries with findings the Code screen lists.' },
+  'code.topActions': { label: 'Improvement actions listed', help: 'How many actions the improvement plan of the Code screen lists.' },
 };
 
 export const parameterLabel = (key: string) => PARAMETERS[key]?.label ?? key;
@@ -484,7 +485,8 @@ const CODE_PENDING =
 
 /**
  * La explicacion de un panel de la pantalla Code: 0 el indice y los indicadores, 1 el
- * ciclo de vida, 2 las bibliotecas, 3 las discrepancias con CMT.
+ * ciclo de vida, 2 las bibliotecas, 3 las discrepancias con CMT, 4 la proyeccion a tres
+ * anos, 5 la evolucion por carga y 6 el plan de mejora.
  */
 export function codeExplanation(panel: number, definitions: AnalyticsDocument): Explanation {
   const d = reader(definitions);
@@ -513,6 +515,46 @@ export function codeExplanation(panel: number, definitions: AnalyticsDocument): 
           `Listed: the ${d.plain('code.topLibraries')} libraries with findings, most critical advisories first, then deprecated, then the most widespread.`,
         ],
         missing: ['License risk and how deep a library sits in the dependency tree.'],
+      };
+    case 4:
+      return {
+        area: 'code',
+        considered: [CODE_MANIFESTS, CODE_CATALOG],
+        rules: [
+          'If nothing changes means the same versions, the same open advisories and no new commits. Only the calendar moves.',
+          `Each horizon — today, in one, two and three years — evaluates every component against its end of life on that date, with the same ending-soon window of ${months}.`,
+          'Code currency: the share of assessable components still within free security support. 100 is all supported; components not in the catalog are left out.',
+          `The code risk index is recomputed on each date with the points in force; a repository crosses the stale threshold of ${d.text('code.staleMonths')} as time passes without commits.`,
+        ],
+        missing: [
+          'Advisories that will be published in the future, and end-of-life dates vendors have not announced yet: a cycle without a date counts as supported.',
+        ],
+      };
+    case 5:
+      return {
+        area: null,
+        considered: [
+          SCORE_MODEL,
+          'Currency Score: the score CMT delivers (Raw_Tech_Score, 0–100) in each upload. A 0 is no data.',
+          'Risk Score: the Modernization Risk Vectors pillar inverted to 0–100, higher is worse — the same as the dashboard.',
+        ],
+        rules: [
+          'One point per upload, oldest first, with the filters on screen and the rules in force: a change of rules moves every point together.',
+          'Each value is the average over the applications with that data in that upload.',
+        ],
+        missing: ['Code obsolescence per upload: repositories are not versioned with the uploads yet.'],
+      };
+    case 6:
+      return {
+        area: 'code',
+        considered: [CODE_MANIFESTS, CODE_CATALOG],
+        rules: [
+          'Upgrade to the supported release cycle that lasts longest, preferring LTS where the product has it and skipping any that ends within the ending-soon window. With no supported cycle left, migrate to the product that replaces it (AngularJS → Angular).',
+          'Urgency: now when the component is past its end of life, the library is deprecated or has critical or high advisories, or the repository is stale; within 1, 2 or 3 years by the end-of-life date; plan it for a library only behind on major versions.',
+          `Points now: what the code risk index drops today when the action is applied. Avoided: what it would add when the component reaches its end of life (${d.text('code.points.eolComponent')} each).`,
+          `The plan groups the same action across repositories and lists the ${d.plain('code.topActions')} most urgent. Each application shows its own list, including stale repositories.`,
+        ],
+        missing: ['Effort and cost of each action, and dependencies between upgrades (a framework that requires a newer runtime).'],
       };
     case 3:
       return {

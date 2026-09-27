@@ -991,6 +991,10 @@ export interface DashboardView {
 }
 
 export interface DashboardTrendPoint {
+  /** Currency Score promedio de CMT en esa carga. */
+  currency: number | null;
+  /** Risk Score promedio en esa carga (0-100, mas alto es peor). */
+  riskScore: number | null;
   versionId: string;
   label: string;
   capturedAt: string;
@@ -1187,6 +1191,8 @@ export interface CodeView {
   rulesetVersion: string;
   source: CodeSource;
   analysis: CodePortfolio;
+  /** El portafolio filtrado en cada carga: score, Currency Score y Risk Score promedio. */
+  trend: readonly DashboardTrendPoint[];
   definitions: AnalyticsDocument;
 }
 
@@ -1196,7 +1202,77 @@ export interface CodeApplicationView {
   asOf: string;
   source: CodeSource;
   detail: CodeApplicationDetail;
+  history: readonly CodeHistoryPoint[];
   definitions: AnalyticsDocument;
+}
+
+/** Una aplicacion en una carga. */
+export interface CodeHistoryPoint {
+  versionId: string;
+  label: string;
+  capturedAt: string;
+  score: number | null;
+  currency: number | null;
+  riskScore: number | null;
+}
+
+/** El portafolio filtrado en un horizonte si nada cambia: 0 es hoy. */
+export interface CodeHorizon {
+  years: number;
+  on: string;
+  eolComponents: number;
+  eolApplications: number;
+  /** Parte de los componentes evaluables que sigue con soporte, 0-100. */
+  currency: number | null;
+  highRiskApplications: number;
+  averageRiskIndex: number | null;
+  statuses: readonly CodeStatusShare[];
+}
+
+export interface CodeApplicationHorizon {
+  years: number;
+  on: string;
+  components: number;
+  eolComponents: number;
+  approachingComponents: number;
+  currency: number | null;
+  riskIndex: number | null;
+  riskLevel: string | null;
+}
+
+/** Una mejora sugerida en un repositorio. */
+export interface CodeSuggestion {
+  /** upgrade, migrate, awaitRelease, updateLibrary, replaceLibrary, maintainRepository o retireRepository. */
+  kind: string;
+  /** now, year1, year2, year3 o planned. */
+  urgency: string;
+  repository: string;
+  subject: string;
+  ecosystem: string | null;
+  current: string;
+  targetSubject: string | null;
+  target: string | null;
+  deadline: string | null;
+  targetEol: string | null;
+  pointsNow: number;
+  pointsAvoided: number;
+}
+
+/** Una accion del plan del portafolio. */
+export interface CodeActionRow {
+  kind: string;
+  urgency: string;
+  subject: string;
+  ecosystem: string | null;
+  current: string;
+  targetSubject: string | null;
+  target: string | null;
+  deadline: string | null;
+  targetEol: string | null;
+  repositories: number;
+  applications: number;
+  pointsNow: number;
+  pointsAvoided: number;
 }
 
 /** De donde sale lo que se ve. `connected` es false con datos de demostracion. */
@@ -1222,6 +1298,10 @@ export interface CodePortfolio {
   libraries: readonly CodeLibraryRow[];
   riskLevels: readonly CodeLevelShare[];
   applications: readonly CodeApplication[];
+  /** Hoy y en uno, dos y tres anos, si nada cambia. */
+  outlook: readonly CodeHorizon[];
+  /** El plan de mejora: las sugerencias de todas las aplicaciones, por accion. */
+  actions: readonly CodeActionRow[];
 }
 
 export interface CodeKpis {
@@ -1310,12 +1390,17 @@ export interface CodeApplication {
   worstStatus: string | null;
   /** hiddenObsolescence o inventoryBehind: el codigo y CMT no cuentan lo mismo. */
   mismatch: string | null;
+  /** Componentes vencidos dentro de tres anos si nada cambia. */
+  projectedEolComponents: number;
+  projectedRiskLevel: string | null;
 }
 
 export interface CodeApplicationDetail {
   application: CodeApplication;
   factors: readonly CodeRiskFactor[];
   repositories: readonly CodeRepository[];
+  outlook: readonly CodeApplicationHorizon[];
+  suggestions: readonly CodeSuggestion[];
 }
 
 export interface CodeRiskFactor {

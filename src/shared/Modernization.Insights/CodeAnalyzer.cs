@@ -108,6 +108,37 @@ public static class CodeAnalyzer
             .ThenBy(a => a.EaiCode, StringComparer.Ordinal)
             .ToList();
 
+        var outlook = CodeOutlook.Years
+            .Select((years, i) =>
+            {
+                var on = asOf.AddYears(years);
+                var horizons = assessed.Select(a => (a.Summary, Horizon: a.Outlook[i])).ToList();
+                var at = components
+                    .Select(x => (x.a.Summary.EaiCode, Status: CodeOutlook.StatusAt(x.c, catalog, on, rules.Code.ApproachingMonths)))
+                    .ToList();
+                var assessable = at.Count(x => x.Status != EndOfLifeStatus.Unknown);
+                var eol = at.Count(x => x.Status == EndOfLifeStatus.EndOfLife);
+                var indexes = horizons.Where(h => h.Horizon.RiskIndex is not null).Select(h => h.Horizon.RiskIndex!.Value).ToList();
+
+                return new CodeHorizon(
+                    years,
+                    on,
+                    eol,
+                    horizons.Count(h => h.Horizon.EolComponents > 0),
+                    CodeOutlook.Currency(assessable - eol, assessable),
+                    horizons.Count(h => h.Horizon.RiskLevel is "high" or "critical"),
+                    indexes.Count == 0 ? null : Math.Round(indexes.Average(), 1, MidpointRounding.AwayFromZero),
+                    [.. EndOfLifeStatus.Ordered.Select(status => new CodeStatusShare(
+                        status,
+                        at.Count(x => x.Status == status),
+                        at.Where(x => x.Status == status).Select(x => x.EaiCode).Distinct(StringComparer.Ordinal).Count()))]);
+            })
+            .ToList();
+
+        var plan = CodeOutlook.Plan(
+            [.. assessed.SelectMany(a => a.Suggestions.Select(s => (a.Summary.EaiCode, s)))],
+            rules.Code.TopActions);
+
         return new CodePortfolio(
             asOf,
             kpis,
@@ -115,7 +146,9 @@ public static class CodeAnalyzer
             lifecycle,
             [.. libraries.Take(rules.Code.TopLibraries)],
             levels,
-            ranked);
+            ranked,
+            outlook,
+            plan);
     }
 
     /// <summary>Una aplicación con todos sus repositorios y de dónde sale cada punto de su índice.</summary>
@@ -132,7 +165,12 @@ public static class CodeAnalyzer
         var repositories = RepositoriesOf([application], inventory)[application.EaiCode];
         var assessed = Assess(application, repositories, catalog, rules, asOf);
 
-        return new CodeApplicationDetail(assessed.Summary, assessed.Factors, assessed.Repositories);
+        return new CodeApplicationDetail(
+            assessed.Summary,
+            assessed.Factors,
+            assessed.Repositories,
+            assessed.Outlook,
+            assessed.Suggestions);
     }
 
     // -------------------------------------------------------------- por aplicación
@@ -140,7 +178,9 @@ public static class CodeAnalyzer
     private sealed record Assessed(
         CodeApplication Summary,
         IReadOnlyList<CodeRiskFactor> Factors,
-        IReadOnlyList<CodeRepository> Repositories);
+        IReadOnlyList<CodeRepository> Repositories,
+        IReadOnlyList<CodeApplicationHorizon> Outlook,
+        IReadOnlyList<CodeSuggestion> Suggestions);
 
     private static Dictionary<string, List<RepositoryInventory>> RepositoriesOf(
         IReadOnlyList<ApplicationSnapshot> applications,
@@ -242,6 +282,18 @@ public static class CodeAnalyzer
             ? null
             : components.MinBy(c => EndOfLifeStatus.Rank(c.Status))!.Status;
 
+        var outlook = CodeOutlook.ForApplication(
+            views,
+            [.. repositories.Select(r => new RepositoryFacts(r.Archived, r.LastCommit))],
+            catalog,
+            rules,
+            asOf,
+            critical,
+            high,
+            deprecated,
+            outdated);
+        var suggestions = CodeOutlook.Suggestions(views, catalog, rules, asOf);
+
         var summary = new CodeApplication(
             application.EaiCode,
             application.ApplicationName,
@@ -263,9 +315,11 @@ public static class CodeAnalyzer
             index,
             index is { } value ? code.LevelOf(value) : null,
             worst,
-            mismatch);
+            mismatch,
+            outlook[^1].EolComponents,
+            outlook[^1].RiskLevel);
 
-        return new Assessed(summary, factors, views);
+        return new Assessed(summary, factors, views, outlook, suggestions);
     }
 
     private static CodeRiskFactor Factor(string key, int count, decimal points)

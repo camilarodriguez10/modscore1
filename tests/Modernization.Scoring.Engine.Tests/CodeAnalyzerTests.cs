@@ -234,6 +234,115 @@ public sealed class CodeAnalyzerTests
         Assert.All(portfolio.Applications, a => Assert.Null(a.RiskLevel));
     }
 
+    // -------------------------------------------------------------- en el tiempo
+
+    [Fact]
+    public void TheOutlookStartsTodayAndOnlyGetsWorseIfNothingChanges()
+    {
+        var outlook = Analyze().Outlook;
+
+        Assert.Equal([0, 1, 2, 3], outlook.Select(h => h.Years));
+        Assert.Equal(AsOf.AddYears(3), outlook[^1].On);
+        Assert.Equal(Analyze().Kpis.EolComponents, outlook[0].EolComponents);
+
+        for (var i = 1; i < outlook.Count; i++)
+        {
+            Assert.True(outlook[i].EolComponents >= outlook[i - 1].EolComponents);
+            Assert.True(outlook[i].Currency <= outlook[i - 1].Currency);
+        }
+    }
+
+    /// <summary>
+    /// La 100 hoy tiene Node 14 y jQuery 1 vencidos; Ubuntu 22.04 vence en junio de 2027 y
+    /// Python 3.13 en octubre de 2029. En un año son tres vencidos de cuatro evaluables.
+    /// </summary>
+    [Fact]
+    public void AnApplicationIsProjectedComponentByComponent()
+    {
+        var outlook = CodeAnalyzer.Detail(Hidden, Inventory, Catalog, Rules, AsOf).Outlook;
+
+        Assert.Equal([2, 3, 3, 3], outlook.Select(h => h.EolComponents));
+        Assert.Equal(50m, outlook[0].Currency);   // 2 de 4 con soporte
+        Assert.Equal(25m, outlook[1].Currency);   // 1 de 4
+        Assert.Equal(outlook[0].RiskIndex, CodeAnalyzer.Detail(Hidden, Inventory, Catalog, Rules, AsOf).Application.RiskIndex);
+
+        // Hoy: 2 vencidos + 1 próximo. En un año: 3 vencidos y el repositorio web también
+        // abandonado si nadie hace commits (último: septiembre de 2026, umbral 12 meses).
+        Assert.True(outlook[1].RiskIndex > outlook[0].RiskIndex);
+        Assert.Equal(3, Analyze().Applications.Single(a => a.EaiCode == "100").ProjectedEolComponents);
+    }
+
+    [Fact]
+    public void TheSuggestionsSayWhatToChangeAndWhen()
+    {
+        var suggestions = CodeAnalyzer.Detail(Hidden, Inventory, Catalog, Rules, AsOf).Suggestions;
+
+        var node = suggestions.Single(s => s.Subject == "Node.js");
+        Assert.Equal(CodeActions.Upgrade, node.Kind);
+        Assert.Equal(CodeUrgency.Now, node.Urgency);
+        Assert.Equal("14", node.Current);
+        Assert.Equal("26", node.Target);                  // la LTS que más dura
+        Assert.Equal(new DateOnly(2029, 4, 30), node.TargetEol);
+        Assert.Equal(10m, node.PointsNow);
+
+        var ubuntu = suggestions.Single(s => s.Subject == "Ubuntu");
+        Assert.Equal(CodeUrgency.Year1, ubuntu.Urgency);
+        Assert.Equal("26.04", ubuntu.Target);
+        Assert.Equal(4m, ubuntu.PointsNow);
+        Assert.Equal(6m, ubuntu.PointsAvoided);           // de 4 hoy a 10 al vencer
+
+        Assert.Contains(suggestions, s => s.Kind == CodeActions.ReplaceLibrary && s.Subject == "request");
+        Assert.Contains(suggestions, s => s.Kind == CodeActions.UpdateLibrary && s.Subject == "lodash" && s.Target == "4.17.21");
+        Assert.Contains(suggestions, s => s.Kind == CodeActions.MaintainRepository && s.Repository == "org/hidden-batch");
+        Assert.DoesNotContain(suggestions, s => s.Subject == "Python");   // vence en 2029: fuera de los tres años
+
+        // Lo urgente primero.
+        Assert.Equal(CodeUrgency.Now, suggestions[0].Urgency);
+        Assert.Equal(CodeUrgency.Planned, suggestions[^1].Urgency);
+    }
+
+    [Theory]
+    [InlineData("dotnet", "8.0.11", CodeActions.Upgrade, "10")]
+    [InlineData("oracle-jdk", "1.8.0_392", CodeActions.Upgrade, "25")]
+    [InlineData("angularjs", "1.8.3", CodeActions.Migrate, "22")]
+    [InlineData("spring-boot", "4.1.0", CodeActions.AwaitRelease, null)]
+    [InlineData("log4j", "1.2.17", CodeActions.Upgrade, "2")]
+    [InlineData("mssqlserver", "13.0-sp3", CodeActions.Upgrade, "2025")]
+    public void EachComponentGoesToTheRightTarget(string product, string version, string kind, string? target)
+    {
+        var application = Application("900", 70m);
+        var inventory = new CodeInventorySet
+        {
+            Provider = "Test",
+            Connected = false,
+            Repositories =
+            [
+                new RepositoryInventory
+                {
+                    EaiCode = "900", Name = "org/app", DefaultBranch = "main", LastCommit = AsOf,
+                    Components = [new(product, version, "test")], Dependencies = [],
+                },
+            ],
+        };
+
+        var suggestion = Assert.Single(CodeAnalyzer.Detail(application, inventory, Catalog, Rules, AsOf).Suggestions);
+
+        Assert.Equal(kind, suggestion.Kind);
+        Assert.Equal(target, suggestion.Target);
+    }
+
+    [Fact]
+    public void ThePlanGroupsTheSameActionAcrossRepositories()
+    {
+        var plan = Analyze().Actions;
+
+        Assert.All(plan, row => Assert.NotEqual(CodeActions.MaintainRepository, row.Kind));
+        var node = plan.Single(r => r.Subject == "Node.js");
+        Assert.Equal(1, node.Applications);
+        Assert.True(plan.Count <= Rules.Code.TopActions);
+        Assert.Equal(CodeUrgency.Now, plan[0].Urgency);
+    }
+
     private static ApplicationSnapshot Application(string eai, decimal currency, bool critical = false) => new()
     {
         EaiCode = eai,

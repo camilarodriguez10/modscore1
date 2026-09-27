@@ -373,6 +373,9 @@ public sealed record CodeRules
     /// <summary>Cuántas bibliotecas lista el panel de dependencias.</summary>
     public int TopLibraries { get; init; } = 12;
 
+    /// <summary>Cuántas acciones lista el plan de mejora del portafolio.</summary>
+    public int TopActions { get; init; } = 12;
+
     /// <summary>El nivel de un índice. Una aplicación sin repositorios no tiene nivel.</summary>
     public string LevelOf(decimal index)
         => index >= CriticalFrom ? "critical"

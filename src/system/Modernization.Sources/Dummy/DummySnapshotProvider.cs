@@ -97,14 +97,12 @@ public sealed class DummySnapshotProvider : IApplicationSnapshotProvider
                     nameof(versionId), versionId, "The dummy portfolio has no such upload.")
             : versions[0];
 
-        // Cada version historica se genera con su propia semilla derivada: los
-        // datos derivan de forma determinista, como lo harian entre trimestres.
+        // Cada version historica es el mismo portafolio unos trimestres antes: las
+        // mismas aplicaciones con los valores que tenian entonces, para que la
+        // evolucion de cada una tenga sentido (DummyTimeline).
         var portfolio = version.IsCurrent
             ? _portfolio
-            : DummyPortfolio.Generate(
-                _seed + VersionOffset(versions, version),
-                _applicationCount,
-                version.CapturedAt);
+            : DummyTimeline.Rewind(_portfolio, VersionOffset(versions, version));
 
         return await AssembleAsync(portfolio, version, cancellationToken).ConfigureAwait(false);
     }

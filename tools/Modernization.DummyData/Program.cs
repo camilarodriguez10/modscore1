@@ -2,9 +2,12 @@ using System.Globalization;
 using Modernization.Scoring.Engine;
 using Modernization.Sources.Dummy;
 using Modernization.Sources.Export;
+using Modernization.Sources.Files;
 
 // Genera el portafolio sintetico, lo exporta como CSV con los nombres de columna
-// reales y reporta la cobertura de cada fuente.
+// reales y reporta la cobertura de cada fuente. Ademas escribe la linea de tiempo: el
+// mismo portafolio en los tres trimestres anteriores y en el actual, cada uno como una
+// carga lista para leer (CSV + manifest.json), en "timeline" junto al directorio.
 //
 //   dotnet run --project tools/Modernization.DummyData -- [directorio] [semilla] [cantidad]
 
@@ -44,6 +47,49 @@ if (reference is null)
 
 var result = engine.Calculate(reference);
 var ok = result.Score == 79.67m;
+
+// Linea de tiempo: tres trimestres hacia atras mas el actual, del mas viejo al mas nuevo.
+var timeline = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(directory)) ?? ".", "timeline");
+Console.WriteLine();
+Line($"Linea de tiempo en {timeline}");
+Console.WriteLine("CARGA                    CAPTURA      SCORE   CURRENCY   FLAWS ABIERTOS (C+H)");
+
+const int TimelineQuarters = 3;
+
+for (var quarters = TimelineQuarters; quarters >= 0; quarters--)
+{
+    var portfolio = DummyTimeline.Rewind(provider.Portfolio, quarters);
+    var at = portfolio.CapturedAt;
+    var quarter = ((at.Month - 1) / 3) + 1;
+    // Identificador fijo por trimestre: regenerar no crea cargas nuevas en el repositorio.
+    var id = string.Create(CultureInfo.InvariantCulture, $"{at.UtcDateTime:yyyyMMdd-HHmmss}-t{quarter}{at.Year % 100:00}");
+    var folder = Path.Combine(timeline, id);
+
+    if (Directory.Exists(folder))
+    {
+        Directory.Delete(folder, recursive: true);
+    }
+
+    var exported = CsvSourceExporter.Export(portfolio, folder);
+
+    new UploadManifest
+    {
+        Id = id,
+        Label = string.Create(CultureInfo.InvariantCulture, $"Q{quarter} {at.Year} (sample timeline)"),
+        CapturedAt = at,
+        ApplicationCount = portfolio.Eai.Count,
+        Files = [.. exported.Select(f => f.FileName)],
+        UploadedBy = "sample-timeline",
+    }.Write(folder);
+
+    var assembled = await new DummySnapshotProvider(portfolio).GetAllAsync().ConfigureAwait(false);
+    var quarterScores = assembled.Applications.Select(a => engine.Calculate(a).Score).ToList();
+    var currencies = portfolio.Eai.Where(e => e.RawTechScore is > 0m).Select(e => e.RawTechScore!.Value).ToList();
+    var openFlaws = portfolio.ScaFlaws.Count(f => f.FindingStatus == "Open" && f.SeverityDescription is "1-Critical" or "2-High");
+
+    Line($"{id,-24} {at:yyyy-MM-dd}   {quarterScores.Average(),5:0.00}   {currencies.Average(),8:0.00}   {openFlaws,8}");
+}
+
 
 Line($"EAI {reference.EaiCode} — numerador {result.Numerator}, denominador {result.Denominator}, score {result.Score} (BRD 79,67) {(ok ? "OK" : "FALLA")}");
 

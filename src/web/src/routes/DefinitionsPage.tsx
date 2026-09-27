@@ -191,7 +191,7 @@ const SECTIONS: readonly Section[] = [
     title: 'Code · Component obsolescence & risk',
     area: 'code',
     explain: (d) => {
-      const parts = [0, 1, 2, 3].map((panel) => codeExplanation(panel, d));
+      const parts = [0, 1, 4, 6, 2, 3].map((panel) => codeExplanation(panel, d));
       return {
         area: 'code',
         considered: [...new Set(parts.flatMap((part) => part.considered))],

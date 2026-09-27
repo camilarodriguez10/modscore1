@@ -139,6 +139,8 @@ public static class AnalyticsCatalog
             (r, v) => r with { Code = r.Code with { CriticalFrom = v } }),
         Whole(CodeArea, "code.topLibraries", r => r.Code.TopLibraries,
             (r, v) => r with { Code = r.Code with { TopLibraries = v } }, 1, 50),
+        Whole(CodeArea, "code.topActions", r => r.Code.TopActions,
+            (r, v) => r with { Code = r.Code with { TopActions = v } }, 1, 50),
     ];
 
     /// <summary>

@@ -1,0 +1,17 @@
+{
+  "id": "20260308-212400-t126",
+  "label": "Q1 2026 (sample timeline)",
+  "capturedAt": "2026-03-08T21:24:00+00:00",
+  "applicationCount": 250,
+  "files": [
+    "eai_master.csv",
+    "architectural_value_by_eai.csv",
+    "product_strategy.csv",
+    "tech_debt.csv",
+    "veracode_sca_open_flaws.csv",
+    "oss_score_by_eai.csv",
+    "monitoreo.csv",
+    "apim_onboarded_eais.csv"
+  ],
+  "uploadedBy": "sample-timeline"
+}

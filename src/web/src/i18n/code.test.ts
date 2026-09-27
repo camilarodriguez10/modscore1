@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { AnalyticsDocument } from '../api/types';
 import { codeExplanation, formatParameter, parameterLabel, constraintText } from './analytics';
-import { STATUS_KEYS, formatDay, mismatchLabel, monthsFromNow, statusLabel, statusText } from './code';
+import {
+  STATUS_KEYS,
+  actionText,
+  formatDay,
+  mismatchLabel,
+  monthsFromNow,
+  statusLabel,
+  statusText,
+  urgencyLabel,
+  urgencyStatus,
+} from './code';
 
 const definitions = (months = 12): AnalyticsDocument => ({
   parameters: [
@@ -59,5 +69,36 @@ describe('code screen words', () => {
 
     expect(codeExplanation(1, definitions(6)).rules.join(' ')).toContain('it ends within 6 months');
     expect(codeExplanation(3, definitions()).rules[0]).toContain('Currency Score is 60 or more');
+  });
+
+  it('says each improvement as an action a person can take', () => {
+    const base = { ecosystem: null, targetSubject: null, target: null };
+    expect(actionText({ ...base, kind: 'upgrade', subject: 'Node.js', current: '14', targetSubject: 'Node.js', target: '26' })).toBe(
+      'Upgrade Node.js 14 → 26',
+    );
+    expect(actionText({ ...base, kind: 'migrate', subject: 'AngularJS', current: '1.8', targetSubject: 'Angular', target: '22' })).toBe(
+      'Migrate AngularJS 1.8 → Angular 22',
+    );
+    expect(actionText({ ...base, kind: 'awaitRelease', subject: 'Spring Boot', current: '4.1' })).toBe(
+      'Spring Boot 4.1: no newer supported release yet',
+    );
+    expect(actionText({ ...base, kind: 'replaceLibrary', subject: 'request', ecosystem: 'npm', current: '2.88.2' })).toBe(
+      'Replace request 2.88.2 (deprecated)',
+    );
+    expect(actionText({ ...base, kind: 'maintainRepository', subject: 'org/app', current: '2025-06-01' })).toContain('Jun 1, 2025');
+  });
+
+  it('names the urgency and colors it with the lifecycle palette', () => {
+    expect(urgencyLabel('now')).toBe('Now');
+    expect(urgencyLabel('year2')).toBe('Within 2 years');
+    expect(urgencyStatus('now')).toBe('eol');
+    expect(urgencyStatus('year1')).toBe('approaching');
+    expect(urgencyStatus('planned')).toBe('unknown');
+  });
+
+  it('explains the outlook, the uploads and the plan with the values in force', () => {
+    expect(codeExplanation(4, definitions(18)).rules.join(' ')).toContain('ending-soon window of 18 months');
+    expect(codeExplanation(5, definitions()).area).toBeNull();
+    expect(codeExplanation(6, definitions()).rules.join(' ')).toContain('10 pts each');
   });
 });

@@ -54,7 +54,8 @@ test.describe('code', () => {
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByRole('heading', { level: 2 })).toHaveText(name ?? '');
     await expect(dialog.getByRole('heading', { name: 'How the index adds up' })).toBeVisible();
-    await expect(dialog.getByRole('row', { name: /Components past end of life/ })).toBeVisible();
+    // La fila del desglose (con el «×» de los puntos), no la de la proyección.
+    await expect(dialog.getByRole('row', { name: /Components past end of life \d+ ×/ })).toBeVisible();
     await expect(page).toHaveURL(/app=\d+/);
 
     await page.keyboard.press('Escape');
@@ -83,5 +84,37 @@ test.describe('code', () => {
 
     await signIn(page, '/admin/rules?tab=analytics');
     await expect(page.getByLabel('Ending soon within')).toHaveValue('12');
+  });
+
+  test('compares score, currency and risk across uploads and projects the next three years', async ({ page }) => {
+    await signIn(page, '/code');
+
+    const history = panel(page, 'How did score, currency and risk move across uploads?');
+    // Cuatro trimestres del mismo portafolio en modo Dummy: la cabecera y cuatro filas.
+    await expect(history.getByRole('table').getByRole('row')).toHaveCount(5);
+    await expect(history).toContainText('Currency Score');
+    await expect(history).toContainText('Risk Score');
+
+    const outlook = panel(page, 'Where is obsolescence heading if nothing changes?');
+    for (const horizon of ['Today', 'In 1 year', 'In 2 years', 'In 3 years']) {
+      await expect(outlook.getByRole('region', { name: horizon })).toBeVisible();
+    }
+
+    const plan = panel(page, 'What should change first?');
+    await expect(plan.getByRole('row').nth(1)).toContainText('Now');
+    await expect(plan.getByText(/^(Upgrade|Migrate|Replace|Update) /).first()).toBeVisible();
+  });
+
+  test('an application shows its suggestions, its next three years and its uploads', async ({ page }) => {
+    await signIn(page, '/code?app=14381');
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('heading', { name: 'Suggested improvements' })).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: 'Today and in 1, 2 and 3 years, if nothing changes' })).toBeVisible();
+
+    const uploads = dialog.locator('section').filter({ has: page.getByRole('heading', { name: 'Across uploads' }) });
+    await expect(uploads.getByRole('row')).toHaveCount(5);
+    // El ejemplo del BRD no cambia entre trimestres.
+    await expect(uploads.getByRole('row').nth(1)).toContainText('79.67');
   });
 });

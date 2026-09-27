@@ -278,6 +278,8 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
                 CapturedAt = version.CapturedAt,
                 Score = visible ? match!.Score : null,
                 AvailableWeight = visible ? match!.Weight : null,
+                Currency = visible ? match!.Currency : null,
+                RiskScore = visible ? match!.Risk : null,
             });
         }
 
@@ -364,13 +366,23 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
                     : Math.Round(visible.Average(p => p.Score!.Value), 2, MidpointRounding.AwayFromZero),
                 visible.Count == 0
                     ? null
-                    : Math.Round(atRisk / (decimal)visible.Count * 100m, 2, MidpointRounding.AwayFromZero)));
+                    : Math.Round(atRisk / (decimal)visible.Count * 100m, 2, MidpointRounding.AwayFromZero),
+                Average(visible.Select(p => p.Currency)),
+                Average(visible.Select(p => p.Risk))));
         }
 
         return points;
     }
 
     // -----------------------------------------------------------------------
+
+    /// <summary>El promedio de los valores con dato, o null si ninguno lo tiene.</summary>
+    private static decimal? Average(IEnumerable<decimal?> values)
+    {
+        var present = values.Where(v => v is not null).Select(v => v!.Value).ToList();
+
+        return present.Count == 0 ? null : Math.Round(present.Average(), 2, MidpointRounding.AwayFromZero);
+    }
 
     private static bool Allows(PortfolioScope scope, ApplicationSnapshot application)
         => scope.Allows(application.Lob, application.Country, application.Cio);
@@ -538,12 +550,14 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
         {
             decimal? score = null;
             decimal? weight = null;
+            decimal? risk = null;
 
             try
             {
                 var breakdown = model.Engine.Calculate(application);
                 score = breakdown.EffectiveScore;
                 weight = breakdown.Denominator;
+                risk = Insights.DashboardAnalyzer.RiskScoreOf(breakdown, model.Analytics);
             }
             catch (RulesetException)
             {
@@ -558,6 +572,11 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
                 application.Cio,
                 score,
                 weight,
+                // El Currency Score de CMT: un 0 es falta de dato, como en el score.
+                application.RawTechScore is { } currency and > 0m
+                    ? Math.Round(currency, 2, MidpointRounding.AwayFromZero)
+                    : null,
+                risk,
                 AttributesOf(application)));
         }
 
@@ -594,6 +613,8 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
         string? Cio,
         decimal? Score,
         decimal? Weight,
+        decimal? Currency,
+        decimal? Risk,
         ApplicationSnapshot Attributes);
 
     /// <summary>Los scores de un snapshot calculados con unas reglas concretas.</summary>

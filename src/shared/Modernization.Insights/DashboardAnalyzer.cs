@@ -450,6 +450,26 @@ public static class DashboardAnalyzer
             : Low;
 
     /// <summary>
+    /// Risk Score de una aplicación: el pilar de riesgo invertido a una escala de 0 a 100
+    /// donde alto es peor. Null sin ese pilar. La historia por carga usa la misma fórmula.
+    /// </summary>
+    public static decimal? RiskScoreOf(ScoreBreakdown breakdown, DashboardRules rules)
+    {
+        ArgumentNullException.ThrowIfNull(breakdown);
+        ArgumentNullException.ThrowIfNull(rules);
+
+        var pillar = breakdown.Pillars.FirstOrDefault(p => p.Key == rules.Risk.Pillar);
+
+        if (pillar?.Score is not { } score)
+        {
+            return null;
+        }
+
+        var risk = (100m - score) / 80m * 100m;
+        return Math.Round(Math.Clamp(risk, 0m, 100m), 2, MidpointRounding.AwayFromZero);
+    }
+
+    /// <summary>
     /// Lo que el dashboard sabe de una aplicación, calculado una sola vez y usado por
     /// todos los paneles: así una aplicación nunca cae en un nivel en un panel y en otro
     /// distinto en el de al lado.
@@ -492,7 +512,7 @@ public static class DashboardAnalyzer
             DashboardOptions options)
         {
             var score = Math.Round(breakdown.EffectiveScore, 2, MidpointRounding.AwayFromZero);
-            var risk = RiskOf(breakdown, rules);
+            var risk = RiskScoreOf(breakdown, rules);
             var currency = CurrencyOf(application);
             var criticality = CriticalityOf(application, rules, options);
 
@@ -573,19 +593,6 @@ public static class DashboardAnalyzer
             Operational,
             [.. Complexity.Order(StringComparer.Ordinal)]);
 
-        /// <summary>El pilar de riesgo, invertido a una escala de 0 a 100 donde alto es peor.</summary>
-        private static decimal? RiskOf(ScoreBreakdown breakdown, DashboardRules rules)
-        {
-            var pillar = breakdown.Pillars.FirstOrDefault(p => p.Key == rules.Risk.Pillar);
-
-            if (pillar?.Score is not { } score)
-            {
-                return null;
-            }
-
-            var risk = (100m - score) / 80m * 100m;
-            return Math.Round(Math.Clamp(risk, 0m, 100m), 2, MidpointRounding.AwayFromZero);
-        }
 
         /// <summary>
         /// El Currency Score es el que entrega CMT: el <c>Raw_Tech_Score</c> del Currency

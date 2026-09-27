@@ -73,6 +73,53 @@ const MISMATCHES: Record<string, { label: string; hint: string }> = {
 export const mismatchLabel = (key: string) => MISMATCHES[key]?.label ?? key;
 export const mismatchHint = (key: string) => MISMATCHES[key]?.hint ?? '';
 
+export const URGENCY_KEYS = ['now', 'year1', 'year2', 'year3', 'planned'] as const;
+
+const URGENCIES: Record<string, string> = {
+  now: 'Now',
+  year1: 'Within 1 year',
+  year2: 'Within 2 years',
+  year3: 'Within 3 years',
+  planned: 'Plan it',
+};
+
+export const urgencyLabel = (urgency: string) => URGENCIES[urgency] ?? urgency;
+
+/** El color de la urgencia: la misma paleta de estados que el fin de vida. */
+export const urgencyStatus = (urgency: string) =>
+  urgency === 'now' ? 'eol' : urgency === 'year1' ? 'approaching' : urgency === 'planned' ? 'unknown' : 'security';
+
+/** Lo que hay que hacer, en una frase corta. */
+export function actionText(action: {
+  kind: string;
+  subject: string;
+  ecosystem: string | null;
+  current: string;
+  targetSubject: string | null;
+  target: string | null;
+}): string {
+  const { kind, subject, current, targetSubject, target } = action;
+
+  switch (kind) {
+    case 'upgrade':
+      return `Upgrade ${subject} ${current} → ${target ?? '?'}`;
+    case 'migrate':
+      return `Migrate ${subject} ${current} → ${targetSubject ?? ''} ${target ?? ''}`.trim();
+    case 'awaitRelease':
+      return `${subject} ${current}: no newer supported release yet`;
+    case 'updateLibrary':
+      return target ? `Update ${subject} ${current} → ${target}` : `Update ${subject} ${current}`;
+    case 'replaceLibrary':
+      return `Replace ${subject} ${current} (deprecated)`;
+    case 'maintainRepository':
+      return current ? `Resume maintenance: no commits since ${formatDay(current)}` : 'Resume maintenance';
+    case 'retireRepository':
+      return 'Archived: unmap it or confirm the application no longer uses it';
+    default:
+      return `${kind} ${subject}`;
+  }
+}
+
 /** Una fecha yyyy-mm-dd como se lee en el sitio, sin correrla por la zona horaria. */
 export function formatDay(day: string | null | undefined): string {
   if (!day) return '—';

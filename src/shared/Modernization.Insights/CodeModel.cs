@@ -12,7 +12,73 @@ public sealed record CodePortfolio(
     IReadOnlyList<CodeLifecycleRow> Lifecycle,
     IReadOnlyList<CodeLibraryRow> Libraries,
     IReadOnlyList<CodeLevelShare> RiskLevels,
-    IReadOnlyList<CodeApplication> Applications);
+    IReadOnlyList<CodeApplication> Applications,
+    IReadOnlyList<CodeHorizon> Outlook,
+    IReadOnlyList<CodeActionRow> Actions);
+
+/// <summary>
+/// El portafolio filtrado en un horizonte, si nada cambia: hoy (0) y en uno, dos y tres
+/// años. <c>Currency</c> es la parte de los componentes evaluables que sigue con soporte.
+/// </summary>
+public sealed record CodeHorizon(
+    int Years,
+    DateOnly On,
+    int EolComponents,
+    int EolApplications,
+    decimal? Currency,
+    int HighRiskApplications,
+    decimal? AverageRiskIndex,
+    IReadOnlyList<CodeStatusShare> Statuses);
+
+/// <summary>Una aplicación en un horizonte, si nada cambia.</summary>
+public sealed record CodeApplicationHorizon(
+    int Years,
+    DateOnly On,
+    int Components,
+    int EolComponents,
+    int ApproachingComponents,
+    decimal? Currency,
+    decimal? RiskIndex,
+    string? RiskLevel);
+
+/// <summary>
+/// Una mejora sugerida en un repositorio. <c>PointsNow</c> es lo que baja hoy el índice al
+/// aplicarla; <c>PointsAvoided</c>, lo que evita sumar cuando el componente venza.
+/// </summary>
+/// <remarks>
+/// <c>Current</c> y <c>Target</c> son versiones o ciclos; para un repositorio abandonado,
+/// <c>Current</c> es la fecha de su último commit. Sin <c>Target</c>, no hay a dónde ir
+/// todavía.
+/// </remarks>
+public sealed record CodeSuggestion(
+    string Kind,
+    string Urgency,
+    string Repository,
+    string Subject,
+    string? Ecosystem,
+    string Current,
+    string? TargetSubject,
+    string? Target,
+    DateOnly? Deadline,
+    DateOnly? TargetEol,
+    decimal PointsNow,
+    decimal PointsAvoided);
+
+/// <summary>Una acción del plan del portafolio: la misma sugerencia en todos los repositorios donde aplica.</summary>
+public sealed record CodeActionRow(
+    string Kind,
+    string Urgency,
+    string Subject,
+    string? Ecosystem,
+    string Current,
+    string? TargetSubject,
+    string? Target,
+    DateOnly? Deadline,
+    DateOnly? TargetEol,
+    int Repositories,
+    int Applications,
+    decimal PointsNow,
+    decimal PointsAvoided);
 
 /// <summary>
 /// Los indicadores. Los componentes se cuentan por uso: el mismo Node 14 en tres
@@ -103,13 +169,17 @@ public sealed record CodeApplication(
     decimal? RiskIndex,
     string? RiskLevel,
     string? WorstStatus,
-    string? Mismatch);
+    string? Mismatch,
+    int ProjectedEolComponents,
+    string? ProjectedRiskLevel);
 
 /// <summary>Una aplicación con sus repositorios y de dónde sale cada punto de su índice.</summary>
 public sealed record CodeApplicationDetail(
     CodeApplication Application,
     IReadOnlyList<CodeRiskFactor> Factors,
-    IReadOnlyList<CodeRepository> Repositories);
+    IReadOnlyList<CodeRepository> Repositories,
+    IReadOnlyList<CodeApplicationHorizon> Outlook,
+    IReadOnlyList<CodeSuggestion> Suggestions);
 
 /// <summary>Un hallazgo del índice: cuántas veces aparece, cuánto vale cada una y el total.</summary>
 public sealed record CodeRiskFactor(string Key, int Count, decimal Points, decimal Total);

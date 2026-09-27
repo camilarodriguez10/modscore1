@@ -89,6 +89,55 @@ public sealed class CodeEndToEndTests(LayeredApiFixture fixture) : IClassFixture
         Assert.Equal(everything.Analysis.AsOf, view.AsOf);
     }
 
+    /// <summary>
+    /// El modo Dummy trae cuatro trimestres del mismo portafolio: la tendencia compara
+    /// score, Currency Score y Risk Score, y cada aplicación tiene un punto por carga.
+    /// </summary>
+    [Fact]
+    public async Task TheTrendComparesScoreCurrencyAndRiskAcrossUploads()
+    {
+        var view = await GetAsync();
+
+        Assert.Equal(4, view.Trend.Count);
+        Assert.All(view.Trend, p =>
+        {
+            Assert.NotNull(p.HealthScore);
+            Assert.InRange(p.Currency!.Value, 1m, 100m);
+            Assert.InRange(p.RiskScore!.Value, 0m, 100m);
+        });
+        Assert.Equal(view.Trend.OrderBy(p => p.CapturedAt).Select(p => p.VersionId), view.Trend.Select(p => p.VersionId));
+    }
+
+    [Fact]
+    public async Task AnApplicationHasItsOutlookSuggestionsAndOnePointPerUpload()
+    {
+        var everything = await GetAsync();
+        var riskiest = everything.Analysis.Applications[0];
+        var client = await fixture.CreateAuthenticatedChannelClientAsync();
+
+        var view = await client.GetFromJsonAsync<CodeApplicationResponse>(
+            new Uri($"/api/code/applications/{riskiest.EaiCode}", UriKind.Relative), Json);
+
+        Assert.NotNull(view);
+        Assert.Equal([0, 1, 2, 3], view.Detail.Outlook.Select(h => h.Years));
+        Assert.Equal(riskiest.RiskIndex, view.Detail.Outlook[0].RiskIndex);
+        Assert.NotEmpty(view.Detail.Suggestions);
+        Assert.Equal(4, view.History.Count);
+        Assert.All(view.History, p => Assert.NotNull(p.Score));
+    }
+
+    [Fact]
+    public async Task ThePortfolioHasAnOutlookAndAnImprovementPlan()
+    {
+        var analysis = (await GetAsync()).Analysis;
+
+        Assert.Equal(4, analysis.Outlook.Count);
+        Assert.Equal(analysis.Kpis.EolComponents, analysis.Outlook[0].EolComponents);
+        Assert.True(analysis.Outlook[3].EolComponents >= analysis.Outlook[0].EolComponents);
+        Assert.NotEmpty(analysis.Actions);
+        Assert.True(analysis.Actions.Count <= Insights.DashboardRules.Default.Code.TopActions);
+    }
+
     [Theory]
     [InlineData("/api/code/applications/abc", HttpStatusCode.BadRequest)]
     [InlineData("/api/code/applications/99999999", HttpStatusCode.NotFound)]

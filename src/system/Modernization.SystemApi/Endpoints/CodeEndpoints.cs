@@ -60,11 +60,13 @@ public static class CodeEndpoints
         var inventory = await inventories.GetAsync(cancellationToken).ConfigureAwait(false);
 
         var analysis = CodeAnalyzer.Analyze(applications, inventory, catalog, rules.Analytics, Today(time));
+        var trend = await portfolio.GetDashboardTrendAsync(scope, filter, cancellationToken).ConfigureAwait(false);
 
         return Results.Ok(new CodeResponse(
             rules.Info.Id,
             CodeSourceResponse.From(inventory, catalog),
             analysis,
+            trend,
             AnalyticsDocument.From(rules.Analytics, rules.Roadmap.Parameters.SignificantUserBase)));
     }
 
@@ -102,12 +104,14 @@ public static class CodeEndpoints
         var inventory = await inventories.GetAsync(cancellationToken).ConfigureAwait(false);
         var today = Today(time);
         var detail = CodeAnalyzer.Detail(application, inventory, catalog, rules.Analytics, today);
+        var history = await portfolio.GetHistoryAsync(eaiCode, scope, cancellationToken).ConfigureAwait(false);
 
         return Results.Ok(new CodeApplicationResponse(
             rules.Info.Id,
             today,
             CodeSourceResponse.From(inventory, catalog),
             detail,
+            [.. history.Select(CodeHistoryPoint.From)],
             AnalyticsDocument.From(rules.Analytics, rules.Roadmap.Parameters.SignificantUserBase)));
     }
 

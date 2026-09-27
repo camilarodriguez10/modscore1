@@ -8,7 +8,8 @@ import { defineConfig } from '@playwright/test';
  * instala Playwright, que es lo que hay en un runner de Linux.
  *
  * Levanta las tres piezas con datos dummy y autenticacion de desarrollo, o reutiliza las
- * que ya esten corriendo. Para probar un paquete portable ya arrancado:
+ * que ya esten corriendo. Para probar un sitio ya arrancado —por ejemplo, la capa Channel
+ * sirviendo el sitio compilado con --webroot—:
  *
  *   MODSCORE_E2E_BASE_URL=http://localhost:5100 npx playwright test
  */

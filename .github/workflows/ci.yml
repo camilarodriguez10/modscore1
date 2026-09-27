@@ -3,8 +3,8 @@ name: ci
 # Build, pruebas, CodeQL, imagenes e infraestructura. Los escaneos de secretos y de
 # dependencias estan en seguridad.yml, que corre en cada push sin filtro de rutas.
 #
-# Un push o PR que solo cambia documentacion, los scripts historicos, el paquete portable
-# o el estado local de data/ no dispara este workflow: no hay codigo que compilar ni
+# Un push o PR que solo cambia documentacion, los scripts historicos o el estado local de
+# data/ no dispara este workflow: no hay codigo que compilar ni
 # analizar. Con proteccion de rama, un check requerido de este workflow queda esperando en
 # un PR solo de documentacion (OP-04).
 
@@ -15,7 +15,6 @@ on:
       - "**/*.md"
       - "docs/**"
       - "tools/sesiones/**"
-      - "artifacts/**"
       - "data/history/**"
       - "data/*.db*"
       - ".claude/**"
@@ -24,7 +23,6 @@ on:
       - "**/*.md"
       - "docs/**"
       - "tools/sesiones/**"
-      - "artifacts/**"
       - "data/history/**"
       - "data/*.db*"
       - ".claude/**"

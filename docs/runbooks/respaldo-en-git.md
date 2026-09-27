@@ -10,8 +10,9 @@ qué queda fuera del repositorio y por qué, y cómo recuperar.
 1. **Visibilidad: privado.** El código describe el modelo de scoring interno y la
    arquitectura de seguridad.
 2. **Qué se versiona: todo lo creado, salvo las capturas del BRD y las imágenes.** Incluye el
-   último paquete portable, el estado local de `data/`, los scripts de las sesiones y la
-   copia del plan publicado. Detalle en las tablas de abajo.
+   estado local de `data/`, los scripts de las sesiones y la copia del plan publicado.
+   Detalle en las tablas de abajo. El paquete portable se versionó hasta el 2026-09-27, cuando
+   se retiró: la historia conserva sus `.zip` anteriores.
 3. **Autor de los commits: el correo de la cuenta**, no la dirección `…@users.noreply.github.com`.
    Se configura por repositorio, no global:
 
@@ -70,7 +71,6 @@ git push origin fase-13
 
 | Qué | Cuidado |
 |---|---|
-| `artifacts/*.zip` | Último paquete portable, unos 93 MB. Cada paquete queda **para siempre** en la historia: antes de confirmar uno nuevo, borrar el anterior del árbol. Si los builds se vuelven frecuentes, conviene pasar a GitHub Releases o Git LFS (OP-04) |
 | `data/history/`, `data/modernization.db*` | Estado local de prueba, con datos dummy. Cambia al usar la app con los adaptadores de archivos o de base: confirmarlo solo cuando se quiera guardar esa foto. En despliegue el estado vive en su volumen ([recuperación ante desastres](recuperacion-ante-desastres.md)) |
 | `data/dummy/` | Datos sintéticos que usan las pruebas |
 | `tools/sesiones/` | Scripts históricos de las sesiones de trabajo; no se vuelven a ejecutar |

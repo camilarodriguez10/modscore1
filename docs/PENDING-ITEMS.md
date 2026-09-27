@@ -50,16 +50,17 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
   - Performance improvements, measured before and after.
   - SPA unit tests and end-to-end tests.
   - Contract test between the C# view models and the TypeScript types.
-  - Git repository with backup scripts, and a portable package to test on other machines.
+  - Git repository with backup scripts. The portable package that existed from 2026-09-14 was removed on 2026-09-27 by decision: the application runs from the code, with command lines for cmd and PowerShell.
 - **Executive dashboard** (2026-09-18, phases D1, D2 and D3): the home page (`/`), *Portfolio Health & Risk Intelligence*, built from the *EA Data & Insights – MVP Proposal*. Five KPIs, one panel per portfolio question and one shared detail table. Five more filters on every screen: CRE, Region, App Status, Primary Capability and EAI Code.
 - **Definitions editable from the portal** (ADR 0025): every threshold, level, list length and weight behind the six questions —37 parameters in seven areas, each with a status (provisional or agreed) and an owner— travels with the rules versions and is edited in *Rules → Portfolio analytics*, with the same draft, simulation, step-up, audit and publication as a score weight. The simulation shows how the dashboard indicators move. Every panel explains its calculation with the values in force, and the *Definitions* page is the KPI dictionary.
 - **Decided on 2026-09-18:** the Currency Score is the score CMT delivers (`Raw_Tech_Score`), and the dashboard is the home page.
-- **Code screen** (2026-09-26, ADR 0026): `/code`, *Component obsolescence & risk*. What each application's repositories declare —runtimes, frameworks, app servers, OS images, databases and libraries— checked against **end-of-life dates from endoflife.date** (a versioned snapshot: 22 products, 273 release cycles) and open advisories; libraries that need attention; where the code contradicts the CMT Currency Score; and a code risk index per application with its detail. Its 14 parameters are a new `code` area of the definitions, edited from the portal. **Repositories are sample data** generated from the portfolio until GitHub Enterprise is connected (GH-01 … GH-09); the screen says so, and the sample provider refuses to start outside Development.
+- **Code screen** (2026-09-26, ADR 0026): `/code`, *Component obsolescence & risk*. What each application's repositories declare —runtimes, frameworks, app servers, OS images, databases and libraries— checked against **end-of-life dates from endoflife.date** (a versioned snapshot: 22 products, 273 release cycles) and open advisories; libraries that need attention; where the code contradicts the CMT Currency Score; and a code risk index per application with its detail. Its 15 parameters are a new `code` area of the definitions, edited from the portal. **Repositories are sample data** generated from the portfolio until GitHub Enterprise is connected (GH-01 … GH-09); the screen says so, and the sample provider refuses to start outside Development.
+- **Code screen over time** (2026-09-27): the outlook today and in one, two and three years if nothing changes (components past end of life, share of code still supported, code risk), an improvement plan with a target release and an urgency per action, and score, Currency Score and Risk Score per upload. `data/timeline` holds the same dummy portfolio in four quarterly uploads, and the Dummy mode now rewinds the same applications instead of generating a different portfolio per quarter.
 - **Fixed on 2026-09-18:** the Insights risk index counted Kenna **below 50** as weak vulnerability management. Kenna runs from 0 to 1000 and higher is worse, so it counted the best applications. It now counts Kenna ≥ 670 (the BRD's Critical/High band), and the threshold is a parameter.
 - **Tests**:
-  - 828 .NET tests: 309 engine, 183 contracts, 336 API.
-  - 63 SPA unit tests.
-  - 49 end-to-end scenarios: 24 flows and 25 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
+  - 847 .NET tests: 319 engine, 189 contracts, 339 API.
+  - 66 SPA unit tests.
+  - 51 end-to-end scenarios: 26 flows and 25 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
   - Zero vulnerable packages, and `npm audit` is clean.
 
 ### What needs the team
@@ -134,7 +135,7 @@ it is what the platform does today unless the row says otherwise.
 | SEC-19 | Step-up against a real identity provider not verified | Security | P0 | Identity + development | Open |
 | SEC-20 | Security gates never run outside CI (DAST, Trivy, CodeQL, Checkov, gitleaks, image build) | Security | P0 | DevSecOps | In progress (CI green; ZAP pending) |
 | SEC-21 | Repository visibility, BRD captures and commit metadata | Security | P0 | Repository owner | Decided (2026-09-15) |
-| SEC-22 | Portable package uses development authentication | Security | P1 | Everyone who distributes it | Accepted risk (with rules) |
+| SEC-22 | Portable package uses development authentication | Security | P1 | Everyone who distributes it | Closed (2026-09-27): package removed |
 | SEC-23 | Rules timeline shows the publication reason to every reader | Security / privacy | P3 | Rules administrators | Accepted risk |
 | SEC-24 | CSV exports and data exfiltration | Security | P1 | Security + data owners | Decision needed |
 | TD-01 | Outdated packages kept on purpose | Technical debt | P3 | Development | Accepted (policy) |
@@ -148,7 +149,7 @@ it is what the platform does today unless the row says otherwise.
 | TD-09 | Language sweep does not cover the new endpoints | Quality | P1 | Development | Done (2026-09-16) |
 | TD-10 | CSV of a draft's impact | Product / debt | P3 | Development | Open |
 | TD-11 | Mixed line endings in the repository | Hygiene | P3 | Development | Decision needed |
-| TD-12 | Lock files and runtime-specific publish | Supply chain | P3 | Development | Mitigated |
+| TD-12 | Lock files and runtime-specific publish | Supply chain | P3 | Development | Moot since 2026-09-27 (portable build removed) |
 | TD-13 | Security review of phases 09–13 by a second person | Security | P1 | Security | Open |
 | TD-14 | Size of the rules editor screen | Maintainability | P3 | Development | Open |
 | TD-15 | Warm-up service and caches with many versions | Performance | P3 | Development | Open |
@@ -179,7 +180,7 @@ it is what the platform does today unless the row says otherwise.
 | OP-02 | Backups of the data volume and the rules store | Operations | P1 | Operations | Open |
 | OP-03 | Upload retention policy | Operations / compliance | P1 | Data owners + compliance | Decision needed |
 | OP-04 | GitHub repository settings (first push done) | Operations | P1 | Repository owner | Open |
-| OP-05 | Portable package distribution checklist | Operations | P2 | Whoever distributes it | Open |
+| OP-05 | Portable package distribution checklist | Operations | P2 | Whoever distributes it | Closed (2026-09-27): package removed |
 | GH-01 | GitHub App on GitHub Enterprise: permissions, organizations, version | Code screen | P2 | GitHub Enterprise admins + security | Decision needed |
 | GH-02 | Mapping repositories to applications (EAI code) | Code screen | P2 | Enterprise architecture + application owners | Decision needed |
 | GH-03 | Where the collector runs and how it reaches the internet | Code screen / platform | P2 | Platform + security | Decision needed |
@@ -680,7 +681,6 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
   - The captures and every image stay **out** of the repository; corporate storage keeps them.
   - Commits keep the account email, not the GitHub no-reply address.
   - Everything else created during the project **is versioned**:
-    - the latest portable `.zip`, about 93 MB;
     - the local run state (`data/history/`, `data/modernization.db*`, dummy data only);
     - the helper scripts of the working sessions (`tools/sesiones/`);
     - a copy of the published plan (`docs/plan/`);
@@ -691,7 +691,8 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
 
 ### SEC-22 — The portable package uses development authentication
 
-- **Priority:** P1 · **Owner:** everyone who distributes the package · **Status:** Accepted risk with rules
+- **Closed on 2026-09-27:** the portable package and `tools/portable` were removed. The same rule still applies to running from the code: the development scheme only starts in `Development`, and the commands bind to `localhost`. The text below is kept for traceability.
+- **Priority:** P1 · **Owner:** everyone who distributes the package · **Status:** Closed (was: accepted risk with rules)
 - **Context:**
   - `tools/portable` builds a self-contained package to test the application on another Windows machine before publishing.
   - It runs in the Development environment with the development authentication scheme: anyone who reaches the port is an administrator.
@@ -812,7 +813,7 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
 - **Priority:** P1 · **Owner:** DevSecOps · **Status:** Done (2026-09-15)
 - **Context:**
   - Sixteen Playwright scenarios (6 flows and 10 accessibility checks) run locally with the installed Microsoft Edge (`channel: 'msedge'`), so no browser is downloaded.
-  - They start System, Channel and Vite, or reuse running ones; they can also target a running portable package with `MODSCORE_E2E_BASE_URL`.
+  - They start System, Channel and Vite, or reuse running ones; they can also target an already running site with `MODSCORE_E2E_BASE_URL`.
   - Run time is about 45 s after builds.
 - **Done:** the `SPA de punta a punta` job in `ci.yml` installs .NET 10, Node 24 and Playwright's Chromium (`MODSCORE_E2E_CHANNEL=chromium`), builds both layers, runs the suite and uploads traces when it fails.
 - **Work left:** make the job a required status check when branch protection is configured (OP-04).
@@ -911,7 +912,7 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
 
 ### TD-12 — Lock files and runtime-specific publish
 
-- **Priority:** P3 · **Owner:** development · **Status:** Mitigated
+- **Priority:** P3 · **Owner:** development · **Status:** Moot since 2026-09-27: the portable build that published with `-r win-x64` was removed
 - **Context:**
   - Projects restore with lock files (`packages.lock.json`), and CI uses locked mode (`dotnet restore --locked-mode`).
   - Publishing the portable package with `-r win-x64` adds `Microsoft.NET.ILLink.Tasks` and a `net10.0/win-x64` section to 10 lock files. Seen on the second build of 2026-09-15.
@@ -1191,7 +1192,7 @@ and calculation.
 
 ### GH-07 — Code risk index points and levels
 - **Priority:** P2 · **Owner:** enterprise architecture + application security · **Status:** Decision needed (defaults implemented)
-- **Context:** The index adds points per finding: 10 per component past its end of life, 4 per component ending within 12 months, 5 per critical advisory, 2 per high advisory, 3 per deprecated library, 1 per library two or more major versions behind and 5 per repository with no commits in 12 months or archived. Levels: moderate 10, high 25, critical 50. It is a sum with no cap, so an application with many repositories accumulates more. All 14 values are editable in *Rules → Portfolio analytics* (area `code`).
+- **Context:** The index adds points per finding: 10 per component past its end of life, 4 per component ending within 12 months, 5 per critical advisory, 2 per high advisory, 3 per deprecated library, 1 per library two or more major versions behind and 5 per repository with no commits in 12 months or archived. Levels: moderate 10, high 25, critical 50. It is a sum with no cap, so an application with many repositories accumulates more. All 15 values are editable in *Rules → Portfolio analytics* (area `code`).
 - **On the sample data:** 186 of 250 applications have repositories; 96 have at least one component past its end of life and about 60 are at high or critical code risk.
 - **Question:** confirm or change the points and levels; decide whether a critical application should weigh more (today it does not), and whether the index should be normalized by number of repositories.
 - **Effort:** S if only values change (a publication); S–M for a multiplier or a normalization (code).
@@ -1246,13 +1247,14 @@ and calculation.
   1. Branch protection on `main`: required reviews, required status checks from the CI gates, no force push. Signed commits per plan §7.2 if the team uses them.
   2. Enable Renovate and secret scanning.
   3. Tag phase closes (`fase-13`).
-  4. Watch repository size. Each portable `.zip` adds about 93 MB to the history for good, and GitHub rejects files over 100 MB. Keep only the latest `.zip` in the tree; move to GitHub Releases or Git LFS if builds become frequent.
+  4. Watch repository size. The portable `.zip` files versioned until 2026-09-27 stay in the history (about 93 MB each). If the size becomes a problem, purge them with a history rewrite (`git filter-repo`), coordinated with everyone who has a clone. GitHub rejects files over 100 MB.
   5. When adding required status checks, remember that `ci.yml` skips docs-only changes: its checks stay "Expected" on a docs-only PR. Either require only the `seguridad.yml` checks for those PRs or merge them explicitly.
 - **Acceptance criteria:** branch protection active; first CI run green (SEC-20).
 - **Effort:** S.
 
 ### OP-05 — Portable package distribution checklist
-- **Priority:** P2 · **Owner:** whoever distributes it · **Status:** Open
+- **Closed on 2026-09-27:** the portable package was removed; the application runs from the code ([guide](guia-localhost.md)).
+- **Priority:** P2 · **Owner:** whoever distributes it · **Status:** Closed
 - **Checklist:**
   - Build with `tools/portable/build-portable.ps1` on a clean checkout of a tagged commit.
   - Share the `.zip` and its SHA-256 through corporate storage, not email attachments.
@@ -1280,7 +1282,7 @@ and calculation.
 | Suggestion 4: rule changes on the trend | Timeline endpoint for readers; dashed markers and list under the trend | `ScoreTrend.tsx`, `RulesComparisonAndExportTests` |
 | Suggestion 5: new comparison view | `/admin/rules/compare`: two versions or the draft, portfolio impact and one application metric by metric | `RulesComparePage.tsx`, `RulesComparisonTests` |
 | Suggestion 7: downloadable content by filters and notice | Portfolio, roadmap and comparison CSV; in-app notice of new rules | `ExportEndpoints.cs`, `RulesChangedNotice.tsx` |
-| Portable executable package | Self-contained single-file build for System and Channel with the SPA, launcher with local-only binding and per-run token | `tools/portable/` |
+| Portable executable package | Self-contained single-file build for System and Channel with the SPA, launcher with local-only binding and per-run token. **Removed on 2026-09-27** | `tools/portable/` (deleted) |
 
 ---
 
@@ -1305,13 +1307,13 @@ Numbers are for comparing changes on the same machine, not for sizing production
 
 | Suite | Count | Command |
 |---|---|---|
-| Engine (golden cases, mapping table, what-if, roadmap, rules editor, comparison, dashboard, insights, end-of-life catalog, code analyzer) | 309 | `dotnet test tests/Modernization.Scoring.Engine.Tests` |
-| Source contracts (Dummy, File, Database; rules stores; sample repositories) | 183 | `dotnet test tests/Modernization.Sources.ContractTests` |
-| API end-to-end through both layers and security | 336 | `dotnet test tests/Modernization.Api.Tests` |
-| SPA unit (Vitest) | 63 | `npm --prefix src/web test` |
-| SPA end-to-end (Playwright, Edge locally, Chromium in CI) | 24 | `npm --prefix src/web run test:e2e` |
+| Engine (golden cases, mapping table, what-if, roadmap, rules editor, comparison, dashboard, insights, end-of-life catalog, code analyzer) | 319 | `dotnet test tests/Modernization.Scoring.Engine.Tests` |
+| Source contracts (Dummy, File, Database; rules stores; sample repositories; dummy timeline) | 189 | `dotnet test tests/Modernization.Sources.ContractTests` |
+| API end-to-end through both layers and security | 339 | `dotnet test tests/Modernization.Api.Tests` |
+| SPA unit (Vitest) | 66 | `npm --prefix src/web test` |
+| SPA end-to-end (Playwright, Edge locally, Chromium in CI) | 26 | `npm --prefix src/web run test:e2e` |
 | SPA accessibility (axe, the daily screens and the Code detail, in light and dark) | 25 | Same command; `e2e/accessibility.spec.ts` |
-| SPA end-to-end against the portable package | 49 | With `start.ps1 -NoBrowser` running, from `src/web`: `MODSCORE_E2E_BASE_URL=http://localhost:5100 npx playwright test` |
+| SPA end-to-end against an already running site | Same | With the site running (for example the Channel serving `src/web/dist`), from `src/web`: `MODSCORE_E2E_BASE_URL=http://localhost:5100 npx playwright test` |
 | SPA lint (ESLint, required by CI) | 0 errors | `npm --prefix src/web run lint` |
 | Vulnerable packages | 0 | `dotnet list ModernizationScore.slnx package --vulnerable --include-transitive` and `npm --prefix src/web audit --audit-level=moderate` |
 

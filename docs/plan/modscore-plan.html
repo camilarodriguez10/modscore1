@@ -308,7 +308,7 @@ pre em{color:var(--ink-3);font-style:normal}
     <div class="mast-meta">
       <span>Base documental · <b>34 capturas: BRD + dashboard Power BI v1.3 + archivos fuente</b></span>
       <span>Ruleset · <b>v1.3</b></span>
-      <span>Fases 00–13 entregadas · 14 y 15 en curso · dashboard ejecutivo · pantalla Code · <b>828 pruebas .NET, 63 unitarias y 49 e2e en verde</b></span>
+      <span>Fases 00–13 entregadas · 14 y 15 en curso · dashboard ejecutivo · pantalla Code · <b>847 pruebas .NET, 66 unitarias y 51 e2e en verde</b></span>
       <span>Duración estimada · <b>16 semanas</b></span>
     </div>
   </div>
@@ -826,7 +826,7 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
     <div class="screen key"><span class="i">10</span><div><div class="t">Insights — las seis preguntas <span class="req">req. 4 · 6</span></div><div class="d">Qué tan sano está el portafolio, qué modernizar primero según impacto y esfuerzo, dónde reducir complejidad, dónde se concentra el riesgo tecnológico, qué causa la obsolescencia y dónde faltan defensas de continuidad. Una sola llamada, el mismo filtro que el resto del sitio, y cada número con su aritmética a la vista.</div></div></div>
     <div class="screen key"><span class="i">11</span><div><div class="t">Dashboard — Portfolio Health &amp; Risk Intelligence <span class="req">inicio</span></div><div class="d">La página de inicio y la vista para dirección, según la propuesta <em>EA Data &amp; Insights</em>: la pregunta ejecutiva, cinco indicadores con tendencia por carga y un panel por pregunta —mapa de calor de capacidad primaria contra región, país, CIO o disposición; matriz criticidad × oportunidad; treemap de complejidad; concentración del riesgo; causas de la obsolescencia; huecos de resiliencia—. Cada celda, burbuja o barra abre el mismo detalle, y cada panel explica su cálculo con los valores vigentes.</div></div></div>
     <div class="screen key"><span class="i">12</span><div><div class="t">Definitions y Portfolio analytics</div><div class="d">El diccionario de indicadores —definición y fórmula, datos, valores en vigor, dueño, estado, frecuencia y cobertura— y la pestaña de reglas donde el administrador edita las definiciones —37 de las seis preguntas y 14 de la pantalla Code—, con borrador, simulación de los indicadores y publicación.</div></div></div>
-    <div class="screen key"><span class="i">13</span><div><div class="t">Code — obsolescencia y riesgo por componentes <span class="req">nueva</span></div><div class="d">Lo que declaran los repositorios de cada aplicación en GitHub Enterprise —runtimes, frameworks, servidores, imágenes de sistema operativo, bases de datos y bibliotecas— contra su fecha de fin de vida en endoflife.date y sus alertas abiertas: qué vence y cuándo, qué bibliotecas necesitan atención, dónde el código contradice al Currency Score de CMT y qué aplicaciones cargan más riesgo de código, con el detalle de cada una. Repositorios de demostración hasta la integración.</div></div></div>
+    <div class="screen key"><span class="i">13</span><div><div class="t">Code — obsolescencia y riesgo por componentes <span class="req">nueva</span></div><div class="d">Lo que declaran los repositorios de cada aplicación en GitHub Enterprise —runtimes, frameworks, servidores, imágenes de sistema operativo, bases de datos y bibliotecas— contra su fecha de fin de vida en endoflife.date y sus alertas abiertas: qué vence y cuándo, qué bibliotecas necesitan atención, dónde el código contradice al Currency Score de CMT y qué aplicaciones cargan más riesgo de código, con el detalle de cada una. Además, score, Currency y riesgo carga por carga, la proyección a uno, dos y tres años si nada cambia y el plan de mejora. Repositorios de demostración hasta la integración.</div></div></div>
   </div>
 
   <h4>Seguridad del frontend</h4>
@@ -979,7 +979,7 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
         <tr class="shipped"><td class="mono">—</td><td>Dashboard ejecutivo · D1 y D2</td><td><span class="done">ENTREGADA</span></td><td><strong>Portfolio Health &amp; Risk Intelligence en una vista</strong> · cinco indicadores, seis paneles y un detalle común · cinco filtros nuevos en todo el sitio · definiciones provisionales versionadas (ADR 0024) · 28 pruebas del analizador, 13 de API, 8 de la SPA y 6 de punta a punta</td></tr>
         <tr class="shipped"><td class="mono">—</td><td>Dashboard ejecutivo · D3</td><td><span class="done">ENTREGADA</span></td><td><strong>Cambiar un umbral desde el portal mueve el dashboard sin desplegar</strong> · 37 definiciones con estado y dueño por área, versionadas con las reglas (ADR 0025) · diccionario de indicadores · cada panel explica su cálculo · dashboard como página de inicio · Currency Score de CMT</td></tr>
         <tr><td class="mono">—</td><td>Dashboard ejecutivo · D4</td><td><div class="dur"><i style="width:32px"></i><span>2 sem</span></div></td><td>Fuentes nuevas —TLM, resiliencia, deudas técnicas, application class, dependencias—: cada una convierte un bloque «sin dato» en una medición</td></tr>
-        <tr class="shipped"><td class="mono">—</td><td>Pantalla Code · C1</td><td><span class="done">ENTREGADA</span></td><td><strong>Obsolescencia y riesgo según los componentes de cada repositorio</strong> · fin de vida de endoflife.date (22 productos, 273 ciclos) · 14 parámetros editables desde el portal · discrepancias con el Currency Score · repositorios de demostración que solo arrancan en Development (ADR 0026)</td></tr>
+        <tr class="shipped"><td class="mono">—</td><td>Pantalla Code · C1</td><td><span class="done">ENTREGADA</span></td><td><strong>Obsolescencia y riesgo según los componentes de cada repositorio</strong> · proyección a uno, dos y tres años si nada cambia, plan de mejora y evolución por carga · fin de vida de endoflife.date (22 productos, 273 ciclos) · 15 parámetros editables desde el portal · discrepancias con el Currency Score · repositorios de demostración que solo arrancan en Development (ADR 0026)</td></tr>
         <tr><td class="mono">—</td><td>Pantalla Code · C2 · GitHub Enterprise</td><td><div class="dur"><i style="width:48px"></i><span>3 sem</span></div></td><td>Recolector aparte con una GitHub App de solo lectura, mapeo repositorio → EAI y publicación del inventario a la capa System: la pantalla muestra una organización piloto real, sin credenciales de GitHub en la System ni en la Channel</td></tr>
         <tr><td class="mono">16</td><td>Escala y operación</td><td><div class="dur"><i style="width:48px"></i><span>3 sem</span></div></td><td>Destino y motor de base, Redis, dos réplicas por capa, respaldos, SIEM y notificaciones de reglas</td></tr>
         <tr><td class="mono">17</td><td>Hallazgos de infraestructura</td><td><div class="dur"><i style="width:32px"></i><span>2 sem</span></div></td><td>Al final, por decisión: identidad de carga de trabajo (H-16), firma de imágenes y logs inmutables (H-17), sesiones activas (H-20) y antivirus en cargas (H-21)</td></tr>
@@ -992,7 +992,7 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
 
   <div class="ship">
     <div class="h">Criterio de aceptación cumplido</div>
-    <p><strong>828 pruebas .NET en verde</strong>, más 63 unitarias y 49 de punta a punta en la SPA —veinticuatro de flujo y veinticinco de accesibilidad—, cero paquetes vulnerables —ya con EF Core y SQLite dentro—, y el build compila con todas las reglas de seguridad del analizador como errores. El motor reproduce exactamente los dos casos documentados: <span class="mono">EAI 14381 = 79,67</span> y <span class="mono">EAI 10969 = 79,61</span>, métrica por métrica.</p>
+    <p><strong>847 pruebas .NET en verde</strong>, más 66 unitarias y 51 de punta a punta en la SPA —veintiséis de flujo y veinticinco de accesibilidad—, cero paquetes vulnerables —ya con EF Core y SQLite dentro—, y el build compila con todas las reglas de seguridad del analizador como errores. El motor reproduce exactamente los dos casos documentados: <span class="mono">EAI 14381 = 79,67</span> y <span class="mono">EAI 10969 = 79,61</span>, métrica por métrica.</p>
     <p>El 14381 se reproduce <strong>extremo a extremo</strong>: generador → puerto <code>ISourceReader</code> → ensamblado → motor → <code>system-api</code> → <code>channel-api</code> → SPA. Cada eslabón de esa cadena está cubierto por tests, y el último se ve en pantalla.</p>
   </div>
 
@@ -1281,7 +1281,7 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
         <tr><td><strong>Descargas según los filtros</strong></td><td>CSV del portafolio, del roadmap agrupado y de la comparación, sin inyección de fórmulas, con límite propio y auditoría</td></tr>
         <tr><td><strong>Robustez</strong></td><td>Un almacén de reglas caído ya no deja sin scores; la reautenticación cierra la sesión anterior y queda lista para OAuth con APIM (ADR 0020)</td></tr>
         <tr><td><strong>Pruebas de la SPA</strong></td><td>Vitest para la lógica y Playwright con el Edge instalado; una prueba impide que los tipos TypeScript se separen del backend</td></tr>
-        <tr><td><strong>Git y paquete portable</strong></td><td>Repositorio con un respaldo que se niega a subir las capturas del BRD; ejecutables de un solo archivo para probar en otro equipo, solo en la interfaz local</td></tr>
+        <tr><td><strong>Git y paquete portable</strong></td><td>Repositorio con un respaldo que se niega a subir las capturas del BRD; ejecutables de un solo archivo para probar en otro equipo, solo en la interfaz local. El paquete se retiró el 2026-09-27: la aplicación se levanta desde el código</td></tr>
       </tbody>
     </table>
   </div>
@@ -1392,6 +1392,19 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
       </tbody>
     </table>
   </div>
+
+  <h4>En el tiempo y qué cambiar — ampliación del 27 de septiembre</h4>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:30%">Pedido</th><th>Cómo quedó</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Hoy contra uno, dos y tres años, si nada cambia</strong></td><td>Mismas versiones, mismas alertas y ningún commit: por horizonte, componentes vencidos, aplicaciones afectadas, parte del código que sigue con soporte e índice de riesgo. Con los datos de ejemplo, el código con soporte pasa del 70 % hoy al 22 % en tres años</td></tr>
+        <tr><td><strong>La mejora que debe aplicarse</strong></td><td>Un plan del portafolio —«Upgrade Node.js 14 → 26», «Migrate AngularJS → Angular 22», «Replace request»—, cada acción una vez con sus repositorios, por urgencia y por puntos de riesgo que baja o evita. El destino es el ciclo con soporte que más dura, LTS cuando existe</td></tr>
+        <tr><td><strong>Score, Currency y riesgo en el tiempo</strong></td><td>Cuatro cargas trimestrales del mismo portafolio en <code>data/timeline</code>, y el modo Dummy con los mismos cuatro trimestres: la pantalla compara las tres medidas carga por carga, y cada aplicación muestra la suya</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">El mismo día se retiró el <strong>paquete portable</strong>: la aplicación se levanta desde el código con comandos para cmd y PowerShell, y un equipo que bloquea ejecutables propios usa el sitio compilado servido por la capa Channel, con solo <code>dotnet.exe</code>.</div>
 
   <h4>La integración: un recolector aparte que no se expone</h4>
   <pre>GitHub Enterprise ──(GitHub App, solo lectura)──► <b>code-collector</b>  <em>tarea programada, sin ingress</em>

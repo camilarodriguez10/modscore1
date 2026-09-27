@@ -67,9 +67,9 @@ enlaza a su fuente primaria.
 ### 3. Las reglas son paramétricas, en un área nueva de las definiciones
 
 El área `code` se suma a las siete de ADR 0025, con los mismos borrador, simulación,
-reautenticación, auditoría y versiones: 14 parámetros —ventana de *ending soon*, mayores
+reautenticación, auditoría y versiones: 15 parámetros —ventana de *ending soon*, mayores
 de atraso para una biblioteca desactualizada, meses sin commits para un repositorio
-abandonado, los puntos de cada hallazgo, los tres niveles y el largo de la lista— y la
+abandonado, los puntos de cada hallazgo, los tres niveles y el largo de las dos listas— y la
 regla `code.levels` (moderado < alto < crítico).
 
 **Índice de riesgo de código** = la suma, sobre los repositorios de la aplicación, de los
@@ -118,6 +118,30 @@ registros de paquetes / espejo ────────────────�
   paquetes, o sus espejos internos (GH-03).
 - **Frecuencia:** diaria. El catálogo de fin de vida se refresca en la misma corrida y se
   valida antes de usarlo; si no valida, se conserva el anterior.
+
+### 5. Ampliación del 2026-09-27: en el tiempo y qué cambiar
+
+- **Si nada cambia, hoy y en uno, dos y tres años.** Cada componente se evalúa contra su fecha
+  de fin de vida en la fecha del horizonte; las alertas y las versiones quedan como están y
+  no hay commits nuevos, así que un repositorio cruza el umbral de abandono con el tiempo. Por
+  horizonte: componentes vencidos, aplicaciones afectadas, **vigencia del código** (la parte
+  de los componentes evaluables que sigue con soporte, de 0 a 100) e índice de riesgo. No se
+  inventan alertas ni fechas futuras: un ciclo sin fecha publicada cuenta como vigente.
+- **Qué cambiar y cuándo.** Por componente, el destino es el ciclo publicado con soporte que
+  más dura, LTS cuando el producto las tiene, y que no vence dentro de la ventana de
+  *ending soon*; si el producto no tiene ninguno, el que lo reemplaza (AngularJS → Angular), y
+  si ni eso, *no newer supported release yet*. Urgencia: ya (vencido, biblioteca obsoleta o
+  con alertas, repositorio abandonado), dentro de uno, dos o tres años por la fecha de fin de
+  vida, o planificar (biblioteca solo atrasada). Cada sugerencia dice cuántos puntos baja hoy
+  el índice y cuántos evita cuando el componente venza. El plan del portafolio agrupa la
+  misma acción en todos los repositorios donde aplica.
+- **Score, Currency Score y riesgo por carga.** La tendencia del portafolio y la historia de
+  cada aplicación llevan, además del score, el Currency Score de CMT y el Risk Score
+  promedio, calculados con las reglas vigentes.
+- **Datos de ejemplo en el tiempo.** Las versiones anteriores del modo Dummy dejaron de ser
+  un portafolio distinto por trimestre: son las mismas aplicaciones con trayectorias
+  deterministas (`DummyTimeline`), y `data/timeline` las trae como cuatro cargas listas para
+  leer. La proyección no depende de ellas: sale de las fechas de fin de vida.
 
 ## Alternativas consideradas
 

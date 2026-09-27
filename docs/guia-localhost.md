@@ -20,158 +20,26 @@ importa es que **todas tienen que estar arriba** para que el sitio funcione.
 |---|---|---|
 | **Capa System** | Calcula los scores y lee los datos | `5101` |
 | **Capa Channel** | Es a la que le habla el navegador; nunca calcula nada | `5100` |
-| **Sitio (SPA)** | Lo que ves en pantalla | `5173` en el camino B; en A y C lo sirve la capa Channel |
+| **Sitio (SPA)** | Lo que ves en pantalla | `5173` en el camino A; en el camino B lo sirve la capa Channel |
 
-Hay **tres caminos**. Elige uno:
+Hay **dos caminos**, los dos desde el código y con comandos para `cmd` y PowerShell. Elige uno:
 
-| | Camino A · paquete portable | Camino B · desde el código | Camino C · sin permiso para ejecutar `.exe` |
-|---|---|---|---|
-| Para quién | Alguien que solo quiere **usar** la aplicación | Alguien que va a **modificarla** | Un equipo de empresa que **bloquea programas no firmados** |
-| Sistema | Windows 10/11 de 64 bits | Windows, macOS o Linux | Windows, desde `cmd` |
-| Hay que instalar | **Nada** | .NET 10 y Node.js | Solo .NET 10 |
-| Qué se ejecuta | Los `.exe` del paquete | `dotnet` y `node` | **Solo `dotnet.exe`**, firmado por Microsoft |
-| Cuánto toma | 5 minutos | 20 minutos la primera vez | 15 minutos la primera vez |
-| Se abre en | `http://localhost:5100` | `http://localhost:5173` | `http://localhost:5100` |
+| | Camino A · desde el código | Camino B · sin permiso para ejecutar `.exe` |
+|---|---|---|
+| Para quién | Cualquiera que va a **usar o modificar** la aplicación | Un equipo de empresa que **bloquea programas no firmados** |
+| Sistema | Windows, macOS o Linux | Windows, desde `cmd` o PowerShell |
+| Hay que instalar | .NET SDK 10 y Node.js | .NET SDK 10 (Node solo para compilar el sitio una vez, en este equipo o en otro) |
+| Qué se ejecuta | `dotnet` y `node` | **Solo `dotnet.exe`**, firmado por Microsoft |
+| Ventanas abiertas | Tres | Dos |
+| Cuánto toma | 20 minutos la primera vez | 15 minutos la primera vez |
+| Se abre en | `http://localhost:5173` | `http://localhost:5100` |
 
-Si dudas, empieza por el **camino A**. Si al abrir `start.cmd` Windows dice que el programa
-está **bloqueado por el administrador** o que **no tienes permiso**, ve directo al
-**camino C**.
-
----
-
-## Camino A · el paquete portable (Windows, sin instalar nada)
-
-### Paso 1 · consigue el `.zip`
-
-Está en el repositorio, en la carpeta `artifacts/`, con un nombre como
-`modscore-portable-win-x64-selfcontained-AAAAMMDD-HHMM.zip` (unos 93 MB). Cópialo al otro
-equipo con un pendrive, una carpeta compartida o como prefieras.
-
-**Comprueba que llegó completo** (opcional pero recomendado). Abre PowerShell donde está el
-archivo y escribe:
-
-```powershell
-Get-FileHash -Algorithm SHA256 .\modscore-portable-*.zip
-```
-
-o, en `cmd`:
-
-```bat
-for %f in (modscore-portable-*.zip) do certutil -hashfile "%f" SHA256
-```
-
-El resultado tiene que coincidir con el SHA-256 que aparece en
-[HANDOFF.md](../HANDOFF.md) (fila «Paquete portable»). Si no coincide, el archivo se copió
-mal: vuelve a copiarlo.
-
-### Paso 2 · descomprímelo
-
-Clic derecho sobre el `.zip` → **Extraer todo**.
-
-- Elige una carpeta **local y corta**, por ejemplo `C:\modscore`.
-- **Evita** el Escritorio dentro de OneDrive, `Descargas` sincronizadas o rutas muy largas:
-  la sincronización bloquea archivos y da errores raros al arrancar.
-- Tiene que quedar así:
-
-```
-C:\modscore\
-├─ channel\      (la capa Channel y el sitio)
-├─ system\       (la capa System)
-├─ samples\      (ocho CSV de ejemplo)
-├─ start.cmd     ← esto es lo que se ejecuta
-├─ start.ps1
-└─ README.txt
-```
-
-### Paso 3 · arráncalo
-
-Doble clic en **`start.cmd`**. O, si prefieres escribirlo, en una ventana de `cmd`:
-
-```bat
-cd /d C:\modscore
-.\start.cmd
-```
-
-o en una de PowerShell:
-
-```powershell
-Set-Location C:\modscore
-powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
-```
-
-El `.\` delante no es un adorno: en equipos con la política `NoDefaultCurrentDirectoryInExePath`,
-`cmd` no ejecuta nada de la carpeta actual sin él. Si el equipo no deja correr el script pero
-sí los `.exe`, el `README.txt` del paquete trae los comandos para arrancar las dos capas a
-mano, en cmd y en PowerShell.
-
-Se abre una ventana negra de consola. Verás algo así:
-
-```
-  Modernization Score - paquete de PRUEBA
-  Autenticacion de desarrollo: no usar con datos reales ni exponer en una red.
-
-Esperando a que las dos capas respondan...
-
-Listo: http://localhost:5100/  (datos: Dummy)
-Presione Enter para detener.
-```
-
-El navegador se abre solo en `http://localhost:5100/`.
-
-> **Si Windows muestra un aviso azul** («Windows protegió su PC»), es SmartScreen: los
-> ejecutables de prueba no están firmados. Pulsa **Más información → Ejecutar de todas
-> formas**. Firmar los binarios es trabajo pendiente del proyecto (hallazgo H-17).
-
-### Paso 4 · entra
-
-En la página, pulsa **Sign in**. No pide usuario ni contraseña: el esquema de desarrollo te
-entra con todos los permisos.
-
-### Paso 5 · comprueba que quedó bien
-
-Cuatro comprobaciones de treinta segundos:
-
-1. Al entrar se abre el **Dashboard**, la página de inicio. En la pestaña **Portfolio**
-   tiene que haber una tabla con unas 250 aplicaciones.
-2. Abre `http://localhost:5100/applications/14381/calculation`. El score de esa aplicación
-   tiene que ser exactamente **79.67**. Es el ejemplo trabajado del documento de negocio:
-   si ese número sale, el cálculo está bien de punta a punta.
-3. Abre **Insights** en el menú. Tienen que aparecer las seis preguntas del portafolio, la
-   primera con el promedio y la mediana.
-4. Vuelve a **Dashboard**, la primera pestaña. Arriba dice *Portfolio Health & Risk
-   Intelligence*, debajo hay cinco indicadores y, al bajar, seis paneles numerados. Un clic en
-   cualquier indicador abre a la derecha la lista de aplicaciones que cuenta, y
-   *How this is calculated*, al pie de cada panel, explica el cálculo con los valores vigentes.
-
-### Paso 6 · para detenerlo
-
-Vuelve a la ventana negra y pulsa **Enter**. Verás `Detenido.`, y con eso se cierran las dos
-capas y se borra el token temporal que usan para hablar entre ellas.
-
-> No cierres la ventana con la ✕ si puedes evitarlo: al cerrarla sin más pueden quedar los
-> dos procesos vivos. Si pasa, ver [Problemas frecuentes](#problemas-frecuentes).
-
-### Opciones del arranque
-
-Abre PowerShell en `C:\modscore` y usa `start.ps1` en vez del doble clic (en `cmd`, las
-mismas opciones van después de `.\start.cmd`, por ejemplo `.\start.cmd -Data File`):
-
-| Comando | Para qué |
-|---|---|
-| `.\start.ps1` | Igual que el doble clic: 250 aplicaciones generadas en memoria |
-| `.\start.ps1 -Data File` | Para **subir archivos** de verdad: la pantalla Data acepta los CSV de `samples\` y lo cargado queda en `data\` |
-| `.\start.ps1 -Port 5200` | Si el puerto 5100 está ocupado (la capa System usará el 5201) |
-| `.\start.ps1 -NoBrowser` | No abre el navegador solo |
-
-Si PowerShell se queja de la política de ejecución, usa:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\start.ps1
-```
+Si dudas, empieza por el **camino A**. Si al arrancar Windows dice que un programa está
+**bloqueado por el administrador** o que **no tienes permiso**, ve al **camino B**.
 
 ---
 
-## Camino B · desde el código (Windows, macOS o Linux)
+## Camino A · desde el código (Windows, macOS o Linux)
 
 Este camino sirve para tocar el código y ver los cambios al vuelo.
 
@@ -310,15 +178,25 @@ siguientes veces arrancan en segundos.
 
 ### Paso 5 · entra y comprueba
 
-Abre <http://localhost:5173> y pulsa **Sign in**. **La primera vez no hay datos**: cada
-pantalla lo avisa y te lleva a **Data**. Sube ahí los ocho CSV de `data\dummy`, como se
-explica en [Cargar archivos](#cargar-archivos). Luego, las mismas cuatro comprobaciones del
-camino A:
+Abre <http://localhost:5173> y pulsa **Sign in**. No pide usuario ni contraseña: el esquema
+de desarrollo te entra con todos los permisos.
 
-1. Portfolio con unas 250 aplicaciones.
-2. `http://localhost:5173/applications/14381/calculation` da **79.67**.
-3. **Insights** muestra las seis preguntas.
-4. **Dashboard** muestra cinco indicadores y seis paneles.
+**La primera vez no hay datos**: cada pantalla lo avisa y te lleva a **Data**. Hay dos
+formas de cargar, explicadas en [Cargar archivos](#cargar-archivos): subir los ocho CSV de
+`data\dummy`, o copiar antes de arrancar los cuatro trimestres de `data\timeline` para ver
+la evolución en el tiempo. Luego, cinco comprobaciones de treinta segundos:
+
+1. Al entrar se abre el **Dashboard**. En la pestaña **Portfolio** tiene que haber una tabla
+   con unas 250 aplicaciones.
+2. Abre `http://localhost:5173/applications/14381/calculation`. El score tiene que ser
+   exactamente **79.67**: es el ejemplo trabajado del documento de negocio, y si ese número
+   sale, el cálculo está bien de punta a punta.
+3. **Insights** muestra las seis preguntas del portafolio.
+4. **Dashboard** muestra cinco indicadores y seis paneles; un clic en un indicador abre la
+   lista de aplicaciones que cuenta.
+5. **Code** avisa en ámbar que los repositorios son de demostración, muestra la proyección a
+   uno, dos y tres años y el plan de mejora. Con los cuatro trimestres cargados, además
+   compara el score, el Currency Score y el riesgo carga por carga.
 
 ### Paso 6 · para detenerlo
 
@@ -337,19 +215,20 @@ dotnet test ModernizationScore.slnx
 npm --prefix src/web test
 ```
 
-Deben terminar en verde: 737 pruebas .NET y 47 de la interfaz.
+Deben terminar en verde: 847 pruebas .NET y 66 de la interfaz.
 
 ---
 
-## Camino C · sin permiso para ejecutar `.exe` (Windows, `cmd`)
+## Camino B · sin permiso para ejecutar `.exe` (Windows, `cmd`)
 
 Para equipos de empresa donde Windows no deja ejecutar programas que no estén firmados: los
-`.exe` del paquete portable no abren, y tampoco los que crea `dotnet run` por su cuenta.
+`.exe` que crea `dotnet run` por su cuenta no abren.
 
 La idea es que **el único programa que se ejecuta sea `dotnet.exe`**, que es de Microsoft y
 está firmado. El código de la aplicación lo carga `dotnet` como biblioteca, y el sitio lo
-sirve la propia capa Channel desde archivos HTML, JavaScript y CSS, que no se ejecutan. No
-hace falta Node.
+sirve la propia capa Channel desde archivos HTML, JavaScript y CSS ya compilados, que no se
+ejecutan. Node hace falta una sola vez, para compilar el sitio, y puede hacerse en otro
+equipo.
 
 > Probado el 2026-09-17 en un clon limpio del repositorio, desde `cmd`: compila sin
 > generar ningún `.exe` del proyecto, solo corren procesos `dotnet.exe`, y los escenarios de
@@ -369,28 +248,42 @@ firmado y suele estar en el catálogo de software de la empresa.
 
 ### Paso 2 · consigue el código
 
-Igual que en el [paso 2 del camino B](#paso-2--consigue-el-código): `git clone`, o una copia
+Igual que en el [paso 2 del camino A](#paso-2--consigue-el-código): `git clone`, o una copia
 de la carpeta del proyecto. En esta guía se asume que quedó en `C:\modscore1`; si la pusiste
 en otro lado, cambia esa ruta en todos los comandos.
 
-### Paso 3 · consigue los archivos del sitio, sin compilar nada
+### Paso 3 · compila el sitio una sola vez
 
-El sitio ya compilado viene dentro del paquete portable. Solo hace falta esa carpeta:
+El sitio compilado es una carpeta de archivos estáticos, `src\web\dist`. Se genera con Node,
+**en este equipo o en cualquier otro** que tenga Node 22.12 o superior y acceso al registro
+de npm.
 
-1. Abre el `.zip` del paquete portable con doble clic (Windows lo muestra como carpeta, **sin
-   ejecutar nada**).
-2. Entra en `channel`.
-3. Copia la carpeta **`wwwroot`** a `C:\modscore-sitio`.
-
-Tiene que quedar el archivo `C:\modscore-sitio\wwwroot\index.html`. Compruébalo:
+En `cmd`:
 
 ```bat
-dir C:\modscore-sitio\wwwroot\index.html
+cd /d C:\modscore1
+npm --prefix src\web ci --ignore-scripts
+npm --prefix src\web run build
+dir src\web\dist\index.html
 ```
 
-### Paso 4 · compila una sola vez
+En PowerShell:
 
-En **una** ventana de `cmd`:
+```powershell
+Set-Location C:\modscore1
+npm.cmd --prefix src\web ci --ignore-scripts
+npm.cmd --prefix src\web run build
+Test-Path src\web\dist\index.html
+```
+
+El último comando tiene que encontrar `index.html` (en PowerShell, responder `True`). Si lo
+compilaste en otro equipo, copia la carpeta `dist` completa a `C:\modscore1\src\web\dist`
+en este. La compilación ejecuta un `esbuild.exe` que viene con las dependencias: si la misma
+política que bloquea los `.exe` lo bloquea, compílalo en otro equipo.
+
+### Paso 4 · compila las dos capas una sola vez
+
+En **una** ventana (en PowerShell, la primera línea es `Set-Location C:\modscore1`):
 
 ```bat
 cd /d C:\modscore1
@@ -426,17 +319,16 @@ Si no, no abras la ventana 2 todavía: ve a [Si la System no levanta](#si-la-sys
 
 ```bat
 cd /d C:\modscore1
-dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore-sitio\wwwroot
+dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore1\src\web\dist
 ```
 
 Tiene que aparecer `Now listening on: http://localhost:5100`.
 
 > Si en la ventana 2 aparece `warn: ... Failed to determine the https port for redirect`,
 > **no es un error**: en local todo va por HTTP y la aplicación solo avisa que no tiene a
-> dónde redirigir. Desde el 2026-09-17 ya no se muestra al correr desde el código; el
-> paquete portable anterior todavía lo imprime.
+> dónde redirigir.
 
-Qué hace cada parte que no estaba en el camino B:
+Qué hace cada parte que no estaba en el camino A:
 
 | Parte | Para qué |
 |---|---|
@@ -444,7 +336,7 @@ Qué hace cada parte que no estaba en el camino B:
 | `--no-build` | Arranca lo que compilaste en el paso 4, sin volver a compilar |
 | `--` | Lo que va antes es para `dotnet`; lo que va después, para la aplicación |
 | `--webroot` | Le dice a la capa Channel dónde están los archivos del sitio, para servirlos ella misma en el puerto 5100. Por eso no hace falta Node ni una tercera ventana |
-| `--DataSource:...` | Igual que en el camino B: carga de archivos, guardada en `C:\modscore1\data\local` |
+| `--DataSource:...` | Igual que en el camino A: carga de archivos, guardada en `C:\modscore1\data\local` |
 
 ### Si la System no levanta
 
@@ -468,33 +360,15 @@ se identifica la causa.
 
 ### Paso 6 · entra y comprueba
 
-Abre <http://localhost:5100> y pulsa **Sign in**. La primera vez, sube los ocho CSV de
-`data\dummy` en **Data** ([Cargar archivos](#cargar-archivos)). Luego, las cuatro comprobaciones del
-[paso 5 del camino A](#paso-5--comprueba-que-quedó-bien) cambiando nada más que el puerto:
-Portfolio con ~250 aplicaciones, `/applications/14381/calculation` con **79.67**,
-**Insights** con las seis preguntas y **Dashboard** con cinco indicadores y seis paneles.
+Abre <http://localhost:5100> y pulsa **Sign in**. La primera vez, carga los datos como se
+explica en [Cargar archivos](#cargar-archivos). Luego, las cinco comprobaciones del
+[paso 5 del camino A](#paso-5--entra-y-comprueba) cambiando nada más que el puerto: 5100 en
+lugar de 5173.
 
 ### Paso 7 · para detenerlo
 
 **Ctrl + C** en cada ventana. La próxima vez basta con el paso 5: no hace falta volver a
 compilar mientras no cambie el código.
-
-### Si prefieres compilar el sitio en vez de sacarlo del `.zip`
-
-Con Node instalado:
-
-```bat
-npm --prefix src\web ci --ignore-scripts
-```
-
-```bat
-npm --prefix src\web run build
-```
-
-y en la ventana 2 usa `--webroot C:\modscore1\src\web\dist`. **Ojo:** la
-compilación ejecuta un `esbuild.exe` que viene dentro de las dependencias, y la misma
-política que bloquea los `.exe` del paquete puede bloquear ese. Por eso el camino C usa por
-defecto los archivos del `.zip`.
 
 ---
 
@@ -504,15 +378,15 @@ La aplicación tiene dos modos de datos, y solo uno acepta cargas:
 
 | Modo | Cómo se arranca | Data acepta cargas |
 |---|---|---|
-| **Archivos** | Caminos B y C tal como están arriba (`--DataSource:Provider=File --DataSource:Directory=...`); camino A con `.\start.cmd -Data File` | **Sí**. Cada carga queda como una versión y sobrevive al reinicio |
-| **Datos generados** | Camino A con doble clic; caminos B y C sin los dos argumentos `--DataSource:...` | No: 250 aplicaciones inventadas en memoria, que se pierden al detener |
+| **Archivos** | Los dos caminos tal como están arriba (`--DataSource:Provider=File --DataSource:Directory=...`) | **Sí**. Cada carga queda como una versión y sobrevive al reinicio |
+| **Datos generados** | Los dos caminos sin los dos argumentos `--DataSource:...` | No: 250 aplicaciones inventadas en memoria, con sus cuatro trimestres, que se pierden al detener |
 
 Si Data dice *The active adapter is 'Dummy', which serves generated data*, estás en el
 segundo modo: detén la capa System y arráncala con la línea completa.
 
-**Dónde queda lo cargado:** en los caminos B y C, en `C:\modscore1\data\local`, que git
-ignora para que ningún dato real llegue al repositorio (las reglas publicadas quedan en
-`.rules\`, dentro de la misma carpeta). En el camino A, en la carpeta `data\` del paquete.
+**Dónde queda lo cargado:** en `C:\modscore1\data\local`, que git ignora para que ningún
+dato real llegue al repositorio (las reglas publicadas quedan en `.rules\`, dentro de la
+misma carpeta).
 
 > **La ruta tiene que ser absoluta.** `dotnet run --project` arranca con la carpeta del
 > proyecto como raíz, así que una ruta relativa apunta a un directorio dentro de `src\`: el
@@ -522,22 +396,47 @@ ignora para que ningún dato real llegue al repositorio (las reglas publicadas q
 **La primera carga.** Con la carpeta vacía, las pantallas dirán que no hay datos y te
 llevarán a **Data**. Es lo esperado, no un error. Luego:
 
-1. En **Upload files**, arrastra los ocho CSV (los de `samples\` en el paquete portable, o
-   los de `data\dummy` en el repositorio), o los tuyos. **No hace falta renombrarlos**: cada
-   archivo se reconoce por su encabezado. `eai_master.csv` es obligatorio.
+1. En **Upload files**, arrastra los ocho CSV de `data\dummy`, o los tuyos. **No hace falta
+   renombrarlos**: cada archivo se reconoce por su encabezado. `eai_master.csv` es
+   obligatorio.
 2. Pulsa **Upload and recalculate**. La pantalla dice cuántas filas leyó, cuántas rechazó y
    por qué.
 3. Con los CSV de ejemplo, Portfolio muestra 250 aplicaciones y la 14381 da **79.67**.
+
+**Para comparar en el tiempo: los cuatro trimestres de ejemplo.** `data\timeline` trae el
+mismo portafolio en cuatro cargas —Q4 2025, Q1, Q2 y Q3 2026—, con aplicaciones que se
+modernizan y otras que envejecen. Cópialas a `data\local` **antes de arrancar la capa
+System** (si ya estaba corriendo, detenla con Ctrl + C y vuelve a arrancarla).
+
+En `cmd`:
+
+```bat
+cd /d C:\modscore1
+xcopy /E /I /Y data\timeline data\local
+```
+
+En PowerShell:
+
+```powershell
+Set-Location C:\modscore1
+New-Item -ItemType Directory -Force data\local | Out-Null
+Copy-Item -Recurse -Force data\timeline\* data\local
+```
+
+Después, en **Data → Upload history** aparecen las cuatro cargas, y la pantalla **Code**
+compara el Modernization Score, el Currency Score y el Risk Score de una a otra; el detalle
+de cada aplicación muestra su propia evolución.
 
 ---
 
 ## Probar con un usuario limitado
 
 Por defecto entras como administrador de todo. Para ver la aplicación como la vería alguien
-que solo puede consultar un LOB, arranca la **capa Channel** así:
+que solo puede consultar un LOB, agrega dos argumentos al final de la línea de la **capa
+Channel** (la misma línea en cmd y en PowerShell):
 
-```bash
-Authentication__Development__Roles__0=portfolio.read Authentication__Development__Scopes__0=lob:Individual dotnet run --project src/channel/Modernization.ChannelApi
+```bat
+dotnet run --no-build --project src\channel\Modernization.ChannelApi -- --environment Development --urls http://localhost:5100 --Authentication:Development:Roles:0=portfolio.read --Authentication:Development:Scopes:0=lob:Individual
 ```
 
 Ese usuario no verá la pantalla **Rules** ni podrá publicar cargas, y todas las cifras
@@ -551,28 +450,23 @@ permite ver.
 | Lo que ves | Qué pasa | Qué hacer |
 |---|---|---|
 | `dotnet` o `npm` «no se reconoce» | No están instalados o la terminal es anterior a la instalación | Cierra y abre la terminal; si sigue, reinicia el equipo |
-| En Data: `The active adapter is 'Dummy', which serves generated data. Uploading files requires the file or database adapter.` | La capa System arrancó sin carga de archivos | Caminos B y C: detén la ventana de la System y copia de nuevo su línea completa, con los dos `--DataSource:...`. Camino A: `.\start.cmd -Data File` |
-| La consola se cierra sola al instante | Doble clic sobre `start.ps1` en vez de `start.cmd` | Usa `start.cmd`, o abre PowerShell y ejecuta `.\start.ps1` |
-| `"start.cmd" no se reconoce como un comando interno o externo` (o lo mismo con un `.exe`), aunque el archivo está en esa carpeta | El equipo tiene la política `NoDefaultCurrentDirectoryInExePath`: `cmd` no busca programas en la carpeta actual | Escribe `.\start.cmd` (o `.\Modernization.SystemApi.exe`) |
-| `No se puede cargar el archivo start.ps1 ... deshabilitada la ejecución de scripts` | Política de ejecución de PowerShell | `powershell -ExecutionPolicy Bypass -File .\start.ps1` |
-| «Windows protegió su PC» | SmartScreen: los binarios no están firmados | Más información → Ejecutar de todas formas |
-| «Este programa está bloqueado por una directiva de grupo», «el administrador del sistema bloqueó esta aplicación» o «acceso denegado» al abrir `start.cmd` o un `.exe` | La empresa no deja ejecutar programas sin firmar desde carpetas de usuario | Si el `.zip` llegó por internet o por correo, primero: clic derecho sobre el `.zip` → Propiedades → **Desbloquear**, y descomprímelo otra vez. Si sigue bloqueado, usa el **camino C** |
+| En Data: `The active adapter is 'Dummy', which serves generated data. Uploading files requires the file or database adapter.` | La capa System arrancó sin carga de archivos | Detén la ventana de la System y copia de nuevo su línea completa, con los dos `--DataSource:...` |
+| «Este programa está bloqueado por una directiva de grupo», «el administrador del sistema bloqueó esta aplicación» o «acceso denegado» al arrancar una capa | La empresa no deja ejecutar programas sin firmar desde carpetas de usuario | Usa el **camino B**: solo corre `dotnet.exe` |
 | `Unhandled exception ... 'AllowedHosts' debe listar los hosts del servicio (entorno 'Production')`, a veces con `DeploymentGuards.cs:line 32` y `Program.cs:line 214` | La capa arrancó como producción: no recibió el entorno de desarrollo. Lo más común es haber pegado un bloque de `cmd` con `set "..."` en **PowerShell** (la Terminal de Windows 11 abre PowerShell): ahí `set` crea una variable de PowerShell que el programa no ve, sin dar error | Usa los comandos con argumentos: al final de la línea, `--environment Development --urls http://localhost:5101` (después de `--` si es un `dotnet run`). Funcionan igual en cmd y en PowerShell. No hace falta tocar `AllowedHosts` |
 | `warn: ... Failed to determine the https port for redirect` | Solo un aviso: en local no hay HTTPS al que redirigir | Nada: la capa está funcionando. Si el sitio falla, la causa es otra; revisa primero que la System responda en <http://localhost:5101/health> |
 | `Now listening on: http://localhost:5000` | Faltó el argumento `--urls` | Detén con Ctrl + C y vuelve a arrancar con `--urls http://localhost:5101` (o `5100` en la Channel) al final de la línea |
-| Camino C: `http://localhost:5100` responde 404 o una página vacía | `--webroot` no apunta a una carpeta con `index.html` | `dir C:\modscore-sitio\wwwroot\index.html` tiene que encontrar el archivo; corrige la ruta y reinicia la ventana 2 |
-| `Failed to bind to address ... address already in use` | Otro programa ocupa 5100, 5101 o 5173 | Camino A: `.\start.ps1 -Port 5200`. Camino B: cierra lo que use el puerto (ver fila siguiente) |
+| Camino B: `http://localhost:5100` responde 404 o una página vacía | `--webroot` no apunta a una carpeta con `index.html` | `dir C:\modscore1\src\web\dist\index.html` tiene que encontrar el archivo; si no, repite el paso 3 del camino B y reinicia la ventana 2 |
+| `Failed to bind to address ... address already in use` | Otro programa ocupa 5100, 5101 o 5173 | Cierra lo que use el puerto (ver fila siguiente), o cambia el número en `--urls` |
 | Necesitas saber **quién** ocupa un puerto | — | Windows: `netstat -ano \| findstr :5100` y luego `tasklist \| findstr <PID>`. macOS/Linux: `lsof -i :5100` |
 | El sitio carga pero todo sale vacío o con error | La capa Channel está arriba, la System no | Mira la terminal 1: tiene que decir `Now listening on: http://localhost:5101` |
 | El sitio no carga («no se puede acceder a este sitio») | La capa Channel no está arriba | Mira la terminal 2, y arráncala después de la System |
 | `502` o `500` al entrar | Las dos capas no se están reconociendo | Deténlas todas y arráncalas en orden: System, Channel, sitio |
-| Ves la página de login y `Sign in` no hace nada | La capa Channel no está en entorno `Development` | Caminos B y C: la línea de la Channel también necesita `--environment Development` |
-| Al ejecutar un `.exe` a mano dice que no lo encuentra | Windows no busca en la carpeta actual | Escribe `.\Modernization.SystemApi.exe`, y hazlo **desde la carpeta de esa capa** |
-| La ventana negra se cerró y los puertos siguen ocupados | Los procesos quedaron vivos | Camino A: `taskkill /IM Modernization.SystemApi.exe /F` y lo mismo con `Modernization.ChannelApi.exe`. Caminos B y C, donde el proceso se llama `dotnet.exe`: `netstat -ano \| findstr :5100` da el número de proceso, y `taskkill /PID <número> /F` lo cierra |
-| Página en blanco tras actualizar el código | Faltan dependencias nuevas del sitio | Repite el [paso 3 del camino B](#paso-3--prepara-el-sitio) |
-| `"vite" no se reconoce como un comando interno o externo` | Faltan las dependencias del sitio: el paso 3 del camino B no se hizo, falló o se hizo en otra carpeta | Desde la carpeta del proyecto, repite el paso 3 y comprueba que existe `src\web\node_modules\.bin\vite.cmd`. Si no vas a cambiar la interfaz, puedes saltarte Node: la Channel sirve el sitio ya compilado con `--webroot` (camino C, paso 5) |
+| Ves la página de login y `Sign in` no hace nada | La capa Channel no está en entorno `Development` | Los dos caminos: la línea de la Channel también necesita `--environment Development` |
+| Se cerró una ventana y el puerto sigue ocupado | El proceso quedó vivo | `netstat -ano \| findstr :5100` da el número de proceso al final de la línea, y `taskkill /PID <número> /F` lo cierra (en PowerShell, `Get-NetTCPConnection -LocalPort 5100 -State Listen` y `Stop-Process -Id <número>`) |
+| Página en blanco tras actualizar el código | Faltan dependencias nuevas del sitio | Repite el [paso 3 del camino A](#paso-3--prepara-el-sitio) |
+| `"vite" no se reconoce como un comando interno o externo` | Faltan las dependencias del sitio: el paso 3 del camino A no se hizo, falló o se hizo en otra carpeta | Desde la carpeta del proyecto, repite el paso 3 y comprueba que existe `src\web\node_modules\.bin\vite.cmd`. Si no vas a cambiar la interfaz, la Channel puede servir el sitio compilado con `--webroot` (camino B) |
 | `npm.ps1 no se puede cargar ... la ejecución de scripts está deshabilitada` | En PowerShell, `npm` es un script que la política bloquea | Escribe `npm.cmd` en lugar de `npm` |
-| El `npm ci` termina con `ECONNRESET`, `ETIMEDOUT`, `E403`, `self-signed certificate` o `unable to get local issuer certificate` | La red de la empresa no deja llegar al registro de npm | Pide a soporte el proxy o el registro interno de npm. Mientras tanto, usa la Channel sirviendo el sitio con `--webroot` (camino C), que no necesita Node |
+| El `npm ci` termina con `ECONNRESET`, `ETIMEDOUT`, `E403`, `self-signed certificate` o `unable to get local issuer certificate` | La red de la empresa no deja llegar al registro de npm | Pide a soporte el proxy o el registro interno de npm. Mientras tanto, compila el sitio en un equipo con acceso, copia `src\web\dist` y sigue el camino B |
 | Vite avisa que la versión de Node no es compatible, o `crypto.hash is not a function` | Node anterior a 22.12 (o a 20.19) | Instala Node 22.12 o superior y repite el paso 3 |
 | `dotnet test` falla con «el archivo está siendo usado por otro proceso» | La aplicación está corriendo | Detén las tres piezas antes de compilar o probar |
 | Todo iba bien y dejó de arrancar tras mover la carpeta | Ruta dentro de OneDrive o demasiado larga | Muévela a algo como `C:\modscore` |
@@ -581,29 +475,29 @@ permite ver.
 
 ## Cómo dejar el equipo como estaba
 
-1. Detén la aplicación (Enter en la consola, o Ctrl + C en las tres terminales).
-2. Borra la carpeta donde descomprimiste el paquete (camino A) o donde clonaste el
-   repositorio (camino B).
-3. Lo que hayas cargado se va con esa carpeta: en el camino A está en `data\`, y en los
-   caminos B y C en `C:\modscore1\data\local` (si usaste otra ruta, bórrala aparte).
+1. Detén la aplicación: Ctrl + C en cada ventana.
+2. Borra la carpeta donde clonaste el repositorio.
+3. Lo que hayas cargado se va con esa carpeta, en `C:\modscore1\data\local` (si usaste otra
+   ruta, bórrala aparte).
 
-No queda nada instalado ni registrado en el sistema: el paquete portable no toca el
-registro de Windows ni instala servicios.
+La aplicación no instala servicios ni toca el registro de Windows. Lo único instalado son el
+.NET SDK y Node, que se desinstalan como cualquier programa.
 
 ---
 
 ## Checklist
 
-- [ ] Las tres piezas arriba (o las dos del paquete portable).
+- [ ] Las tres piezas arriba (o las dos del camino B).
 - [ ] `Sign in` entra sin pedir contraseña.
-- [ ] En los caminos B y C, Data acepta la primera carga con los CSV de `data\dummy`.
+- [ ] Data acepta la primera carga con los CSV de `data\dummy`, o muestra los cuatro
+      trimestres copiados de `data\timeline`.
 - [ ] Portfolio muestra ~250 aplicaciones.
 - [ ] `/applications/14381/calculation` da **79.67**.
 - [ ] **Insights** responde las seis preguntas.
 - [ ] **Dashboard** muestra cinco indicadores y seis paneles, y un clic abre el detalle.
-- [ ] **Code** avisa en ámbar que los repositorios son de demostración y muestra las fechas de
-      fin de vida de endoflife.date (caminos B y C; en el paquete portable, desde el generado
-      el 2026-09-26).
+- [ ] **Code** avisa en ámbar que los repositorios son de demostración y muestra la
+      proyección a uno, dos y tres años, el plan de mejora y, con los cuatro trimestres, la
+      evolución por carga.
 - [ ] Al detener, ninguna ventana queda abierta y los puertos quedan libres.
 
 ---
@@ -611,8 +505,6 @@ registro de Windows ni instala servicios.
 ## Para seguir
 
 - [README.md](../README.md) — qué hace la plataforma y cómo se verifica.
-- [tools/portable/README.md](../tools/portable/README.md) — detalle del paquete portable y
-  cómo generar uno nuevo.
 - [HANDOFF.md](../HANDOFF.md) — el contexto completo del proyecto.
 - [docs/runbooks](runbooks) — procedimientos de operación (rotación de secretos, carga
   defectuosa, recuperación, reglas defectuosas).

@@ -16,9 +16,8 @@ El plan completo está en [PLAN.md](PLAN.md). Las decisiones de arquitectura, en
 
 | Cómo se levanta | Qué hay que tener instalado |
 |---|---|
-| **Paquete portable** (`.\start.cmd -Data File` o sus `.exe` a mano) | **Nada**: la variante autocontenida trae su propio .NET. Ver [tools/portable/README.md](tools/portable/README.md) |
-| **Desde el código**, con los comandos de abajo | **.NET SDK 10** (<https://dotnet.microsoft.com/download/dotnet/10.0>) y **Node.js 22.12 o superior**, o 20.19+ (<https://nodejs.org>) |
-| **Desde el código sin Node** (variante «Sin Node») | Solo el **.NET SDK 10**, más la carpeta `channel\wwwroot` del paquete portable |
+| **Los comandos de abajo**, en tres ventanas | **.NET SDK 10** (<https://dotnet.microsoft.com/download/dotnet/10.0>) y **Node.js 22.12 o superior**, o 20.19+ (<https://nodejs.org>) |
+| **Con el sitio compilado**, en dos ventanas (variante de abajo) | **.NET SDK 10**. Node solo hace falta para compilar el sitio una vez, y eso puede hacerse en otro equipo y copiar la carpeta `src\web\dist` |
 
 Hace falta el **SDK** de .NET, no solo el runtime: el runtime corre programas ya compilados,
 pero no compila. Para comprobarlo, en una terminal abierta después de instalar:
@@ -52,9 +51,9 @@ cada una abierta mientras se usa la aplicación.
 - **La primera vez, instalar las dependencias del sitio** (el paso «una sola vez» de cada
   consola, abajo). Sin ellas, la ventana 3 falla con `"vite" no se reconoce como un comando
   interno o externo`. Hace falta **Node.js 22.12 o superior** (o 20.19+): `node --version`.
-- **¿Solo vas a usar la aplicación, no a cambiar la interfaz?** No hace falta Node ni la
-  ventana 3: la Channel sirve el sitio ya compilado del paquete portable (ver
-  [Variantes](#variantes), «Sin Node»).
+- **¿Solo vas a usar la aplicación, no a cambiar la interfaz?** Se puede prescindir de la
+  ventana 3: la Channel sirve el sitio compilado una vez (ver [Variantes](#variantes),
+  «Con el sitio compilado»).
 - **La System arranca con carga de archivos** (`--DataSource:Provider=File`): la pantalla
   **Data** acepta CSV, y lo que subas y las reglas que publiques quedan en
   `C:\modscore1\data\local`. Git ignora esa carpeta porque puede tener datos reales. La
@@ -187,27 +186,51 @@ La carpeta `data\local` empieza vacía, así que cada pantalla avisa que no hay 
 Cada carga queda como una versión en **Upload history** y sobrevive al reinicio. Con los CSV
 de ejemplo, la aplicación 14381 tiene que dar **79.67**.
 
+### Para comparar en el tiempo: cuatro trimestres de ejemplo
+
+`data\timeline` trae el mismo portafolio en cuatro cargas trimestrales —Q4 2025, Q1, Q2 y Q3
+2026—: las mismas 250 aplicaciones, unas modernizándose y otras envejeciendo. Copiadas a
+`data\local` **antes de arrancar la ventana 1**, la pantalla **Code** compara el score, el
+Currency Score y el riesgo carga por carga, y el detalle de cada aplicación muestra su propia
+evolución.
+
+En cmd:
+
+```bat
+cd /d C:\modscore1
+xcopy /E /I /Y data\timeline data\local
+```
+
+En PowerShell:
+
+```powershell
+Set-Location C:\modscore1
+New-Item -ItemType Directory -Force data\local | Out-Null
+Copy-Item -Recurse -Force data\timeline\* data\local
+```
+
+Si la ventana 1 ya estaba corriendo, hay que detenerla (`Ctrl + C`) y volver a arrancarla. Con
+datos generados (sin los dos `--DataSource:...`), los cuatro trimestres ya vienen incluidos.
+Los regenera `dotnet run --project tools/Modernization.DummyData -- data/dummy`.
+
 ### Variantes
 
 Se agregan o quitan argumentos al final de la línea de la ventana que corresponde:
 
 | Variante | Qué cambia |
 |---|---|
-| **Sin Node: la Channel sirve el sitio** | Se omite la ventana 3 y en la ventana 2 se agrega `--webroot C:\modscore\channel\wwwroot` (la carpeta `wwwroot` del paquete portable). El sitio queda en <http://localhost:5100/> |
+| **Con el sitio compilado** | Una vez, `npm --prefix src\web run build` (en PowerShell, `npm.cmd`), que deja el sitio en `src\web\dist`. Después se omite la ventana 3 y en la ventana 2 se agrega `--webroot C:\modscore1\src\web\dist`. El sitio queda en <http://localhost:5100/>. La carpeta `dist` se puede compilar en otro equipo y copiar |
 | **El equipo no deja ejecutar `.exe` sin firmar** | `-p:UseAppHost=false` al final del `dotnet build` y, en cada `dotnet run`, **antes** del `--`. Así quien ejecuta es `dotnet.exe`. Es el camino C de la [guía](docs/guia-localhost.md) |
 | **Datos generados, sin cargas** | En la ventana 1, quitar `--DataSource:Provider=File --DataSource:Directory=...`: 250 aplicaciones inventadas en memoria, listas al instante, que se pierden al detener. Data no acepta cargas. Es lo que usan las pruebas e2e |
 | **Otra carpeta de datos** | Cambiar la ruta de `--DataSource:Directory`. **Siempre absoluta**: `dotnet run --project` arranca en la carpeta del proyecto, y una ruta relativa terminaría dentro de `src\system\...`. Nunca una carpeta versionada como `data\history`: lo subido quedaría para el próximo commit |
 | **Otros puertos** | Cambiar el número en `--urls`; si cambia la System, la Channel necesita `--SystemApi:BaseUrl=http://localhost:<puerto>` |
 
-Ejemplo del camino C completo, ventana 2:
+Ejemplo de la ventana 2 con el sitio compilado y sin ejecutables propios (camino C de la guía):
 
 ```bat
-dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore\channel\wwwroot
+dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore1\src\web\dist
 ```
 
-- **Paquete portable, sin el código:** los comandos para cmd y PowerShell están en
-  [tools/portable/README.md](tools/portable/README.md), que viaja dentro del `.zip` como
-  `README.txt`.
 - **Desde la app de Claude:** `.claude/launch.json` tiene las tres piezas —`system`,
   `channel` y `web`—. Arrancar `system`, esperar a que responda y después `channel`. La
   `system` también usa el adaptador de archivos sobre `data\local`.
@@ -219,7 +242,7 @@ dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHo
 | En Data: `The active adapter is 'Dummy', which serves generated data. Uploading files requires the file or database adapter.` | La ventana 1 arrancó sin `--DataSource:Provider=File --DataSource:Directory=...` | Detener la ventana 1 (`Ctrl + C`) y copiar de nuevo su línea completa |
 | `"vite" no se reconoce como un comando interno o externo` | Faltan las dependencias del sitio: no se corrió el `npm ci`, falló, o se corrió en otra carpeta | Desde la raíz del repositorio, el paso «una sola vez» de tu consola: `npm --prefix src\web ci --ignore-scripts` (en PowerShell, `npm.cmd`), y comprobar que existe `src\web\node_modules\.bin\vite.cmd` |
 | `npm.ps1 no se puede cargar ... la ejecución de scripts está deshabilitada` | En PowerShell, `npm` es un script que la política bloquea | Escribir `npm.cmd` en lugar de `npm` |
-| El `npm ci` termina con `ECONNRESET`, `ETIMEDOUT`, `E403`, `self-signed certificate` o `unable to get local issuer certificate` | La red de la empresa no deja llegar al registro de npm | Pedir a soporte el proxy o el registro interno de npm. Mientras tanto, usar la variante **sin Node** |
+| El `npm ci` termina con `ECONNRESET`, `ETIMEDOUT`, `E403`, `self-signed certificate` o `unable to get local issuer certificate` | La red de la empresa no deja llegar al registro de npm | Pedir a soporte el proxy o el registro interno de npm. Mientras tanto, compilar el sitio en un equipo con acceso, copiar `src\web\dist` y usar la variante **con el sitio compilado** |
 | Vite dice que la versión de Node no es compatible, o `crypto.hash is not a function` | Node anterior a 20.19 o a 22.12 | Instalar Node 22.12 o superior |
 | `'AllowedHosts' debe listar los hosts del servicio (entorno 'Production')` | Faltó `--environment Development` en la línea de esa capa, o se pegó un bloque con `set` en PowerShell | Copiar de nuevo la línea completa, con `-- --environment Development --urls ...` al final |
 
@@ -239,7 +262,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-828 pruebas .NET: 309 del motor, 183 de contratos y 336 de API. Las dos que importan más
+847 pruebas .NET: 319 del motor, 189 de contratos y 339 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **EAI 14381 = 79,67:** ejemplo trabajado del BRD, derivado desde datos crudos por el
@@ -250,8 +273,8 @@ reproducen los casos documentados:
 TypeScript difieren.
 
 ```bash
-npm --prefix src/web test          # 63 pruebas unitarias (Vitest)
-npm --prefix src/web run test:e2e  # 49 escenarios: 24 de flujo y 25 de accesibilidad (axe)
+npm --prefix src/web test          # 66 pruebas unitarias (Vitest)
+npm --prefix src/web run test:e2e  # 51 escenarios: 26 de flujo y 25 de accesibilidad (axe)
 ```
 
 Las de punta a punta usan el Microsoft Edge instalado (no descargan navegadores) y levantan
@@ -399,7 +422,17 @@ alertas de seguridad abiertas ([ADR 0026](docs/adr/0026-el-analisis-de-codigo-ll
 - **El fin de vida sale de endoflife.date**, una foto versionada en
   `contracts/eol-catalog-v1.json` (22 productos, 273 ciclos, consultada el 2026-09-26). El
   soporte extendido pagado se muestra, pero no cuenta como soporte.
-- **Las reglas son el área `code` de las definiciones**: 14 parámetros editables en
+- **En el tiempo:** *How did score, currency and risk move across uploads?* compara, carga
+  por carga, el Modernization Score, el Currency Score de CMT y el Risk Score promedio; *Where
+  is obsolescence heading if nothing changes?* proyecta hoy, en uno, dos y tres años con las
+  mismas versiones, las mismas alertas y ningún commit más: componentes vencidos, parte del
+  código que sigue con soporte e índice de riesgo.
+- **Qué cambiar:** *What should change first?* es el plan de mejora —«Upgrade Node.js 14 →
+  26», «Migrate AngularJS → Angular 22», «Replace request»—, cada acción una vez con todos
+  los repositorios donde aplica, por urgencia y por puntos de riesgo que baja o evita. El
+  destino es el ciclo con soporte que más dura, LTS cuando existe. Cada aplicación tiene su
+  propia lista, su proyección y su evolución por carga en el detalle.
+- **Las reglas son el área `code` de las definiciones**: 15 parámetros editables en
   *Rules → Portfolio analytics*. El índice no cambia el Modernization Score.
 - **Hoy los repositorios son de demostración**: se generan del portafolio, deterministas por
   EAI, y la pantalla lo dice en ámbar. Ese proveedor solo arranca en Development
@@ -476,20 +509,6 @@ cambian por configuración, sin desplegar otra versión. El paso a paso, en el
 
 Los CSV neutralizan textos que una planilla ejecutaría como fórmula, y cada descarga queda
 auditada con el evento 4213.
-
-## Paquete portable para probar en otro equipo
-
-```powershell
-powershell -ExecutionPolicy Bypass -File tools/portable/build-portable.ps1
-```
-
-Genera en `artifacts/` un `.zip` con las dos capas como ejecutables de un solo archivo y la
-SPA dentro, más su SHA-256. El último `.zip` se versiona en el repositorio. En el otro equipo
-se descomprime y se ejecuta `start.cmd`. Ver [tools/portable/README.md](tools/portable/README.md)
-y, para el paso a paso completo, [docs/guia-localhost.md](docs/guia-localhost.md).
-
-**No es un despliegue:** usa la autenticación de desarrollo, y por eso escucha solo en
-`127.0.0.1`.
 
 ## Respaldo en git
 
@@ -586,12 +605,13 @@ referencia deja de dar 79,67.
 contracts/ruleset-v1.3.json     18 métricas: pesos, bandas y procedencia — reglas como datos
 contracts/dashboard-v1.json     valores de fábrica de las definiciones de las seis preguntas
 data/dummy/                     los ocho CSV generados
+data/timeline/                  el mismo portafolio en cuatro cargas trimestrales
 src/shared/                     dominio, motor de scoring, what-if, roadmap, insights y dashboard, reglas, seguridad
 src/system/                     capa System: reglas de negocio + fuentes
 src/channel/                    capa Channel: BFF, composición por pantalla y exportaciones
 src/web/                        SPA React 19 · pruebas unitarias en src/ · e2e/ con Playwright
 tests/                          golden tests, contract tests, E2E por HTTP y seguridad
-tools/                          datos dummy, prueba de carga, respaldo en git y paquete portable
+tools/                          datos dummy, catálogo de fin de vida, prueba de carga y respaldo en git
 docs/                           ADR, seguridad, runbooks, índice del BRD y PENDING-ITEMS.md
 deploy/                         imágenes y manifiestos del cluster
 HANDOFF.md                      traspaso completo del contexto

@@ -13,9 +13,8 @@ src/web/playwright-report/
 src/web/blob-report/
 src/web/coverage/
 
-# Paquete portable: el .zip se versiona; la carpeta descomprimida que deja el build, no.
-# GitHub rechaza archivos de mas de 100 MB (los scripts de tools/git lo revisan).
-artifacts/*/
+# Salidas de build locales. El paquete portable que vivia aqui se retiro el 2026-09-27.
+artifacts/
 
 # Configuracion personal de herramientas. .claude/launch.json si se versiona.
 .claude/settings.local.json

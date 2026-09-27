@@ -567,7 +567,7 @@ tests corre igual contra el tercer adaptador.
 | **Dashboard ejecutivo — D1 y D2** ✅ | ENTREGADA | Pedido el 2026-09-18 a partir de la propuesta EA Data & Insights: *Portfolio Health & Risk Intelligence*, hoy la página de inicio (`/`), con cinco indicadores, seis paneles, un detalle común y cinco filtros nuevos (ver 8.10) | **Cumplido:** 28 pruebas del analizador, 13 más en la suite de API, 8 de Vitest y 6 de punta a punta; axe sin violaciones serias en claro y oscuro. Las definiciones abiertas quedan como defaults provisionales (ADR 0024, DD-01 a DD-07) |
 | **Dashboard ejecutivo — D3** ✅ | ENTREGADA | Diccionario de indicadores (*Definitions*), explicación de cada cálculo en el dashboard y en Insights, y las 37 definiciones editables desde el portal con las reglas versionadas ([ADR 0025](docs/adr/0025-las-definiciones-viajan-con-las-reglas.md)) | **Cumplido:** ningún indicador sin sus seis campos; una prueba de API publica un umbral desde el portal y el dashboard se mueve sin desplegar |
 | Dashboard ejecutivo — D4 | PLANIFICADA | Fuentes nuevas: TLM, resiliencia, deudas técnicas, application class, dependencias | Cada fuente encendida convierte un bloque «sin dato» en una medición |
-| **Pantalla Code — C1** ✅ | ENTREGADA | Pedida el 2026-09-26: obsolescencia y riesgo por librerías, software y componentes de cada repositorio, con endoflife.date como fuente del fin de vida y datos de demostración hasta integrar GitHub Enterprise (ver 8.11) | **Cumplido:** la pantalla responde con los mismos filtros y alcance, cada número se explica con las definiciones vigentes (área `code`, 14 parámetros editables) y el proveedor de demostración no arranca fuera de Development |
+| **Pantalla Code — C1** ✅ | ENTREGADA | Pedida el 2026-09-26: obsolescencia y riesgo por librerías, software y componentes de cada repositorio, con endoflife.date como fuente del fin de vida y datos de demostración hasta integrar GitHub Enterprise (ver 8.11) | **Cumplido:** la pantalla responde con los mismos filtros y alcance, cada número se explica con las definiciones vigentes (área `code`, 15 parámetros editables) y el proveedor de demostración no arranca fuera de Development |
 | Pantalla Code — C2 · GitHub Enterprise | PLANIFICADA | El recolector `code-collector` con una GitHub App de solo lectura, el mapeo repositorio → EAI y la publicación del inventario a la capa System (ver 8ter, GH-01 a GH-09) | La pantalla muestra repositorios reales de una organización piloto, sin ningún dato de demostración y sin que la System ni la Channel tengan credenciales de GitHub |
 | **16 — Escala y operación** | 3 sem | Destino y motor de base (RFC-07), Redis, réplicas, respaldos, retención, SIEM, notificaciones de reglas | Dos réplicas por capa bajo carga; restauración probada; alertas activas |
 | **17 — Hallazgos de infraestructura** | 2 sem | **Al final por decisión del 2026-09-14:** H-16, H-17, H-20, H-21 | ASVS 2.10.1, 3.3.4, 7.3.3, 12.4.2 y 14.1.5 cumplen |
@@ -873,14 +873,14 @@ en inglés y con el máximo detalle.
 **Respaldo y distribución:**
 
 - **Repositorio git** privado en GitHub (`main`, primer push el 2026-09-15). Guarda todo lo
-  creado —incluidos el paquete portable, el estado local de `data/`, los scripts de las
-  sesiones y la copia del plan— salvo las capturas del BRD y las imágenes.
+  creado —el estado local de `data/`, los scripts de las sesiones y la copia del plan— salvo
+  las capturas del BRD y las imágenes.
 - **Scripts de respaldo** (`tools/git/`): corren las verificaciones y se niegan a subir
   capturas, imágenes, llaves, `.env` o archivos de más de 100 MB. Runbook en
   [docs/runbooks/respaldo-en-git.md](docs/runbooks/respaldo-en-git.md).
 - **Paquete portable** (`tools/portable/`): ejecutables de un solo archivo con la SPA
-  dentro. Escucha solo en `127.0.0.1`, con un token de servicio aleatorio por arranque.
-  **No es un despliegue**: usa la autenticación de desarrollo.
+  dentro, solo en `127.0.0.1`. **Retirado el 2026-09-27** por decisión: la aplicación se
+  levanta desde el código con comandos para cmd y PowerShell ([guía](docs/guia-localhost.md)).
 
 **Qué no se pudo verificar en local:**
 
@@ -1151,7 +1151,7 @@ software y los componentes, con una fuente para el fin de vida.
 - **Fuente del fin de vida:** endoflife.date, como foto versionada en
   `contracts/eol-catalog-v1.json` (22 productos, 273 ciclos, consultada el 2026-09-26). El
   soporte extendido pagado se muestra, pero no cuenta como soporte.
-- **Reglas:** el área `code` de las definiciones, con 14 parámetros editables en
+- **Reglas:** el área `code` de las definiciones, con 15 parámetros editables en
   *Rules → Portfolio analytics* y explicados en *Definitions*. El índice no entra al
   Modernization Score.
 - **Datos de demostración:** generados del portafolio vigente, deterministas por EAI;
@@ -1160,6 +1160,18 @@ software y los componentes, con una fuente para el fin de vida.
   lo dice en ámbar, y ese proveedor no arranca fuera de Development.
 - **Pruebas:** 39 más en el motor, 5 en las fuentes, 14 en la API, 5 en Vitest y 5
   escenarios e2e, más axe en la pantalla y en el detalle, en claro y en oscuro.
+
+**C1 ampliada el 2026-09-27.** Tres pedidos más sobre la misma pantalla:
+
+| Pedido | Cómo quedó |
+|---|---|
+| El estado actual contra la obsolescencia estimada en uno, dos y tres años si nada cambia | *Where is obsolescence heading if nothing changes?*: por horizonte, componentes vencidos, aplicaciones afectadas, vigencia del código (parte de los componentes con soporte) e índice de riesgo. Lo mismo por aplicación en su detalle, y una columna «In 3 years» en la tabla |
+| La sugerencia de mejora que debe aplicarse | *What should change first?*: el plan del portafolio, cada acción una vez con sus repositorios y aplicaciones, por urgencia y por puntos que baja o evita; y la lista propia de cada aplicación, con sus repositorios abandonados. Destino: el ciclo con soporte que más dura, LTS cuando existe |
+| Al menos tres bases dummy nuevas para comparar score, Currency y riesgo en el tiempo | `data/timeline`: el mismo portafolio en Q4 2025, Q1, Q2 y Q3 2026 (cuatro cargas con su manifiesto). El modo Dummy trae los mismos cuatro trimestres. *How did score, currency and risk move across uploads?* compara las tres medidas carga por carga, y cada aplicación muestra la suya |
+
+El mismo día se retiró el paquete portable: la aplicación se levanta desde el código con
+comandos para cmd y PowerShell, y un equipo que bloquea `.exe` propios usa el sitio compilado
+servido por la Channel.
 
 **C2 — la integración con GitHub Enterprise** está en [8ter](#en-paralelo--integración-con-github-enterprise-pantalla-code)
 y en GH-01 a GH-09 de [docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md).
@@ -1406,7 +1418,6 @@ modernization-score/
 ├─ .gitignore · .gitattributes          # capturas, imágenes, salidas de build y secretos fuera del repositorio
 ├─ .claude/launch.json               # servidor de desarrollo para la vista previa de Claude Code
 ├─ HANDOFF.md                        # traspaso completo del contexto
-├─ artifacts/                        # último paquete portable (.zip)
 ├─ docs/
 │  ├─ PENDING-ITEMS.md               # pendientes para revisar con el equipo, en inglés
 │  ├─ plan/                          # copia del plan publicado como artefacto
@@ -1441,7 +1452,6 @@ modernization-score/
 │  ├─ Modernization.DummyData/       # generador determinista
 │  ├─ Modernization.LoadTest/        # prueba de carga sin dependencias
 │  ├─ git/                           # respaldo con verificaciones y archivos bloqueados
-│  ├─ portable/                      # paquete portable de prueba para otros equipos
 │  └─ sesiones/                      # scripts históricos de las sesiones de trabajo
 └─ deploy/
    ├─ docker/                        # imágenes chiseled, no root

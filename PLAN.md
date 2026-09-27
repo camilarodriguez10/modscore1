@@ -1171,7 +1171,8 @@ software y los componentes, con una fuente para el fin de vida.
 
 El mismo día se retiró el paquete portable: la aplicación se levanta desde el código con
 comandos para cmd y PowerShell, y un equipo que bloquea `.exe` propios usa el sitio compilado
-servido por la Channel.
+servido por la Channel. Ese sitio lo publica el CI como artefacto (`sitio-compilado`), así que
+también se levanta sin Node ni Vite: camino C de la [guía](docs/guia-localhost.md).
 
 **C2 — la integración con GitHub Enterprise** está en [8ter](#en-paralelo--integración-con-github-enterprise-pantalla-code)
 y en GH-01 a GH-09 de [docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md).

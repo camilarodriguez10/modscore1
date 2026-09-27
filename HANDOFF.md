@@ -514,7 +514,14 @@ software y componentes y una fuente para el fin de vida. Detalle en PLAN §8.11 
   bloquean programas sin firmar ese `.exe` no abre. `-p:UseAppHost=false` hace que ejecute
   `dotnet.exe` con la DLL. La SPA no necesita Vite: la capa Channel la sirve si `--webroot`
   (o `ASPNETCORE_WEBROOT`) apunta a una carpeta con `index.html`, la que deja
-  `npm run build` en `src\web\dist` (se puede compilar en otro equipo y copiar).
+  `npm run build` en `src\web\dist` (se puede compilar en otro equipo y copiar). Desde el
+  2026-09-27 el job SPA del CI publica esa carpeta como artefacto `sitio-compilado` en cada
+  push de código a `main` (90 días; *Run workflow* lo regenera), y el camino C de la guía
+  levanta la aplicación con solo el .NET SDK, sin Node ni Vite.
+- **Un `dist` más viejo que el código no da ningún error: faltan pantallas.** Al probar el
+  camino C, un `src\web\dist` del día anterior mostraba la pantalla Code sin la proyección ni
+  el plan, con las capas al día. Por eso la guía pide repetir la descarga después de cada
+  `git pull`.
 - **Sin `--DataSource:Provider`, la System arranca con Dummy y Data no acepta cargas**
   (*The active adapter is 'Dummy'*). Los comandos de arranque documentados no lo pasaban, y
   quien usa la aplicación en otro equipo no podía subir archivos (2026-09-21). Desde entonces

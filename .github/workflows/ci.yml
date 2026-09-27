@@ -18,6 +18,9 @@ on:
       - "data/history/**"
       - "data/*.db*"
       - ".claude/**"
+  # A mano, desde la pestana Actions: vuelve a dejar el sitio compilado cuando el ultimo
+  # artefacto ya vencio y no hubo pushes de codigo.
+  workflow_dispatch:
   pull_request:
     paths-ignore:
       - "**/*.md"
@@ -128,6 +131,18 @@ jobs:
             echo "::error::El build referencia recursos de terceros."
             exit 1
           fi
+
+      # El sitio compilado, para levantarlo sin Vite ni Node: la capa Channel lo sirve con
+      # --webroot (camino C de docs/guia-localhost.md). Solo de main, despues de las
+      # comprobaciones de arriba; son archivos estaticos sin secretos ni source maps.
+      - name: Publicar el sitio compilado
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sitio-compilado
+          path: src/web/dist/
+          if-no-files-found: error
+          retention-days: 90
 
   # Punta a punta y accesibilidad (TD-04, TD-05). Levanta las dos capas y la SPA en el
   # runner y las recorre con Chromium: el Edge del equipo de desarrollo no existe aqui.

@@ -14,7 +14,8 @@ pantalla, no se lee.
   `Copy-Item -Recurse -Force data\timeline\* data\local`.
 - **Levantar las tres ventanas** con los comandos de «Levantar el stack» del
   [README](../README.md) —System con carga de archivos, Channel y SPA— y entrar con
-  **Sign in** antes de que llegue el público.
+  **Sign in** antes de que llegue el público. Sin Node ni Vite, son dos ventanas: «Sin Vite
+  ni Node» en el mismo README, con el sitio en el 5100.
 - Dejar abierto el **Dashboard**, sin filtros: <http://localhost:5173/> (o el 5100 si la
   Channel sirve el sitio compilado).
 - Tener a mano la aplicación **14381**: <http://localhost:5173/applications/14381>.

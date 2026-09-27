@@ -20,22 +20,24 @@ importa es que **todas tienen que estar arriba** para que el sitio funcione.
 |---|---|---|
 | **Capa System** | Calcula los scores y lee los datos | `5101` |
 | **Capa Channel** | Es a la que le habla el navegador; nunca calcula nada | `5100` |
-| **Sitio (SPA)** | Lo que ves en pantalla | `5173` en el camino A; en el camino B lo sirve la capa Channel |
+| **Sitio (SPA)** | Lo que ves en pantalla | `5173` en el camino A; en los caminos B y C lo sirve la capa Channel |
 
-Hay **dos caminos**, los dos desde el código y con comandos para `cmd` y PowerShell. Elige uno:
+Hay **tres caminos**, todos desde el código y con comandos para `cmd` y PowerShell. Elige uno:
 
-| | Camino A · desde el código | Camino B · sin permiso para ejecutar `.exe` |
-|---|---|---|
-| Para quién | Cualquiera que va a **usar o modificar** la aplicación | Un equipo de empresa que **bloquea programas no firmados** |
-| Sistema | Windows, macOS o Linux | Windows, desde `cmd` o PowerShell |
-| Hay que instalar | .NET SDK 10 y Node.js | .NET SDK 10 (Node solo para compilar el sitio una vez, en este equipo o en otro) |
-| Qué se ejecuta | `dotnet` y `node` | **Solo `dotnet.exe`**, firmado por Microsoft |
-| Ventanas abiertas | Tres | Dos |
-| Cuánto toma | 20 minutos la primera vez | 15 minutos la primera vez |
-| Se abre en | `http://localhost:5173` | `http://localhost:5100` |
+| | Camino A · desde el código | Camino B · sin permiso para ejecutar `.exe` | Camino C · sin Vite ni Node |
+|---|---|---|---|
+| Para quién | Cualquiera que va a **usar o modificar** la aplicación | Un equipo de empresa que **bloquea programas no firmados** | Quien solo va a **usar** la aplicación y no puede instalar Node, o donde Vite no arranca |
+| Sistema | Windows, macOS o Linux | Windows, desde `cmd` o PowerShell | Windows, desde `cmd` o PowerShell |
+| Hay que instalar | .NET SDK 10 y Node.js | .NET SDK 10 (Node solo para compilar el sitio una vez, en este equipo o en otro) | **Solo .NET SDK 10**. El sitio se descarga ya compilado de GitHub |
+| Qué se ejecuta | `dotnet` y `node` (Vite) | **Solo `dotnet.exe`**, firmado por Microsoft | **Solo `dotnet.exe`**. Ni Node ni Vite |
+| Ventanas abiertas | Tres | Dos | Dos |
+| Cuánto toma | 20 minutos la primera vez | 15 minutos la primera vez | 10 minutos la primera vez |
+| Se abre en | `http://localhost:5173` | `http://localhost:5100` | `http://localhost:5100` |
 
 Si dudas, empieza por el **camino A**. Si al arrancar Windows dice que un programa está
-**bloqueado por el administrador** o que **no tienes permiso**, ve al **camino B**.
+**bloqueado por el administrador** o que **no tienes permiso**, ve al **camino B**. Si no
+puedes instalar Node, el `npm ci` no llega al registro de npm o la ventana de Vite nunca dice
+`ready`, ve al **camino C**.
 
 ---
 
@@ -279,7 +281,8 @@ Test-Path src\web\dist\index.html
 El último comando tiene que encontrar `index.html` (en PowerShell, responder `True`). Si lo
 compilaste en otro equipo, copia la carpeta `dist` completa a `C:\modscore1\src\web\dist`
 en este. La compilación ejecuta un `esbuild.exe` que viene con las dependencias: si la misma
-política que bloquea los `.exe` lo bloquea, compílalo en otro equipo.
+política que bloquea los `.exe` lo bloquea, compílalo en otro equipo o **descárgalo ya
+compilado**, sin Node, como en el [paso 2 del camino C](#paso-2--descarga-el-sitio-ya-compilado).
 
 ### Paso 4 · compila las dos capas una sola vez
 
@@ -372,14 +375,114 @@ compilar mientras no cambie el código.
 
 ---
 
+## Camino C · sin Vite ni Node (Windows, `cmd` o PowerShell)
+
+Para **usar** la aplicación sin instalar Node y sin ejecutar Vite. El sitio son archivos
+HTML, JavaScript y CSS que no se ejecutan: GitHub Actions los compila en cada cambio de
+código de `main` y los deja para descargar como `sitio-compilado`. En el equipo solo corre
+`dotnet.exe`, igual que en el camino B, así que también sirve donde la empresa bloquea los
+`.exe` propios.
+
+Lo que no se puede: ver al vuelo un cambio en `src\web`. Para tocar la interfaz, camino A.
+
+### Paso 1 · comprueba `dotnet` y consigue el código
+
+Son los pasos [1](#paso-1--comprueba-que-dotnet-sí-corre) y
+[2](#paso-2--consigue-el-código-1) del camino B: `dotnet --list-sdks` tiene que listar una
+versión `10.`, y el código queda en `C:\modscore1`. Si ya tenías una copia, actualízala con
+`git pull` para que el sitio que descargues sea de la misma versión que las capas.
+
+### Paso 2 · descarga el sitio ya compilado
+
+Hace falta una cuenta de GitHub con acceso al repositorio, que es privado.
+
+1. Abre <https://github.com/camilarodriguez10/modscore1/actions/workflows/ci.yml?query=branch%3Amain>
+   e inicia sesión si te lo pide.
+2. Entra en la corrida **más reciente** de la lista. Sirve aunque tenga una cruz roja por otro
+   job, siempre que al final de la página, en **Artifacts**, aparezca `sitio-compilado`.
+3. Pulsa **sitio-compilado**. El navegador descarga `sitio-compilado.zip`.
+
+Después, desde la carpeta del proyecto, bórralo de una versión anterior si había y
+descomprímelo en `src\web\dist`.
+
+En `cmd`:
+
+```bat
+cd /d C:\modscore1
+if exist src\web\dist rmdir /S /Q src\web\dist
+mkdir src\web\dist
+tar -xf "%USERPROFILE%\Downloads\sitio-compilado.zip" -C src\web\dist
+dir src\web\dist\index.html
+```
+
+En PowerShell:
+
+```powershell
+Set-Location C:\modscore1
+if (Test-Path src\web\dist) { Remove-Item -Recurse -Force src\web\dist }
+Expand-Archive -Path "$env:USERPROFILE\Downloads\sitio-compilado.zip" -DestinationPath src\web\dist
+Test-Path src\web\dist\index.html
+```
+
+El último comando tiene que encontrar `index.html` (en PowerShell, responder `True`). Si el
+navegador guardó el archivo en otra carpeta, cambia la ruta del `.zip`. `src\web\dist` solo
+tiene el sitio compilado y git la ignora: borrarla no toca el código.
+
+> **Si en Artifacts no aparece `sitio-compilado`, o dice que venció** (duran 90 días), quien
+> tenga permiso de escritura en el repositorio puede generarlo de nuevo: en la misma página,
+> **Run workflow** sobre `main`. A los pocos minutos aparece en la corrida nueva. Sin acceso
+> a GitHub, pide el `.zip` o la carpeta `dist` a quien lo tenga: se usan igual.
+
+### Paso 3 · compila y levanta las dos capas
+
+Igual que en el camino B. En PowerShell, la primera línea de cada bloque es
+`Set-Location C:\modscore1` en vez de `cd /d C:\modscore1`.
+
+**Una sola vez, compilar** (tiene que terminar con `0 Errores` o `0 Error(s)`):
+
+```bat
+cd /d C:\modscore1
+dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false
+```
+
+**Ventana 1 — capa System.** Antes de seguir, <http://localhost:5101/health> tiene que decir
+`{"status":"healthy"}`:
+
+```bat
+cd /d C:\modscore1
+dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\local
+```
+
+**Ventana 2 — capa Channel, que sirve el sitio descargado:**
+
+```bat
+cd /d C:\modscore1
+dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore1\src\web\dist
+```
+
+Qué hace cada parte está en el [paso 5 del camino B](#paso-5--levanta-las-dos-capas-sin-volver-a-compilar);
+si una capa no arranca, [Si la System no levanta](#si-la-system-no-levanta).
+
+### Paso 4 · entra y comprueba
+
+Abre <http://localhost:5100> y pulsa **Sign in**. La primera vez, carga los datos como se
+explica en [Cargar archivos](#cargar-archivos), y haz las cinco comprobaciones del
+[paso 5 del camino A](#paso-5--entra-y-comprueba) con el puerto 5100 en lugar de 5173.
+
+Para detenerlo, **Ctrl + C** en cada ventana; la próxima vez basta con las dos ventanas del
+paso 3. Si actualizas el código con `git pull`, repite los pasos 2 y 3: el sitio y las capas
+tienen que ser de la misma versión.
+
+---
+
 ## Cargar archivos
 
 La aplicación tiene dos modos de datos, y solo uno acepta cargas:
 
 | Modo | Cómo se arranca | Data acepta cargas |
 |---|---|---|
-| **Archivos** | Los dos caminos tal como están arriba (`--DataSource:Provider=File --DataSource:Directory=...`) | **Sí**. Cada carga queda como una versión y sobrevive al reinicio |
-| **Datos generados** | Los dos caminos sin los dos argumentos `--DataSource:...` | No: 250 aplicaciones inventadas en memoria, con sus cuatro trimestres, que se pierden al detener |
+| **Archivos** | Los tres caminos tal como están arriba (`--DataSource:Provider=File --DataSource:Directory=...`) | **Sí**. Cada carga queda como una versión y sobrevive al reinicio |
+| **Datos generados** | Los tres caminos sin los dos argumentos `--DataSource:...` | No: 250 aplicaciones inventadas en memoria, con sus cuatro trimestres, que se pierden al detener |
 
 Si Data dice *The active adapter is 'Dummy', which serves generated data*, estás en el
 segundo modo: detén la capa System y arráncala con la línea completa.
@@ -455,20 +558,23 @@ permite ver.
 | `Unhandled exception ... 'AllowedHosts' debe listar los hosts del servicio (entorno 'Production')`, a veces con `DeploymentGuards.cs:line 32` y `Program.cs:line 214` | La capa arrancó como producción: no recibió el entorno de desarrollo. Lo más común es haber pegado un bloque de `cmd` con `set "..."` en **PowerShell** (la Terminal de Windows 11 abre PowerShell): ahí `set` crea una variable de PowerShell que el programa no ve, sin dar error | Usa los comandos con argumentos: al final de la línea, `--environment Development --urls http://localhost:5101` (después de `--` si es un `dotnet run`). Funcionan igual en cmd y en PowerShell. No hace falta tocar `AllowedHosts` |
 | `warn: ... Failed to determine the https port for redirect` | Solo un aviso: en local no hay HTTPS al que redirigir | Nada: la capa está funcionando. Si el sitio falla, la causa es otra; revisa primero que la System responda en <http://localhost:5101/health> |
 | `Now listening on: http://localhost:5000` | Faltó el argumento `--urls` | Detén con Ctrl + C y vuelve a arrancar con `--urls http://localhost:5101` (o `5100` en la Channel) al final de la línea |
-| Camino B: `http://localhost:5100` responde 404 o una página vacía | `--webroot` no apunta a una carpeta con `index.html` | `dir C:\modscore1\src\web\dist\index.html` tiene que encontrar el archivo; si no, repite el paso 3 del camino B y reinicia la ventana 2 |
+| Caminos B y C: `http://localhost:5100` responde 404 o una página vacía | `--webroot` no apunta a una carpeta con `index.html` | `dir C:\modscore1\src\web\dist\index.html` tiene que encontrar el archivo; si no, repite el paso 3 del camino B (o el paso 2 del C) y reinicia la ventana 2 |
 | `Failed to bind to address ... address already in use` | Otro programa ocupa 5100, 5101 o 5173 | Cierra lo que use el puerto (ver fila siguiente), o cambia el número en `--urls` |
 | Necesitas saber **quién** ocupa un puerto | — | Windows: `netstat -ano \| findstr :5100` y luego `tasklist \| findstr <PID>`. macOS/Linux: `lsof -i :5100` |
 | El sitio carga pero todo sale vacío o con error | La capa Channel está arriba, la System no | Mira la terminal 1: tiene que decir `Now listening on: http://localhost:5101` |
 | El sitio no carga («no se puede acceder a este sitio») | La capa Channel no está arriba | Mira la terminal 2, y arráncala después de la System |
 | `502` o `500` al entrar | Las dos capas no se están reconociendo | Deténlas todas y arráncalas en orden: System, Channel, sitio |
-| Ves la página de login y `Sign in` no hace nada | La capa Channel no está en entorno `Development` | Los dos caminos: la línea de la Channel también necesita `--environment Development` |
+| Ves la página de login y `Sign in` no hace nada | La capa Channel no está en entorno `Development` | En todos los caminos, la línea de la Channel también necesita `--environment Development` |
 | Se cerró una ventana y el puerto sigue ocupado | El proceso quedó vivo | `netstat -ano \| findstr :5100` da el número de proceso al final de la línea, y `taskkill /PID <número> /F` lo cierra (en PowerShell, `Get-NetTCPConnection -LocalPort 5100 -State Listen` y `Stop-Process -Id <número>`) |
 | Página en blanco tras actualizar el código | Faltan dependencias nuevas del sitio | Repite el [paso 3 del camino A](#paso-3--prepara-el-sitio) |
-| `"vite" no se reconoce como un comando interno o externo` | Faltan las dependencias del sitio: el paso 3 del camino A no se hizo, falló o se hizo en otra carpeta | Desde la carpeta del proyecto, repite el paso 3 y comprueba que existe `src\web\node_modules\.bin\vite.cmd`. Si no vas a cambiar la interfaz, la Channel puede servir el sitio compilado con `--webroot` (camino B) |
+| `"vite" no se reconoce como un comando interno o externo` | Faltan las dependencias del sitio: el paso 3 del camino A no se hizo, falló o se hizo en otra carpeta | Desde la carpeta del proyecto, repite el paso 3 y comprueba que existe `src\web\node_modules\.bin\vite.cmd`. Si no vas a cambiar la interfaz, sigue el **camino C**: sin Node ni Vite |
 | `npm.ps1 no se puede cargar ... la ejecución de scripts está deshabilitada` | En PowerShell, `npm` es un script que la política bloquea | Escribe `npm.cmd` en lugar de `npm` |
-| El `npm ci` termina con `ECONNRESET`, `ETIMEDOUT`, `E403`, `self-signed certificate` o `unable to get local issuer certificate` | La red de la empresa no deja llegar al registro de npm | Pide a soporte el proxy o el registro interno de npm. Mientras tanto, compila el sitio en un equipo con acceso, copia `src\web\dist` y sigue el camino B |
-| Vite avisa que la versión de Node no es compatible, o `crypto.hash is not a function` | Node anterior a 22.12 (o a 20.19) | Instala Node 22.12 o superior y repite el paso 3 |
-| `dotnet test` falla con «el archivo está siendo usado por otro proceso» | La aplicación está corriendo | Detén las tres piezas antes de compilar o probar |
+| El `npm ci` termina con `ECONNRESET`, `ETIMEDOUT`, `E403`, `self-signed certificate` o `unable to get local issuer certificate` | La red de la empresa no deja llegar al registro de npm | Pide a soporte el proxy o el registro interno de npm. Mientras tanto, sigue el **camino C**, que no usa npm |
+| Vite avisa que la versión de Node no es compatible, o `crypto.hash is not a function` | Node anterior a 22.12 (o a 20.19) | Instala Node 22.12 o superior y repite el paso 3; o sigue el **camino C**, sin Node |
+| La ventana de Vite nunca dice `ready`, o `src\web\node_modules\.bin\esbuild.cmd --version` se queda colgado o dice «acceso denegado» | La política de la empresa bloquea el `esbuild.exe` que Vite ejecuta por dentro, o el antivirus revisa uno a uno los archivos de `node_modules` | Sigue el **camino C**: el sitio llega compilado y no se ejecuta nada de Node. Si quieres el camino A, pide a soporte una exclusión para la carpeta del proyecto |
+| Camino C: en **Artifacts** no aparece `sitio-compilado`, o dice que venció | Los artefactos duran 90 días, y solo los deja una corrida de `main` con cambios de código | **Run workflow** sobre `main` en la página del workflow (hace falta permiso de escritura), o pide el `.zip` a quien lo tenga |
+| Camino C: `tar: Error opening archive` o `Expand-Archive` dice que no encuentra la ruta | El `.zip` no está en `Descargas` o se llama distinto (por ejemplo, `sitio-compilado (1).zip`) | Busca el archivo y cambia la ruta en el comando |
+| `dotnet test` falla con «el archivo está siendo usado por otro proceso» | La aplicación está corriendo | Detén todas las ventanas antes de compilar o probar |
 | Todo iba bien y dejó de arrancar tras mover la carpeta | Ruta dentro de OneDrive o demasiado larga | Muévela a algo como `C:\modscore` |
 
 ---
@@ -479,15 +585,16 @@ permite ver.
 2. Borra la carpeta donde clonaste el repositorio.
 3. Lo que hayas cargado se va con esa carpeta, en `C:\modscore1\data\local` (si usaste otra
    ruta, bórrala aparte).
+4. En el camino C, borra también `sitio-compilado.zip` de `Descargas`.
 
 La aplicación no instala servicios ni toca el registro de Windows. Lo único instalado son el
-.NET SDK y Node, que se desinstalan como cualquier programa.
+.NET SDK y, en los caminos A y B, Node, que se desinstalan como cualquier programa.
 
 ---
 
 ## Checklist
 
-- [ ] Las tres piezas arriba (o las dos del camino B).
+- [ ] Las tres piezas arriba (o las dos ventanas de los caminos B y C).
 - [ ] `Sign in` entra sin pedir contraseña.
 - [ ] Data acepta la primera carga con los CSV de `data\dummy`, o muestra los cuatro
       trimestres copiados de `data\timeline`.

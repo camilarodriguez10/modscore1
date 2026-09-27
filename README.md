@@ -18,6 +18,7 @@ El plan completo está en [PLAN.md](PLAN.md). Las decisiones de arquitectura, en
 |---|---|
 | **Los comandos de abajo**, en tres ventanas | **.NET SDK 10** (<https://dotnet.microsoft.com/download/dotnet/10.0>) y **Node.js 22.12 o superior**, o 20.19+ (<https://nodejs.org>) |
 | **Con el sitio compilado**, en dos ventanas (variante de abajo) | **.NET SDK 10**. Node solo hace falta para compilar el sitio una vez, y eso puede hacerse en otro equipo y copiar la carpeta `src\web\dist` |
+| **Sin Vite ni Node**, en dos ventanas ([abajo](#sin-vite-ni-node-el-sitio-ya-compilado)) | **Solo .NET SDK 10**, y una cuenta de GitHub con acceso al repositorio para descargar el sitio que compila el CI |
 
 Hace falta el **SDK** de .NET, no solo el runtime: el runtime corre programas ya compilados,
 pero no compila. Para comprobarlo, en una terminal abierta después de instalar:
@@ -52,8 +53,9 @@ cada una abierta mientras se usa la aplicación.
   consola, abajo). Sin ellas, la ventana 3 falla con `"vite" no se reconoce como un comando
   interno o externo`. Hace falta **Node.js 22.12 o superior** (o 20.19+): `node --version`.
 - **¿Solo vas a usar la aplicación, no a cambiar la interfaz?** Se puede prescindir de la
-  ventana 3: la Channel sirve el sitio compilado una vez (ver [Variantes](#variantes),
-  «Con el sitio compilado»).
+  ventana 3: la Channel sirve el sitio compilado. Se compila una vez con Node (ver
+  [Variantes](#variantes), «Con el sitio compilado») o se descarga ya compilado, sin Node ni
+  Vite (ver [Sin Vite ni Node](#sin-vite-ni-node-el-sitio-ya-compilado)).
 - **La System arranca con carga de archivos** (`--DataSource:Provider=File`): la pantalla
   **Data** acepta CSV, y lo que subas y las reglas que publiques quedan en
   `C:\modscore1\data\local`. Git ignora esa carpeta porque puede tener datos reales. La
@@ -172,6 +174,66 @@ dotnet run --no-build --project src/channel/Modernization.ChannelApi -- --enviro
 npm --prefix src/web run dev
 ```
 
+### Sin Vite ni Node: el sitio ya compilado
+
+Para usar la aplicación sin instalar Node ni ejecutar Vite: solo corre `dotnet.exe`. En cada
+push de código a `main`, el job **SPA** del CI compila el sitio y lo deja como artefacto
+`sitio-compilado` (dura 90 días; **Run workflow** sobre `main` lo genera de nuevo). La
+Channel lo sirve con `--webroot` y no hay ventana 3. Es el camino C de la
+[guía](docs/guia-localhost.md#camino-c--sin-vite-ni-node-windows-cmd-o-powershell).
+
+1. Con el código al día (`git pull`), abrir
+   <https://github.com/camilarodriguez10/modscore1/actions/workflows/ci.yml?query=branch%3Amain>,
+   entrar en la corrida más reciente y, en **Artifacts**, descargar `sitio-compilado`.
+2. Descomprimirlo en `src\web\dist` y compilar las dos capas, una sola vez.
+
+   En cmd:
+
+   ```bat
+   cd /d C:\modscore1
+   if exist src\web\dist rmdir /S /Q src\web\dist
+   mkdir src\web\dist
+   tar -xf "%USERPROFILE%\Downloads\sitio-compilado.zip" -C src\web\dist
+   dir src\web\dist\index.html
+   dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false
+   ```
+
+   En PowerShell:
+
+   ```powershell
+   Set-Location C:\modscore1
+   if (Test-Path src\web\dist) { Remove-Item -Recurse -Force src\web\dist }
+   Expand-Archive -Path "$env:USERPROFILE\Downloads\sitio-compilado.zip" -DestinationPath src\web\dist
+   Test-Path src\web\dist\index.html
+   dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false
+   ```
+
+   El `dir` tiene que encontrar `index.html` (en PowerShell, `True`), y el build terminar con
+   `0 Errores`.
+3. Dos ventanas, en este orden. La línea de `dotnet` es la misma en cmd y en PowerShell; en
+   PowerShell se entra a la carpeta con `Set-Location C:\modscore1`.
+
+   **Ventana 1 — capa System:**
+
+   ```bat
+   cd /d C:\modscore1
+   dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\local
+   ```
+
+   **Ventana 2 — capa Channel, que sirve el sitio:**
+
+   ```bat
+   cd /d C:\modscore1
+   dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore1\src\web\dist
+   ```
+
+4. Abrir <http://localhost:5100/> (no el 5173) y **Sign in**.
+
+`-p:UseAppHost=false` hace que quien ejecuta sea `dotnet.exe` y no un `.exe` propio: sirve en
+cualquier equipo, y también donde la empresa bloquea programas sin firmar. Los cambios en
+`src\web` no se ven hasta descargar un sitio nuevo; si se actualiza el código, se repiten los
+pasos 1 y 2 para que el sitio y las capas sean de la misma versión.
+
 ### La primera carga
 
 La carpeta `data\local` empieza vacía, así que cada pantalla avisa que no hay datos y lleva a
@@ -219,13 +281,13 @@ Se agregan o quitan argumentos al final de la línea de la ventana que correspon
 
 | Variante | Qué cambia |
 |---|---|
-| **Con el sitio compilado** | Una vez, `npm --prefix src\web run build` (en PowerShell, `npm.cmd`), que deja el sitio en `src\web\dist`. Después se omite la ventana 3 y en la ventana 2 se agrega `--webroot C:\modscore1\src\web\dist`. El sitio queda en <http://localhost:5100/>. La carpeta `dist` se puede compilar en otro equipo y copiar |
-| **El equipo no deja ejecutar `.exe` sin firmar** | `-p:UseAppHost=false` al final del `dotnet build` y, en cada `dotnet run`, **antes** del `--`. Así quien ejecuta es `dotnet.exe`. Es el camino C de la [guía](docs/guia-localhost.md) |
+| **Con el sitio compilado** | Una vez, `npm --prefix src\web run build` (en PowerShell, `npm.cmd`), que deja el sitio en `src\web\dist`. Después se omite la ventana 3 y en la ventana 2 se agrega `--webroot C:\modscore1\src\web\dist`. El sitio queda en <http://localhost:5100/>. La carpeta `dist` se puede compilar en otro equipo y copiar, o descargar ya compilada sin Node ([Sin Vite ni Node](#sin-vite-ni-node-el-sitio-ya-compilado)) |
+| **El equipo no deja ejecutar `.exe` sin firmar** | `-p:UseAppHost=false` al final del `dotnet build` y, en cada `dotnet run`, **antes** del `--`. Así quien ejecuta es `dotnet.exe`. Es el camino B de la [guía](docs/guia-localhost.md) |
 | **Datos generados, sin cargas** | En la ventana 1, quitar `--DataSource:Provider=File --DataSource:Directory=...`: 250 aplicaciones inventadas en memoria, listas al instante, que se pierden al detener. Data no acepta cargas. Es lo que usan las pruebas e2e |
 | **Otra carpeta de datos** | Cambiar la ruta de `--DataSource:Directory`. **Siempre absoluta**: `dotnet run --project` arranca en la carpeta del proyecto, y una ruta relativa terminaría dentro de `src\system\...`. Nunca una carpeta versionada como `data\history`: lo subido quedaría para el próximo commit |
 | **Otros puertos** | Cambiar el número en `--urls`; si cambia la System, la Channel necesita `--SystemApi:BaseUrl=http://localhost:<puerto>` |
 
-Ejemplo de la ventana 2 con el sitio compilado y sin ejecutables propios (camino C de la guía):
+Ejemplo de la ventana 2 con el sitio compilado y sin ejecutables propios (caminos B y C de la guía):
 
 ```bat
 dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore1\src\web\dist
@@ -240,9 +302,10 @@ dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHo
 | Lo que ves | Qué pasa | Qué hacer |
 |---|---|---|
 | En Data: `The active adapter is 'Dummy', which serves generated data. Uploading files requires the file or database adapter.` | La ventana 1 arrancó sin `--DataSource:Provider=File --DataSource:Directory=...` | Detener la ventana 1 (`Ctrl + C`) y copiar de nuevo su línea completa |
-| `"vite" no se reconoce como un comando interno o externo` | Faltan las dependencias del sitio: no se corrió el `npm ci`, falló, o se corrió en otra carpeta | Desde la raíz del repositorio, el paso «una sola vez» de tu consola: `npm --prefix src\web ci --ignore-scripts` (en PowerShell, `npm.cmd`), y comprobar que existe `src\web\node_modules\.bin\vite.cmd` |
+| `"vite" no se reconoce como un comando interno o externo` | Faltan las dependencias del sitio: no se corrió el `npm ci`, falló, o se corrió en otra carpeta | Desde la raíz del repositorio, el paso «una sola vez» de tu consola: `npm --prefix src\web ci --ignore-scripts` (en PowerShell, `npm.cmd`), y comprobar que existe `src\web\node_modules\.bin\vite.cmd`. Para solo usar la aplicación, [Sin Vite ni Node](#sin-vite-ni-node-el-sitio-ya-compilado) |
+| La ventana 3 nunca dice `ready`, o `src\web\node_modules\.bin\esbuild.cmd --version` se queda colgado o dice «acceso denegado» | La política de la empresa bloquea el `esbuild.exe` que Vite ejecuta por dentro, o el antivirus revisa uno a uno los archivos de `node_modules` | [Sin Vite ni Node](#sin-vite-ni-node-el-sitio-ya-compilado): el sitio llega compilado. Para seguir con Vite, pedir a soporte una exclusión para la carpeta del proyecto |
 | `npm.ps1 no se puede cargar ... la ejecución de scripts está deshabilitada` | En PowerShell, `npm` es un script que la política bloquea | Escribir `npm.cmd` en lugar de `npm` |
-| El `npm ci` termina con `ECONNRESET`, `ETIMEDOUT`, `E403`, `self-signed certificate` o `unable to get local issuer certificate` | La red de la empresa no deja llegar al registro de npm | Pedir a soporte el proxy o el registro interno de npm. Mientras tanto, compilar el sitio en un equipo con acceso, copiar `src\web\dist` y usar la variante **con el sitio compilado** |
+| El `npm ci` termina con `ECONNRESET`, `ETIMEDOUT`, `E403`, `self-signed certificate` o `unable to get local issuer certificate` | La red de la empresa no deja llegar al registro de npm | Pedir a soporte el proxy o el registro interno de npm. Mientras tanto, [Sin Vite ni Node](#sin-vite-ni-node-el-sitio-ya-compilado), que no usa npm |
 | Vite dice que la versión de Node no es compatible, o `crypto.hash is not a function` | Node anterior a 20.19 o a 22.12 | Instalar Node 22.12 o superior |
 | `'AllowedHosts' debe listar los hosts del servicio (entorno 'Production')` | Faltó `--environment Development` en la línea de esa capa, o se pegó un bloque con `set` en PowerShell | Copiar de nuevo la línea completa, con `-- --environment Development --urls ...` al final |
 

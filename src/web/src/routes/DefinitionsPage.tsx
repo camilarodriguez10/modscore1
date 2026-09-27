@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
-import { useDashboard, useSession } from '../api/hooks';
-import type { AnalyticsDocument, DashboardView } from '../api/types';
+import { useCode, useDashboard, useSession } from '../api/hooks';
+import type { AnalyticsDocument, CodeView, DashboardView } from '../api/types';
 import { AreaStatus } from '../components/Explanation';
 import { Label, QueryError, Spinner, fmt } from '../components/primitives';
 import {
   areaName,
+  codeExplanation,
   dashboardExplanation,
   formatParameter,
   insightsExplanation,
@@ -25,6 +26,8 @@ import { countOf } from '../i18n/notices';
  */
 export function DefinitionsPage() {
   const { data, isPending, error } = useDashboard({});
+  // La cobertura de la pantalla Code sale de su propia vista: repositorios, no cargas.
+  const code = useCode({});
   const session = useSession();
   const { hash } = useLocation();
 
@@ -77,7 +80,7 @@ export function DefinitionsPage() {
       </nav>
 
       {SECTIONS.map((section) => (
-        <Definition key={section.id} section={section} view={data} definitions={definitions} />
+        <Definition key={section.id} section={section} view={data} code={code.data} definitions={definitions} />
       ))}
     </div>
   );
@@ -89,7 +92,9 @@ interface Section {
   /** Area de definiciones cuyos parametros se listan; null si sigue el modelo de score. */
   area: string | null;
   explain: (definitions: AnalyticsDocument, view: DashboardView) => Explanation;
-  coverage: (view: DashboardView) => string;
+  coverage: (view: DashboardView, code: CodeView | undefined) => string;
+  /** Cada cuanto se recalcula, si no es con cada carga. */
+  frequency?: string;
 }
 
 const total = (view: DashboardView) => view.dashboard.applications.length;
@@ -181,15 +186,42 @@ const SECTIONS: readonly Section[] = [
     },
     coverage: (view) => `Computed over the same ${countOf(total(view), 'application')}, group by group.`,
   },
+  {
+    id: 'code',
+    title: 'Code · Component obsolescence & risk',
+    area: 'code',
+    explain: (d) => {
+      const parts = [0, 1, 2, 3].map((panel) => codeExplanation(panel, d));
+      return {
+        area: 'code',
+        considered: [...new Set(parts.flatMap((part) => part.considered))],
+        rules: parts.flatMap((part) => part.rules),
+        missing: [...new Set(parts.flatMap((part) => part.missing))],
+      };
+    },
+    coverage: (_view, code) => {
+      if (!code) return 'Reading the repository inventory…';
+      const { kpis } = code.analysis;
+      const source = code.source.connected
+        ? 'from GitHub Enterprise'
+        : code.source.provider === 'Sample'
+          ? 'sample data until GitHub Enterprise is connected'
+          : 'no repository inventory yet';
+      return `${countOf(kpis.applicationsWithRepositories, 'application')} of ${kpis.applications} (${share(kpis.applicationsWithRepositories, kpis.applications)} %) have repositories (${source}). ${kpis.unknownComponents} of ${countOf(kpis.components, 'component')} are not in the end-of-life catalog.`;
+    },
+    frequency: 'With every repository scan and every published rules version. End-of-life dates change when the catalog snapshot is refreshed.',
+  },
 ];
 
 function Definition({
   section,
   view,
+  code,
   definitions,
 }: {
   section: Section;
   view: DashboardView;
+  code: CodeView | undefined;
   definitions: AnalyticsDocument;
 }) {
   const explanation = section.explain(definitions, view);
@@ -249,9 +281,9 @@ function Definition({
 
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
             <dt className="text-ink-2">Frequency</dt>
-            <dd>With every upload and every published rules version.</dd>
+            <dd>{section.frequency ?? 'With every upload and every published rules version.'}</dd>
             <dt className="text-ink-2">Data quality</dt>
-            <dd>{section.coverage(view)}</dd>
+            <dd>{section.coverage(view, code)}</dd>
           </dl>
         </div>
       </div>

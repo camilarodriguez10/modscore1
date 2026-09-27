@@ -85,6 +85,21 @@ public sealed partial class ViewModelContractTests
         [typeof(RulesDraft)] = "RulesDraft",
         [typeof(AnalyticsDraft)] = "AnalyticsDraft",
         [typeof(AnalyticsAreaDraft)] = "AnalyticsAreaDraft",
+        [typeof(CodeResponse)] = "CodeView",
+        [typeof(CodeApplicationResponse)] = "CodeApplicationView",
+        [typeof(CodeSourceResponse)] = "CodeSource",
+        [typeof(Insights.CodePortfolio)] = "CodePortfolio",
+        [typeof(Insights.CodeKpis)] = "CodeKpis",
+        [typeof(Insights.CodeStatusShare)] = "CodeStatusShare",
+        [typeof(Insights.CodeLifecycleRow)] = "CodeLifecycleRow",
+        [typeof(Insights.CodeLibraryRow)] = "CodeLibraryRow",
+        [typeof(Insights.CodeLevelShare)] = "CodeLevelShare",
+        [typeof(Insights.CodeApplication)] = "CodeApplication",
+        [typeof(Insights.CodeApplicationDetail)] = "CodeApplicationDetail",
+        [typeof(Insights.CodeRiskFactor)] = "CodeRiskFactor",
+        [typeof(Insights.CodeRepository)] = "CodeRepository",
+        [typeof(Insights.CodeComponent)] = "CodeComponent",
+        [typeof(Insights.CodeDependency)] = "CodeDependency",
     };
 
     [Fact]

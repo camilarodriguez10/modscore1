@@ -44,6 +44,13 @@ public sealed record DashboardRules
     public InsightsRules Insights { get; init; } = new();
 
     /// <summary>
+    /// Los parámetros de la pantalla Code: obsolescencia y riesgo según lo que declaran los
+    /// repositorios (ADR 0026). Una versión de reglas anterior a la pantalla no los trae y
+    /// toma los de fábrica.
+    /// </summary>
+    public CodeRules Code { get; init; } = new();
+
+    /// <summary>
     /// Estado y dueño de cada área (<see cref="AnalyticsCatalog.Areas"/>). Un área que no
     /// aparece es provisional y sin dueño.
     /// </summary>
@@ -336,6 +343,54 @@ public sealed record RiskIndexRules
 
     public decimal ObsoleteComponent { get; init; } = 2m;
     public decimal ExposedCritical { get; init; } = 10m;
+}
+
+/// <summary>
+/// La pantalla Code (ADR 0026): cuándo un componente está por llegar a su fin de vida, cuándo
+/// una biblioteca está desactualizada o un repositorio abandonado, cuánto suma cada hallazgo
+/// al índice de riesgo de la aplicación y desde dónde empieza cada nivel.
+/// </summary>
+public sealed record CodeRules
+{
+    public string? Note { get; init; }
+
+    /// <summary>Un fin de vida dentro de estos meses cuenta como próximo.</summary>
+    public int ApproachingMonths { get; init; } = 12;
+
+    /// <summary>Versiones mayores por detrás de la última a partir de las cuales una biblioteca está desactualizada.</summary>
+    public int OutdatedMajorsBehind { get; init; } = 2;
+
+    /// <summary>Meses sin commits a partir de los cuales un repositorio cuenta como abandonado.</summary>
+    public int StaleMonths { get; init; } = 12;
+
+    public CodeRiskPoints Points { get; init; } = new();
+
+    /// <summary>Niveles del índice de riesgo de código: suma de puntos, sin tope.</summary>
+    public decimal ModerateFrom { get; init; } = 10m;
+    public decimal HighFrom { get; init; } = 25m;
+    public decimal CriticalFrom { get; init; } = 50m;
+
+    /// <summary>Cuántas bibliotecas lista el panel de dependencias.</summary>
+    public int TopLibraries { get; init; } = 12;
+
+    /// <summary>El nivel de un índice. Una aplicación sin repositorios no tiene nivel.</summary>
+    public string LevelOf(decimal index)
+        => index >= CriticalFrom ? "critical"
+            : index >= HighFrom ? "high"
+            : index >= ModerateFrom ? "moderate"
+            : "low";
+}
+
+/// <summary>Lo que suma cada hallazgo, por cada vez que aparece.</summary>
+public sealed record CodeRiskPoints
+{
+    public decimal EolComponent { get; init; } = 10m;
+    public decimal ApproachingComponent { get; init; } = 4m;
+    public decimal CriticalVulnerability { get; init; } = 5m;
+    public decimal HighVulnerability { get; init; } = 2m;
+    public decimal DeprecatedLibrary { get; init; } = 3m;
+    public decimal OutdatedLibrary { get; init; } = 1m;
+    public decimal StaleRepository { get; init; } = 5m;
 }
 
 /// <summary>Las definiciones del dashboard no se pudieron cargar o no son consistentes.</summary>

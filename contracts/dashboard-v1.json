@@ -77,6 +77,18 @@
     "duplicateDefault": 3
   },
 
+  "code": {
+    "note": "Code screen (ADR 0026): evidence from the repositories each application owns in GitHub Enterprise. A component is approaching its end of life when its cycle ends within approachingMonths, per the endoflife.date snapshot in contracts/eol-catalog-v1.json. A library is outdated when it is outdatedMajorsBehind or more major versions behind the latest release; a repository is stale after staleMonths without commits, or when it is archived. The code risk index adds the points below for every finding, and its levels follow moderateFrom < highFrom < criticalFrom. It does not change the Modernization Score.",
+    "approachingMonths": 12,
+    "outdatedMajorsBehind": 2,
+    "staleMonths": 12,
+    "points": { "eolComponent": 10, "approachingComponent": 4, "criticalVulnerability": 5, "highVulnerability": 2, "deprecatedLibrary": 3, "outdatedLibrary": 1, "staleRepository": 5 },
+    "moderateFrom": 10,
+    "highFrom": 25,
+    "criticalFrom": 50,
+    "topLibraries": 12
+  },
+
   "areas": {
     "currency": { "status": "provisional", "owner": "CMT owner" },
     "prioritization": { "status": "provisional", "owner": "Enterprise Architecture" },
@@ -84,6 +96,7 @@
     "risk": { "status": "provisional", "owner": "Enterprise Architecture" },
     "obsolescence": { "status": "provisional", "owner": "Enterprise Architecture" },
     "resilience": { "status": "provisional", "owner": "Operations" },
-    "insights": { "status": "provisional", "owner": "Enterprise Architecture" }
+    "insights": { "status": "provisional", "owner": "Enterprise Architecture" },
+    "code": { "status": "provisional", "owner": "Enterprise Architecture" }
   }
 }

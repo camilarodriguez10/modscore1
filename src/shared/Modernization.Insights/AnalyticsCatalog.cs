@@ -18,10 +18,11 @@ public static class AnalyticsCatalog
     public const string ObsolescenceArea = "obsolescence";
     public const string ResilienceArea = "resilience";
     public const string InsightsArea = "insights";
+    public const string CodeArea = "code";
 
-    /// <summary>Las áreas, en el orden de las preguntas.</summary>
+    /// <summary>Las áreas, en el orden de las preguntas; la pantalla Code va al final.</summary>
     public static readonly IReadOnlyList<string> Areas =
-        [Currency, Prioritization, ComplexityArea, RiskArea, ObsolescenceArea, ResilienceArea, InsightsArea];
+        [Currency, Prioritization, ComplexityArea, RiskArea, ObsolescenceArea, ResilienceArea, InsightsArea, CodeArea];
 
     public static readonly IReadOnlyList<AnalyticsParameter> Parameters =
     [
@@ -108,6 +109,36 @@ public static class AnalyticsCatalog
             (r, v) => r with { Insights = r.Insights with { LowOperationalBelow = v } }, min: 0.01m),
         Whole(InsightsArea, "insights.duplicateDefault", r => r.Insights.DuplicateDefault,
             (r, v) => r with { Insights = r.Insights with { DuplicateDefault = v } }, 2, 5),
+
+        // Pantalla Code: componentes y bibliotecas de los repositorios
+        Whole(CodeArea, "code.approachingMonths", r => r.Code.ApproachingMonths,
+            (r, v) => r with { Code = r.Code with { ApproachingMonths = v } }, 1, 60, AnalyticsKind.Months),
+        Whole(CodeArea, "code.outdatedMajorsBehind", r => r.Code.OutdatedMajorsBehind,
+            (r, v) => r with { Code = r.Code with { OutdatedMajorsBehind = v } }, 1, 20),
+        Whole(CodeArea, "code.staleMonths", r => r.Code.StaleMonths,
+            (r, v) => r with { Code = r.Code with { StaleMonths = v } }, 1, 60, AnalyticsKind.Months),
+        Points(CodeArea, "code.points.eolComponent", r => r.Code.Points.EolComponent,
+            (r, v) => r with { Code = r.Code with { Points = r.Code.Points with { EolComponent = v } } }, min: 0m),
+        Points(CodeArea, "code.points.approachingComponent", r => r.Code.Points.ApproachingComponent,
+            (r, v) => r with { Code = r.Code with { Points = r.Code.Points with { ApproachingComponent = v } } }, min: 0m),
+        Points(CodeArea, "code.points.criticalVulnerability", r => r.Code.Points.CriticalVulnerability,
+            (r, v) => r with { Code = r.Code with { Points = r.Code.Points with { CriticalVulnerability = v } } }, min: 0m),
+        Points(CodeArea, "code.points.highVulnerability", r => r.Code.Points.HighVulnerability,
+            (r, v) => r with { Code = r.Code with { Points = r.Code.Points with { HighVulnerability = v } } }, min: 0m),
+        Points(CodeArea, "code.points.deprecatedLibrary", r => r.Code.Points.DeprecatedLibrary,
+            (r, v) => r with { Code = r.Code with { Points = r.Code.Points with { DeprecatedLibrary = v } } }, min: 0m),
+        Points(CodeArea, "code.points.outdatedLibrary", r => r.Code.Points.OutdatedLibrary,
+            (r, v) => r with { Code = r.Code with { Points = r.Code.Points with { OutdatedLibrary = v } } }, min: 0m),
+        Points(CodeArea, "code.points.staleRepository", r => r.Code.Points.StaleRepository,
+            (r, v) => r with { Code = r.Code with { Points = r.Code.Points with { StaleRepository = v } } }, min: 0m),
+        Points(CodeArea, "code.moderateFrom", r => r.Code.ModerateFrom,
+            (r, v) => r with { Code = r.Code with { ModerateFrom = v } }),
+        Points(CodeArea, "code.highFrom", r => r.Code.HighFrom,
+            (r, v) => r with { Code = r.Code with { HighFrom = v } }),
+        Points(CodeArea, "code.criticalFrom", r => r.Code.CriticalFrom,
+            (r, v) => r with { Code = r.Code with { CriticalFrom = v } }),
+        Whole(CodeArea, "code.topLibraries", r => r.Code.TopLibraries,
+            (r, v) => r with { Code = r.Code with { TopLibraries = v } }, 1, 50),
     ];
 
     /// <summary>
@@ -127,6 +158,8 @@ public static class AnalyticsCatalog
         new("resilience.operational", r =>
             r.Resilience.OperationalModerateBelow > r.Resilience.OperationalHighBelow
             && r.Resilience.OperationalHighBelow > r.Resilience.OperationalCriticalBelow),
+        new("code.levels", r =>
+            r.Code.ModerateFrom < r.Code.HighFrom && r.Code.HighFrom < r.Code.CriticalFrom),
     ];
 
     public static AnalyticsParameter? Find(string? key)
@@ -181,6 +214,9 @@ public static class AnalyticsKind
     public const string Count = "count";
 
     public const string Hours = "hours";
+
+    /// <summary>Una cantidad de meses.</summary>
+    public const string Months = "months";
 
     /// <summary>Kenna, de 0 a 1000.</summary>
     public const string Kenna = "kenna";

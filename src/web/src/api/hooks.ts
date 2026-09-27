@@ -138,6 +138,24 @@ export function useDashboard(filters: PortfolioFilters = {}, axis = 'country') {
   });
 }
 
+/** La pantalla Code, con el filtro de la barra. */
+export function useCode(filters: PortfolioFilters = {}) {
+  return useQuery({
+    queryKey: ['code', filters],
+    queryFn: () => api.code(filters),
+    placeholderData: (previous) => previous,
+  });
+}
+
+/** Los repositorios de una aplicacion; sin codigo, no pregunta. */
+export function useCodeApplication(eaiCode: string | null) {
+  return useQuery({
+    queryKey: ['code', 'application', eaiCode],
+    queryFn: () => api.codeApplication(eaiCode ?? ''),
+    enabled: eaiCode !== null && eaiCode.length > 0,
+  });
+}
+
 export function useWhatIfLab(eaiCode: string) {
   return useQuery({
     queryKey: ['whatif', eaiCode],

@@ -196,6 +196,21 @@ public sealed class SystemApiClient(HttpClient http, IHttpClientFactory clients)
         return GetRequiredAsync<DashboardResponse>(url, cancellationToken);
     }
 
+    /// <summary>La pantalla Code sobre el mismo recorte que el inventario (ADR 0026).</summary>
+    public Task<CodeResponse> GetCodeAsync(ApplicationQuery? query = null, CancellationToken cancellationToken = default)
+    {
+        var parts = query?.FilterParts() ?? [];
+        var url = parts.Count == 0 ? "/system/code" : "/system/code?" + string.Join('&', parts);
+
+        return GetRequiredAsync<CodeResponse>(url, cancellationToken);
+    }
+
+    /// <summary>Los repositorios de una aplicación. Null si no existe o está fuera del alcance.</summary>
+    public Task<CodeApplicationResponse?> GetCodeApplicationAsync(string eaiCode, CancellationToken cancellationToken = default)
+        => GetOrNullAsync<CodeApplicationResponse>(
+            $"/system/code/applications/{Uri.EscapeDataString(eaiCode)}",
+            cancellationToken);
+
     public Task<LeverCatalogResponse?> GetLeversAsync(string eaiCode, CancellationToken cancellationToken = default)
         => GetOrNullAsync<LeverCatalogResponse>(
             $"/system/applications/{Uri.EscapeDataString(eaiCode)}/whatif/levers",

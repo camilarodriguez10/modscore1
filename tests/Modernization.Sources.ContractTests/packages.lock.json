@@ -261,6 +261,18 @@
       "modernization.domain": {
         "type": "Project"
       },
+      "modernization.insights": {
+        "type": "Project",
+        "dependencies": {
+          "Modernization.Roadmap": "[1.0.0, )"
+        }
+      },
+      "modernization.roadmap": {
+        "type": "Project",
+        "dependencies": {
+          "Modernization.WhatIf": "[1.0.0, )"
+        }
+      },
       "modernization.scoring.engine": {
         "type": "Project",
         "dependencies": {
@@ -279,6 +291,12 @@
         "dependencies": {
           "Microsoft.EntityFrameworkCore.Sqlite": "[10.0.12, )",
           "Modernization.Sources": "[1.0.0, )"
+        }
+      },
+      "modernization.whatif": {
+        "type": "Project",
+        "dependencies": {
+          "Modernization.Scoring.Engine": "[1.0.0, )"
         }
       },
       "CsvHelper": {

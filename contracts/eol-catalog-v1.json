@@ -1,0 +1,1757 @@
+{
+  "version": "eol-catalog-v1",
+  "description": "End-of-life snapshot for the Code screen. Every date comes from the endoflife.date API (https://endoflife.date/docs/api), an open, community-maintained catalog under the MIT license. 'eol' is the end of free security support; 'supportEnds' the end of active support; 'extendedSupportEnds' the end of paid extended support, shown but not used as the end of life; 'discontinued' marks a cycle that is no longer supported and has no published date. The GitHub Enterprise integration will refresh this snapshot on a schedule (ADR 0026).",
+  "source": "endoflife.date",
+  "sourceUrl": "https://endoflife.date",
+  "retrievedOn": "2026-09-26",
+  "products": [
+    {
+      "key": "nodejs",
+      "name": "Node.js",
+      "kind": "runtime",
+      "sourceUrl": "https://endoflife.date/nodejs",
+      "cycles": [
+        {
+          "cycle": "26",
+          "releaseDate": "2026-05-05",
+          "supportEnds": "2027-10-27",
+          "eol": "2029-04-30",
+          "lts": true
+        },
+        {
+          "cycle": "25",
+          "releaseDate": "2025-10-15",
+          "supportEnds": "2026-04-01",
+          "eol": "2026-06-01"
+        },
+        {
+          "cycle": "24",
+          "releaseDate": "2025-05-06",
+          "supportEnds": "2026-10-20",
+          "eol": "2028-04-30",
+          "lts": true
+        },
+        {
+          "cycle": "23",
+          "releaseDate": "2024-10-16",
+          "supportEnds": "2025-04-01",
+          "eol": "2025-06-01"
+        },
+        {
+          "cycle": "22",
+          "releaseDate": "2024-04-24",
+          "supportEnds": "2025-10-21",
+          "eol": "2027-04-30",
+          "lts": true
+        },
+        {
+          "cycle": "21",
+          "releaseDate": "2023-10-17",
+          "supportEnds": "2024-04-01",
+          "eol": "2024-06-01"
+        },
+        {
+          "cycle": "20",
+          "releaseDate": "2023-04-18",
+          "supportEnds": "2024-10-22",
+          "eol": "2026-04-30",
+          "lts": true
+        },
+        {
+          "cycle": "19",
+          "releaseDate": "2022-10-18",
+          "supportEnds": "2023-04-01",
+          "eol": "2023-06-01"
+        },
+        {
+          "cycle": "18",
+          "releaseDate": "2022-04-19",
+          "supportEnds": "2023-10-18",
+          "eol": "2025-04-30",
+          "lts": true
+        },
+        {
+          "cycle": "17",
+          "releaseDate": "2021-10-19",
+          "supportEnds": "2022-04-01",
+          "eol": "2022-06-01"
+        },
+        {
+          "cycle": "16",
+          "releaseDate": "2021-04-20",
+          "supportEnds": "2022-10-18",
+          "eol": "2023-09-11",
+          "lts": true
+        },
+        {
+          "cycle": "15",
+          "releaseDate": "2020-10-20",
+          "supportEnds": "2021-04-01",
+          "eol": "2021-06-01"
+        },
+        {
+          "cycle": "14",
+          "releaseDate": "2020-04-21",
+          "supportEnds": "2021-10-19",
+          "eol": "2023-04-30",
+          "lts": true
+        },
+        {
+          "cycle": "13",
+          "releaseDate": "2019-10-22",
+          "supportEnds": "2020-04-01",
+          "eol": "2020-06-01"
+        },
+        {
+          "cycle": "12",
+          "releaseDate": "2019-04-23",
+          "supportEnds": "2020-10-20",
+          "eol": "2022-04-30",
+          "lts": true
+        },
+        {
+          "cycle": "11",
+          "releaseDate": "2018-10-23",
+          "supportEnds": "2019-04-01",
+          "eol": "2019-06-30"
+        },
+        {
+          "cycle": "10",
+          "releaseDate": "2018-04-24",
+          "supportEnds": "2020-05-19",
+          "eol": "2021-04-30",
+          "lts": true
+        },
+        {
+          "cycle": "9",
+          "releaseDate": "2017-10-31",
+          "supportEnds": "2018-06-30",
+          "eol": "2018-06-30"
+        },
+        {
+          "cycle": "8",
+          "releaseDate": "2017-05-30",
+          "supportEnds": "2019-01-01",
+          "eol": "2019-12-31",
+          "lts": true
+        },
+        {
+          "cycle": "7",
+          "releaseDate": "2016-10-25",
+          "supportEnds": "2017-06-30",
+          "eol": "2017-06-30"
+        },
+        {
+          "cycle": "6",
+          "releaseDate": "2016-04-26",
+          "supportEnds": "2018-04-30",
+          "eol": "2019-04-30",
+          "lts": true
+        },
+        {
+          "cycle": "5",
+          "releaseDate": "2015-10-30",
+          "supportEnds": "2016-06-30",
+          "eol": "2016-06-30"
+        },
+        {
+          "cycle": "4",
+          "releaseDate": "2015-09-09",
+          "supportEnds": "2017-04-01",
+          "eol": "2018-04-30",
+          "lts": true
+        },
+        {
+          "cycle": "3",
+          "releaseDate": "2015-08-04",
+          "discontinued": true
+        },
+        {
+          "cycle": "2",
+          "releaseDate": "2015-05-04",
+          "discontinued": true
+        },
+        {
+          "cycle": "1",
+          "releaseDate": "2015-01-20",
+          "discontinued": true
+        }
+      ]
+    },
+    {
+      "key": "dotnet",
+      "name": ".NET",
+      "kind": "runtime",
+      "sourceUrl": "https://endoflife.date/dotnet",
+      "cycles": [
+        {
+          "cycle": "10",
+          "releaseDate": "2025-11-11",
+          "eol": "2028-11-14",
+          "lts": true
+        },
+        {
+          "cycle": "9",
+          "releaseDate": "2024-11-12",
+          "eol": "2026-11-10"
+        },
+        {
+          "cycle": "8",
+          "releaseDate": "2023-11-14",
+          "eol": "2026-11-10",
+          "lts": true
+        },
+        {
+          "cycle": "7",
+          "releaseDate": "2022-11-08",
+          "eol": "2024-05-14"
+        },
+        {
+          "cycle": "6",
+          "releaseDate": "2021-11-08",
+          "eol": "2024-11-12",
+          "lts": true
+        },
+        {
+          "cycle": "5",
+          "releaseDate": "2020-11-10",
+          "eol": "2022-05-10"
+        },
+        {
+          "cycle": "3.1",
+          "releaseDate": "2019-12-03",
+          "eol": "2022-12-13",
+          "lts": true
+        },
+        {
+          "cycle": "3.0",
+          "releaseDate": "2019-09-23",
+          "eol": "2020-03-03"
+        },
+        {
+          "cycle": "2.2",
+          "releaseDate": "2018-12-04",
+          "eol": "2019-12-23"
+        },
+        {
+          "cycle": "2.1",
+          "releaseDate": "2018-05-30",
+          "eol": "2021-08-21",
+          "lts": true
+        },
+        {
+          "cycle": "2.0",
+          "releaseDate": "2017-08-14",
+          "eol": "2018-10-01"
+        },
+        {
+          "cycle": "1.1",
+          "releaseDate": "2016-11-16",
+          "eol": "2019-06-27"
+        },
+        {
+          "cycle": "1.0",
+          "releaseDate": "2016-06-27",
+          "eol": "2019-06-27"
+        }
+      ]
+    },
+    {
+      "key": "dotnetfx",
+      "name": ".NET Framework",
+      "kind": "runtime",
+      "sourceUrl": "https://endoflife.date/dotnetfx",
+      "cycles": [
+        {
+          "cycle": "4.8.1",
+          "releaseDate": "2022-08-09"
+        },
+        {
+          "cycle": "4.8",
+          "releaseDate": "2019-04-18"
+        },
+        {
+          "cycle": "4.7.2",
+          "releaseDate": "2018-04-30"
+        },
+        {
+          "cycle": "4.7.1",
+          "releaseDate": "2017-10-17"
+        },
+        {
+          "cycle": "4.7",
+          "releaseDate": "2017-04-05"
+        },
+        {
+          "cycle": "4.6.2",
+          "releaseDate": "2016-08-02",
+          "eol": "2027-01-12"
+        },
+        {
+          "cycle": "4.6.1",
+          "releaseDate": "2015-11-30",
+          "eol": "2022-04-26"
+        },
+        {
+          "cycle": "4.6",
+          "releaseDate": "2015-07-20",
+          "eol": "2022-04-26"
+        },
+        {
+          "cycle": "4.5.2",
+          "releaseDate": "2014-05-05",
+          "eol": "2022-04-26"
+        },
+        {
+          "cycle": "4.5.1",
+          "releaseDate": "2013-10-17",
+          "eol": "2016-01-12"
+        },
+        {
+          "cycle": "4.5",
+          "releaseDate": "2012-08-15",
+          "eol": "2016-01-12"
+        }
+      ]
+    },
+    {
+      "key": "oracle-jdk",
+      "name": "Oracle Java SE",
+      "kind": "runtime",
+      "sourceUrl": "https://endoflife.date/oracle-jdk",
+      "cycles": [
+        {
+          "cycle": "27",
+          "releaseDate": "2026-09-15",
+          "eol": "2027-03-31"
+        },
+        {
+          "cycle": "26",
+          "releaseDate": "2026-03-17",
+          "eol": "2026-09-18"
+        },
+        {
+          "cycle": "25",
+          "releaseDate": "2025-09-16",
+          "eol": "2030-09-30",
+          "extendedSupportEnds": "2033-09-30",
+          "lts": true
+        },
+        {
+          "cycle": "24",
+          "releaseDate": "2025-03-18",
+          "eol": "2025-09-16"
+        },
+        {
+          "cycle": "23",
+          "releaseDate": "2024-09-17",
+          "eol": "2025-03-18"
+        },
+        {
+          "cycle": "22",
+          "releaseDate": "2024-03-19",
+          "eol": "2024-09-17"
+        },
+        {
+          "cycle": "21",
+          "releaseDate": "2023-09-19",
+          "eol": "2028-09-30",
+          "extendedSupportEnds": "2031-09-30",
+          "lts": true
+        },
+        {
+          "cycle": "20",
+          "releaseDate": "2023-03-21",
+          "eol": "2023-09-19"
+        },
+        {
+          "cycle": "19",
+          "releaseDate": "2022-09-20",
+          "eol": "2023-03-21"
+        },
+        {
+          "cycle": "18",
+          "releaseDate": "2022-03-22",
+          "eol": "2022-09-20"
+        },
+        {
+          "cycle": "17",
+          "releaseDate": "2021-09-14",
+          "eol": "2026-09-30",
+          "extendedSupportEnds": "2029-09-30",
+          "lts": true
+        },
+        {
+          "cycle": "16",
+          "releaseDate": "2021-03-16",
+          "eol": "2021-09-14"
+        },
+        {
+          "cycle": "15",
+          "releaseDate": "2020-09-15",
+          "eol": "2021-03-16"
+        },
+        {
+          "cycle": "14",
+          "releaseDate": "2020-03-17",
+          "eol": "2020-09-16"
+        },
+        {
+          "cycle": "13",
+          "releaseDate": "2019-09-17",
+          "eol": "2020-03-17"
+        },
+        {
+          "cycle": "12",
+          "releaseDate": "2019-03-19",
+          "eol": "2019-09-17"
+        },
+        {
+          "cycle": "11",
+          "releaseDate": "2018-09-25",
+          "eol": "2023-09-30",
+          "extendedSupportEnds": "2032-01-31",
+          "lts": true
+        },
+        {
+          "cycle": "10",
+          "releaseDate": "2018-03-20",
+          "eol": "2018-09-25"
+        },
+        {
+          "cycle": "9",
+          "releaseDate": "2017-09-21",
+          "eol": "2018-03-20"
+        },
+        {
+          "cycle": "8",
+          "releaseDate": "2014-03-18",
+          "eol": "2022-03-31",
+          "extendedSupportEnds": "2030-12-31",
+          "lts": true
+        }
+      ]
+    },
+    {
+      "key": "eclipse-temurin",
+      "name": "Eclipse Temurin",
+      "kind": "runtime",
+      "sourceUrl": "https://endoflife.date/eclipse-temurin",
+      "cycles": [
+        {
+          "cycle": "26",
+          "releaseDate": "2026-03-23",
+          "eol": "2026-09-15"
+        },
+        {
+          "cycle": "25",
+          "releaseDate": "2025-09-22",
+          "eol": "2031-09-30",
+          "lts": true
+        },
+        {
+          "cycle": "24",
+          "releaseDate": "2025-03-20",
+          "eol": "2025-09-16"
+        },
+        {
+          "cycle": "23",
+          "releaseDate": "2024-09-17",
+          "eol": "2025-03-18"
+        },
+        {
+          "cycle": "22",
+          "releaseDate": "2024-03-20",
+          "eol": "2024-09-17"
+        },
+        {
+          "cycle": "21",
+          "releaseDate": "2023-10-10",
+          "eol": "2029-12-31",
+          "lts": true
+        },
+        {
+          "cycle": "20",
+          "releaseDate": "2023-03-23",
+          "eol": "2023-09-19"
+        },
+        {
+          "cycle": "19",
+          "releaseDate": "2022-09-26",
+          "eol": "2023-03-31"
+        },
+        {
+          "cycle": "18",
+          "releaseDate": "2022-03-24",
+          "eol": "2022-09-30"
+        },
+        {
+          "cycle": "17",
+          "releaseDate": "2021-09-22",
+          "eol": "2027-10-31",
+          "lts": true
+        },
+        {
+          "cycle": "11",
+          "releaseDate": "2021-08-01",
+          "eol": "2027-10-31",
+          "lts": true
+        },
+        {
+          "cycle": "16",
+          "releaseDate": "2021-07-30",
+          "eol": "2021-09-30"
+        },
+        {
+          "cycle": "8",
+          "releaseDate": "2021-07-29",
+          "eol": "2030-12-31",
+          "lts": true
+        }
+      ]
+    },
+    {
+      "key": "python",
+      "name": "Python",
+      "kind": "runtime",
+      "sourceUrl": "https://endoflife.date/python",
+      "cycles": [
+        {
+          "cycle": "3.14",
+          "releaseDate": "2025-10-07",
+          "supportEnds": "2027-10-01",
+          "eol": "2030-10-31"
+        },
+        {
+          "cycle": "3.13",
+          "releaseDate": "2024-10-07",
+          "supportEnds": "2026-10-01",
+          "eol": "2029-10-31"
+        },
+        {
+          "cycle": "3.12",
+          "releaseDate": "2023-10-02",
+          "supportEnds": "2025-04-02",
+          "eol": "2028-10-31"
+        },
+        {
+          "cycle": "3.11",
+          "releaseDate": "2022-10-24",
+          "supportEnds": "2024-04-01",
+          "eol": "2027-10-31"
+        },
+        {
+          "cycle": "3.10",
+          "releaseDate": "2021-10-04",
+          "supportEnds": "2023-04-05",
+          "eol": "2026-10-31"
+        },
+        {
+          "cycle": "3.9",
+          "releaseDate": "2020-10-05",
+          "supportEnds": "2022-05-17",
+          "eol": "2025-10-31"
+        },
+        {
+          "cycle": "3.8",
+          "releaseDate": "2019-10-14",
+          "supportEnds": "2021-05-03",
+          "eol": "2024-10-07"
+        },
+        {
+          "cycle": "3.7",
+          "releaseDate": "2018-06-27",
+          "supportEnds": "2020-06-27",
+          "eol": "2023-06-27"
+        },
+        {
+          "cycle": "3.6",
+          "releaseDate": "2016-12-23",
+          "supportEnds": "2018-12-24",
+          "eol": "2021-12-23"
+        },
+        {
+          "cycle": "3.5",
+          "releaseDate": "2015-09-13",
+          "eol": "2020-09-30"
+        },
+        {
+          "cycle": "3.4",
+          "releaseDate": "2014-03-16",
+          "eol": "2019-03-18"
+        },
+        {
+          "cycle": "3.3",
+          "releaseDate": "2012-09-29",
+          "eol": "2017-09-29"
+        },
+        {
+          "cycle": "3.2",
+          "releaseDate": "2011-02-20",
+          "eol": "2016-02-20"
+        },
+        {
+          "cycle": "2.7",
+          "releaseDate": "2010-07-03",
+          "eol": "2020-01-01"
+        },
+        {
+          "cycle": "3.1",
+          "releaseDate": "2009-06-27",
+          "eol": "2012-04-09"
+        },
+        {
+          "cycle": "3.0",
+          "releaseDate": "2008-12-03",
+          "eol": "2009-06-27"
+        },
+        {
+          "cycle": "2.6",
+          "releaseDate": "2008-10-01",
+          "eol": "2013-10-29"
+        }
+      ]
+    },
+    {
+      "key": "go",
+      "name": "Go",
+      "kind": "runtime",
+      "sourceUrl": "https://endoflife.date/go",
+      "cycles": [
+        {
+          "cycle": "1.27",
+          "releaseDate": "2026-08-19"
+        },
+        {
+          "cycle": "1.26",
+          "releaseDate": "2026-02-10"
+        },
+        {
+          "cycle": "1.25",
+          "releaseDate": "2025-08-12",
+          "eol": "2026-08-19"
+        },
+        {
+          "cycle": "1.24",
+          "releaseDate": "2025-02-11",
+          "eol": "2026-02-10"
+        },
+        {
+          "cycle": "1.23",
+          "releaseDate": "2024-08-13",
+          "eol": "2025-08-12"
+        },
+        {
+          "cycle": "1.22",
+          "releaseDate": "2024-02-06",
+          "eol": "2025-02-11"
+        },
+        {
+          "cycle": "1.21",
+          "releaseDate": "2023-08-08",
+          "eol": "2024-08-13"
+        },
+        {
+          "cycle": "1.20",
+          "releaseDate": "2023-02-01",
+          "eol": "2024-02-06"
+        },
+        {
+          "cycle": "1.19",
+          "releaseDate": "2022-08-02",
+          "eol": "2023-09-06"
+        },
+        {
+          "cycle": "1.18",
+          "releaseDate": "2022-03-15",
+          "eol": "2023-02-01"
+        },
+        {
+          "cycle": "1.17",
+          "releaseDate": "2021-08-16",
+          "eol": "2022-08-02"
+        },
+        {
+          "cycle": "1.16",
+          "releaseDate": "2021-02-16",
+          "eol": "2022-03-15"
+        },
+        {
+          "cycle": "1.15",
+          "releaseDate": "2020-08-11",
+          "eol": "2021-08-16"
+        },
+        {
+          "cycle": "1.14",
+          "releaseDate": "2020-02-25",
+          "eol": "2021-02-16"
+        },
+        {
+          "cycle": "1.13",
+          "releaseDate": "2019-09-03",
+          "eol": "2020-08-11"
+        },
+        {
+          "cycle": "1.12",
+          "releaseDate": "2019-02-25",
+          "eol": "2020-02-25"
+        },
+        {
+          "cycle": "1.11",
+          "releaseDate": "2018-08-24",
+          "eol": "2019-09-03"
+        },
+        {
+          "cycle": "1.10",
+          "releaseDate": "2018-02-16",
+          "eol": "2019-02-25"
+        }
+      ]
+    },
+    {
+      "key": "angular",
+      "name": "Angular",
+      "kind": "framework",
+      "sourceUrl": "https://endoflife.date/angular",
+      "cycles": [
+        {
+          "cycle": "22",
+          "releaseDate": "2026-06-03",
+          "supportEnds": "2027-06-30",
+          "eol": "2028-06-30"
+        },
+        {
+          "cycle": "21",
+          "releaseDate": "2025-11-19",
+          "supportEnds": "2026-06-03",
+          "eol": "2027-06-30"
+        },
+        {
+          "cycle": "20",
+          "releaseDate": "2025-05-28",
+          "supportEnds": "2025-11-19",
+          "eol": "2026-11-28"
+        },
+        {
+          "cycle": "19",
+          "releaseDate": "2024-11-19",
+          "supportEnds": "2025-05-28",
+          "eol": "2026-05-19"
+        },
+        {
+          "cycle": "18",
+          "releaseDate": "2024-05-22",
+          "supportEnds": "2024-11-19",
+          "eol": "2025-11-21"
+        },
+        {
+          "cycle": "17",
+          "releaseDate": "2023-11-08",
+          "supportEnds": "2024-05-08",
+          "eol": "2025-05-15"
+        },
+        {
+          "cycle": "16",
+          "releaseDate": "2023-05-03",
+          "supportEnds": "2023-11-08",
+          "eol": "2024-11-08"
+        },
+        {
+          "cycle": "15",
+          "releaseDate": "2022-11-16",
+          "supportEnds": "2023-05-03",
+          "eol": "2024-05-18"
+        },
+        {
+          "cycle": "14",
+          "releaseDate": "2022-06-02",
+          "supportEnds": "2022-11-18",
+          "eol": "2023-11-18"
+        },
+        {
+          "cycle": "13",
+          "releaseDate": "2021-11-03",
+          "supportEnds": "2022-06-02",
+          "eol": "2023-05-04"
+        },
+        {
+          "cycle": "12",
+          "releaseDate": "2021-05-13",
+          "supportEnds": "2021-11-12",
+          "eol": "2022-11-12"
+        },
+        {
+          "cycle": "11",
+          "releaseDate": "2020-11-11",
+          "supportEnds": "2021-05-11",
+          "eol": "2022-05-11"
+        },
+        {
+          "cycle": "10",
+          "releaseDate": "2020-06-24",
+          "supportEnds": "2020-12-24",
+          "eol": "2021-12-24"
+        },
+        {
+          "cycle": "9",
+          "releaseDate": "2020-02-06",
+          "supportEnds": "2020-08-06",
+          "eol": "2021-08-06"
+        }
+      ]
+    },
+    {
+      "key": "angularjs",
+      "name": "AngularJS",
+      "kind": "framework",
+      "sourceUrl": "https://endoflife.date/angularjs",
+      "cycles": [
+        {
+          "cycle": "1.8",
+          "releaseDate": "2020-06-04",
+          "eol": "2021-12-31",
+          "lts": true
+        },
+        {
+          "cycle": "1.7",
+          "releaseDate": "2018-05-11",
+          "eol": "2021-12-31"
+        },
+        {
+          "cycle": "1.6",
+          "releaseDate": "2016-12-08",
+          "eol": "2021-12-31"
+        },
+        {
+          "cycle": "1.5",
+          "releaseDate": "2016-02-05",
+          "eol": "2021-12-31"
+        },
+        {
+          "cycle": "1.4",
+          "releaseDate": "2015-05-27",
+          "eol": "2021-12-31"
+        },
+        {
+          "cycle": "1.3",
+          "releaseDate": "2014-10-13",
+          "eol": "2021-12-31"
+        },
+        {
+          "cycle": "1.2",
+          "releaseDate": "2013-11-23",
+          "eol": "2021-12-31"
+        },
+        {
+          "cycle": "1.1",
+          "releaseDate": "2013-11-23",
+          "eol": "2021-12-31"
+        },
+        {
+          "cycle": "1.0",
+          "releaseDate": "2013-11-23",
+          "eol": "2021-12-31"
+        }
+      ]
+    },
+    {
+      "key": "react",
+      "name": "React",
+      "kind": "framework",
+      "sourceUrl": "https://endoflife.date/react",
+      "cycles": [
+        {
+          "cycle": "19",
+          "releaseDate": "2024-12-05"
+        },
+        {
+          "cycle": "18",
+          "releaseDate": "2022-03-29",
+          "supportEnds": "2024-12-05"
+        },
+        {
+          "cycle": "17",
+          "releaseDate": "2020-10-20",
+          "supportEnds": "2022-03-29"
+        },
+        {
+          "cycle": "16",
+          "releaseDate": "2017-09-26",
+          "supportEnds": "2020-10-20"
+        },
+        {
+          "cycle": "15",
+          "releaseDate": "2016-04-07",
+          "supportEnds": "2020-10-14"
+        }
+      ]
+    },
+    {
+      "key": "vue",
+      "name": "Vue",
+      "kind": "framework",
+      "sourceUrl": "https://endoflife.date/vue",
+      "cycles": [
+        {
+          "cycle": "3.5",
+          "releaseDate": "2024-09-03"
+        },
+        {
+          "cycle": "3.4",
+          "releaseDate": "2023-12-29",
+          "supportEnds": "2024-09-03",
+          "eol": "2024-09-03"
+        },
+        {
+          "cycle": "3.3",
+          "releaseDate": "2023-05-11",
+          "supportEnds": "2023-12-29",
+          "eol": "2023-12-29"
+        },
+        {
+          "cycle": "2.7",
+          "releaseDate": "2022-07-01",
+          "supportEnds": "2023-12-31",
+          "eol": "2023-12-31"
+        },
+        {
+          "cycle": "3.2",
+          "releaseDate": "2021-08-09",
+          "supportEnds": "2023-05-11",
+          "eol": "2023-05-11"
+        },
+        {
+          "cycle": "3.1",
+          "releaseDate": "2021-06-07",
+          "supportEnds": "2021-08-09",
+          "eol": "2021-08-09"
+        },
+        {
+          "cycle": "3.0",
+          "releaseDate": "2020-09-18",
+          "supportEnds": "2021-06-07",
+          "eol": "2021-06-07"
+        },
+        {
+          "cycle": "2.6",
+          "releaseDate": "2019-02-04",
+          "supportEnds": "2022-07-01",
+          "eol": "2022-07-01"
+        },
+        {
+          "cycle": "2.5",
+          "releaseDate": "2017-10-13",
+          "supportEnds": "2019-02-04",
+          "eol": "2019-02-04"
+        },
+        {
+          "cycle": "2.4",
+          "releaseDate": "2017-07-13",
+          "supportEnds": "2017-10-13",
+          "eol": "2017-10-13"
+        },
+        {
+          "cycle": "2.3",
+          "releaseDate": "2017-04-27",
+          "supportEnds": "2017-07-13",
+          "eol": "2017-07-13"
+        },
+        {
+          "cycle": "2.2",
+          "releaseDate": "2017-02-26",
+          "supportEnds": "2017-04-27",
+          "eol": "2017-04-27"
+        },
+        {
+          "cycle": "2.1",
+          "releaseDate": "2016-11-22",
+          "supportEnds": "2017-02-26",
+          "eol": "2017-02-26"
+        },
+        {
+          "cycle": "2.0",
+          "releaseDate": "2016-09-30",
+          "supportEnds": "2016-11-22",
+          "eol": "2016-11-22"
+        },
+        {
+          "cycle": "1",
+          "releaseDate": "2015-10-27",
+          "discontinued": true
+        }
+      ]
+    },
+    {
+      "key": "jquery",
+      "name": "jQuery",
+      "kind": "framework",
+      "sourceUrl": "https://endoflife.date/jquery",
+      "cycles": [
+        {
+          "cycle": "4",
+          "releaseDate": "2026-01-17"
+        },
+        {
+          "cycle": "3",
+          "releaseDate": "2016-06-09",
+          "supportEnds": "2026-01-17"
+        },
+        {
+          "cycle": "2",
+          "releaseDate": "2013-04-18",
+          "discontinued": true
+        },
+        {
+          "cycle": "1",
+          "releaseDate": "2006-08-31",
+          "discontinued": true
+        }
+      ]
+    },
+    {
+      "key": "spring-framework",
+      "name": "Spring Framework",
+      "kind": "framework",
+      "sourceUrl": "https://endoflife.date/spring-framework",
+      "cycles": [
+        {
+          "cycle": "7.0",
+          "releaseDate": "2025-11-30",
+          "eol": "2027-07-31",
+          "extendedSupportEnds": "2028-07-31"
+        },
+        {
+          "cycle": "6.2",
+          "releaseDate": "2024-11-30",
+          "eol": "2026-06-30",
+          "extendedSupportEnds": "2032-06-30"
+        },
+        {
+          "cycle": "6.1",
+          "releaseDate": "2023-11-30",
+          "eol": "2025-06-30",
+          "extendedSupportEnds": "2032-06-30"
+        },
+        {
+          "cycle": "6.0",
+          "releaseDate": "2022-11-30",
+          "eol": "2024-06-30",
+          "extendedSupportEnds": "2032-06-30"
+        },
+        {
+          "cycle": "5.3",
+          "releaseDate": "2020-10-31",
+          "eol": "2024-08-31",
+          "extendedSupportEnds": "2029-06-30",
+          "lts": true
+        },
+        {
+          "cycle": "5.2",
+          "releaseDate": "2019-09-30",
+          "eol": "2021-12-31",
+          "extendedSupportEnds": "2029-06-30"
+        },
+        {
+          "cycle": "5.1",
+          "releaseDate": "2018-09-30",
+          "eol": "2020-12-31",
+          "extendedSupportEnds": "2022-12-31"
+        },
+        {
+          "cycle": "5.0",
+          "releaseDate": "2017-09-28",
+          "eol": "2020-12-31"
+        },
+        {
+          "cycle": "4.3",
+          "releaseDate": "2016-06-10",
+          "eol": "2020-12-31"
+        },
+        {
+          "cycle": "3.2",
+          "releaseDate": "2012-12-13",
+          "eol": "2016-12-31"
+        }
+      ]
+    },
+    {
+      "key": "spring-boot",
+      "name": "Spring Boot",
+      "kind": "framework",
+      "sourceUrl": "https://endoflife.date/spring-boot",
+      "cycles": [
+        {
+          "cycle": "4.1",
+          "releaseDate": "2026-06-30",
+          "eol": "2027-07-31",
+          "extendedSupportEnds": "2028-07-31"
+        },
+        {
+          "cycle": "4.0",
+          "releaseDate": "2025-11-30",
+          "eol": "2026-12-31",
+          "extendedSupportEnds": "2027-12-31"
+        },
+        {
+          "cycle": "3.5",
+          "releaseDate": "2025-05-31",
+          "eol": "2026-06-30",
+          "extendedSupportEnds": "2032-06-30"
+        },
+        {
+          "cycle": "3.4",
+          "releaseDate": "2024-11-30",
+          "eol": "2025-12-31",
+          "extendedSupportEnds": "2026-12-31"
+        },
+        {
+          "cycle": "3.3",
+          "releaseDate": "2024-05-31",
+          "eol": "2025-06-30",
+          "extendedSupportEnds": "2026-06-30"
+        },
+        {
+          "cycle": "3.2",
+          "releaseDate": "2023-11-30",
+          "eol": "2024-12-31",
+          "extendedSupportEnds": "2025-12-31"
+        },
+        {
+          "cycle": "3.1",
+          "releaseDate": "2023-05-31",
+          "eol": "2024-06-30",
+          "extendedSupportEnds": "2025-06-30"
+        },
+        {
+          "cycle": "3.0",
+          "releaseDate": "2022-11-24",
+          "eol": "2023-12-31",
+          "extendedSupportEnds": "2024-12-31"
+        },
+        {
+          "cycle": "2.7",
+          "releaseDate": "2022-05-31",
+          "eol": "2023-06-30",
+          "extendedSupportEnds": "2029-06-30"
+        },
+        {
+          "cycle": "2.6",
+          "releaseDate": "2021-11-17",
+          "eol": "2022-11-24",
+          "extendedSupportEnds": "2024-02-24"
+        },
+        {
+          "cycle": "2.5",
+          "releaseDate": "2021-05-20",
+          "eol": "2022-05-19",
+          "extendedSupportEnds": "2023-08-24"
+        },
+        {
+          "cycle": "2.4",
+          "releaseDate": "2020-11-12",
+          "eol": "2021-11-18",
+          "extendedSupportEnds": "2023-02-23"
+        },
+        {
+          "cycle": "2.3",
+          "releaseDate": "2020-05-15",
+          "eol": "2021-05-20",
+          "extendedSupportEnds": "2022-08-20"
+        },
+        {
+          "cycle": "2.2",
+          "releaseDate": "2019-10-16",
+          "eol": "2020-10-16",
+          "extendedSupportEnds": "2022-01-16"
+        },
+        {
+          "cycle": "2.1",
+          "releaseDate": "2018-10-30",
+          "eol": "2019-10-30",
+          "extendedSupportEnds": "2021-01-30"
+        },
+        {
+          "cycle": "2.0",
+          "releaseDate": "2018-03-01",
+          "eol": "2019-03-01",
+          "extendedSupportEnds": "2020-06-01"
+        },
+        {
+          "cycle": "1.5",
+          "releaseDate": "2017-01-30",
+          "eol": "2019-08-06",
+          "extendedSupportEnds": "2020-11-06"
+        }
+      ]
+    },
+    {
+      "key": "django",
+      "name": "Django",
+      "kind": "framework",
+      "sourceUrl": "https://endoflife.date/django",
+      "cycles": [
+        {
+          "cycle": "6.1",
+          "releaseDate": "2026-08-05",
+          "supportEnds": "2027-04-30",
+          "eol": "2027-12-31"
+        },
+        {
+          "cycle": "6.0",
+          "releaseDate": "2025-12-03",
+          "supportEnds": "2026-08-04",
+          "eol": "2027-04-30"
+        },
+        {
+          "cycle": "5.2",
+          "releaseDate": "2025-04-02",
+          "supportEnds": "2025-12-03",
+          "eol": "2028-04-30",
+          "lts": true
+        },
+        {
+          "cycle": "5.1",
+          "releaseDate": "2024-08-07",
+          "supportEnds": "2025-04-02",
+          "eol": "2025-12-03"
+        },
+        {
+          "cycle": "5.0",
+          "releaseDate": "2023-12-04",
+          "supportEnds": "2024-08-07",
+          "eol": "2025-04-02"
+        },
+        {
+          "cycle": "4.2",
+          "releaseDate": "2023-04-03",
+          "supportEnds": "2023-12-04",
+          "eol": "2026-04-07",
+          "lts": true
+        },
+        {
+          "cycle": "4.1",
+          "releaseDate": "2022-08-03",
+          "supportEnds": "2023-04-05",
+          "eol": "2023-12-01"
+        },
+        {
+          "cycle": "4.0",
+          "releaseDate": "2021-12-07",
+          "supportEnds": "2022-08-03",
+          "eol": "2023-04-01"
+        },
+        {
+          "cycle": "3.2",
+          "releaseDate": "2021-04-06",
+          "supportEnds": "2021-12-07",
+          "eol": "2024-04-01",
+          "lts": true
+        },
+        {
+          "cycle": "3.1",
+          "releaseDate": "2020-08-04",
+          "supportEnds": "2021-04-06",
+          "eol": "2021-12-07"
+        },
+        {
+          "cycle": "3.0",
+          "releaseDate": "2019-12-02",
+          "supportEnds": "2020-08-03",
+          "eol": "2021-04-06"
+        },
+        {
+          "cycle": "2.2",
+          "releaseDate": "2019-04-01",
+          "supportEnds": "2019-12-02",
+          "eol": "2022-04-11",
+          "lts": true
+        },
+        {
+          "cycle": "2.1",
+          "releaseDate": "2018-08-01",
+          "supportEnds": "2019-04-01",
+          "eol": "2019-12-02"
+        },
+        {
+          "cycle": "2.0",
+          "releaseDate": "2017-12-02",
+          "supportEnds": "2018-08-01",
+          "eol": "2019-04-01"
+        },
+        {
+          "cycle": "1.11",
+          "releaseDate": "2017-04-04",
+          "supportEnds": "2017-12-02",
+          "eol": "2020-04-01",
+          "lts": true
+        },
+        {
+          "cycle": "1.10",
+          "releaseDate": "2016-08-01",
+          "supportEnds": "2017-04-04",
+          "eol": "2017-12-02"
+        },
+        {
+          "cycle": "1.9",
+          "releaseDate": "2015-12-01",
+          "supportEnds": "2016-08-01",
+          "eol": "2017-04-04"
+        },
+        {
+          "cycle": "1.8",
+          "releaseDate": "2015-04-01",
+          "supportEnds": "2015-12-01",
+          "eol": "2018-04-01"
+        },
+        {
+          "cycle": "1.7",
+          "releaseDate": "2014-09-03",
+          "supportEnds": "2015-04-01",
+          "eol": "2015-12-01"
+        },
+        {
+          "cycle": "1.6",
+          "releaseDate": "2013-11-06",
+          "supportEnds": "2014-09-02",
+          "eol": "2015-04-01"
+        },
+        {
+          "cycle": "1.5",
+          "releaseDate": "2013-02-26",
+          "supportEnds": "2013-11-06",
+          "eol": "2014-09-02"
+        },
+        {
+          "cycle": "1.4",
+          "releaseDate": "2012-03-23",
+          "supportEnds": "2013-02-26",
+          "eol": "2015-10-01"
+        }
+      ]
+    },
+    {
+      "key": "tomcat",
+      "name": "Apache Tomcat",
+      "kind": "server",
+      "sourceUrl": "https://endoflife.date/tomcat",
+      "cycles": [
+        {
+          "cycle": "11.0",
+          "releaseDate": "2024-10-03"
+        },
+        {
+          "cycle": "10.1",
+          "releaseDate": "2022-09-23"
+        },
+        {
+          "cycle": "10.0",
+          "releaseDate": "2020-12-03",
+          "eol": "2022-10-31"
+        },
+        {
+          "cycle": "9.0",
+          "releaseDate": "2017-09-27",
+          "eol": "2027-03-31"
+        },
+        {
+          "cycle": "8.5",
+          "releaseDate": "2016-03-17",
+          "eol": "2024-03-31"
+        },
+        {
+          "cycle": "8.0",
+          "releaseDate": "2014-01-29",
+          "eol": "2018-06-30"
+        },
+        {
+          "cycle": "7",
+          "releaseDate": "2013-01-10",
+          "eol": "2021-03-31"
+        },
+        {
+          "cycle": "6",
+          "releaseDate": "2006-10-21",
+          "eol": "2016-12-31"
+        },
+        {
+          "cycle": "5",
+          "releaseDate": "2003-09-06",
+          "eol": "2012-09-30"
+        }
+      ]
+    },
+    {
+      "key": "log4j",
+      "name": "Apache Log4j",
+      "kind": "library",
+      "sourceUrl": "https://endoflife.date/log4j",
+      "cycles": [
+        {
+          "cycle": "2",
+          "releaseDate": "2014-07-12"
+        },
+        {
+          "cycle": "2.12",
+          "releaseDate": "2019-06-26",
+          "eol": "2021-12-14"
+        },
+        {
+          "cycle": "2.3",
+          "releaseDate": "2015-05-10",
+          "eol": "2015-09-20"
+        },
+        {
+          "cycle": "1",
+          "releaseDate": "2001-01-08",
+          "eol": "2015-10-15"
+        }
+      ]
+    },
+    {
+      "key": "ubuntu",
+      "name": "Ubuntu",
+      "kind": "os",
+      "sourceUrl": "https://endoflife.date/ubuntu",
+      "cycles": [
+        {
+          "cycle": "26.04",
+          "releaseDate": "2026-04-23",
+          "supportEnds": "2031-05-29",
+          "eol": "2031-05-29",
+          "extendedSupportEnds": "2036-04-23",
+          "lts": true
+        },
+        {
+          "cycle": "24.04",
+          "releaseDate": "2024-04-25",
+          "supportEnds": "2029-05-31",
+          "eol": "2029-05-31",
+          "extendedSupportEnds": "2034-04-25",
+          "lts": true
+        },
+        {
+          "cycle": "22.04",
+          "releaseDate": "2022-04-21",
+          "supportEnds": "2024-09-30",
+          "eol": "2027-06-01",
+          "extendedSupportEnds": "2032-04-21",
+          "lts": true
+        },
+        {
+          "cycle": "20.04",
+          "releaseDate": "2020-04-23",
+          "supportEnds": "2022-10-01",
+          "eol": "2025-05-31",
+          "extendedSupportEnds": "2030-04-23",
+          "lts": true
+        },
+        {
+          "cycle": "18.04",
+          "releaseDate": "2018-04-26",
+          "supportEnds": "2023-05-31",
+          "eol": "2023-05-31",
+          "extendedSupportEnds": "2028-04-26",
+          "lts": true
+        },
+        {
+          "cycle": "16.04",
+          "releaseDate": "2016-04-21",
+          "supportEnds": "2021-04-02",
+          "eol": "2021-04-02",
+          "extendedSupportEnds": "2026-04-02",
+          "lts": true
+        },
+        {
+          "cycle": "14.04",
+          "releaseDate": "2014-04-17",
+          "supportEnds": "2019-04-02",
+          "eol": "2019-04-02",
+          "extendedSupportEnds": "2024-04-02",
+          "lts": true
+        }
+      ]
+    },
+    {
+      "key": "windows-server",
+      "name": "Windows Server",
+      "kind": "os",
+      "sourceUrl": "https://endoflife.date/windows-server",
+      "cycles": [
+        {
+          "cycle": "2025",
+          "releaseDate": "2024-11-01",
+          "supportEnds": "2029-11-13",
+          "eol": "2034-11-14",
+          "lts": true
+        },
+        {
+          "cycle": "2022",
+          "releaseDate": "2021-08-18",
+          "supportEnds": "2026-10-13",
+          "eol": "2031-10-14",
+          "lts": true
+        },
+        {
+          "cycle": "2019",
+          "releaseDate": "2018-11-13",
+          "supportEnds": "2024-01-09",
+          "eol": "2029-01-09",
+          "lts": true
+        },
+        {
+          "cycle": "2016",
+          "releaseDate": "2016-10-15",
+          "supportEnds": "2022-01-11",
+          "eol": "2027-01-12",
+          "extendedSupportEnds": "2030-01-12",
+          "lts": true
+        },
+        {
+          "cycle": "2012-r2",
+          "label": "2012 R2",
+          "releaseDate": "2013-11-25",
+          "supportEnds": "2018-10-09",
+          "eol": "2023-10-10",
+          "extendedSupportEnds": "2026-10-13",
+          "lts": true
+        },
+        {
+          "cycle": "2012",
+          "releaseDate": "2012-10-30",
+          "supportEnds": "2018-10-09",
+          "eol": "2023-10-10",
+          "extendedSupportEnds": "2026-10-13",
+          "lts": true
+        }
+      ]
+    },
+    {
+      "key": "mssqlserver",
+      "name": "SQL Server",
+      "kind": "database",
+      "sourceUrl": "https://endoflife.date/mssqlserver",
+      "cycles": [
+        {
+          "cycle": "17.0",
+          "label": "2025",
+          "releaseDate": "2025-11-18",
+          "supportEnds": "2031-01-06",
+          "eol": "2036-01-06"
+        },
+        {
+          "cycle": "16.0",
+          "label": "2022",
+          "releaseDate": "2022-11-16",
+          "supportEnds": "2028-01-11",
+          "eol": "2033-01-11"
+        },
+        {
+          "cycle": "13.0-sp3",
+          "label": "2016 SP3",
+          "releaseDate": "2021-09-15",
+          "supportEnds": "2026-07-14",
+          "eol": "2026-07-14",
+          "extendedSupportEnds": "2029-07-17"
+        },
+        {
+          "cycle": "15.0",
+          "label": "2019",
+          "releaseDate": "2019-11-04",
+          "supportEnds": "2025-02-28",
+          "eol": "2030-01-08"
+        },
+        {
+          "cycle": "12.0-sp3",
+          "label": "2014 SP3",
+          "releaseDate": "2018-10-30",
+          "supportEnds": "2019-07-09",
+          "eol": "2024-07-09",
+          "extendedSupportEnds": "2027-07-12"
+        },
+        {
+          "cycle": "11.0-sp4",
+          "label": "2012 SP4",
+          "releaseDate": "2017-10-05",
+          "supportEnds": "2022-07-12",
+          "eol": "2022-07-12",
+          "extendedSupportEnds": "2025-07-08"
+        },
+        {
+          "cycle": "14.0",
+          "label": "2017",
+          "releaseDate": "2017-09-29",
+          "supportEnds": "2022-10-11",
+          "eol": "2027-10-12"
+        }
+      ]
+    },
+    {
+      "key": "oracle-database",
+      "name": "Oracle Database",
+      "kind": "database",
+      "sourceUrl": "https://endoflife.date/oracle-database",
+      "cycles": [
+        {
+          "cycle": "23",
+          "label": "23ai",
+          "releaseDate": "2023-09-19",
+          "eol": "2031-12-31",
+          "lts": true
+        },
+        {
+          "cycle": "21",
+          "label": "21c",
+          "releaseDate": "2021-08-13",
+          "eol": "2027-07-31"
+        },
+        {
+          "cycle": "19",
+          "label": "19c",
+          "releaseDate": "2019-04-25",
+          "eol": "2029-12-31",
+          "extendedSupportEnds": "2032-12-31",
+          "lts": true
+        },
+        {
+          "cycle": "18",
+          "label": "18c",
+          "releaseDate": "2018-07-23",
+          "eol": "2021-06-30"
+        },
+        {
+          "cycle": "12.2",
+          "label": "12c R2",
+          "releaseDate": "2017-03-01",
+          "eol": "2022-03-31"
+        },
+        {
+          "cycle": "12.1",
+          "label": "12c R1",
+          "releaseDate": "2013-06-25",
+          "eol": "2018-07-31",
+          "extendedSupportEnds": "2022-07-31",
+          "lts": true
+        },
+        {
+          "cycle": "11.2",
+          "label": "11g R2",
+          "releaseDate": "2009-09-01",
+          "eol": "2015-01-31",
+          "extendedSupportEnds": "2020-12-31",
+          "lts": true
+        },
+        {
+          "cycle": "11.1",
+          "releaseDate": "2007-08-09",
+          "eol": "2012-08-31",
+          "extendedSupportEnds": "2015-08-31",
+          "lts": true
+        },
+        {
+          "cycle": "10.2",
+          "releaseDate": "2005-07-11",
+          "eol": "2010-07-31",
+          "extendedSupportEnds": "2015-07-31",
+          "lts": true
+        },
+        {
+          "cycle": "10.1",
+          "releaseDate": "2003-09-08",
+          "eol": "2009-01-31",
+          "extendedSupportEnds": "2012-01-01",
+          "lts": true
+        },
+        {
+          "cycle": "9.2",
+          "releaseDate": "2002-05-01",
+          "eol": "2007-07-31",
+          "extendedSupportEnds": "2010-07-31",
+          "lts": true
+        },
+        {
+          "cycle": "9.0",
+          "releaseDate": "2001-06-01",
+          "eol": "2003-12-31"
+        }
+      ]
+    },
+    {
+      "key": "postgresql",
+      "name": "PostgreSQL",
+      "kind": "database",
+      "sourceUrl": "https://endoflife.date/postgresql",
+      "cycles": [
+        {
+          "cycle": "18",
+          "releaseDate": "2025-09-25",
+          "eol": "2030-11-14"
+        },
+        {
+          "cycle": "17",
+          "releaseDate": "2024-09-26",
+          "eol": "2029-11-08"
+        },
+        {
+          "cycle": "16",
+          "releaseDate": "2023-09-14",
+          "eol": "2028-11-09"
+        },
+        {
+          "cycle": "15",
+          "releaseDate": "2022-10-13",
+          "eol": "2027-11-11"
+        },
+        {
+          "cycle": "14",
+          "releaseDate": "2021-09-30",
+          "eol": "2026-11-12"
+        },
+        {
+          "cycle": "13",
+          "releaseDate": "2020-09-24",
+          "eol": "2025-11-13"
+        },
+        {
+          "cycle": "12",
+          "releaseDate": "2019-10-03",
+          "eol": "2024-11-21"
+        },
+        {
+          "cycle": "11",
+          "releaseDate": "2018-10-18",
+          "eol": "2023-11-09"
+        },
+        {
+          "cycle": "10",
+          "releaseDate": "2017-10-05",
+          "eol": "2022-11-10"
+        },
+        {
+          "cycle": "9.6",
+          "releaseDate": "2016-09-29",
+          "eol": "2021-11-11"
+        },
+        {
+          "cycle": "9.5",
+          "releaseDate": "2016-01-07",
+          "eol": "2021-02-11"
+        },
+        {
+          "cycle": "9.4",
+          "releaseDate": "2014-12-18",
+          "eol": "2020-02-13"
+        },
+        {
+          "cycle": "9.3",
+          "releaseDate": "2013-09-09",
+          "eol": "2018-11-08"
+        },
+        {
+          "cycle": "9.2",
+          "releaseDate": "2012-09-10",
+          "eol": "2017-11-09"
+        }
+      ]
+    }
+  ]
+}

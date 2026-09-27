@@ -1,4 +1,6 @@
 import type {
+  CodeApplicationView,
+  CodeView,
   ExplainView,
   LeverSelection,
   DashboardView,
@@ -235,6 +237,13 @@ export const api = {
 
     return request<InsightsView>(`/api/insights${withQuery(params)}`);
   },
+
+  /** La pantalla Code sobre el mismo recorte que el resto (ADR 0026). */
+  code: (filters: PortfolioFilters = {}) => request<CodeView>(`/api/code${withQuery(buildFilterQuery(filters))}`),
+
+  /** Los repositorios, componentes y dependencias de una aplicacion. */
+  codeApplication: (eaiCode: string) =>
+    request<CodeApplicationView>(`/api/code/applications/${encodeURIComponent(eaiCode)}`),
 
   whatIf: (eaiCode: string) =>
     request<WhatIfLabView>(`/api/applications/${encodeURIComponent(eaiCode)}/whatif`),

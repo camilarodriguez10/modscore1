@@ -77,6 +77,12 @@ public static class ChannelEndpoints
         api.MapGet("/insights", GetInsights)
             .WithSummary("Pantalla 09 — las seis preguntas del portafolio, con los mismos filtros.");
 
+        api.MapGet("/code", GetCode)
+            .WithSummary("Pantalla Code — obsolescencia y riesgo segun los repositorios, con los mismos filtros.");
+
+        api.MapGet("/code/applications/{eaiCode}", GetCodeApplication)
+            .WithSummary("Repositorios, componentes y dependencias de una aplicacion.");
+
         api.MapGet("/ingestion", GetIngestion)
             .WithSummary("Pantalla 08 — archivos esperados, cargas existentes y evolucion del portafolio.");
 
@@ -480,6 +486,40 @@ public static class ChannelEndpoints
         var dashboard = await system.GetDashboardAsync(filters.ToQuery(), axis, cancellationToken).ConfigureAwait(false);
 
         return Results.Ok(dashboard);
+    }
+
+    /// <summary>
+    /// La pantalla Code. Como el dashboard, la capa Channel no calcula: valida los filtros,
+    /// pregunta y entrega (ADR 0026).
+    /// </summary>
+    private static async Task<IResult> GetCode(
+        SystemApiClient system,
+        [AsParameters] FilterParameters filters,
+        CancellationToken cancellationToken)
+    {
+        if (InvalidFilters(filters) is { } problem)
+        {
+            return problem;
+        }
+
+        var code = await system.GetCodeAsync(filters.ToQuery(), cancellationToken).ConfigureAwait(false);
+
+        return Results.Ok(code);
+    }
+
+    private static async Task<IResult> GetCodeApplication(
+        string eaiCode,
+        SystemApiClient system,
+        CancellationToken cancellationToken)
+    {
+        if (!InputValidation.IsValidEaiCode(eaiCode))
+        {
+            return InvalidEaiCode();
+        }
+
+        var detail = await system.GetCodeApplicationAsync(eaiCode, cancellationToken).ConfigureAwait(false);
+
+        return detail is null ? NotFound() : Results.Ok(detail);
     }
 
     private static async Task<IResult> GetPortfolioRoadmap(

@@ -59,7 +59,21 @@ public sealed class CsvSourceReader
         public DateTimeOffset? Date(string column) => Values.GetValueOrDefault(column) as DateTimeOffset?;
     }
 
-    public sealed record ReadOutcome(IReadOnlyList<Row> Rows, IReadOnlyList<SourceRejection> Rejections);
+    /// <summary>Cuántos problemas distintos se devuelven por archivo.</summary>
+    public const int MaxReasons = 20;
+
+    /// <summary>Cuántos números de fila se devuelven por problema.</summary>
+    public const int MaxSampleRows = 5;
+
+    public sealed record ReadOutcome(IReadOnlyList<Row> Rows, IReadOnlyList<SourceRejection> Rejections)
+    {
+        /// <summary>
+        /// Los rechazos agrupados por problema, con <b>todas</b> las columnas malas de cada
+        /// fila y no solo la primera: quien corrige el archivo necesita la lista completa
+        /// de una vez, no descubrirla carga tras carga.
+        /// </summary>
+        public IReadOnlyList<RejectionReason> Reasons { get; init; } = [];
+    }
 
     public ReadOutcome Read(TextReader reader)
     {
@@ -147,6 +161,7 @@ public sealed class CsvSourceReader
         var mapping = MapColumns(headers);
         var rows = new List<Row>();
         var rejections = new List<SourceRejection>();
+        var reasons = new ReasonTally();
         var rowNumber = 1;
 
         while (csv.Read())
@@ -158,7 +173,7 @@ public sealed class CsvSourceReader
                 throw new SourceSchemaException(Notice.Of(NoticeCodes.CsvTooManyRows, ("max", MaxRows), ("file", _schema.FileName)));
             }
 
-            var (row, rejection) = ReadRow(csv, mapping, rowNumber);
+            var (row, rejection) = ReadRow(csv, mapping, rowNumber, reasons);
 
             if (row is not null)
             {
@@ -170,7 +185,7 @@ public sealed class CsvSourceReader
             }
         }
 
-        return new ReadOutcome(rows, rejections);
+        return new ReadOutcome(rows, rejections) { Reasons = reasons.Summary() };
     }
 
     /// <summary>
@@ -214,7 +229,8 @@ public sealed class CsvSourceReader
     private (Row? Row, SourceRejection? Rejection) ReadRow(
         CsvReader csv,
         Dictionary<string, int> mapping,
-        int rowNumber)
+        int rowNumber,
+        ReasonTally reasons)
     {
         var values = new Dictionary<string, object?>(mapping.Count, StringComparer.Ordinal);
         var errors = new List<Notice>();
@@ -245,14 +261,19 @@ public sealed class CsvSourceReader
 
         if (string.IsNullOrWhiteSpace(key))
         {
-            return (null, new SourceRejection(
-                rowNumber,
-                Notice.Of(NoticeCodes.RowMissingKey, ("column", _schema.KeyColumn)),
-                null));
+            var missingKey = Notice.Of(NoticeCodes.RowMissingKey, ("column", _schema.KeyColumn));
+            reasons.Add(missingKey, rowNumber);
+
+            return (null, new SourceRejection(rowNumber, missingKey, null));
         }
 
         if (errors.Count > 0)
         {
+            foreach (var error in errors)
+            {
+                reasons.Add(error, rowNumber);
+            }
+
             // El primero, con cuantos mas hubo: una fila con doce columnas malas no
             // necesita doce lineas en la pantalla de linaje para entenderse.
             var reason = errors.Count == 1 ? errors[0] : errors[0].With("more", errors.Count - 1);
@@ -265,4 +286,55 @@ public sealed class CsvSourceReader
 
     private static string Bounded(string header)
         => header.Length > MaxEchoedHeaderLength ? header[..MaxEchoedHeaderLength] + "…" : header;
+
+    /// <summary>
+    /// Agrupa los problemas por código, columna y tipo esperado. El valor no entra en la
+    /// clave: tres mil filas con tres mil valores distintos en la misma columna son un
+    /// solo problema, y el aviso guarda el de la primera como ejemplo.
+    /// </summary>
+    private sealed class ReasonTally
+    {
+        private readonly Dictionary<string, Entry> _entries = new(StringComparer.Ordinal);
+        private int _order;
+
+        public void Add(Notice notice, int rowNumber)
+        {
+            var key = string.Join(
+                '\u001f',
+                notice.Code,
+                notice.Args.GetValueOrDefault("column"),
+                notice.Args.GetValueOrDefault("expected"));
+
+            if (!_entries.TryGetValue(key, out var entry))
+            {
+                entry = new Entry(notice, _order++);
+                _entries[key] = entry;
+            }
+
+            entry.Rows++;
+
+            if (entry.SampleRows.Count < MaxSampleRows)
+            {
+                entry.SampleRows.Add(rowNumber);
+            }
+        }
+
+        public IReadOnlyList<RejectionReason> Summary()
+            => [.. _entries.Values
+                .OrderByDescending(e => e.Rows)
+                .ThenBy(e => e.Order)
+                .Take(MaxReasons)
+                .Select(e => new RejectionReason(e.Example, e.Rows, [.. e.SampleRows]))];
+
+        private sealed class Entry(Notice example, int order)
+        {
+            public Notice Example { get; } = example;
+
+            public int Order { get; } = order;
+
+            public int Rows { get; set; }
+
+            public List<int> SampleRows { get; } = [];
+        }
+    }
 }

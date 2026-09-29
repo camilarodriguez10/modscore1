@@ -114,6 +114,24 @@ public sealed class SystemApiClient(HttpClient http, IHttpClientFactory clients)
             ?? throw new SystemApiException("The System layer returned no upload result.");
     }
 
+    /// <summary>De dónde sale cada campo de la base, con la columna de la carga vigente.</summary>
+    public async Task<MappingCatalogResponse> GetMappingAsync(CancellationToken cancellationToken = default)
+        => await GetOrNullAsync<MappingCatalogResponse>("/system/ingestion/mapping", cancellationToken).ConfigureAwait(false)
+            ?? throw new SystemApiException("The System layer returned no column mapping.");
+
+    /// <summary>
+    /// El mapping propuesto para cada archivo, a partir de sus encabezados. La capa System
+    /// resuelve y valida; aquí solo se reenvía.
+    /// </summary>
+    public async Task<MappingPreviewResponse> PreviewMappingAsync(
+        MappingPreviewRequest request,
+        CancellationToken cancellationToken = default)
+        => await PostAsync<MappingPreviewRequest, MappingPreviewResponse>(
+                "/system/ingestion/mapping/preview",
+                request,
+                cancellationToken).ConfigureAwait(false)
+            ?? throw new SystemApiException("The System layer returned no mapping review.");
+
     public Task<RoadmapPlanResponse?> GetRoadmapPlanAsync(
         string eaiCode,
         CancellationToken cancellationToken = default)

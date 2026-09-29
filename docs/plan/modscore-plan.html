@@ -308,7 +308,7 @@ pre em{color:var(--ink-3);font-style:normal}
     <div class="mast-meta">
       <span>Base documental · <b>34 capturas: BRD + dashboard Power BI v1.3 + archivos fuente</b></span>
       <span>Ruleset · <b>v1.3</b></span>
-      <span>Fases 00–13 entregadas · 14 y 15 en curso · dashboard ejecutivo · pantalla Code · <b>847 pruebas .NET, 66 unitarias y 51 e2e en verde</b></span>
+      <span>Fases 00–13 entregadas · 14 y 15 en curso · dashboard ejecutivo · pantalla Code · mapping de columnas · <b>889 pruebas .NET, 74 unitarias y 56 e2e en verde</b></span>
       <span>Duración estimada · <b>16 semanas</b></span>
     </div>
   </div>
@@ -820,7 +820,7 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
     <div class="screen key"><span class="i">04</span><div><div class="t">What-If Lab <span class="req">req. 5</span></div><div class="d">Panel de palancas con toggles y sliders, recálculo en vivo con delta por métrica, comparación lado a lado baseline contra escenario, ranking de quick wins, modo objetivo (ingresar score meta y obtener el set mínimo de acciones) y escenarios guardados y compartibles.</div></div></div>
     <div class="screen"><span class="i">05</span><div><div class="t">Roadmap y plan futuro <span class="req">req. 6</span></div><div class="d">Ficha MAPS de la aplicación, timeline de hitos, score proyectado tras el roadmap, dependencias y alertas de incoherencia.</div></div></div>
     <div class="screen"><span class="i">06</span><div><div class="t">Portfolio Roadmap <span class="req">req. 6</span></div><div class="d">Matriz Disposition × Roadmap, capacidad por trimestre y agregados por LOB.</div></div></div>
-    <div class="screen"><span class="i">07</span><div><div class="t">Data Lineage <span class="req">req. 8 · 9</span></div><div class="d">Estado de cada fuente: última carga, filas leídas, filas rechazadas con motivo y cobertura por métrica — qué porcentaje de aplicaciones tiene dato.</div></div></div>
+    <div class="screen"><span class="i">07</span><div><div class="t">Data Lineage <span class="req">req. 8 · 9</span></div><div class="d">Estado de cada fuente: última carga, filas leídas, filas rechazadas con motivo y cobertura por métrica — qué porcentaje de aplicaciones tiene dato. Antes de cargar, la pestaña Mapping y la revisión de columnas dicen qué archivo y qué columna cargan cada campo.</div></div></div>
     <div class="screen"><span class="i">08</span><div><div class="t">Cargas <span class="req">req. 8 · 9</span></div><div class="d">Subir los archivos del período y recalcular el portafolio, con el veredicto de cada archivo — filas leídas, filas rechazadas y el motivo — el historial de versiones publicadas y la evolución del score del portafolio a lo largo de las cargas. Desde la Fase 10, Cargas y Linaje son las dos pestañas de la pantalla Datos, con un selector de carga compartido.</div></div></div>
     <div class="screen"><span class="i">09</span><div><div class="t">Admin · Rulesets</div><div class="d">Comparación de versiones de ruleset, simulación del impacto en todo el portafolio antes de publicar, e historial de overrides con su justificación.</div></div></div>
     <div class="screen key"><span class="i">10</span><div><div class="t">Insights — las seis preguntas <span class="req">req. 4 · 6</span></div><div class="d">Qué tan sano está el portafolio, qué modernizar primero según impacto y esfuerzo, dónde reducir complejidad, dónde se concentra el riesgo tecnológico, qué causa la obsolescencia y dónde faltan defensas de continuidad. Una sola llamada, el mismo filtro que el resto del sitio, y cada número con su aritmética a la vista.</div></div></div>
@@ -992,7 +992,7 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
 
   <div class="ship">
     <div class="h">Criterio de aceptación cumplido</div>
-    <p><strong>847 pruebas .NET en verde</strong>, más 66 unitarias y 51 de punta a punta en la SPA —veintiséis de flujo y veinticinco de accesibilidad—, cero paquetes vulnerables —ya con EF Core y SQLite dentro—, y el build compila con todas las reglas de seguridad del analizador como errores. El motor reproduce exactamente los dos casos documentados: <span class="mono">EAI 14381 = 79,67</span> y <span class="mono">EAI 10969 = 79,61</span>, métrica por métrica.</p>
+    <p><strong>889 pruebas .NET en verde</strong>, más 74 unitarias y 56 de punta a punta en la SPA —veintinueve de flujo y veintisiete de accesibilidad—, cero paquetes vulnerables —ya con EF Core y SQLite dentro—, y el build compila con todas las reglas de seguridad del analizador como errores. El motor reproduce exactamente los dos casos documentados: <span class="mono">EAI 14381 = 79,67</span> y <span class="mono">EAI 10969 = 79,61</span>, métrica por métrica.</p>
     <p>El 14381 se reproduce <strong>extremo a extremo</strong>: generador → puerto <code>ISourceReader</code> → ensamblado → motor → <code>system-api</code> → <code>channel-api</code> → SPA. Cada eslabón de esa cadena está cubierto por tests, y el último se ve en pantalla.</p>
   </div>
 
@@ -1425,6 +1425,24 @@ endoflife.date · registros de paquetes ─────────►       │
     <b class="tag">Datos de demostración, dichos con todas sus letras</b>
     Hasta la integración, los repositorios se generan del portafolio vigente, deterministas por código EAI: el lenguaje del maestro elige la familia tecnológica y el Currency Score inclina las versiones. La pantalla lo avisa en ámbar antes que cualquier número, y ese proveedor <strong>no arranca fuera de Development</strong>, para que un dato inventado nunca se lea como real. Las decisiones para conectarla —la GitHub App, el mapeo, la salida de red, la fuente de vulnerabilidades, el refresco del catálogo y los puntos del índice— son <strong>GH-01 a GH-09</strong> en <code>docs/PENDING-ITEMS.md</code>.
   </div>
+
+  <h3>Mapping de columnas antes de cargar y motivos de rechazo</h3>
+  <div class="ship">
+    <div class="h">Pedido el 28 de septiembre · entregado el mismo día</div>
+    <p>La primera carga con datos reales dejó el EAI Master en <strong>0 filas y 3.869 rechazadas</strong>, sin decir por qué, con datos que no se pueden compartir. Y faltaba un paso <strong>previo</strong> a la carga: el linaje describe lo que ya entró, y había que decidir antes qué archivo y qué columna cargan cada valor en la base.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:30%">Pedido</th><th>Cómo quedó</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Por qué se rechazaron las filas</strong></td><td><em>Why rows were rejected</em>: los rechazos agrupados por problema —columna, qué esperaba, el valor de la primera fila, cuántas filas y las primeras—, contando todas las columnas malas de cada fila, con una pista cuando el valor delata la causa (<code>N/A</code> en vez de celda vacía, decimales en enteros, punto de miles, columnas corridas)</td></tr>
+        <tr><td><strong>Decidir antes de cargar qué columna carga cada campo</strong></td><td><em>Review column mapping</em>: el navegador lee <strong>solo la primera línea</strong> de cada archivo, y la System propone por cada campo la columna que lo cargaría —mismo nombre, alias conocido, como en la carga anterior o ninguna—, con su tipo y las métricas que lo usan. Se confirma o se elige otra</td></tr>
+        <tr><td><strong>Que quede y se reutilice</strong></td><td>Cada carga registra qué columna cargó cada campo; la próxima revisión lo propone si el archivo sigue trayendo esas columnas. La pestaña <strong>Data → Mapping</strong> lo muestra por fuente sin elegir archivos</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">El mapping se aplica <strong>reescribiendo el encabezado</strong> con los nombres canónicos: el lector no cambia, el archivo guardado dice de dónde salió cada valor y las versiones viejas se releen igual. Revisar exige lo mismo que publicar, y ninguna fila de datos sale del navegador antes de cargar. De paso: <code>1.234,5</code> ya no se lee como 1,2345. El porqué, en el ADR 0027.</div>
 
   <h3>Estructura del repositorio</h3>
   <pre>modernization-score/

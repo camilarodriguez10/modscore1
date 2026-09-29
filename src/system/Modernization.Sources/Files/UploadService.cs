@@ -232,6 +232,14 @@ public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? cat
                 Notice.Of(NoticeCodes.FileTooLarge, ("size", Megabytes(file.Length)), ("max", Megabytes(MaxFileBytes))));
         }
 
+        // Un mapping es de una fuente concreta: sin la fuente asignada no hay contra qué
+        // contrato validarlo.
+        if (file.ColumnMap is not null && string.IsNullOrWhiteSpace(file.AssignedFileName))
+        {
+            return new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0,
+                Notice.Of(NoticeCodes.MappingNeedsSource));
+        }
+
         var scratch = Path.Combine(
             staging,
             Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture) + ".part");
@@ -270,7 +278,55 @@ public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? cat
 
         // El destino es el nombre canonico del contrato, dentro de staging.
         var destination = Path.Combine(staging, schema.FileName);
-        System.IO.File.Move(scratch, destination, overwrite: true);
+        ColumnResolution resolution;
+
+        try
+        {
+            resolution = ResolveColumns(scratch, schema, file.ColumnMap);
+
+            if (!resolution.IsValid && file.ColumnMap is not null)
+            {
+                accepted.Remove(schema.FileName);
+                System.IO.File.Delete(scratch);
+
+                var problem = resolution.Problems.Count == 1
+                    ? resolution.Problems[0]
+                    : resolution.Problems[0].With("more", resolution.Problems.Count - 1);
+
+                return new PublishedFileOutcome(clientName, schema.FileName, schema.Source, file.Length, 0, 0, problem)
+                {
+                    DetectedColumns = match.DetectedColumns,
+                };
+            }
+
+            if (file.ColumnMap is not null)
+            {
+                // Con un mapping, el archivo se guarda con el encabezado reescrito: dice por
+                // si mismo que columna cargo cada campo, y releerlo no depende del mapping.
+                using (var output = new StreamWriter(destination, append: false, new System.Text.UTF8Encoding(false)))
+                {
+                    ColumnMapping.Rewrite(new StreamReader(scratch), output, resolution);
+                }
+
+                System.IO.File.Delete(scratch);
+            }
+            else
+            {
+                System.IO.File.Move(scratch, destination, overwrite: true);
+            }
+        }
+        catch (SourceSchemaException ex)
+        {
+            accepted.Remove(schema.FileName);
+            System.IO.File.Delete(scratch);
+            System.IO.File.Delete(destination);
+
+            return new PublishedFileOutcome(clientName, schema.FileName, schema.Source, file.Length, 0, 0,
+                ex.Notice ?? Notice.Of(NoticeCodes.CsvUnreadable, ("row", 1)))
+            {
+                DetectedColumns = match.DetectedColumns,
+            };
+        }
 
         try
         {
@@ -287,6 +343,8 @@ public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? cat
                 null)
             {
                 DetectedColumns = match.DetectedColumns,
+                RejectionReasons = outcome.Reasons,
+                ColumnMap = resolution.ToColumnMap(),
             };
         }
         catch (SourceSchemaException ex)
@@ -342,6 +400,7 @@ public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? cat
             ApplicationCount = 0,
             Files = [.. outcomes.Where(o => o.CanonicalFileName is not null).Select(o => o.CanonicalFileName!)],
             UploadedBy = uploadedBy,
+            ColumnMaps = [.. outcomes.Where(o => o.ColumnMap is not null).Select(o => o.ColumnMap!)],
         };
         probeManifest.Write(staging);
 
@@ -368,6 +427,41 @@ public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? cat
         manifest.Write(destination);
 
         return probe with { ApplicationCount = snapshot.Applications.Count };
+    }
+
+    /// <summary>
+    /// El mapping de la carga vigente: el manifiesto de la versión más reciente. Una
+    /// versión anterior al registro del mapping no trae ninguno.
+    /// </summary>
+    public Task<IReadOnlyList<SourceColumnMap>> GetCurrentColumnMapsAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (!Directory.Exists(rootDirectory))
+        {
+            return Task.FromResult<IReadOnlyList<SourceColumnMap>>([]);
+        }
+
+        var current = Directory.EnumerateDirectories(rootDirectory)
+            .Select(UploadManifest.TryRead)
+            .Where(manifest => manifest is not null)
+            .OrderByDescending(manifest => manifest!.CapturedAt)
+            .FirstOrDefault();
+
+        return Task.FromResult(current?.ColumnMaps ?? []);
+    }
+
+    /// <summary>
+    /// Qué columna del archivo carga cada campo. Sin mapping es lo mismo que decide el
+    /// lector por nombre o alias, y queda registrado igual: cada carga dice de qué columna
+    /// salió cada valor.
+    /// </summary>
+    private static ColumnResolution ResolveColumns(string path, SourceSchema schema, IReadOnlyDictionary<string, string?>? map)
+    {
+        using var reader = new StreamReader(path);
+        var headers = CsvSourceReader.ReadHeader(reader);
+
+        return ColumnMapping.Resolve(schema, headers, map);
     }
 
     private static string Megabytes(long bytes)

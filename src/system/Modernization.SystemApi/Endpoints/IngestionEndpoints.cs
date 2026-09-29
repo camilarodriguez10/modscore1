@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using Modernization.Domain.Sources;
 using Modernization.Security;
+using Modernization.Sources.Files;
 using Modernization.SystemApi.Contracts;
 using Modernization.SystemApi.Services;
 
@@ -47,6 +48,88 @@ public static class IngestionEndpoints
         group.MapPost("/ingestion/upload", PostUpload)
             .WithSummary("Publica una carga nueva y recalcula el portafolio. Exige alcance completo.")
             .DisableAntiforgery();
+
+        group.MapPost("/ingestion/mapping/preview", PostMappingPreview)
+            .WithSummary("Propone qué columna de cada archivo carga cada campo, solo con los encabezados. No publica nada.");
+
+        group.MapGet("/ingestion/mapping", GetMapping)
+            .WithSummary("De dónde sale cada campo de la base: nombres aceptados y columna de la carga vigente.");
+    }
+
+    /// <summary>
+    /// El mapping vigente, fuente por fuente. Describe cargas completas, como el linaje:
+    /// exige alcance sobre todo el portafolio.
+    /// </summary>
+    private static async Task<IResult> GetMapping(
+        HttpContext context,
+        PortfolioScope scope,
+        IngestionService ingestion,
+        PortfolioService portfolio,
+        ILoggerFactory loggers,
+        CancellationToken cancellationToken)
+    {
+        if (!scope.IsFull)
+        {
+            var audit = SecurityAudit.CreateLogger(loggers);
+            SecurityAudit.ScopeDenied(audit, ForwardedUser.Read(context), SecurityAudit.Clean(context.Request.Path.Value));
+
+            return ApiProblem.Create(
+                StatusCodes.Status403Forbidden,
+                "insufficient-scope",
+                "Insufficient scope",
+                "The column mapping describes whole uploads and requires scope over the whole portfolio.");
+        }
+
+        var rules = await portfolio.GetRulesAsync(cancellationToken).ConfigureAwait(false);
+        var metrics = rules.Ruleset.Metrics.Select(m => (m.Name, m.Source.Field)).ToList();
+
+        return Results.Ok(await ingestion.DescribeMappingAsync(metrics, cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <summary>
+    /// Revisión del mapping antes de cargar. Llegan solo los encabezados, pero es parte de
+    /// publicar: exige lo mismo que la carga.
+    /// </summary>
+    private static async Task<IResult> PostMappingPreview(
+        MappingPreviewRequest? request,
+        HttpContext context,
+        PortfolioScope scope,
+        IngestionService ingestion,
+        PortfolioService portfolio,
+        ILoggerFactory loggers,
+        CancellationToken cancellationToken)
+    {
+        if (!scope.IsFull)
+        {
+            var audit = SecurityAudit.CreateLogger(loggers);
+            SecurityAudit.ScopeDenied(audit, ForwardedUser.Read(context), SecurityAudit.Clean(context.Request.Path.Value));
+
+            return ApiProblem.Create(
+                StatusCodes.Status403Forbidden,
+                "insufficient-scope",
+                "Insufficient scope",
+                "Reviewing a column mapping requires scope over the whole portfolio, like publishing an upload.");
+        }
+
+        if (request?.Files is not { Count: > 0 } files
+            || files.Count > IngestionService.MaxFiles
+            || files.Any(f => f is null
+                || (f.Header?.Length ?? 0) > ColumnMapping.MaxHeaderLineLength
+                || (f.Columns?.Count ?? 0) > IngestionService.MaxColumnMapEntries))
+        {
+            return ApiProblem.Create(
+                StatusCodes.Status400BadRequest,
+                "invalid-mapping-preview",
+                "Invalid mapping review",
+                $"Send between 1 and {IngestionService.MaxFiles} file headers, each up to {ColumnMapping.MaxHeaderLineLength} characters.");
+        }
+
+        var rules = await portfolio.GetRulesAsync(cancellationToken).ConfigureAwait(false);
+        var metrics = rules.Ruleset.Metrics.Select(m => (m.Name, m.Source.Field)).ToList();
+
+        var preview = await ingestion.PreviewMappingAsync(request, metrics, cancellationToken).ConfigureAwait(false);
+
+        return Results.Ok(preview);
     }
 
     private static async Task<IResult> GetVersions(
@@ -164,8 +247,14 @@ public static class IngestionEndpoints
             ? null
             : form["assign"].Select(v => v ?? string.Empty).ToList();
 
+        // El mapping de columnas, uno por archivo y en su mismo orden, cuando se revisó
+        // antes de cargar. Vacío significa que lo decidan el nombre y los alias.
+        var columnMaps = form["map"].Count == 0
+            ? null
+            : form["map"].Select(v => v ?? string.Empty).ToList();
+
         var outcome = await ingestion
-            .PublishAsync(form.Files, form["label"].ToString(), user, assignments, cancellationToken)
+            .PublishAsync(form.Files, form["label"].ToString(), user, assignments, columnMaps, cancellationToken)
             .ConfigureAwait(false);
 
         if (!outcome.Accepted || outcome.Version is null)

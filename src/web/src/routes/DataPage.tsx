@@ -3,6 +3,7 @@ import { useIngestion, useSession } from '../api/hooks';
 import { Label, QueryError, Spinner } from '../components/primitives';
 import { IngestionPanel } from './IngestionPage';
 import { LineagePanel } from './LineagePage';
+import { MappingPanel } from './MappingPanel';
 
 /**
  * Pantalla de Datos: cargas y linaje, juntos.
@@ -22,8 +23,14 @@ export function DataPage() {
   // existe, y el servidor lo niega igual si alguien la fuerza por la URL.
   const canSeeLineage = session.data?.permissions.fullPortfolio ?? false;
   const requested = params.get('tab');
-  // "linaje" es el valor que usaban los enlaces de la Fase 10.
-  const tab = (requested === 'lineage' || requested === 'linaje') && canSeeLineage ? 'lineage' : 'uploads';
+  // "linaje" es el valor que usaban los enlaces de la Fase 10. El mapping describe cargas
+  // completas como el linaje, y tiene la misma condicion.
+  const tab =
+    (requested === 'lineage' || requested === 'linaje') && canSeeLineage
+      ? 'lineage'
+      : requested === 'mapping' && canSeeLineage
+        ? 'mapping'
+        : 'uploads';
 
   if (ingestion.isPending) return <Spinner label="Loading source status…" />;
 
@@ -85,17 +92,20 @@ export function DataPage() {
           Uploads
         </TabButton>
         {canSeeLineage && (
+          <TabButton active={tab === 'mapping'} onClick={() => update({ tab: 'mapping' })}>
+            Mapping
+          </TabButton>
+        )}
+        {canSeeLineage && (
           <TabButton active={tab === 'lineage'} onClick={() => update({ tab: 'lineage' })}>
             Lineage
           </TabButton>
         )}
       </nav>
 
-      {tab === 'uploads' ? (
-        <IngestionPanel data={ingestion.data} selectedVersion={selected} />
-      ) : (
-        <LineagePanel version={selected || undefined} />
-      )}
+      {tab === 'uploads' && <IngestionPanel data={ingestion.data} selectedVersion={selected} />}
+      {tab === 'mapping' && <MappingPanel onReview={() => update({ tab: 'uploads' })} />}
+      {tab === 'lineage' && <LineagePanel version={selected || undefined} />}
     </div>
   );
 }

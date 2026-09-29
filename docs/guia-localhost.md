@@ -217,7 +217,7 @@ dotnet test ModernizationScore.slnx
 npm --prefix src/web test
 ```
 
-Deben terminar en verde: 847 pruebas .NET y 66 de la interfaz.
+Deben terminar en verde: 889 pruebas .NET y 74 de la interfaz.
 
 ---
 
@@ -506,6 +506,38 @@ llevarán a **Data**. Es lo esperado, no un error. Luego:
    por qué.
 3. Con los CSV de ejemplo, Portfolio muestra 250 aplicaciones y la 14381 da **79.67**.
 
+**Con tus propios exports: revisa el mapping antes de cargar.** Si tus archivos no traen
+exactamente los nombres de columna esperados, decide primero qué columna carga cada campo:
+
+1. En **Data → Uploads**, elige los archivos y pulsa **Review column mapping**. El navegador
+   lee **solo la primera línea** de cada archivo (los nombres de las columnas): ninguna fila
+   de datos sale del equipo en este paso.
+2. Para cada archivo verás su fuente y, por cada campo de la base, la columna que lo
+   cargaría y cómo se decidió: *Same name*, *Known alias*, *As in the last upload* o *Not in
+   this file*. Si una columna tuya no aparece donde debe, elígela en el selector del campo;
+   las columnas que no cargan nada se listan debajo de la tabla.
+3. Pulsa **Upload with this mapping**. El mapping queda guardado con la carga y la próxima
+   vez se propone solo.
+
+La pestaña **Data → Mapping** muestra, sin elegir archivos, de qué columna sale cada campo en
+la carga vigente, con qué nombres se reconoce solo y qué métricas lo usan.
+
+**Si la carga rechaza filas.** Debajo del detalle por archivo, **Why rows were rejected**
+dice qué pasó, agrupado por problema: la columna, qué esperaba, el valor de la primera fila
+que lo tuvo y cuántas filas. No hace falta compartir el archivo para entenderlo. Los casos
+más comunes:
+
+| La pantalla dice | Qué hacer en el archivo |
+|---|---|
+| `'Kenna_Score' expected an integer. For example, 'N/A'` | Deja **vacías** las celdas sin dato: una celda vacía se acepta y solo deja fuera esa métrica; `N/A`, `-` o `#N/A` rechazan la fila entera |
+| `... expected an integer. For example, '712.5'` | Esa columna lleva números enteros: redondéalos en el export |
+| `... expected an integer. For example, '1.234'` | El export usa punto como separador de miles: expórtalo sin separadores |
+| Una columna de números con texto en **todas** las filas | Las columnas están corridas —suele ser una coma dentro de un valor sin comillas— o el campo se cargó desde otra columna: revisa el mapping |
+| `No value in the key column 'EAI_Code'` | Filas sin EAI: totales, subtotales o líneas separadoras exportadas con los datos |
+
+Si el EAI Master queda sin ninguna fila válida, la carga se descarta completa y el portafolio
+vigente no cambia.
+
 **Para comparar en el tiempo: los cuatro trimestres de ejemplo.** `data\timeline` trae el
 mismo portafolio en cuatro cargas —Q4 2025, Q1, Q2 y Q3 2026—, con aplicaciones que se
 modernizan y otras que envejecen. Cópialas a `data\local` **antes de arrancar la capa
@@ -576,6 +608,7 @@ permite ver.
 | Camino C: `tar: Error opening archive` o `Expand-Archive` dice que no encuentra la ruta | El `.zip` no está en `Descargas` o se llama distinto (por ejemplo, `sitio-compilado (1).zip`) | Busca el archivo y cambia la ruta en el comando |
 | `dotnet test` falla con «el archivo está siendo usado por otro proceso» | La aplicación está corriendo | Detén todas las ventanas antes de compilar o probar |
 | Todo iba bien y dejó de arrancar tras mover la carpeta | Ruta dentro de OneDrive o demasiado larga | Muévela a algo como `C:\modscore` |
+| En Data, el EAI Master queda con `0` filas y todas rechazadas, y la carga se descarta | Todas las filas comparten un problema: texto en una columna de números, decimales donde van enteros o un campo cargado desde otra columna | Lee **Why rows were rejected** y sigue [Si la carga rechaza filas](#cargar-archivos); si el campo sale de otra columna, elígela con **Review column mapping** |
 
 ---
 

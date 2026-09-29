@@ -405,7 +405,7 @@ Regla general cuando la métrica **ya tiene dato**: `Δ = 0.8 × w × (v' − v)
 | 4 | **What-If Lab** | Panel de palancas con sliders/toggles; recálculo en vivo con delta por métrica; comparación lado a lado baseline vs escenario; ranking de quick wins; modo "objetivo": ingresar score meta y obtener el set mínimo de acciones; guardar y compartir escenarios. | 5 |
 | 5 | **Roadmap & Plan Futuro** | Ficha MAPS de la app, timeline de hitos, score proyectado post-roadmap, dependencias, alertas de incoherencia. | 6 |
 | 6 | **Portfolio Roadmap** | Matriz Disposition × Roadmap, capacidad por trimestre, agregados por LOB. | 6 |
-| 7 | **Data Lineage** | Estado de cada fuente: última carga, filas, filas rechazadas con motivo, cobertura por métrica (% de apps con dato). | 8, 9 |
+| 7 | **Data Lineage** | Estado de cada fuente: última carga, filas, filas rechazadas con motivo, cobertura por métrica (% de apps con dato). Desde el 2026-09-28, con la pestaña **Mapping** (archivo y columna que cargan cada campo, decidido antes de cargar) y los motivos de rechazo agrupados en el resultado de cada carga ([ADR 0027](docs/adr/0027-el-mapping-de-columnas-se-decide-antes-de-cargar.md)). | 8, 9 |
 | 8 | **Admin / Rulesets** | Comparación de versiones de ruleset, simulación de impacto en el portafolio antes de publicar, historial de overrides con justificación. | — |
 | 9 | **Insights** | Las seis preguntas de gestión sobre el portafolio filtrado: salud, qué modernizar primero (impacto contra esfuerzo), dónde reducir complejidad, dónde se concentra el riesgo, qué causa la obsolescencia y dónde faltan defensas de continuidad. Cada número con su aritmética a la vista ([ADR 0023](docs/adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md)). | 4, 6 |
 | 10 | **Code** | Obsolescencia y riesgo según lo que declaran los repositorios de cada aplicación en GitHub Enterprise: componentes contra su fecha de fin de vida (endoflife.date), bibliotecas obsoletas, desactualizadas o con alertas, discrepancias con el Currency Score de CMT e índice de riesgo de código por aplicación, con su detalle. Datos de demostración hasta la integración ([ADR 0026](docs/adr/0026-el-analisis-de-codigo-llega-de-github-enterprise.md)). | — |
@@ -1176,6 +1176,27 @@ también se levanta sin Node ni Vite: camino C de la [guía](docs/guia-localhost
 
 **C2 — la integración con GitHub Enterprise** está en [8ter](#en-paralelo--integración-con-github-enterprise-pantalla-code)
 y en GH-01 a GH-09 de [docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md).
+
+### 8.12 Mapping de columnas antes de cargar y motivos de rechazo (2026-09-28)
+
+La primera carga con datos reales dejó el EAI Master en 0 filas y 3.869 rechazadas, sin decir
+por qué, con datos que no se pueden compartir. El mismo día pidieron un módulo de mapping
+previo a la carga: el linaje describe lo que ya entró, y hacía falta decidir antes **qué
+archivo y qué columna cargan cada valor en la base**. Quedó así
+([ADR 0027](docs/adr/0027-el-mapping-de-columnas-se-decide-antes-de-cargar.md)):
+
+| Pedido | Cómo quedó |
+|---|---|
+| Saber por qué se rechazaron las filas sin compartir el archivo | *Why rows were rejected*, bajo el detalle por archivo: los rechazos agrupados por problema —columna, qué esperaba, el valor de la primera fila, cuántas filas y las primeras—, contando todas las columnas malas de cada fila, con una pista cuando el valor delata la causa. El resultado por archivo ya no dice «accepted» si ninguna fila sirvió |
+| Decidir antes de cargar qué columna carga cada campo | *Review column mapping*: el navegador lee solo la primera línea de cada archivo y la System propone, por cada campo, la columna que lo cargaría (mismo nombre, alias conocido, como en la carga anterior o ninguna), con su tipo y las métricas que lo usan. Se confirma o se elige otra, y *Upload with this mapping* publica con ese mapping |
+| Que quede registrado y se reutilice | Cada carga registra qué columna cargó cada campo (manifiesto; columna `ColumnMaps` en la base, migración `MapeoDeColumnas`). La próxima revisión lo propone si el archivo sigue trayendo esas columnas |
+| Un módulo propio, previo a la carga | Pestaña **Data → Mapping**: por fuente, la columna de la carga vigente, los nombres con que cada campo se reconoce solo y las métricas que lo usan, sin elegir archivos |
+
+El mapping se aplica **reescribiendo el encabezado** con los nombres canónicos: el lector no
+cambia, el archivo guardado dice por sí mismo de dónde salió cada valor y las versiones
+viejas se releen igual. De paso se corrigió la lectura de números con los dos separadores
+(`1.234,5` se leía 1,2345) y la etiqueta del selector de archivos, que las pruebas de
+accesibilidad nunca habían visto porque con datos generados la carga está apagada.
 
 ## 8bis. Ampliación solicitada — fases 10 a 12
 

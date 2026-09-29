@@ -56,11 +56,13 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 - **Decided on 2026-09-18:** the Currency Score is the score CMT delivers (`Raw_Tech_Score`), and the dashboard is the home page.
 - **Code screen** (2026-09-26, ADR 0026): `/code`, *Component obsolescence & risk*. What each application's repositories declare —runtimes, frameworks, app servers, OS images, databases and libraries— checked against **end-of-life dates from endoflife.date** (a versioned snapshot: 22 products, 273 release cycles) and open advisories; libraries that need attention; where the code contradicts the CMT Currency Score; and a code risk index per application with its detail. Its 15 parameters are a new `code` area of the definitions, edited from the portal. **Repositories are sample data** generated from the portfolio until GitHub Enterprise is connected (GH-01 … GH-09); the screen says so, and the sample provider refuses to start outside Development.
 - **Code screen over time** (2026-09-27): the outlook today and in one, two and three years if nothing changes (components past end of life, share of code still supported, code risk), an improvement plan with a target release and an urgency per action, and score, Currency Score and Risk Score per upload. `data/timeline` holds the same dummy portfolio in four quarterly uploads, and the Dummy mode now rewinds the same applications instead of generating a different portfolio per quarter.
+- **Column mapping before uploading** (2026-09-28, ADR 0027): *Review column mapping* reads only the header row of each file in the browser and shows, for every field of the database, which column of the file will load it (same name, known alias, as in the last upload, or not in the file), its type and the metrics that use it. The person confirms or picks another column; the System validates it, stores the file with canonical column names and **records the mapping with the upload** (manifest in the file adapter, a `ColumnMaps` column in the database adapter), so the next review proposes it. *Data → Mapping* shows the same per source without choosing files.
+- **Why rows were rejected** (2026-09-28): the upload result groups rejected rows by problem —column, expected type, the first value, how many rows and the first row numbers— counting every bad column of a row, with a hint when the value gives the cause away (`N/A` placeholders, decimals in whole-number columns, dot thousands separators, shifted columns). Before, the screen only showed how many rows were left out. Also fixed: a number with both separators (`1.234,5`) was read as 1.2345 without warning; the last separator is now the decimal one.
 - **Fixed on 2026-09-18:** the Insights risk index counted Kenna **below 50** as weak vulnerability management. Kenna runs from 0 to 1000 and higher is worse, so it counted the best applications. It now counts Kenna ≥ 670 (the BRD's Critical/High band), and the threshold is a parameter.
 - **Tests**:
-  - 847 .NET tests: 319 engine, 189 contracts, 339 API.
-  - 66 SPA unit tests.
-  - 51 end-to-end scenarios: 26 flows and 25 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
+  - 889 .NET tests: 319 engine, 216 contracts, 354 API.
+  - 74 SPA unit tests.
+  - 56 end-to-end scenarios: 29 flows and 27 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
   - Zero vulnerable packages, and `npm audit` is clean.
 
 ### What needs the team
@@ -153,6 +155,7 @@ it is what the platform does today unless the row says otherwise.
 | TD-13 | Security review of phases 09–13 by a second person | Security | P1 | Security | Open |
 | TD-14 | Size of the rules editor screen | Maintainability | P3 | Development | Open |
 | TD-15 | Warm-up service and caches with many versions | Performance | P3 | Development | Open |
+| TD-16 | Column mapping of any upload in the lineage, and a first-time review | Product / data | P3 | Development | Open |
 | PF-01 | Save and share what-if scenarios | Product | P3 | Product | Open |
 | PF-02 | Override rule UI and audit | Product | P2 | Product | Blocked by SR-04 |
 | PF-03 | Currency Score KPI | Product | P3 | Product | Done (2026-09-18) |
@@ -954,6 +957,16 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
   - Memory with hundreds of uploads and frequent rule changes is not measured.
 - **Acceptance criteria:** memory profile with 200 uploads and 10 rules versions. **Effort:** S.
 
+### TD-16 — Column mapping of any upload in the lineage, and a first-time review
+
+- **Priority:** P3 · **Owner:** development · **Status:** Open
+- **Context (2026-09-28, ADR 0027):**
+  - Every upload records which column loaded each field (manifest `ColumnMaps`; `snapshot_version.ColumnMaps` in the database). *Data → Mapping* shows the **current** upload only; the lineage of an older upload does not show its mapping yet.
+  - Uploads before 2026-09-28, including the four `data/timeline` quarters, have no recorded mapping. The tab says so.
+  - A mapping is prepared with the files at hand (only their header is read). There is no way to prepare one for a source without a file.
+  - The review lists every field of the contract; the EAI Master has 28. If exports keep only a few of them, a "show only the fields in this file" toggle would shorten it.
+- **Acceptance criteria:** the lineage shows the recorded column of each field for the selected upload, with the same wording as the Mapping tab. **Effort:** S.
+
 ---
 
 ## 5. Product follow-ups
@@ -1308,11 +1321,11 @@ Numbers are for comparing changes on the same machine, not for sizing production
 | Suite | Count | Command |
 |---|---|---|
 | Engine (golden cases, mapping table, what-if, roadmap, rules editor, comparison, dashboard, insights, end-of-life catalog, code analyzer) | 319 | `dotnet test tests/Modernization.Scoring.Engine.Tests` |
-| Source contracts (Dummy, File, Database; rules stores; sample repositories; dummy timeline) | 189 | `dotnet test tests/Modernization.Sources.ContractTests` |
-| API end-to-end through both layers and security | 339 | `dotnet test tests/Modernization.Api.Tests` |
-| SPA unit (Vitest) | 66 | `npm --prefix src/web test` |
-| SPA end-to-end (Playwright, Edge locally, Chromium in CI) | 26 | `npm --prefix src/web run test:e2e` |
-| SPA accessibility (axe, the daily screens and the Code detail, in light and dark) | 25 | Same command; `e2e/accessibility.spec.ts` |
+| Source contracts (Dummy, File, Database; rules stores; sample repositories; dummy timeline; column mapping; rejection reasons) | 216 | `dotnet test tests/Modernization.Sources.ContractTests` |
+| API end-to-end through both layers and security | 354 | `dotnet test tests/Modernization.Api.Tests` |
+| SPA unit (Vitest) | 74 | `npm --prefix src/web test` |
+| SPA end-to-end (Playwright, Edge locally, Chromium in CI) | 29 | `npm --prefix src/web run test:e2e` |
+| SPA accessibility (axe, the daily screens, the Code detail and the column mapping, in light and dark) | 27 | Same command; `e2e/accessibility.spec.ts` |
 | SPA end-to-end against an already running site | Same | With the site running (for example the Channel serving `src/web/dist`), from `src/web`: `MODSCORE_E2E_BASE_URL=http://localhost:5100 npx playwright test` |
 | SPA lint (ESLint, required by CI) | 0 errors | `npm --prefix src/web run lint` |
 | Vulnerable packages | 0 | `dotnet list ModernizationScore.slnx package --vulnerable --include-transitive` and `npm --prefix src/web audit --audit-level=moderate` |

@@ -129,6 +129,13 @@ public sealed class DatabaseSnapshotPublisher(
                     ("max", Megabytes(PublishLimits.MaxFileBytes))));
         }
 
+        // Un mapping es de una fuente concreta, igual que en el adaptador de archivos.
+        if (file.ColumnMap is not null && string.IsNullOrWhiteSpace(file.AssignedFileName))
+        {
+            return new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0,
+                Notice.Of(NoticeCodes.MappingNeedsSource));
+        }
+
         // Se identifica por el encabezado, igual que en el adaptador de archivos:
         // el stream se abre una vez para leer la firma y otra para leer las filas.
         SourceFileMatch match;
@@ -161,11 +168,38 @@ public sealed class DatabaseSnapshotPublisher(
 
         try
         {
-            using var stream = file.OpenRead();
-            using var reader = new StreamReader(stream);
+            ColumnResolution resolution;
+
+            using (var headerStream = file.OpenRead())
+            using (var headerReader = new StreamReader(headerStream))
+            {
+                resolution = ColumnMapping.Resolve(schema, CsvSourceReader.ReadHeader(headerReader), file.ColumnMap);
+            }
+
+            if (!resolution.IsValid && file.ColumnMap is not null)
+            {
+                seen.Remove(schema.FileName);
+
+                var problem = resolution.Problems.Count == 1
+                    ? resolution.Problems[0]
+                    : resolution.Problems[0].With("more", resolution.Problems.Count - 1);
+
+                return new PublishedFileOutcome(clientName, schema.FileName, schema.Source, file.Length, 0, 0, problem)
+                {
+                    DetectedColumns = match.DetectedColumns,
+                };
+            }
+
+            // Con un mapping, el encabezado se reescribe al leer: el lector de siempre lee
+            // exactamente las columnas elegidas.
+            var stream = file.OpenRead();
+            using var reader = file.ColumnMap is null
+                ? new StreamReader(stream)
+                : ColumnMapping.Open(new StreamReader(stream), resolution);
             var outcome = new CsvSourceReader(schema).Read(reader);
 
             var rejected = parsed.Add(schema, outcome);
+            parsed.ColumnMaps.Add(resolution.ToColumnMap());
 
             return new PublishedFileOutcome(
                 clientName,
@@ -177,6 +211,9 @@ public sealed class DatabaseSnapshotPublisher(
                 null)
             {
                 DetectedColumns = match.DetectedColumns,
+                RejectionReasons = rejected == 0
+                    ? outcome.Reasons
+                    : [.. outcome.Reasons, new RejectionReason(Notice.Of(NoticeCodes.RowNotConvertible), rejected, [])],
             };
         }
         catch (SourceSchemaException ex)
@@ -217,6 +254,7 @@ public sealed class DatabaseSnapshotPublisher(
             Label = label,
             UploadedBy = uploadedBy,
             ApplicationCount = parsed.Eai.Count,
+            ColumnMaps = ColumnMapStorage.Serialize(parsed.ColumnMaps),
         });
 
         parsed.AddTo(db, id);
@@ -234,6 +272,20 @@ public sealed class DatabaseSnapshotPublisher(
             ApplicationCount = parsed.Eai.Count,
             IsCurrent = true,
         };
+    }
+
+    /// <summary>El mapping de la carga vigente, guardado en su fila.</summary>
+    public async Task<IReadOnlyList<SourceColumnMap>> GetCurrentColumnMapsAsync(CancellationToken cancellationToken = default)
+    {
+        await using var db = await contexts.CreateDbContextAsync(cancellationToken).ConfigureAwait(false);
+
+        var stored = await db.Versions
+            .OrderByDescending(v => v.CapturedAtUtc)
+            .Select(v => v.ColumnMaps)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return ColumnMapStorage.Deserialize(stored);
     }
 
     /// <summary>
@@ -311,6 +363,9 @@ public sealed class DatabaseSnapshotPublisher(
         public List<ApimOnboardingRecord> ApimOnboarding { get; } = [];
 
         public List<SourceRejectionRow> Rejections { get; } = [];
+
+        /// <summary>Qué columna de cada archivo cargó cada campo.</summary>
+        public List<SourceColumnMap> ColumnMaps { get; } = [];
 
         /// <summary>Convierte las filas leidas y devuelve cuantas no se pudieron convertir.</summary>
         public int Add(SourceSchema schema, CsvSourceReader.ReadOutcome outcome)

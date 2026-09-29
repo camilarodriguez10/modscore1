@@ -263,6 +263,70 @@ public sealed class UploadFlowTests(FileBackedApiFixture fixture) : IClassFixtur
         var strategy = result.Files.Single(f => f.FileName == "product_strategy.csv");
         Assert.Equal(1, strategy.RejectedCount);
         Assert.NotEqual("0", result.Summary.Args["rejectedRows"]);
+
+        // El motivo llega a la pantalla: la columna, qué esperaba y el valor recibido.
+        var reason = Assert.Single(strategy.RejectionReasons);
+        Assert.Equal(NoticeCodes.RowInvalidValue, reason.Reason.Code);
+        Assert.Equal("Invest_Count", reason.Reason.Args["column"]);
+        Assert.Equal("no-es-un-numero", reason.Reason.Args["value"]);
+        Assert.Equal(1, reason.Rows);
+    }
+
+    /// <summary>
+    /// Un EAI Master con todas sus filas rechazadas descarta la carga. Antes la pantalla
+    /// solo decía cuántas filas quedaron fuera; ahora dice por qué, sin que nadie tenga
+    /// que compartir el archivo.
+    /// </summary>
+    [Fact]
+    public async Task AMasterWithEveryRowRejectedExplainsWhy()
+    {
+        var client = await fixture.CreateMutatingClientAsync();
+
+        using var form = new MultipartFormDataContent();
+        var masterRows = 0;
+
+        foreach (var (name, content) in fixture.ReadSeedFiles())
+        {
+            var bytes = content;
+
+            if (name == "eai_master.csv")
+            {
+                // Cada fila con "N/A" en User Count, como deja un export sin el dato.
+                var lines = Encoding.UTF8.GetString(content).Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                var header = lines[0].TrimEnd('\r').Split(',');
+                var userCount = Array.IndexOf(header, "User Count");
+                var broken = lines.Skip(1).Select(line =>
+                {
+                    var cells = line.TrimEnd('\r').Split(',');
+                    cells[userCount] = "N/A";
+                    return string.Join(',', cells);
+                }).ToList();
+
+                masterRows = broken.Count;
+                bytes = Encoding.UTF8.GetBytes(string.Join('\n', [lines[0].TrimEnd('\r'), .. broken]) + "\n");
+            }
+
+            var part = new ByteArrayContent(bytes);
+            part.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/csv");
+            form.Add(part, "files", name);
+        }
+
+        using var response = await client.PostAsync(new Uri(UploadPath, UriKind.Relative), form);
+        var result = await response.Content.ReadFromJsonAsync<UploadResultView>(Json);
+
+        Assert.NotNull(result);
+        Assert.False(result.Accepted);
+
+        var master = result.Files.Single(f => f.CanonicalFileName == "eai_master.csv");
+        Assert.Equal(0, master.RowCount);
+        Assert.Equal(masterRows, master.RejectedCount);
+
+        var reason = Assert.Single(master.RejectionReasons);
+        Assert.Equal("User Count", reason.Reason.Args["column"]);
+        Assert.Equal("integer", reason.Reason.Args["expected"]);
+        Assert.Equal("N/A", reason.Reason.Args["value"]);
+        Assert.Equal(masterRows, reason.Rows);
+        Assert.Equal([2, 3, 4, 5, 6], reason.SampleRows);
     }
 
     /// <summary>

@@ -243,10 +243,41 @@ La carpeta `data\local` empieza vacía, así que cada pantalla avisa que no hay 
 2. En **Upload files**, arrastrar los ocho CSV de `C:\modscore1\data\dummy` (datos de
    ejemplo, 250 aplicaciones) o los propios. No hace falta renombrarlos: cada archivo se
    reconoce por su encabezado. `eai_master.csv` es obligatorio.
-3. **Upload and recalculate**. La pantalla dice cuántas filas leyó y cuántas rechazó.
+3. **Upload and recalculate**, o antes **Review column mapping** para decidir qué columna de
+   cada archivo carga cada campo (ver abajo). La pantalla dice cuántas filas leyó, cuántas
+   rechazó y por qué.
 
 Cada carga queda como una versión en **Upload history** y sobrevive al reinicio. Con los CSV
 de ejemplo, la aplicación 14381 tiene que dar **79.67**.
+
+### Antes de cargar: el mapping de columnas
+
+Cuando los exports de la organización no traen los nombres de columna del contrato, se
+decide antes de publicar qué columna carga cada campo de la base:
+
+1. En **Data → Uploads**, elegir los archivos y pulsar **Review column mapping**. El
+   navegador lee **solo la primera línea** de cada archivo —los nombres de las columnas— y
+   la manda a revisar; ninguna fila de datos sale del equipo hasta cargar.
+2. Por cada archivo aparece su fuente y, por cada campo de la base, la columna que lo
+   cargaría: *Same name*, *Known alias*, *As in the last upload* o *Not in this file*, con el
+   tipo esperado y las métricas que lo usan. Se cambia con el selector de cada campo; una
+   columna del archivo sin campo aparece abajo como *columns of the file that load nothing*.
+3. **Upload with this mapping**. La System vuelve a validarlo, guarda el archivo con los
+   nombres canónicos en las columnas elegidas y **registra el mapping con la carga**: la
+   próxima revisión lo propone solo, si el archivo sigue trayendo esas columnas.
+
+La pestaña **Data → Mapping** muestra lo mismo sin elegir archivos: para cada fuente, la
+columna que cargó cada campo en la carga vigente, los nombres con que se reconoce solo y las
+métricas que lo usan. El linaje, en cambio, describe lo que ya entró.
+
+### Si se rechazan filas
+
+Debajo del detalle por archivo, **Why rows were rejected** agrupa los rechazos por problema:
+la columna, qué esperaba, el valor de la primera fila que lo tuvo, cuántas filas y los números
+de las primeras. Cuenta todas las columnas malas de cada fila, no solo la primera, y agrega
+una pista cuando el valor delata la causa: un `N/A` donde la celda debería ir vacía, decimales
+en una columna de enteros, un punto como separador de miles o columnas corridas. Si el EAI
+Master queda sin filas válidas, la carga se descarta y el portafolio no cambia.
 
 ### Para comparar en el tiempo: cuatro trimestres de ejemplo
 
@@ -308,6 +339,7 @@ dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHo
 | El `npm ci` termina con `ECONNRESET`, `ETIMEDOUT`, `E403`, `self-signed certificate` o `unable to get local issuer certificate` | La red de la empresa no deja llegar al registro de npm | Pedir a soporte el proxy o el registro interno de npm. Mientras tanto, [Sin Vite ni Node](#sin-vite-ni-node-el-sitio-ya-compilado), que no usa npm |
 | Vite dice que la versión de Node no es compatible, o `crypto.hash is not a function` | Node anterior a 20.19 o a 22.12 | Instalar Node 22.12 o superior |
 | `'AllowedHosts' debe listar los hosts del servicio (entorno 'Production')` | Faltó `--environment Development` en la línea de esa capa, o se pegó un bloque con `set` en PowerShell | Copiar de nuevo la línea completa, con `-- --environment Development --urls ...` al final |
+| El EAI Master queda con 0 filas y todas rechazadas, y la carga se descarta | Un problema que tienen todas las filas: una columna de números con texto (`N/A`, `-`), decimales donde van enteros, o una columna que se cargó por alias con otro contenido | Leer **Why rows were rejected**: dice la columna y el valor. Dejar vacías las celdas sin dato, o elegir la columna correcta con **Review column mapping** |
 
 **Detener:** `Ctrl + C` en cada ventana. Si un puerto queda ocupado:
 `netstat -ano | findstr :5101` da el número de proceso al final de la línea, y
@@ -325,7 +357,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-847 pruebas .NET: 319 del motor, 189 de contratos y 339 de API. Las dos que importan más
+889 pruebas .NET: 319 del motor, 216 de contratos y 354 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **EAI 14381 = 79,67:** ejemplo trabajado del BRD, derivado desde datos crudos por el
@@ -336,12 +368,14 @@ reproducen los casos documentados:
 TypeScript difieren.
 
 ```bash
-npm --prefix src/web test          # 66 pruebas unitarias (Vitest)
-npm --prefix src/web run test:e2e  # 51 escenarios: 26 de flujo y 25 de accesibilidad (axe)
+npm --prefix src/web test          # 74 pruebas unitarias (Vitest)
+npm --prefix src/web run test:e2e  # 56 escenarios: 29 de flujo y 27 de accesibilidad (axe)
 ```
 
 Las de punta a punta usan el Microsoft Edge instalado (no descargan navegadores) y levantan
-las tres piezas con datos dummy, o reutilizan las que ya estén corriendo.
+las tres piezas con datos dummy, o reutilizan las que ya estén corriendo. Con datos dummy la
+carga está apagada, así que la prueba del mapping simula las respuestas de carga; lo que
+valida el servidor lo cubren las pruebas de API.
 
 ```bash
 dotnet list ModernizationScore.slnx package --vulnerable --include-transitive

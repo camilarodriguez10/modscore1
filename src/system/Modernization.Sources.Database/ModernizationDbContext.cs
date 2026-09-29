@@ -73,6 +73,9 @@ public sealed class ModernizationDbContext(DbContextOptions<ModernizationDbConte
             entity.Property(v => v.Id).HasMaxLength(IdentifierLength);
             entity.Property(v => v.Label).HasMaxLength(LabelLength);
             entity.Property(v => v.UploadedBy).HasMaxLength(IdentifierLength * 2);
+
+            // Un JSON con un campo por columna de cada fuente: sin el tope de 1 KB.
+            entity.Property(v => v.ColumnMaps).Metadata.SetMaxLength(null);
             entity.HasIndex(v => v.CapturedAtUtc);
         });
 
@@ -185,6 +188,39 @@ public sealed class SnapshotVersionRow
     public required string UploadedBy { get; set; }
 
     public required int ApplicationCount { get; set; }
+
+    /// <summary>
+    /// Qué columna de cada archivo cargó cada campo, como JSON. Null en las cargas
+    /// anteriores al 2026-09-28, que no lo registraban.
+    /// </summary>
+    public string? ColumnMaps { get; set; }
+}
+
+/// <summary>El mapping de una carga, como se guarda en su fila.</summary>
+internal static class ColumnMapStorage
+{
+    private static readonly System.Text.Json.JsonSerializerOptions Options = new(System.Text.Json.JsonSerializerDefaults.Web);
+
+    public static string? Serialize(IReadOnlyList<Modernization.Domain.Sources.SourceColumnMap> maps)
+        => maps.Count == 0 ? null : System.Text.Json.JsonSerializer.Serialize(maps, Options);
+
+    public static IReadOnlyList<Modernization.Domain.Sources.SourceColumnMap> Deserialize(string? stored)
+    {
+        if (string.IsNullOrWhiteSpace(stored))
+        {
+            return [];
+        }
+
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<List<Modernization.Domain.Sources.SourceColumnMap>>(stored, Options) ?? [];
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            // Un registro corrupto deja la próxima carga sin sugerencia, no sin carga.
+            return [];
+        }
+    }
 }
 
 /// <summary>

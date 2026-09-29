@@ -188,10 +188,14 @@ public static class ColumnParser
         var cleaned = Clean(text);
 
         // Un export en configuracion regional europea escribe "1,75" donde el
-        // invariante espera "1.75". Sin coma de miles, la coma es decimal.
-        if (cleaned.Contains(',', StringComparison.Ordinal) && !cleaned.Contains('.', StringComparison.Ordinal))
+        // invariante espera "1.75". Sin coma de miles, la coma es decimal. Con los dos
+        // separadores, el ultimo es el decimal: "1.234,5" es 1234,5 y no 1,2345.
+        var comma = cleaned.LastIndexOf(',');
+        var dot = cleaned.LastIndexOf('.');
+
+        if (comma >= 0 && comma > dot)
         {
-            cleaned = cleaned.Replace(',', '.');
+            cleaned = cleaned.Replace(".", string.Empty, StringComparison.Ordinal).Replace(',', '.');
         }
         else
         {

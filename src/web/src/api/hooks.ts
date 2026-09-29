@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from './client';
-import type { LeverSelection, PortfolioFilters, RulesDraft } from './types';
+import type { LeverSelection, MappingReviewFileRequest, PortfolioFilters, RulesDraft } from './types';
 
 /**
  * Hooks de datos. El servidor es la fuente de verdad; el estado de cliente se
@@ -84,16 +84,34 @@ export function useUpload() {
       files,
       label,
       assignments,
+      columnMaps,
     }: {
       files: readonly File[];
       label: string;
       assignments?: readonly string[] | undefined;
-    }) => api.upload(files, label, assignments),
+      columnMaps?: readonly (Readonly<Record<string, string | null>> | null)[] | undefined;
+    }) => api.upload(files, label, assignments, columnMaps),
     onSuccess: (result) => {
       if (result.accepted) {
         queryClient.invalidateQueries();
       }
     },
+  });
+}
+
+/** La pestaña Mapping. Una carga nueva la cambia: el cache se invalida al publicar. */
+export function useMappingCatalog(enabled = true) {
+  return useQuery({
+    queryKey: ['mapping'],
+    queryFn: () => api.mapping(),
+    enabled,
+  });
+}
+
+/** Revisión del mapping antes de cargar. No cambia nada, así que no invalida el cache. */
+export function useMappingReview() {
+  return useMutation({
+    mutationFn: (files: readonly MappingReviewFileRequest[]) => api.previewMapping(files),
   });
 }
 

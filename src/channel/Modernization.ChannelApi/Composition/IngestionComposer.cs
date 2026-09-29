@@ -89,6 +89,7 @@ public sealed class IngestionComposer(SystemApiClient system, ChannelPermissions
         IFormFileCollection files,
         string? label,
         IReadOnlyList<string>? assignments = null,
+        IReadOnlyList<string>? columnMaps = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(files);
@@ -118,6 +119,12 @@ public sealed class IngestionComposer(SystemApiClient system, ChannelPermissions
                 content.Add(new StringContent(assignment), "assign");
             }
 
+            // El mapping de columnas va igual: uno por archivo, en el mismo orden.
+            foreach (var columnMap in columnMaps ?? [])
+            {
+                content.Add(new StringContent(columnMap), "map");
+            }
+
             if (!string.IsNullOrWhiteSpace(label))
             {
                 content.Add(new StringContent(label.Trim()), "label");
@@ -134,6 +141,61 @@ public sealed class IngestionComposer(SystemApiClient system, ChannelPermissions
                 await stream.DisposeAsync().ConfigureAwait(false);
             }
         }
+    }
+
+    /// <summary>La pestaña Mapping: de dónde sale cada campo, con la columna de la carga vigente.</summary>
+    public async Task<MappingCatalogView> ComposeMappingAsync(CancellationToken cancellationToken = default)
+    {
+        var mapping = await system.GetMappingAsync(cancellationToken).ConfigureAwait(false);
+
+        return new MappingCatalogView(
+            mapping.Recorded,
+            [.. mapping.Sources.Select(s => new MappingSourceView(
+                s.Source,
+                s.FileName,
+                s.Description,
+                s.KeyColumn,
+                [.. s.Fields.Select(f => new MappingCatalogFieldView(
+                    f.Column,
+                    f.Type,
+                    f.Required,
+                    f.IsKey,
+                    f.AcceptedNames,
+                    f.CurrentHeader,
+                    f.CurrentManual,
+                    f.Feeds))]))]);
+    }
+
+    /// <summary>
+    /// El mapping propuesto para cada archivo, antes de cargar. Llegan solo encabezados;
+    /// la capa System identifica la fuente, resuelve cada campo y valida.
+    /// </summary>
+    public async Task<MappingReviewView> PreviewMappingAsync(
+        IReadOnlyList<Endpoints.MappingReviewFileBody> files,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(files);
+
+        var request = new MappingPreviewRequest(
+            [.. files.Select(f => new MappingPreviewFileRequest(
+                f.FileName is null ? null : Path.GetFileName(f.FileName),
+                f.Header,
+                f.AssignedFileName,
+                f.Columns))]);
+
+        var response = await system.PreviewMappingAsync(request, cancellationToken).ConfigureAwait(false);
+
+        return new MappingReviewView([.. response.Files.Select(f => new MappingFileView(
+            f.FileName,
+            f.CanonicalFileName,
+            f.Source,
+            f.Description,
+            f.Problem,
+            f.Candidates,
+            f.Headers,
+            [.. f.Fields.Select(c => new MappingFieldView(c.Column, c.Type, c.Required, c.IsKey, c.Header, c.Match, c.Feeds))],
+            f.UnusedHeaders,
+            f.Problems))]);
     }
 
     // -----------------------------------------------------------------------
@@ -181,7 +243,8 @@ public sealed class IngestionComposer(SystemApiClient system, ChannelPermissions
             f.RejectedCount,
             f.Error,
             f.DetectedColumns,
-            f.Candidates))],
+            f.Candidates,
+            [.. (f.RejectionReasons ?? []).Select(r => new UploadRejectionView(r.Reason, r.Rows, r.SampleRows))]))],
         outcome.Errors,
         Summarize(outcome));
 

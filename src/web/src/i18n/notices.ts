@@ -206,6 +206,17 @@ const MESSAGES: Record<string, (a: Args) => string> = {
   'row.notConvertible': () => 'The row could not be converted to the canonical model.',
   'row.unknownEai': (a) => `EAI '${a.key}' does not exist in the EAI master.`,
 
+  'mapping.invalid': () => 'The column mapping sent with this file is not valid. Review it again and retry.',
+  'mapping.needsSource': () => 'A column mapping belongs to one source: choose the source of this file first.',
+  'mapping.unknownColumn': (a) => `'${a.column}' is not a field of this source.`,
+  'mapping.headerNotInFile': (a) => `'${a.column}' is mapped to '${a.header}', which is not a column of this file.`,
+  'mapping.headerTwice': (a) => `The column '${a.header}' is mapped to more than one field.`,
+  'mapping.requiredExcluded': (a) => `'${a.column}' is required: choose the column of the file that holds it.`,
+  'mapping.headerMultiline': () =>
+    'The header of this file spans more than one line, so its columns cannot be renamed. Export it again without line breaks in the column names.',
+  'mapping.headerTooLarge': (a) =>
+    `The header has more than ${num(a.max)} columns or is longer than ${num(a.maxLength)} characters.`,
+
   // ----------------------------------------------------- rules administration
   'rules.metricUnknown': (a) => `Metric #${a.position} does not exist in the ruleset.`,
   'rules.duplicate': (a) => `${a.item} appears more than once in the draft.`,
@@ -319,6 +330,83 @@ export function formatNotice(notice: Notice | null | undefined): string {
   const text = message ? message(args) : `Unrecognized message (${notice.code})`;
 
   return args.file && !FILE_IN_SENTENCE.has(notice.code) ? `${args.file}: ${text}` : text;
+}
+
+// ------------------------------------------------------ upload rejections
+
+/** Marcadores de «sin dato» que los exports escriben en lugar de dejar la celda vacía. */
+const NO_VALUE_MARKER = /^(n\/?a|#n\/?a|null|none|nan|-+|—|\?+|unknown|tbd|not applicable|sin dato|s\/d)$/i;
+
+/**
+ * Qué le pasa a un grupo de filas rechazadas, en una frase: la columna, qué esperaba y
+ * el valor de la primera fila que lo tuvo. Es el mismo aviso de linaje, redactado para
+ * un grupo y no para una fila.
+ */
+export function rejectionReasonText(reason: Notice, firstRow: number | undefined): string {
+  const a = reason.args ?? {};
+
+  if (reason.code === 'row.invalidValue') {
+    const expected = EXPECTED_VALUE[a.expected ?? ''] ?? 'a known type';
+    const where = firstRow === undefined ? '' : ` in row ${numberFormat.format(firstRow)}`;
+    return `'${a.column}' expected ${expected}. For example, '${a.value}'${where}.`;
+  }
+
+  return formatNotice(reason);
+}
+
+/**
+ * Una pista cuando el valor delata la causa. Solo para casos que se reconocen sin
+ * adivinar; si no, nada.
+ */
+export function rejectionHint(reason: Notice): string | null {
+  const a = reason.args ?? {};
+
+  if (reason.code === 'row.missingKey') {
+    return 'Rows without the key are usually totals, subtotals or separator lines exported with the data.';
+  }
+
+  if (reason.code !== 'row.invalidValue') return null;
+
+  const value = (a.value ?? '').trim();
+
+  if (NO_VALUE_MARKER.test(value)) {
+    return 'Leave the cell empty when there is no value: an empty cell is accepted and only leaves that metric out, while a placeholder rejects the whole row.';
+  }
+
+  if ((a.expected === 'integer' || a.expected === 'long') && /^\d{1,3}(\.\d{3})+$/.test(value)) {
+    return `If '${value}' means ${value.replaceAll('.', ',')}, the export uses a dot as thousands separator. Export the numbers without thousands separators.`;
+  }
+
+  if ((a.expected === 'integer' || a.expected === 'long') && /^-?\d+[.,]\d*[1-9]\d*$/.test(value)) {
+    return 'This column takes whole numbers and the file has decimals. Round them in the export, or tell the team if the source really has decimals.';
+  }
+
+  if (a.expected === 'boolean') {
+    return 'Accepted values: TRUE/FALSE, Yes/No, Y/N, Sí/No or 1/0.';
+  }
+
+  if (a.expected === 'date') {
+    return 'Accepted formats: dd/MM/yyyy, yyyy-MM-dd or MM/dd/yyyy, with or without time.';
+  }
+
+  if (/[a-z]/i.test(value) && (a.expected === 'integer' || a.expected === 'long' || a.expected === 'number')) {
+    return 'The column has text where a number is expected. If every row fails here, check that the columns are not shifted, for example by commas inside unquoted values.';
+  }
+
+  return null;
+}
+
+/** "rows 2, 3 and 4", "rows 2, 3, 4, 5, 6 and 3,864 more". */
+export function sampleRowsText(sampleRows: readonly number[], total: number): string {
+  if (sampleRows.length === 0) return '';
+
+  const listed = sampleRows.map((row) => numberFormat.format(row));
+  const rest = total - sampleRows.length;
+  const label = sampleRows.length === 1 && rest === 0 ? 'row' : 'rows';
+
+  if (rest > 0) return `${label} ${listed.join(', ')} and ${numberFormat.format(rest)} more`;
+  if (listed.length === 1) return `${label} ${listed[0]}`;
+  return `${label} ${listed.slice(0, -1).join(', ')} and ${listed[listed.length - 1]}`;
 }
 
 // ----------------------------------------------------------------- counts

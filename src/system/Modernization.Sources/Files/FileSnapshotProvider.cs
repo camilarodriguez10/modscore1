@@ -215,6 +215,12 @@ public sealed record UploadManifest
     public required IReadOnlyList<string> Files { get; init; }
     public string? UploadedBy { get; init; }
 
+    /// <summary>
+    /// Qué columna de cada archivo cargó cada campo. Vacío en las cargas anteriores al
+    /// 2026-09-28, que no lo registraban.
+    /// </summary>
+    public IReadOnlyList<SourceColumnMap> ColumnMaps { get; init; } = [];
+
     private static readonly System.Text.Json.JsonSerializerOptions Options =
         new(System.Text.Json.JsonSerializerDefaults.Web) { WriteIndented = true };
 

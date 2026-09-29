@@ -1,7 +1,7 @@
 # Demo guiada — guion de 7 minutos
 
 Guion en inglés para presentar el sitio con los datos dummy: qué hace cada pantalla y hacia
-dónde puede crecer. Unas 680 palabras habladas: a ritmo de presentación son unos 5 minutos y
+dónde puede crecer. Unas 710 palabras habladas: a ritmo de presentación son unos 5 minutos y
 medio, y las pausas para los clics y los desplazamientos en la pantalla Code completan los 7. Lo que va entre corchetes es la acción en
 pantalla, no se lee.
 
@@ -96,7 +96,9 @@ Insights goes one level deeper into the six questions: duplicated capabilities, 
 marked Eliminate that are still active, where risk concentrates.
 
 *[Data tab]* Data is where it starts: you drop in the source files, the platform validates
-them and recalculates, and every upload becomes a version you can compare.
+them and recalculates, and every upload becomes a version you can compare. Before uploading,
+you confirm which column of each file loads each field — only the header leaves your
+browser — and if rows are rejected, the screen says exactly why.
 
 *[Definitions tab]* Definitions is the dictionary: how each answer is built and what isn't
 measured yet.

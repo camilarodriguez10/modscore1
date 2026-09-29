@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { bandCode, bandLabel, countOf, formatNotice, groupLabel } from './notices';
+import {
+  bandCode,
+  bandLabel,
+  countOf,
+  formatNotice,
+  groupLabel,
+  rejectionHint,
+  rejectionReasonText,
+  sampleRowsText,
+} from './notices';
 
 describe('formatNotice', () => {
   it('writes the sentence from the code and its data', () => {
@@ -100,5 +109,38 @@ describe('counts and bands', () => {
   it('names the empty group', () => {
     expect(groupLabel('')).toBe('Unassigned');
     expect(groupLabel('Chile')).toBe('Chile');
+  });
+});
+
+describe('upload rejection reasons', () => {
+  const invalid = (column: string, expected: string, value: string) => ({
+    code: 'row.invalidValue',
+    args: { column, expected, value },
+  });
+
+  it('names the column, what it expected and the first value', () => {
+    expect(rejectionReasonText(invalid('User Count', 'integer', 'N/A'), 2)).toBe(
+      "'User Count' expected an integer. For example, 'N/A' in row 2.",
+    );
+    expect(rejectionReasonText({ code: 'row.missingKey', args: { column: 'EAI_Code' } }, 5)).toBe(
+      "No value in the key column 'EAI_Code'.",
+    );
+  });
+
+  it('lists the first rows and how many more', () => {
+    expect(sampleRowsText([2, 3, 4, 5, 6], 3869)).toBe('rows 2, 3, 4, 5, 6 and 3,864 more');
+    expect(sampleRowsText([7], 1)).toBe('row 7');
+    expect(sampleRowsText([7, 9], 2)).toBe('rows 7 and 9');
+    expect(sampleRowsText([], 4)).toBe('');
+  });
+
+  it('recognizes the usual causes without guessing', () => {
+    expect(rejectionHint(invalid('Kenna_Score', 'integer', 'N/A'))).toMatch(/Leave the cell empty/);
+    expect(rejectionHint(invalid('Kenna_Score', 'integer', '#N/A'))).toMatch(/Leave the cell empty/);
+    expect(rejectionHint(invalid('Kenna_Score', 'integer', '712.5'))).toMatch(/whole numbers/);
+    expect(rejectionHint(invalid('User Count', 'integer', '1.234'))).toMatch(/thousands separator/);
+    expect(rejectionHint(invalid('User Count', 'integer', 'Internal'))).toMatch(/columns are not shifted/);
+    expect(rejectionHint(invalid('Internet_Facing', 'boolean', 'maybe'))).toMatch(/TRUE\/FALSE/);
+    expect(rejectionHint(invalid('Kenna_Score', 'integer', '1-100'))).toBeNull();
   });
 });

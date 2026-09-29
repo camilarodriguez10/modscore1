@@ -505,6 +505,93 @@ export interface UploadFileView {
   detectedColumns: readonly string[];
   /** Fuentes a las que se puede asignar el archivo a mano. */
   candidates: readonly string[];
+  /** Por qué quedaron filas fuera, agrupado por problema; el más frecuente primero. */
+  rejectionReasons: readonly UploadRejectionView[];
+}
+
+/**
+ * Un problema de las filas rechazadas: el aviso de la primera fila que lo tuvo (con el
+ * valor recibido, acotado), cuántas filas lo tienen y los números de las primeras.
+ */
+export interface UploadRejectionView {
+  reason: Notice;
+  rows: number;
+  sampleRows: readonly number[];
+}
+
+/**
+ * La pestaña Mapping: de dónde sale cada campo de la base, fuente por fuente. `recorded`
+ * es false si la carga vigente es anterior al registro del mapping.
+ */
+export interface MappingCatalogView {
+  recorded: boolean;
+  sources: readonly MappingSourceView[];
+}
+
+export interface MappingSourceView {
+  source: string;
+  fileName: string;
+  description: string | null;
+  keyColumn: string;
+  fields: readonly MappingCatalogFieldView[];
+}
+
+/** Un campo: nombres que se reconocen solos y la columna que lo cargó en la carga vigente. */
+export interface MappingCatalogFieldView {
+  column: string;
+  type: string;
+  required: boolean;
+  isKey: boolean;
+  acceptedNames: readonly string[];
+  currentHeader: string | null;
+  currentManual: boolean | null;
+  feeds: readonly string[];
+}
+
+/** El mapping de columnas propuesto antes de cargar, archivo por archivo. */
+export interface MappingReviewView {
+  files: readonly MappingFileView[];
+}
+
+/**
+ * Un archivo en la revisión del mapping: la fuente reconocida (o por qué no) y qué
+ * columna cargaría cada campo. `headers` son las columnas del archivo, para elegir.
+ */
+export interface MappingFileView {
+  fileName: string;
+  canonicalFileName: string | null;
+  source: string;
+  description: string | null;
+  problem: Notice | null;
+  candidates: readonly string[];
+  headers: readonly string[];
+  fields: readonly MappingFieldView[];
+  unusedHeaders: readonly string[];
+  problems: readonly Notice[];
+}
+
+/** Cómo se decidió la columna de un campo. */
+export type MappingMatch = 'name' | 'alias' | 'manual' | 'remembered' | 'excluded' | 'missing';
+
+/** Un campo de la base y la columna del archivo que lo cargaría. */
+export interface MappingFieldView {
+  column: string;
+  /** text, integer, long, number, boolean o date. */
+  type: string;
+  required: boolean;
+  isKey: boolean;
+  header: string | null;
+  match: MappingMatch;
+  /** Métricas del ruleset vigente que usan este campo. */
+  feeds: readonly string[];
+}
+
+/** Lo que se envía para revisar el mapping: el encabezado, nunca filas de datos. */
+export interface MappingReviewFileRequest {
+  fileName: string;
+  header: string;
+  assignedFileName?: string | undefined;
+  columns?: Readonly<Record<string, string | null>> | undefined;
 }
 
 // ---------------------------------------------------------- 09 Scoring rules

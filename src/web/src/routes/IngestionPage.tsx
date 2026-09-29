@@ -1,11 +1,13 @@
 import { useRef, useState } from 'react';
-import { useRulesTimeline, useUpload } from '../api/hooks';
+import { useMappingReview, useRulesTimeline, useUpload } from '../api/hooks';
 import type { ExpectedFileView, IngestionView, UploadFileView, UploadResultView } from '../api/types';
 import { Card, Label, fmt } from '../components/primitives';
 import { ScoreTrend } from '../components/ScoreTrend';
-import { countOf, formatNotice } from '../i18n/notices';
+import { countOf, formatNotice, rejectionHint, rejectionReasonText, sampleRowsText } from '../i18n/notices';
 import { formatDate } from './RoadmapPage';
 import { ApiError } from '../api/client';
+import { MappingReview } from './MappingReview';
+import { columnMapToSend, initialDecisions, readHeaderLine, type MappingDecisions } from '../mapping';
 
 /**
  * Cargas, dentro de la pantalla de Datos.
@@ -26,7 +28,10 @@ export function IngestionPanel({
   selectedVersion: string;
 }) {
   const upload = useUpload();
+  const review = useMappingReview();
   const timeline = useRulesTimeline();
+  const [decisions, setDecisions] = useState<MappingDecisions>({});
+  const [headerError, setHeaderError] = useState<string | null>(null);
 
   // Cada version publicada es una marca en la tendencia. La de fabrica no se marca: rige
   // desde antes de la primera carga.
@@ -81,7 +86,81 @@ export function IngestionPanel({
     setSelected([]);
     setAssigned({});
     upload.reset();
+    closeReview();
     if (inputRef.current) inputRef.current.value = '';
+  };
+
+  const closeReview = () => {
+    review.reset();
+    setDecisions({});
+    setHeaderError(null);
+  };
+
+  /**
+   * Revisa el mapping: lee en el navegador solo la primera línea de cada archivo y pide a
+   * la capa System qué columna cargaría cada campo. Con `current`, vuelve a revisar con lo
+   * que la persona ya decidió.
+   */
+  const startReview = async (current?: MappingDecisions) => {
+    if (!canSubmit) return;
+
+    let headers: string[];
+
+    try {
+      headers = await Promise.all(selected.map((file) => readHeaderLine(file)));
+    } catch {
+      setHeaderError('The header of the files could not be read in this browser.');
+      return;
+    }
+
+    setHeaderError(null);
+    upload.reset();
+
+    review.mutate(
+      selected.map((file, index) => {
+        const previous = review.data?.files.find((candidate) => candidate.fileName === file.name);
+        const decision = current?.[file.name];
+        const source = decision?.source ?? assigned[file.name];
+
+        return {
+          fileName: file.name,
+          header: headers[index] ?? '',
+          assignedFileName: source || undefined,
+          columns: previous && decision ? columnMapToSend(previous, decision) : undefined,
+        };
+      }),
+      { onSuccess: (result) => setDecisions(initialDecisions(result)) },
+    );
+  };
+
+  /** Carga con el mapping revisado: la fuente y las decisiones de cada archivo. */
+  const uploadWithMapping = () => {
+    if (!canSubmit || !review.data) return;
+
+    const files = review.data.files;
+
+    upload.mutate(
+      {
+        files: selected,
+        label,
+        assignments: selected.map((file) => decisions[file.name]?.source ?? '-'),
+        columnMaps: selected.map((file) => {
+          const reviewed = files.find((candidate) => candidate.fileName === file.name);
+          return reviewed ? columnMapToSend(reviewed, decisions[file.name]) : null;
+        }),
+      },
+      {
+        onSuccess: (result) => {
+          if (result.accepted) {
+            setSelected([]);
+            setLabel('');
+            setAssigned({});
+            closeReview();
+            if (inputRef.current) inputRef.current.value = '';
+          }
+        },
+      },
+    );
   };
 
   return (
@@ -105,20 +184,25 @@ export function IngestionPanel({
         ) : (
           <div className="flex flex-col gap-4 px-4 py-5">
             <div className="flex flex-col gap-1.5">
-              <Label>CSV files</Label>
+              <label htmlFor="upload-files">
+                <Label>CSV files</Label>
+              </label>
               <input
                 ref={inputRef}
+                id="upload-files"
                 type="file"
                 multiple
+                aria-describedby="upload-files-hint"
                 accept=".csv,text/csv"
                 onChange={(event) => {
                   setSelected(Array.from(event.target.files ?? []));
                   setAssigned({});
                   upload.reset();
+                  closeReview();
                 }}
                 className="rounded-sm border border-rule bg-surface px-3 py-2 text-[13px] text-ink-2 file:mr-3 file:rounded-sm file:border-0 file:bg-accent file:px-3 file:py-1.5 file:text-[12.5px] file:font-medium file:text-on-accent"
               />
-              <p className="font-mono text-[11px] text-ink-3">
+              <p id="upload-files-hint" className="font-mono text-[11px] text-ink-3">
                 any file name works: each file is recognized by its header · up to{' '}
                 {fmt(data.maxFileBytes / 1024 / 1024, 0)} MB per file · {fmt(data.maxTotalBytes / 1024 / 1024, 0)}{' '}
                 MB in total
@@ -170,7 +254,16 @@ export function IngestionPanel({
               </p>
             )}
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => void startReview()}
+                disabled={!canSubmit || review.isPending || upload.isPending}
+                className="rounded-sm border border-accent px-4 py-2 text-[13.5px] font-medium text-accent hover:bg-accent-wash disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {review.isPending && !review.data ? 'Reading headers…' : 'Review column mapping'}
+              </button>
+
               <button
                 type="button"
                 onClick={() => submit(Object.keys(assigned).length > 0)}
@@ -191,14 +284,41 @@ export function IngestionPanel({
               )}
             </div>
 
+            {selected.length > 0 && !review.data && (
+              <p className="max-w-[80ch] text-[12.5px] text-ink-3">
+                Review column mapping reads only the header row of each file in this browser and shows which column will
+                load each field of the database, before anything is uploaded.
+              </p>
+            )}
+
             {upload.error && (
               <p className="text-[13px]" style={{ color: 'var(--app-critical-text)' }}>
                 {upload.error instanceof ApiError ? upload.error.message : 'The upload could not be completed.'}
               </p>
             )}
+
+            {(headerError || review.error) && (
+              <p className="text-[13px]" style={{ color: 'var(--app-critical-text)' }}>
+                {headerError ??
+                  (review.error instanceof ApiError ? review.error.message : 'The column mapping could not be reviewed.')}
+              </p>
+            )}
           </div>
         )}
       </Card>
+
+      {review.data && !upload.data?.accepted && (
+        <MappingReview
+          review={review.data}
+          decisions={decisions}
+          onChange={(fileName, decision) => setDecisions((current) => ({ ...current, [fileName]: decision }))}
+          onRecheck={() => void startReview(decisions)}
+          onUpload={uploadWithMapping}
+          onCancel={closeReview}
+          checking={review.isPending}
+          uploading={upload.isPending}
+        />
+      )}
 
       {upload.data && <UploadResult result={upload.data} />}
 
@@ -403,6 +523,12 @@ function UploadResult({ result }: { result: UploadResultView }) {
                     <td className="px-4 py-2.5 text-[12.5px]">
                       {file.error ? (
                         <span style={{ color: 'var(--app-critical-text)' }}>{formatNotice(file.error)}</span>
+                      ) : file.rowCount === 0 && file.rejectedCount > 0 ? (
+                        // El archivo se leyó, pero ninguna fila sirvió: decir "accepted" aquí
+                        // hacía pensar que el problema estaba en otro lado.
+                        <span style={{ color: 'var(--app-critical-text)' }}>read, but every row was rejected</span>
+                      ) : file.rejectedCount > 0 ? (
+                        <span style={{ color: 'var(--app-serious-text)' }}>accepted, some rows rejected</span>
                       ) : (
                         <span style={{ color: 'var(--app-good-text)' }}>accepted</span>
                       )}
@@ -414,7 +540,69 @@ function UploadResult({ result }: { result: UploadResultView }) {
           </div>
         </Card>
       )}
+
+      <RejectionReasons files={result.files} accepted={result.accepted} />
     </div>
+  );
+}
+
+/**
+ * Por qué quedaron filas fuera, archivo por archivo y agrupado por problema. Quien no
+ * puede compartir el archivo necesita saber qué columna corregir sin mandárselo a nadie.
+ */
+function RejectionReasons({ files, accepted }: { files: readonly UploadFileView[]; accepted: boolean }) {
+  const withReasons = files.filter((file) => (file.rejectionReasons ?? []).length > 0);
+
+  if (withReasons.length === 0) return null;
+
+  return (
+    <Card title="Why rows were rejected">
+      <div className="flex flex-col gap-5 px-4 py-3">
+        <p className="max-w-[72ch] text-[12.5px] text-ink-3">
+          Each problem shows the column, what it expected and the value of the first row that had it. A row can have
+          more than one problem, so the counts can add up to more than the rejected rows.{' '}
+          {accepted
+            ? 'Fix the file and upload the set again to include those rows.'
+            : 'Nothing from this upload was kept: fix the file and upload the set again.'}
+        </p>
+
+        {withReasons.map((file) => (
+          <section key={file.fileName} aria-label={`Rejected rows in ${file.source}`} className="flex flex-col gap-2">
+            <h3 className="flex flex-wrap items-baseline gap-x-2 text-[13px]">
+              <span className="font-semibold text-ink">{file.source}</span>
+              <span className="font-mono text-[12px] text-ink-3">{file.fileName}</span>
+              <span className="tnum text-[12.5px]" style={{ color: 'var(--app-serious-text)' }}>
+                {countOf(file.rejectedCount, 'row')} of {(file.rowCount + file.rejectedCount).toLocaleString('en-US')}{' '}
+                rejected
+              </span>
+            </h3>
+
+            <ul className="flex flex-col divide-y divide-rule rounded-md border border-rule">
+              {file.rejectionReasons.map((item, index) => {
+                const hint = rejectionHint(item.reason);
+
+                return (
+                  <li key={`${item.reason.code}-${index}`} className="flex flex-col gap-1 px-3 py-2.5">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                      <span className="text-[13px] text-ink">{rejectionReasonText(item.reason, item.sampleRows[0])}</span>
+                      <span className="tnum shrink-0 font-mono text-[12px]" style={{ color: 'var(--app-serious-text)' }}>
+                        {countOf(item.rows, 'row')}
+                      </span>
+                    </div>
+                    {item.sampleRows.length > 0 && (
+                      <span className="tnum font-mono text-[11.5px] text-ink-3">
+                        {sampleRowsText(item.sampleRows, item.rows)}
+                      </span>
+                    )}
+                    {hint && <span className="max-w-[80ch] text-[12.5px] text-ink-2">{hint}</span>}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ))}
+      </div>
+    </Card>
   );
 }
 

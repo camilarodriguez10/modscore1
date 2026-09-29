@@ -438,4 +438,72 @@ public sealed record UploadFileView(
 
     // El encabezado leido y las fuentes posibles, cuando no se pudo identificar.
     IReadOnlyList<string> DetectedColumns,
-    IReadOnlyList<string> Candidates);
+    IReadOnlyList<string> Candidates,
+
+    // Por qué quedaron filas fuera, agrupado por problema.
+    IReadOnlyList<UploadRejectionView> RejectionReasons);
+
+/// <summary>
+/// Un problema de las filas rechazadas de un archivo: el aviso de la primera fila que lo
+/// tuvo, cuántas filas lo tienen y los números de las primeras.
+/// </summary>
+public sealed record UploadRejectionView(Notice Reason, int Rows, IReadOnlyList<int> SampleRows);
+
+/// <summary>
+/// La pestaña Mapping: de dónde sale cada campo de la base, fuente por fuente. <c>Recorded</c>
+/// es false si la carga vigente es anterior al registro del mapping.
+/// </summary>
+public sealed record MappingCatalogView(bool Recorded, IReadOnlyList<MappingSourceView> Sources);
+
+public sealed record MappingSourceView(
+    string Source,
+    string FileName,
+    string? Description,
+    string KeyColumn,
+    IReadOnlyList<MappingCatalogFieldView> Fields);
+
+/// <summary>
+/// Un campo: los nombres de columna que se reconocen solos y la columna que lo cargó en la
+/// carga vigente (null los dos si no quedó registrado).
+/// </summary>
+public sealed record MappingCatalogFieldView(
+    string Column,
+    string Type,
+    bool Required,
+    bool IsKey,
+    IReadOnlyList<string> AcceptedNames,
+    string? CurrentHeader,
+    bool? CurrentManual,
+    IReadOnlyList<string> Feeds);
+
+/// <summary>El mapping de columnas propuesto antes de cargar, archivo por archivo.</summary>
+public sealed record MappingReviewView(IReadOnlyList<MappingFileView> Files);
+
+/// <summary>
+/// Un archivo en la revisión del mapping: la fuente reconocida (o por qué no) y qué columna
+/// cargaría cada campo. <c>Headers</c> son las columnas del archivo, para elegir.
+/// </summary>
+public sealed record MappingFileView(
+    string FileName,
+    string? CanonicalFileName,
+    string Source,
+    string? Description,
+    Notice? Problem,
+    IReadOnlyList<string> Candidates,
+    IReadOnlyList<string> Headers,
+    IReadOnlyList<MappingFieldView> Fields,
+    IReadOnlyList<string> UnusedHeaders,
+    IReadOnlyList<Notice> Problems);
+
+/// <summary>
+/// Un campo de la base y la columna del archivo que lo cargaría. <c>Match</c>: name,
+/// alias, manual, remembered, excluded o missing. <c>Feeds</c>: métricas que lo usan.
+/// </summary>
+public sealed record MappingFieldView(
+    string Column,
+    string Type,
+    bool Required,
+    bool IsKey,
+    string? Header,
+    string Match,
+    IReadOnlyList<string> Feeds);

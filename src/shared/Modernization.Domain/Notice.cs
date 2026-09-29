@@ -170,6 +170,16 @@ public static class NoticeCodes
     public const string RowNotConvertible = "row.notConvertible";
     public const string RowUnknownEai = "row.unknownEai";
 
+    // ------------------------------------------- mapping de columnas antes de cargar
+    public const string MappingInvalid = "mapping.invalid";
+    public const string MappingNeedsSource = "mapping.needsSource";
+    public const string MappingUnknownColumn = "mapping.unknownColumn";
+    public const string MappingHeaderNotInFile = "mapping.headerNotInFile";
+    public const string MappingHeaderTwice = "mapping.headerTwice";
+    public const string MappingRequiredExcluded = "mapping.requiredExcluded";
+    public const string MappingHeaderMultiline = "mapping.headerMultiline";
+    public const string MappingHeaderTooLarge = "mapping.headerTooLarge";
+
     // ------------------------------------------- administracion de reglas (Fase 12)
     public const string RulesMetricUnknown = "rules.metricUnknown";
     public const string RulesDuplicate = "rules.duplicate";

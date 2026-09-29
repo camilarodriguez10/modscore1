@@ -244,7 +244,8 @@ public sealed record UploadResponse(
             f.RejectedCount,
             f.Error,
             f.DetectedColumns,
-            f.Candidates))],
+            f.Candidates,
+            [.. f.RejectionReasons.Select(r => new RejectionReasonResponse(r.Reason, r.Rows, r.SampleRows))]))],
         o.Errors);
 }
 
@@ -260,7 +261,87 @@ public sealed record UploadFileResponse(
     // El encabezado leido y las fuentes posibles, cuando no se pudo identificar:
     // es lo que la interfaz necesita para preguntar en lugar de solo rechazar.
     IReadOnlyList<string> DetectedColumns,
-    IReadOnlyList<string> Candidates);
+    IReadOnlyList<string> Candidates,
+
+    // Por qué quedaron filas fuera, agrupado por problema y acotado por el lector.
+    IReadOnlyList<RejectionReasonResponse>? RejectionReasons = null);
+
+/// <summary>Un problema de las filas rechazadas: aviso de ejemplo, cuántas filas y las primeras.</summary>
+public sealed record RejectionReasonResponse(Notice Reason, int Rows, IReadOnlyList<int> SampleRows);
+
+/// <summary>
+/// Pedido de revisión del mapping antes de cargar. Solo viaja el encabezado de cada
+/// archivo: el navegador lee la primera línea y ninguna fila de datos sale del equipo.
+/// </summary>
+public sealed record MappingPreviewRequest(IReadOnlyList<MappingPreviewFileRequest>? Files);
+
+/// <param name="FileName">Nombre del archivo en el equipo; solo se muestra.</param>
+/// <param name="Header">La primera línea del archivo.</param>
+/// <param name="AssignedFileName">Fuente elegida a mano, si el encabezado no alcanza.</param>
+/// <param name="Columns">Decisiones ya tomadas: campo a columna del archivo, o a null.</param>
+public sealed record MappingPreviewFileRequest(
+    string? FileName,
+    string? Header,
+    string? AssignedFileName,
+    IReadOnlyDictionary<string, string?>? Columns);
+
+public sealed record MappingPreviewResponse(IReadOnlyList<MappingPreviewFileResponse> Files);
+
+/// <summary>El mapping propuesto para un archivo, campo por campo.</summary>
+public sealed record MappingPreviewFileResponse(
+    string FileName,
+    string? CanonicalFileName,
+    string Source,
+    string? Description,
+    Notice? Problem,
+    IReadOnlyList<string> Candidates,
+    IReadOnlyList<string> Headers,
+    IReadOnlyList<MappingFieldResponse> Fields,
+    IReadOnlyList<string> UnusedHeaders,
+    IReadOnlyList<Notice> Problems);
+
+/// <summary>
+/// De dónde sale cada campo de la base, fuente por fuente, sin elegir archivos: los nombres
+/// de columna que acepta cada campo y la columna que lo cargó en la carga vigente.
+/// <c>Recorded</c> es false si la carga vigente es anterior al registro del mapping.
+/// </summary>
+public sealed record MappingCatalogResponse(bool Recorded, IReadOnlyList<MappingSourceResponse> Sources);
+
+public sealed record MappingSourceResponse(
+    string Source,
+    string FileName,
+    string? Description,
+    string KeyColumn,
+    IReadOnlyList<MappingCatalogFieldResponse> Fields);
+
+/// <summary>
+/// Un campo de una fuente. <c>AcceptedNames</c> son el nombre y los alias que se reconocen
+/// solos; <c>CurrentHeader</c> y <c>CurrentManual</c>, la columna que lo cargó en la carga
+/// vigente y si la eligió una persona (null los dos si no quedó registrado).
+/// </summary>
+public sealed record MappingCatalogFieldResponse(
+    string Column,
+    string Type,
+    bool Required,
+    bool IsKey,
+    IReadOnlyList<string> AcceptedNames,
+    string? CurrentHeader,
+    bool? CurrentManual,
+    IReadOnlyList<string> Feeds);
+
+/// <summary>
+/// Un campo de la base y la columna del archivo que lo cargaría. <c>Match</c> dice cómo
+/// se decidió —name, alias, manual, remembered, excluded o missing— y <c>Feeds</c>, qué
+/// métricas del ruleset vigente usan el campo.
+/// </summary>
+public sealed record MappingFieldResponse(
+    string Column,
+    string Type,
+    bool Required,
+    bool IsKey,
+    string? Header,
+    string Match,
+    IReadOnlyList<string> Feeds);
 
 /// <summary>
 /// Que adaptador esta activo y si admite cargas. Lo declara la capa System: no

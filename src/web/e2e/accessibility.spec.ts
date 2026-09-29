@@ -17,6 +17,7 @@ const screens = [
   { name: 'code detail of an application', path: '/code?app=14381' },
   { name: 'roadmap', path: '/roadmap' },
   { name: 'data', path: '/data' },
+  { name: 'column mapping', path: '/data?tab=mapping' },
   { name: 'rules administration', path: '/admin/rules' },
   { name: 'portfolio analytics administration', path: '/admin/rules?tab=analytics' },
 ];

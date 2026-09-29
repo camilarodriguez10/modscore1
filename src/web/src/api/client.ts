@@ -20,6 +20,9 @@ import type {
   RulesVersionDocumentView,
   RoadmapPlanView,
   UploadResultView,
+  MappingCatalogView,
+  MappingReviewFileRequest,
+  MappingReviewView,
   ScenarioView,
   ScoreOverviewView,
   SessionView,
@@ -174,6 +177,9 @@ export const api = {
 
   ingestion: () => request<IngestionView>('/api/ingestion'),
 
+  /** De dónde sale cada campo de la base, con la columna de la carga vigente. */
+  mapping: () => request<MappingCatalogView>('/api/ingestion/mapping'),
+
   history: (eaiCode: string) =>
     request<readonly HistoryPointView[]>(
       `/api/applications/${encodeURIComponent(eaiCode)}/history`,
@@ -184,7 +190,12 @@ export const api = {
    * navegador lo escribe con el boundary correcto. El token CSRF lo agrega
    * `request` como en cualquier otra mutacion.
    */
-  upload: (files: readonly File[], label: string, assignments?: readonly string[]) => {
+  upload: (
+    files: readonly File[],
+    label: string,
+    assignments?: readonly string[],
+    columnMaps?: readonly (Readonly<Record<string, string | null>> | null)[],
+  ) => {
     const body = new FormData();
     for (const file of files) {
       body.append('files', file, file.name);
@@ -198,12 +209,31 @@ export const api = {
       }
     }
 
+    // El mapping de columnas va igual, y solo junto con la fuente de cada archivo: un
+    // mapping es de una fuente concreta.
+    if (columnMaps && assignments && columnMaps.length === files.length && assignments.length === files.length) {
+      for (const columnMap of columnMaps) {
+        body.append('map', columnMap && Object.keys(columnMap).length > 0 ? JSON.stringify(columnMap) : '-');
+      }
+    }
+
     if (label.trim()) {
       body.append('label', label.trim());
     }
 
     return request<UploadResultView>('/api/ingestion/upload', { method: 'POST', body });
   },
+
+  /**
+   * Revisión del mapping antes de cargar. Viaja la primera línea de cada archivo —los
+   * nombres de las columnas— y nada más: las filas no salen del navegador hasta cargar.
+   */
+  previewMapping: (files: readonly MappingReviewFileRequest[]) =>
+    request<MappingReviewView>('/api/ingestion/mapping/preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ files }),
+    }),
 
   roadmap: (eaiCode: string) =>
     request<RoadmapPlanView>(`/api/applications/${encodeURIComponent(eaiCode)}/roadmap`),

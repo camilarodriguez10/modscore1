@@ -55,6 +55,20 @@ public sealed class IngestionService(
         string uploadedBy,
         IReadOnlyList<string>? assignments = null,
         CancellationToken cancellationToken = default)
+        => await PublishAsync(files, label, uploadedBy, assignments, null, cancellationToken).ConfigureAwait(false);
+
+    /// <summary>
+    /// Publica una carga con su mapping de columnas. <paramref name="columnMaps"/> lleva,
+    /// en el mismo orden que los archivos, un objeto JSON de campo a columna del archivo
+    /// (o a null si no la trae); vacío o "-" deja que lo decidan el nombre y los alias.
+    /// </summary>
+    public async Task<PublishOutcome> PublishAsync(
+        IFormFileCollection files,
+        string? label,
+        string uploadedBy,
+        IReadOnlyList<string>? assignments,
+        IReadOnlyList<string>? columnMaps,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(files);
 
@@ -87,7 +101,8 @@ public sealed class IngestionService(
         // Si vienen asignaciones, tienen que corresponder una a una con los archivos:
         // una lista desalineada asignaria el contenido de un archivo a la fuente de
         // otro, que es peor que no asignar nada.
-        if (assignments is { Count: > 0 } && assignments.Count != files.Count)
+        if ((assignments is { Count: > 0 } && assignments.Count != files.Count)
+            || (columnMaps is { Count: > 0 } && columnMaps.Count != files.Count))
         {
             return new PublishOutcome(
                 false,
@@ -135,9 +150,16 @@ public sealed class IngestionService(
                 continue;
             }
 
+            if (!TryParseColumnMap(columnMaps, index, out var columnMap))
+            {
+                rejected.Add(Notice.Of(NoticeCodes.MappingInvalid, ("file", name)));
+                continue;
+            }
+
             incoming.Add(new IncomingSourceFile(name, file.Length, file.OpenReadStream)
             {
                 AssignedFileName = assigned,
+                ColumnMap = columnMap,
             });
         }
 
@@ -165,6 +187,218 @@ public sealed class IngestionService(
             now,
             cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>
+    /// Revisa el mapping antes de cargar: identifica la fuente de cada archivo por su
+    /// encabezado y propone qué columna carga cada campo, con lo recordado de la carga
+    /// vigente y las decisiones que ya llegaron. No publica ni guarda nada. Las métricas
+    /// del ruleset vigente, con su campo de origen, dicen qué alimenta cada campo.
+    /// </summary>
+    public async Task<MappingPreviewResponse> PreviewMappingAsync(
+        MappingPreviewRequest request,
+        IReadOnlyList<(string Name, string Field)> metrics,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(metrics);
+
+        var remembered = publisher is null
+            ? []
+            : await publisher.GetCurrentColumnMapsAsync(cancellationToken).ConfigureAwait(false);
+
+        var matcher = new SourceFileMatcher(catalog);
+        var files = new List<MappingPreviewFileResponse>();
+
+        foreach (var file in request.Files ?? [])
+        {
+            var name = Path.GetFileName(file.FileName ?? string.Empty);
+            name = name.Length > MaxPreviewFileNameLength ? name[..MaxPreviewFileNameLength] : name;
+            var assigned = file.AssignedFileName?.Trim() is { Length: > 0 } value && value != "-" ? value : null;
+
+            IReadOnlyList<string> headers;
+
+            try
+            {
+                headers = ColumnMapping.ParseHeaderLine(file.Header);
+            }
+            catch (SourceSchemaException ex)
+            {
+                files.Add(Unresolved(name, [], catalog.ExpectedFileNames, ex.Notice ?? Notice.Of(NoticeCodes.CsvNoHeader)));
+                continue;
+            }
+
+            if (assigned is not null && !IsValidAssignment(assigned))
+            {
+                files.Add(Unresolved(name, headers, catalog.ExpectedFileNames, Notice.Of(NoticeCodes.FileAssignmentShape)));
+                continue;
+            }
+
+            var match = matcher.Match(headers, name, assigned);
+
+            if (match.Schema is null)
+            {
+                files.Add(Unresolved(name, headers, match.Candidates, match.Problem));
+                continue;
+            }
+
+            var schema = match.Schema;
+            var resolution = ColumnMapping.Resolve(
+                schema,
+                headers,
+                file.Columns,
+                remembered.FirstOrDefault(m => string.Equals(m.FileName, schema.FileName, StringComparison.OrdinalIgnoreCase)));
+
+            files.Add(new MappingPreviewFileResponse(
+                name,
+                schema.FileName,
+                schema.Source,
+                schema.Description,
+                null,
+                [],
+                headers,
+                [.. resolution.Columns.Select(c => new MappingFieldResponse(
+                    c.Column.Name,
+                    TypeName(c.Column.Type),
+                    c.Column.Required,
+                    string.Equals(c.Column.Name, schema.KeyColumn, StringComparison.Ordinal),
+                    c.Header,
+                    MatchName(c.How),
+                    [.. metrics.Where(m => MetricFeeds.Uses(m.Field, c.Column.Name)).Select(m => m.Name).Distinct(StringComparer.Ordinal)]))],
+                resolution.UnusedHeaders,
+                resolution.Problems));
+        }
+
+        return new MappingPreviewResponse(files);
+    }
+
+    /// <summary>
+    /// De dónde sale cada campo de la base, sin archivos: el contrato de cada fuente, los
+    /// nombres que se reconocen solos y la columna registrada en la carga vigente.
+    /// </summary>
+    public async Task<MappingCatalogResponse> DescribeMappingAsync(
+        IReadOnlyList<(string Name, string Field)> metrics,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(metrics);
+
+        var current = publisher is null
+            ? []
+            : await publisher.GetCurrentColumnMapsAsync(cancellationToken).ConfigureAwait(false);
+
+        var sources = catalog.Files.Select(schema =>
+        {
+            var map = current.FirstOrDefault(m => string.Equals(m.FileName, schema.FileName, StringComparison.OrdinalIgnoreCase));
+
+            return new MappingSourceResponse(
+                schema.Source,
+                schema.FileName,
+                schema.Description,
+                schema.KeyColumn,
+                [.. schema.Columns.Select(column =>
+                {
+                    var assignment = map?.Columns.FirstOrDefault(a => string.Equals(a.Column, column.Name, StringComparison.Ordinal));
+
+                    return new MappingCatalogFieldResponse(
+                        column.Name,
+                        TypeName(column.Type),
+                        column.Required,
+                        string.Equals(column.Name, schema.KeyColumn, StringComparison.Ordinal),
+                        [column.Name, .. column.Aliases],
+                        assignment?.Header,
+                        assignment?.Manual,
+                        [.. metrics.Where(m => MetricFeeds.Uses(m.Field, column.Name)).Select(m => m.Name).Distinct(StringComparer.Ordinal)]);
+                })]);
+        }).ToList();
+
+        return new MappingCatalogResponse(current.Count > 0, sources);
+    }
+
+    /// <summary>Tope del nombre de archivo que se devuelve en la revisión.</summary>
+    private const int MaxPreviewFileNameLength = 256;
+
+    /// <summary>Tope del JSON de mapping de un archivo.</summary>
+    public const int MaxColumnMapLength = 32 * 1024;
+
+    /// <summary>Tope de campos en el mapping de un archivo. Los contratos tienen menos de 30.</summary>
+    public const int MaxColumnMapEntries = 200;
+
+    private static MappingPreviewFileResponse Unresolved(
+        string name,
+        IReadOnlyList<string> headers,
+        IReadOnlyList<string> candidates,
+        Notice? problem)
+        => new(name, null, "-", null, problem, candidates, headers, [], headers, []);
+
+    private static string TypeName(ColumnType type) => type switch
+    {
+        ColumnType.Int => "integer",
+        ColumnType.Long => "long",
+        ColumnType.Decimal => "number",
+        ColumnType.Bool => "boolean",
+        ColumnType.DateTime => "date",
+        _ => "text",
+    };
+
+    private static string MatchName(ColumnMatch how) => how switch
+    {
+        ColumnMatch.Name => "name",
+        ColumnMatch.Alias => "alias",
+        ColumnMatch.Manual => "manual",
+        ColumnMatch.Remembered => "remembered",
+        ColumnMatch.Excluded => "excluded",
+        _ => "missing",
+    };
+
+    /// <summary>
+    /// El mapping de un archivo, validado por forma: un objeto de campo a columna o a null,
+    /// acotado y sin caracteres de control. Que los campos existan y las columnas estén en
+    /// el archivo lo comprueba el publicador contra el contrato.
+    /// </summary>
+    private static bool TryParseColumnMap(IReadOnlyList<string>? columnMaps, int index, out IReadOnlyDictionary<string, string?>? map)
+    {
+        map = null;
+
+        if (columnMaps is null || index >= columnMaps.Count)
+        {
+            return true;
+        }
+
+        var raw = columnMaps[index]?.Trim();
+
+        if (string.IsNullOrEmpty(raw) || raw == "-")
+        {
+            return true;
+        }
+
+        if (raw.Length > MaxColumnMapLength)
+        {
+            return false;
+        }
+
+        Dictionary<string, string?>? parsed;
+
+        try
+        {
+            parsed = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string?>>(raw);
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return false;
+        }
+
+        if (parsed is null
+            || parsed.Count > MaxColumnMapEntries
+            || parsed.Any(entry => !IsCleanText(entry.Key, 128) || (entry.Value is not null && !IsCleanText(entry.Value, ColumnMapping.MaxHeaderNameLength))))
+        {
+            return false;
+        }
+
+        map = parsed;
+        return true;
+    }
+
+    private static bool IsCleanText(string text, int maxLength)
+        => text.Length is > 0 && text.Length <= maxLength && !text.Any(char.IsControl);
 
     /// <summary>La asignacion de un archivo, o null si se deja al encabezado.</summary>
     private static string? Assignment(IReadOnlyList<string>? assignments, int index)

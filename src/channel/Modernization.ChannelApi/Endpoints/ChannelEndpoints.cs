@@ -25,6 +25,14 @@ public static class ChannelEndpoints
     private const int MaxVersionIdLength = 64;
     private const int MaxAssignmentLength = 64;
 
+    // Topes del mapping de columnas, iguales a los de la capa System.
+    private const int MaxColumnMapLength = 32 * 1024;
+    private const int MaxColumnMapEntries = 200;
+    private const int MaxMappingFiles = 12;
+    private const int MaxHeaderLineLength = 64 * 1024;
+    private const int MaxHeaderNameLength = 256;
+    private const int MaxMappingFileNameLength = 256;
+
     /// <summary>Dimensiones por las que se puede agrupar el plan del portafolio.</summary>
     internal static readonly string[] Groupings =
         ["portfolio", "application", "country", "cio", "lob", "disposition", "roadmap"];
@@ -96,6 +104,18 @@ public static class ChannelEndpoints
             .RequireRateLimiting(ChannelLimits.UploadPolicy)
             .DisableAntiforgery()
             .WithSummary("Sube archivos, recalcula y publica una carga nueva.");
+
+        // De donde sale cada campo de la base. Describe cargas completas, como el linaje.
+        api.MapGet("/ingestion/mapping", GetMapping)
+            .RequireAuthorization(ChannelPermissions.FullPortfolioPolicy)
+            .WithSummary("Pestaña Mapping — archivo y columna que cargan cada campo de la base.");
+
+        // El mapping se revisa antes de publicar y es parte de publicar: el mismo rol y el
+        // mismo alcance. Solo recibe encabezados; ninguna fila de datos.
+        api.MapPost("/ingestion/mapping/preview", PostMappingReview)
+            .RequireAuthorization(ChannelPermissions.UploadPolicy)
+            .RequireRateLimiting(ChannelLimits.SimulationPolicy)
+            .WithSummary("Propone qué columna de cada archivo carga cada campo, antes de cargar.");
 
         // La sesion solo exige estar autenticado: la SPA la consulta para saber que
         // mostrar, incluido un "sin acceso" a quien no tiene permisos.
@@ -411,10 +431,88 @@ public static class ChannelEndpoints
 
         var assignments = assign.Count == 0 ? null : assign.Select(v => v ?? string.Empty).ToList();
 
-        var view = await composer.UploadAsync(form.Files, label, assignments, cancellationToken)
+        // El mapping de columnas, uno por archivo y en su mismo orden, igual que la fuente.
+        // Que sea un mapping valido lo decide la capa System contra el contrato.
+        var map = form["map"];
+
+        if (map.Count > 0 && (map.Count != form.Files.Count || assign.Count != form.Files.Count))
+        {
+            return ApiProblem.Create(
+                StatusCodes.Status400BadRequest,
+                "invalid-mapping",
+                "Invalid column mapping",
+                "Send one column mapping and one source per file, in the same order.");
+        }
+
+        if (map.Any(value => value is { Length: > MaxColumnMapLength }))
+        {
+            return ApiProblem.Create(
+                StatusCodes.Status400BadRequest,
+                "invalid-mapping",
+                "Invalid column mapping",
+                $"A column mapping accepts up to {MaxColumnMapLength} characters per file.");
+        }
+
+        var columnMaps = map.Count == 0 ? null : map.Select(v => v ?? string.Empty).ToList();
+
+        var view = await composer.UploadAsync(form.Files, label, assignments, columnMaps, cancellationToken)
             .ConfigureAwait(false);
 
         return Results.Ok(view);
+    }
+
+    private static async Task<IResult> GetMapping(IngestionComposer composer, CancellationToken cancellationToken)
+        => Results.Ok(await composer.ComposeMappingAsync(cancellationToken).ConfigureAwait(false));
+
+    private static async Task<IResult> PostMappingReview(
+        MappingReviewRequestBody? body,
+        IngestionComposer composer,
+        CancellationToken cancellationToken)
+    {
+        if (body?.Files is not { Count: > 0 } files
+            || files.Count > MaxMappingFiles
+            || files.Any(f => f is null || !IsValidMappingFile(f)))
+        {
+            return ApiProblem.Create(
+                StatusCodes.Status400BadRequest,
+                "invalid-mapping-review",
+                "Invalid mapping review",
+                $"Send between 1 and {MaxMappingFiles} files, each with its header line (up to {MaxHeaderLineLength} characters) and no data rows.");
+        }
+
+        try
+        {
+            var view = await composer.PreviewMappingAsync(files, cancellationToken).ConfigureAwait(false);
+            return Results.Ok(view);
+        }
+        catch (SystemApiException ex)
+        {
+            return ApiProblem.Create(
+                StatusCodes.Status400BadRequest,
+                "invalid-mapping-review",
+                "Invalid mapping review",
+                ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Forma de lo que llega para revisar el mapping, acotada antes de reenviarlo. Solo se
+    /// acepta la línea de encabezado: un salto de línea con algo detrás sería una fila de
+    /// datos, que no tiene por qué salir del navegador.
+    /// </summary>
+    private static bool IsValidMappingFile(MappingReviewFileBody file)
+    {
+        var header = file.Header ?? string.Empty;
+        var lineBreak = header.IndexOfAny(['\r', '\n']);
+
+        return header.Length is > 0 and <= MaxHeaderLineLength
+            && (lineBreak < 0 || header[lineBreak..].Trim().Length == 0)
+            && (file.FileName?.Length ?? 0) <= MaxMappingFileNameLength
+            && (file.AssignedFileName?.Length ?? 0) <= MaxAssignmentLength
+            && (file.Columns?.Count ?? 0) <= MaxColumnMapEntries
+            && (file.Columns ?? new Dictionary<string, string?>()).All(entry =>
+                entry.Key.Length is > 0 and <= 128
+                && (entry.Value is null || entry.Value.Length <= MaxHeaderNameLength));
     }
 
     private static async Task<IResult> GetRoadmapPlan(
@@ -720,6 +818,17 @@ public static class ChannelEndpoints
         "Upload too large",
         $"The upload exceeds the maximum of {ChannelLimits.Megabytes(ChannelLimits.UploadMaxTotalBytes)} MB.");
 }
+
+/// <summary>
+/// Revisión del mapping antes de cargar: el encabezado de cada archivo, nunca sus filas.
+/// </summary>
+public sealed record MappingReviewRequestBody(IReadOnlyList<MappingReviewFileBody>? Files);
+
+public sealed record MappingReviewFileBody(
+    string? FileName,
+    string? Header,
+    string? AssignedFileName,
+    IReadOnlyDictionary<string, string?>? Columns);
 
 /// <summary>Cuerpo de la peticion de escenario que envia la SPA.</summary>
 public sealed record ScenarioRequestBody(IReadOnlyList<LeverSelectionBody> Levers);

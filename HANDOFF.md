@@ -1,6 +1,6 @@
 # Traspaso — Modernization Score Platform
 
-**Fecha:** 2026-09-27 · **Estado:** fases 00 a 13 entregadas; 14 y 15 en curso; dashboard ejecutivo con D1, D2 y D3 entregadas; pantalla Code (C1) con proyección a tres años, plan de mejora y evolución por carga, sobre datos de demostración; paquete portable retirado · **Siguiente:** que el negocio confirme las definiciones desde el portal (DD-01 a DD-08) y las reglas P0 del score; aprobar la GitHub App y el mapeo de repositorios (GH-01, GH-02); terminar la Fase 14 en un entorno de prueba
+**Fecha:** 2026-09-28 · **Estado:** fases 00 a 13 entregadas; 14 y 15 en curso; dashboard ejecutivo con D1, D2 y D3 entregadas; pantalla Code (C1) con proyección a tres años, plan de mejora y evolución por carga, sobre datos de demostración; mapping de columnas previo a la carga y motivos de rechazo; paquete portable retirado · **Siguiente:** que el negocio confirme las definiciones desde el portal (DD-01 a DD-08) y las reglas P0 del score; aprobar la GitHub App y el mapeo de repositorios (GH-01, GH-02); terminar la Fase 14 en un entorno de prueba
 
 Este documento permite que otra persona —o otra sesión— retome el proyecto sin haber
 estado en él. No reemplaza al plan ([PLAN.md](PLAN.md)) ni a los ADR: dice qué hay, dónde
@@ -41,14 +41,14 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | Las seis preguntas (pantalla 09) | Entregada el 2026-09-16 (PLAN §8.9, [ADR 0023](docs/adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md)). Salud, prioridades, complejidad, riesgo, obsolescencia y resiliencia en `/insights`, con los mismos filtros. Ningún dato nuevo hizo falta; lo que mejoraría el esfuerzo y el valor de negocio está en PENDING-ITEMS como DQ-01 a DQ-07 |
 | Dashboard ejecutivo | D1, D2 y D3 entregadas el 2026-09-18 (PLAN §8.10, [ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md), [ADR 0025](docs/adr/0025-las-definiciones-viajan-con-las-reglas.md)). La página de inicio (`/`): *Portfolio Health & Risk Intelligence*, con cinco indicadores, seis paneles y un detalle común; el inventario está en `/portfolio`. Currency Score = `Raw_Tech_Score` de CMT. Las 37 definiciones de las seis preguntas viajan con las reglas y se editan en *Rules → Portfolio analytics*; cada panel explica su cálculo y *Definitions* es el diccionario. Cinco filtros nuevos en todas las pantallas. Falta D4 (fuentes nuevas) |
 | Pantalla Code | C1 entregada el 2026-09-26 (PLAN §8.11, [ADR 0026](docs/adr/0026-el-analisis-de-codigo-llega-de-github-enterprise.md)). `/code`: componentes de cada repositorio contra su fin de vida (endoflife.date, foto versionada con 22 productos y 273 ciclos), bibliotecas con hallazgos, discrepancias con el Currency Score de CMT e índice de riesgo de código con detalle por aplicación. 15 parámetros nuevos (área `code`) editables desde el portal. **Repositorios de demostración** hasta integrar GitHub Enterprise (C2, GH-01 a GH-09) |
-| Pruebas | **847 .NET** (319 motor · 189 contratos · 339 API) · **66 unitarias** de la SPA · **51 de punta a punta** con Playwright (26 de flujo y 25 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-09-27 |
+| Pruebas | **889 .NET** (319 motor · 216 contratos · 354 API) · **74 unitarias** de la SPA · **56 de punta a punta** con Playwright (29 de flujo y 27 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-09-28 |
 | Dependencias | Cero paquetes vulnerables (`dotnet list package --vulnerable`), `npm audit` limpio |
 | CI | GitHub Actions en verde desde la corrida #5 (`55cf36f`, 2026-09-15), que pasó los 7 jobs: backend, SPA, gitleaks, OSV, CodeQL C# y JS/TS, e imágenes con Trivy v0.74.0 y Checkov. CodeQL sin hallazgos altos. Tras acelerarlo, la corrida #6 (`148c6ce`) tardó 7 min 3 s en lugar de 9 min 54 s; CodeQL C# sigue marcando el total (6 min 58 s). Antes hubo que corregir el lint, CodeQL en repositorio privado (`upload: never`, `actions: read`), la versión de Trivy y el UID de los pods. Para acortarlo: gitleaks y OSV están en `seguridad.yml` y corren en cada push; `ci.yml` se salta los cambios que solo tocan documentación; CodeQL C# compila solo `src/` sin los analizadores de Roslyn; hay caché de NuGet, y el job de imágenes no espera a los demás |
 | ASVS L2 | 106 cumple · 11 parciales · 3 pendientes · 10 IdP o N/A. Los parciales dependen de un entorno real |
 | Hallazgos | Fase 08: 23 (19 cerrados, H-16 parcial, H-17/H-20/H-21 pendientes). Revisión 09–13: 7 (6 cerrados, 1 aceptado) |
 | Git | Repositorio **privado** <https://github.com/camilarodriguez10/modscore1>, rama `main`. Guarda todo lo creado —el estado local de `data/`, los scripts de las sesiones (`tools/sesiones/`) y la copia del plan (`docs/plan/`)— salvo las capturas del BRD y las imágenes. Los commits usan el correo de la cuenta. Cada push se confirma antes |
 | Memo de decisiones | <https://claude.ai/artifact/Gp7c9gHv5kTSdGETPfeCi5> (versión 2, del 2026-09-18, con la pregunta 9 respondida): las once reglas de scoring que el negocio tiene que confirmar, con evidencia y opciones. Fuente de verdad: [docs/scoring-decisions.md](docs/scoring-decisions.md); copia publicada en `docs/plan/scoring-decisions.html` |
-| Artefacto del plan | <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> (versión 22, del 2026-09-27, con la pantalla Code en el tiempo y el paquete portable retirado; copia en `docs/plan/modscore-plan.html`, que hay que reemplazar al republicar; enlace anterior del mismo artefacto: <https://claude.ai/code/artifact/25507d1f-40a6-4e74-8c43-0337dbb63358>) |
+| Artefacto del plan | <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> (versión 23, del 2026-09-28, con el mapping de columnas previo a la carga y los motivos de rechazo; copia en `docs/plan/modscore-plan.html`, que hay que reemplazar al republicar; enlace anterior del mismo artefacto: <https://claude.ai/code/artifact/25507d1f-40a6-4e74-8c43-0337dbb63358>) |
 | Paquete portable | **Retirado el 2026-09-27** por decisión: la aplicación se levanta desde el código, con comandos para cmd y PowerShell ([README](README.md), «Levantar el stack», y la [guía](docs/guia-localhost.md)). Se borraron `artifacts/*.zip` y `tools/portable/`; la historia de git conserva los `.zip` anteriores (unos 93 MB cada uno). Para un equipo que no deja ejecutar `.exe` propios, el camino B de la guía sirve el sitio compilado (`src\web\dist`) desde la Channel con solo `dotnet.exe` |
 
 ---
@@ -344,12 +344,54 @@ software y componentes y una fuente para el fin de vida. Detalle en PLAN §8.11 
 
 ---
 
+## 6quinquies. Mapping de columnas y motivos de rechazo
+
+Del 2026-09-28, por la primera carga con datos reales: el EAI Master quedó en 0 filas y
+3.869 rechazadas, sin decir por qué. Detalle y alternativas en el
+[ADR 0027](docs/adr/0027-el-mapping-de-columnas-se-decide-antes-de-cargar.md).
+
+**Qué hay:**
+
+- **Motivos de rechazo:** `CsvSourceReader.ReadOutcome.Reasons` agrupa por código, columna y
+  tipo esperado (`ReasonTally`), con todas las columnas malas de cada fila; viaja como
+  `PublishedFileOutcome.RejectionReasons` → `UploadFileResponse.RejectionReasons` →
+  `UploadFileView.RejectionReasons`. Textos y pistas en `i18n/notices.ts`
+  (`rejectionReasonText`, `rejectionHint`, `sampleRowsText`).
+- **Mapping:** `ColumnMapping` en `Modernization.Sources/Files` resuelve (`Resolve`: nombre,
+  alias, manual, recordado, excluido, faltante), valida y reescribe el encabezado (`Rewrite`
+  para el adaptador de archivos, `Open` como lector para el de base). `IncomingSourceFile`
+  trae `ColumnMap`; `ISnapshotPublisher.GetCurrentColumnMapsAsync` devuelve el de la carga
+  vigente (manifiesto `ColumnMaps`; columna `ColumnMaps` en `snapshot_version`).
+- **Endpoints:** System `POST /system/ingestion/mapping/preview` y `GET /system/ingestion/mapping`;
+  Channel `POST /api/ingestion/mapping/preview` (rol de carga, rate limit de simulación) y
+  `GET /api/ingestion/mapping` (alcance completo). La carga acepta `map` junto a `assign`, uno
+  por archivo.
+- **SPA:** `mapping.ts` (estado, validación, qué se envía), `routes/MappingReview.tsx` en
+  Uploads, `routes/MappingPanel.tsx` como pestaña **Mapping** de Data.
+
+**Cuidados:**
+
+- **Con datos generados la carga está apagada**, así que ninguna prueba de punta a punta había
+  visto el formulario de carga: el selector de archivos no tenía etiqueta y nadie lo notó.
+  `e2e/mapping.spec.ts` simula las tres respuestas de carga con `page.route`; lo que valida el
+  servidor lo cubren `ColumnMappingFlowTests` y las de contrato.
+- **La migración `MapeoDeColumnas` se escribió a mano** (no hay `dotnet ef` en este equipo):
+  el modelo de la migración es el snapshot con la columna nueva. Las pruebas del adaptador de
+  base aplican todas las migraciones sobre SQLite, así que un error ahí se ve.
+- **Solo se envía lo decidido:** la SPA manda en el mapping los campos elegidos a mano, los
+  recordados y los excluidos, no lo reconocido por nombre o alias; así lo registrado distingue
+  una decisión de un reconocimiento.
+- **Números con los dos separadores:** el último es el decimal (`1.234,5` = 1234,5). Antes se
+  quitaban las comas y quedaba 1,2345 sin aviso.
+
+---
+
 ## 7. Comandos frecuentes
 
 | Para | Comando |
 |---|---|
 | Pruebas .NET | `dotnet test ModernizationScore.slnx` |
-| Pruebas de la SPA | `npm --prefix src/web run lint` (el CI lo exige) · `npm --prefix src/web test` · `npm --prefix src/web run test:e2e` (51 escenarios, 25 de ellos de accesibilidad) |
+| Pruebas de la SPA | `npm --prefix src/web run lint` (el CI lo exige) · `npm --prefix src/web test` · `npm --prefix src/web run test:e2e` (56 escenarios, 27 de ellos de accesibilidad) |
 | Catálogo de fin de vida | `python tools/eol-catalog/build-eol-catalog.py` (o `--from <carpeta>` con los JSON bajados con `curl`), y después `dotnet test tests/Modernization.Scoring.Engine.Tests --filter EndOfLifeCatalog` |
 | Pruebas contra un sitio ya arrancado | Con la Channel sirviendo `src/web/dist` en el 5100, desde `src/web`: `MODSCORE_E2E_BASE_URL=http://localhost:5100 npx playwright test` |
 | Tipos de la SPA | `npx --prefix src/web tsc -b` (desde `src/web`: `npx tsc -b`) |

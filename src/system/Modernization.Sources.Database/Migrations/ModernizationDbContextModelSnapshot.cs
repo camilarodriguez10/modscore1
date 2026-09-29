@@ -157,6 +157,9 @@ namespace Modernization.Sources.Database.Migrations
                     b.Property<DateTime>("CapturedAtUtc")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ColumnMaps")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Label")
                         .IsRequired()
                         .HasMaxLength(256)

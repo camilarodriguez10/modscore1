@@ -135,11 +135,10 @@ describe('upload rejection reasons', () => {
   });
 
   it('recognizes the usual causes without guessing', () => {
-    expect(rejectionHint(invalid('Kenna_Score', 'integer', 'N/A'))).toMatch(/Leave the cell empty/);
-    expect(rejectionHint(invalid('Kenna_Score', 'integer', '#N/A'))).toMatch(/Leave the cell empty/);
     expect(rejectionHint(invalid('Kenna_Score', 'integer', '712.5'))).toMatch(/whole numbers/);
     expect(rejectionHint(invalid('User Count', 'integer', '1.234'))).toMatch(/thousands separator/);
-    expect(rejectionHint(invalid('User Count', 'integer', 'Internal'))).toMatch(/columns are not shifted/);
+    expect(rejectionHint(invalid('User Count', 'integer', 'Internal'))).toMatch(/wrong column/);
+    expect(rejectionHint({ code: 'row.duplicateKey', args: { column: 'EAI_Code', key: '14381' } })).toMatch(/one row per date/);
     expect(rejectionHint(invalid('Internet_Facing', 'boolean', 'maybe'))).toMatch(/TRUE\/FALSE/);
     expect(rejectionHint(invalid('Kenna_Score', 'integer', '1-100'))).toBeNull();
   });

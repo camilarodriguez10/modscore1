@@ -78,6 +78,7 @@ export function matchTone(match: MappingMatch, required: boolean): 'good' | 'acc
 
 const TYPE_LABELS: Record<string, string> = {
   text: 'text',
+  identifier: 'identifier',
   integer: 'whole number',
   long: 'whole number',
   number: 'number',

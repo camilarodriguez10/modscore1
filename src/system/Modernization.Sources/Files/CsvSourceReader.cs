@@ -10,12 +10,17 @@ namespace Modernization.Sources.Files;
 /// Lee un CSV validandolo contra su contrato de esquema.
 /// </summary>
 /// <remarks>
-/// Dos niveles de fallo, deliberadamente distintos:
+/// Tres niveles de fallo, deliberadamente distintos:
 /// <list type="bullet">
 /// <item>Una columna obligatoria que falta invalida el archivo completo y lanza:
 /// seguir leyendo produciria un portafolio incompleto sin que nadie lo note.</item>
-/// <item>Una fila mal formada se rechaza con su motivo y la lectura continua: un
-/// dato malo en la fila 300 no puede dejar sin score a las otras 249.</item>
+/// <item>Una fila sin clave, con un valor ilegible en un campo obligatorio o con una clave
+/// que se repite donde no puede se rechaza con su motivo y la lectura continua: un dato
+/// malo en la fila 300 no puede dejar sin score a las otras 249.</item>
+/// <item>Un valor ilegible en un campo <b>opcional</b> queda sin dato y se informa; la fila
+/// se conserva. Desde el 2026-09-28 (ADR 0028): antes rechazaba la fila entera, y un export
+/// con una sola columna mal formateada dejaba sin ninguna aplicación al portafolio. Sin dato
+/// es exactamente lo que el BRD hace con un valor que falta.</item>
 /// </list>
 /// </remarks>
 public sealed class CsvSourceReader
@@ -73,6 +78,12 @@ public sealed class CsvSourceReader
         /// de una vez, no descubrirla carga tras carga.
         /// </summary>
         public IReadOnlyList<RejectionReason> Reasons { get; init; } = [];
+
+        /// <summary>
+        /// Los valores de campos opcionales que no se pudieron leer y quedaron sin dato,
+        /// agrupados igual. La fila se cargó con el resto de sus campos.
+        /// </summary>
+        public IReadOnlyList<RejectionReason> IgnoredValues { get; init; } = [];
     }
 
     public ReadOutcome Read(TextReader reader)
@@ -162,6 +173,7 @@ public sealed class CsvSourceReader
         var rows = new List<Row>();
         var rejections = new List<SourceRejection>();
         var reasons = new ReasonTally();
+        var ignored = new ReasonTally();
         var rowNumber = 1;
 
         while (csv.Read())
@@ -173,7 +185,7 @@ public sealed class CsvSourceReader
                 throw new SourceSchemaException(Notice.Of(NoticeCodes.CsvTooManyRows, ("max", MaxRows), ("file", _schema.FileName)));
             }
 
-            var (row, rejection) = ReadRow(csv, mapping, rowNumber, reasons);
+            var (row, rejection) = ReadRow(csv, mapping, rowNumber, reasons, ignored);
 
             if (row is not null)
             {
@@ -185,8 +197,55 @@ public sealed class CsvSourceReader
             }
         }
 
-        return new ReadOutcome(rows, rejections) { Reasons = reasons.Summary() };
+        if (_schema.UniqueKey)
+        {
+            rows = KeepLastPerKey(rows, rejections, reasons);
+        }
+
+        return new ReadOutcome(rows, rejections) { Reasons = reasons.Summary(), IgnoredValues = ignored.Summary() };
     }
+
+    /// <summary>
+    /// Una fila por clave cuando la clave no puede repetirse: queda la última —la más
+    /// reciente si el export viene ordenado por fecha— y las anteriores se rechazan con su
+    /// motivo. Dos aplicaciones con el mismo EAI romperían el portafolio.
+    /// </summary>
+    private List<Row> KeepLastPerKey(List<Row> rows, List<SourceRejection> rejections, ReasonTally reasons)
+    {
+        var last = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        for (var i = 0; i < rows.Count; i++)
+        {
+            last[KeyOf(rows[i])] = i;
+        }
+
+        if (last.Count == rows.Count)
+        {
+            return rows;
+        }
+
+        var kept = new List<Row>(last.Count);
+
+        for (var i = 0; i < rows.Count; i++)
+        {
+            var key = KeyOf(rows[i]);
+
+            if (last[key] == i)
+            {
+                kept.Add(rows[i]);
+                continue;
+            }
+
+            var duplicate = Notice.Of(NoticeCodes.RowDuplicateKey, ("column", _schema.KeyColumn), ("key", key));
+            reasons.Add(duplicate, rows[i].Number);
+            rejections.Add(new SourceRejection(rows[i].Number, duplicate, key));
+        }
+
+        return kept;
+    }
+
+    private string KeyOf(Row row)
+        => row.Values.GetValueOrDefault(_schema.KeyColumn) as string ?? string.Empty;
 
     /// <summary>
     /// Empareja los encabezados del archivo con las columnas del contrato,
@@ -196,15 +255,16 @@ public sealed class CsvSourceReader
     {
         var mapping = new Dictionary<string, int>(StringComparer.Ordinal);
 
+        // La mejor columna para cada campo: el nombre exacto antes que un alias, y un alias
+        // antes que el mismo nombre con "Suma de". Así un export con "MFA" y "Does this
+        // Application Utilize MFA?" carga la segunda, sin importar cuál viene primero.
         foreach (var column in _schema.Columns)
         {
-            for (var i = 0; i < headers.Length; i++)
+            var index = column.BestIndexIn(headers);
+
+            if (index >= 0)
             {
-                if (column.Matches(headers[i]))
-                {
-                    mapping[column.Name] = i;
-                    break;
-                }
+                mapping[column.Name] = index;
             }
         }
 
@@ -230,10 +290,12 @@ public sealed class CsvSourceReader
         CsvReader csv,
         Dictionary<string, int> mapping,
         int rowNumber,
-        ReasonTally reasons)
+        ReasonTally reasons,
+        ReasonTally ignored)
     {
         var values = new Dictionary<string, object?>(mapping.Count, StringComparer.Ordinal);
         var errors = new List<Notice>();
+        var unreadable = new List<Notice>();
 
         foreach (var column in _schema.Columns)
         {
@@ -250,9 +312,15 @@ public sealed class CsvSourceReader
             {
                 values[column.Name] = outcome.Value;
             }
-            else
+            else if (column.Required)
             {
                 errors.Add(outcome.Error!);
+            }
+            else
+            {
+                // Opcional: queda sin dato, como si la celda viniera vacía, y se informa.
+                values[column.Name] = null;
+                unreadable.Add(outcome.Error!);
             }
         }
 
@@ -279,6 +347,12 @@ public sealed class CsvSourceReader
             var reason = errors.Count == 1 ? errors[0] : errors[0].With("more", errors.Count - 1);
 
             return (null, new SourceRejection(rowNumber, reason, key));
+        }
+
+        // La fila entra; lo ilegible de sus campos opcionales queda informado aparte.
+        foreach (var value in unreadable)
+        {
+            ignored.Add(value, rowNumber);
         }
 
         return (new Row(rowNumber, values), null);

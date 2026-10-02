@@ -47,7 +47,12 @@ public static class SnapshotAssembler
 
         foreach (var eai in input.Eai.Records)
         {
-            var techDebt = eai.AppId is { Length: > 0 } appId && techDebtByAppId.TryGetValue(appId, out var td)
+            // La deuda técnica llega por APP_ID. En la organización el APP_ID es el mismo
+            // código que el EAI (confirmado el 2026-10-02): si el maestro no trae la columna
+            // —su export de Power BI no la tiene— o viene vacía, se une por el EAI (ADR 0028).
+            var appId = eai.AppId is { Length: > 0 } fromMaster ? fromMaster : eai.EaiCode;
+
+            var techDebt = appId is { Length: > 0 } && techDebtByAppId.TryGetValue(appId, out var td)
                 ? td
                 : null;
 

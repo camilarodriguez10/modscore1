@@ -214,6 +214,7 @@ public sealed class DatabaseSnapshotPublisher(
                 RejectionReasons = rejected == 0
                     ? outcome.Reasons
                     : [.. outcome.Reasons, new RejectionReason(Notice.Of(NoticeCodes.RowNotConvertible), rejected, [])],
+                IgnoredValues = outcome.IgnoredValues,
             };
         }
         catch (SourceSchemaException ex)

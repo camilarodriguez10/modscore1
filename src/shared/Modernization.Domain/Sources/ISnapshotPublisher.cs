@@ -117,6 +117,12 @@ public sealed record PublishedFileOutcome(
     /// </summary>
     public IReadOnlyList<RejectionReason> RejectionReasons { get; init; } = [];
 
+    /// <summary>
+    /// Valores de campos opcionales que no se pudieron leer y quedaron sin dato, agrupados
+    /// igual que los rechazos. Esas filas sí se cargaron.
+    /// </summary>
+    public IReadOnlyList<RejectionReason> IgnoredValues { get; init; } = [];
+
     /// <summary>Qué columna cargó cada campo, cuando el archivo se aceptó.</summary>
     public SourceColumnMap? ColumnMap { get; init; }
 }

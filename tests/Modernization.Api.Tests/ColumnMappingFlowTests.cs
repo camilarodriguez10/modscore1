@@ -145,7 +145,7 @@ public sealed class ColumnMappingFlowTests(FileBackedApiFixture fixture) : IClas
         Assert.Equal("EAI_Code", master.KeyColumn);
 
         var userCount = master.Fields.Single(f => f.Column == "User Count");
-        Assert.Equal(["User Count", "User_Count", "Users"], userCount.AcceptedNames);
+        Assert.Equal(["User Count", "User_Count", "Suma de User Count", "Users"], userCount.AcceptedNames);
         Assert.NotEmpty(master.Fields.Single(f => f.Column == "Kenna_Score").Feeds);
     }
 

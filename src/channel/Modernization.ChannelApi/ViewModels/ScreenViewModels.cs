@@ -441,7 +441,10 @@ public sealed record UploadFileView(
     IReadOnlyList<string> Candidates,
 
     // Por qué quedaron filas fuera, agrupado por problema.
-    IReadOnlyList<UploadRejectionView> RejectionReasons);
+    IReadOnlyList<UploadRejectionView> RejectionReasons,
+
+    // Valores de campos opcionales que quedaron sin dato; esas filas sí entraron.
+    IReadOnlyList<UploadRejectionView> IgnoredValues);
 
 /// <summary>
 /// Un problema de las filas rechazadas de un archivo: el aviso de la primera fila que lo

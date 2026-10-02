@@ -244,7 +244,8 @@ public sealed class IngestionComposer(SystemApiClient system, ChannelPermissions
             f.Error,
             f.DetectedColumns,
             f.Candidates,
-            [.. (f.RejectionReasons ?? []).Select(r => new UploadRejectionView(r.Reason, r.Rows, r.SampleRows))]))],
+            [.. (f.RejectionReasons ?? []).Select(r => new UploadRejectionView(r.Reason, r.Rows, r.SampleRows))],
+            [.. (f.IgnoredValues ?? []).Select(r => new UploadRejectionView(r.Reason, r.Rows, r.SampleRows))]))],
         outcome.Errors,
         Summarize(outcome));
 

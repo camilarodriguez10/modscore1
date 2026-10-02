@@ -507,6 +507,8 @@ export interface UploadFileView {
   candidates: readonly string[];
   /** Por qué quedaron filas fuera, agrupado por problema; el más frecuente primero. */
   rejectionReasons: readonly UploadRejectionView[];
+  /** Valores de campos opcionales que quedaron sin dato; esas filas sí entraron. */
+  ignoredValues: readonly UploadRejectionView[];
 }
 
 /**
@@ -576,7 +578,7 @@ export type MappingMatch = 'name' | 'alias' | 'manual' | 'remembered' | 'exclude
 /** Un campo de la base y la columna del archivo que lo cargaría. */
 export interface MappingFieldView {
   column: string;
-  /** text, integer, long, number, boolean o date. */
+  /** text, identifier, integer, long, number, boolean o date. */
   type: string;
   required: boolean;
   isKey: boolean;

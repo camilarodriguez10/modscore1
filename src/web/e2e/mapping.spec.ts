@@ -46,14 +46,21 @@ const uploadResult = {
       canonicalFileName: 'eai_master.csv',
       source: 'EAI Master',
       bytes: 96,
-      rowCount: 0,
+      rowCount: 1,
       rejectedCount: 1,
       error: null,
       detectedColumns: [],
       candidates: [],
       rejectionReasons: [
         {
-          reason: { code: 'row.invalidValue', args: { column: 'Kenna_Score', expected: 'integer', value: 'N/A' } },
+          reason: { code: 'row.missingKey', args: { column: 'EAI_Code' } },
+          rows: 1,
+          sampleRows: [3],
+        },
+      ],
+      ignoredValues: [
+        {
+          reason: { code: 'row.invalidValue', args: { column: 'Kenna_Score', expected: 'integer', value: '712.5' } },
           rows: 1,
           sampleRows: [2],
         },
@@ -131,8 +138,13 @@ for (const scheme of ['light', 'dark'] as const) {
       await page.getByRole('button', { name: 'Upload with this mapping' }).click();
 
       const reasons = page.getByRole('region', { name: 'Rejected rows in EAI Master' });
-      await expect(reasons).toContainText("'Kenna_Score' expected an integer. For example, 'N/A' in row 2.");
-      await expect(reasons).toContainText('Leave the cell empty');
+      await expect(reasons).toContainText("No value in the key column 'EAI_Code'.");
+      await expect(reasons).toContainText('totals, subtotals');
+
+      // Lo ilegible de un campo opcional no rechaza la fila: queda sin dato y se dice.
+      const empty = page.getByRole('region', { name: 'Values loaded as empty in EAI Master' });
+      await expect(empty).toContainText("'Kenna_Score' expected an integer. For example, '712.5' in row 2.");
+      await expect(empty).toContainText('whole numbers');
 
       // La carga lleva la fuente y solo lo decidido, no lo reconocido por alias.
       expect(uploadBody).toContain('eai_master.csv');

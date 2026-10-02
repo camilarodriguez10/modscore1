@@ -336,6 +336,7 @@ public sealed class IngestionService(
         ColumnType.Decimal => "number",
         ColumnType.Bool => "boolean",
         ColumnType.DateTime => "date",
+        ColumnType.Code => "identifier",
         _ => "text",
     };
 

@@ -66,9 +66,11 @@ public sealed class ColumnMappingTests
         Assert.Equal(120, row.Int("Kenna_Score"));
         Assert.Empty(outcome.Rejections);
 
-        // Sin el mapping, "Users" entraba por alias y la fila se rechazaba por texto.
+        // Sin el mapping, "Users" entra por alias y su texto deja User Count sin dato.
         using var plain = new StringReader(csv);
-        Assert.Single(new CsvSourceReader(Master).Read(plain).Rejections);
+        var unmapped = new CsvSourceReader(Master).Read(plain);
+        Assert.Null(Assert.Single(unmapped.Rows).Int("User Count"));
+        Assert.Equal("User Count", Assert.Single(unmapped.IgnoredValues).Reason.Args["column"]);
     }
 
     [Fact]

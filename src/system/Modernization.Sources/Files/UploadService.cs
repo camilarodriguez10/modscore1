@@ -344,6 +344,7 @@ public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? cat
             {
                 DetectedColumns = match.DetectedColumns,
                 RejectionReasons = outcome.Reasons,
+                IgnoredValues = outcome.IgnoredValues,
                 ColumnMap = resolution.ToColumnMap(),
             };
         }

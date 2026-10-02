@@ -220,18 +220,9 @@ public static class ColumnMapping
                 continue;
             }
 
-            // Igual que el lector: la primera columna, en orden, que coincide por nombre o
-            // alias; salvo las que ya carga otro campo.
-            var index = -1;
-
-            for (var i = 0; i < headers.Count; i++)
-            {
-                if (!taken.ContainsKey(i) && column.Matches(headers[i]))
-                {
-                    index = i;
-                    break;
-                }
-            }
+            // Igual que el lector: la mejor columna por nombre o alias —el nombre exacto antes
+            // que un alias, un alias antes que "Suma de"—, salvo las que ya carga otro campo.
+            var index = column.BestIndexIn(headers, i => !taken.ContainsKey(i));
 
             if (index < 0)
             {
@@ -240,9 +231,7 @@ public static class ColumnMapping
             }
 
             taken[index] = column.Name;
-            var how = string.Equals(column.Name, headers[index].Trim(), StringComparison.OrdinalIgnoreCase)
-                ? ColumnMatch.Name
-                : ColumnMatch.Alias;
+            var how = column.MatchRank(headers[index]) == 0 ? ColumnMatch.Name : ColumnMatch.Alias;
 
             resolved.Add(new ResolvedColumn(column, index, headers[index], how));
         }

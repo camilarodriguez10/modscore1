@@ -217,7 +217,7 @@ dotnet test ModernizationScore.slnx
 npm --prefix src/web test
 ```
 
-Deben terminar en verde: 889 pruebas .NET y 74 de la interfaz.
+Deben terminar en verde: 937 pruebas .NET y 74 de la interfaz.
 
 ---
 
@@ -522,21 +522,32 @@ exactamente los nombres de columna esperados, decide primero qué columna carga 
 La pestaña **Data → Mapping** muestra, sin elegir archivos, de qué columna sale cada campo en
 la carga vigente, con qué nombres se reconoce solo y qué métricas lo usan.
 
-**Si la carga rechaza filas.** Debajo del detalle por archivo, **Why rows were rejected**
-dice qué pasó, agrupado por problema: la columna, qué esperaba, el valor de la primera fila
-que lo tuvo y cuántas filas. No hace falta compartir el archivo para entenderlo. Los casos
-más comunes:
+**Exports de Power BI o de Excel en español.** Se cargan tal como salen: los campos
+«Suma de …» se reconocen, `N/A`, `-` o `(En blanco)` cuentan como celda vacía, los números se
+leen con coma o punto decimal y `VERDADERO`/`FALSO` como sí/no. Si el export trae «MFA» y
+«Does this Application Utilize MFA?», carga el segundo; Year, Quarter, Month y Day no se usan.
+Si un EAI se repite (una fila por fecha), queda la última fila.
+
+**Si la carga rechaza filas o deja valores sin dato.** Debajo del detalle por archivo,
+**Why rows were rejected** y **Values loaded as empty** dicen qué pasó, agrupado por problema:
+la columna, qué esperaba, el valor de la primera fila que lo tuvo y cuántas filas. No hace
+falta compartir el archivo para entenderlo. Un valor ilegible en un campo opcional ya no
+rechaza la fila: el campo queda sin dato y la aplicación entra. Los casos más comunes:
 
 | La pantalla dice | Qué hacer en el archivo |
 |---|---|
-| `'Kenna_Score' expected an integer. For example, 'N/A'` | Deja **vacías** las celdas sin dato: una celda vacía se acepta y solo deja fuera esa métrica; `N/A`, `-` o `#N/A` rechazan la fila entera |
 | `... expected an integer. For example, '712.5'` | Esa columna lleva números enteros: redondéalos en el export |
-| `... expected an integer. For example, '1.234'` | El export usa punto como separador de miles: expórtalo sin separadores |
-| Una columna de números con texto en **todas** las filas | Las columnas están corridas —suele ser una coma dentro de un valor sin comillas— o el campo se cargó desde otra columna: revisa el mapping |
+| `... expected an integer. For example, '100-500'` | La columna trae rangos o texto, no números: ese campo queda sin dato hasta que el export traiga el número |
+| Una columna de números con texto en **todas** las filas | El campo se cargó desde otra columna —revisa el mapping— o las columnas están corridas, por una coma dentro de un valor sin comillas |
 | `No value in the key column 'EAI_Code'` | Filas sin EAI: totales, subtotales o líneas separadoras exportadas con los datos |
+| `'EAI_Code' 14381 appears more than once` | El export trae una fila por fecha: exporta solo la última, u ordénalo de la más antigua a la más reciente |
 
 Si el EAI Master queda sin ninguna fila válida, la carga se descarta completa y el portafolio
 vigente no cambia.
+
+**Sin `APP_ID` en el EAI Master**, la deuda técnica se une por el EAI_Code, porque en la
+organización el APP_ID es el mismo código que el EAI. Si el maestro trae `APP_ID`, se usa esa
+columna.
 
 **Para comparar en el tiempo: los cuatro trimestres de ejemplo.** `data\timeline` trae el
 mismo portafolio en cuatro cargas —Q4 2025, Q1, Q2 y Q3 2026—, con aplicaciones que se
@@ -608,7 +619,7 @@ permite ver.
 | Camino C: `tar: Error opening archive` o `Expand-Archive` dice que no encuentra la ruta | El `.zip` no está en `Descargas` o se llama distinto (por ejemplo, `sitio-compilado (1).zip`) | Busca el archivo y cambia la ruta en el comando |
 | `dotnet test` falla con «el archivo está siendo usado por otro proceso» | La aplicación está corriendo | Detén todas las ventanas antes de compilar o probar |
 | Todo iba bien y dejó de arrancar tras mover la carpeta | Ruta dentro de OneDrive o demasiado larga | Muévela a algo como `C:\modscore` |
-| En Data, el EAI Master queda con `0` filas y todas rechazadas, y la carga se descarta | Todas las filas comparten un problema: texto en una columna de números, decimales donde van enteros o un campo cargado desde otra columna | Lee **Why rows were rejected** y sigue [Si la carga rechaza filas](#cargar-archivos); si el campo sale de otra columna, elígela con **Review column mapping** |
+| En Data, el EAI Master queda con `0` filas y todas rechazadas, y la carga se descarta | Desde el 2026-10-02 solo pasa si a todas les falta el EAI; un valor ilegible en otro campo ya no rechaza la fila | Lee **Why rows were rejected**; si el EAI viene en otra columna, elígela con **Review column mapping** |
 
 ---
 

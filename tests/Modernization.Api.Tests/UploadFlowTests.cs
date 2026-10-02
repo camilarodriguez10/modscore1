@@ -227,11 +227,11 @@ public sealed class UploadFlowTests(FileBackedApiFixture fixture) : IClassFixtur
     }
 
     /// <summary>
-    /// Las filas mal formadas se cuentan y se reportan, pero no bloquean la
-    /// carga: un dato malo en una fila no puede dejar sin score al resto.
+    /// Un valor ilegible en un campo opcional deja ese campo sin dato y la fila entra
+    /// (ADR 0028); la pantalla dice qué columna, qué esperaba y el valor.
     /// </summary>
     [Fact]
-    public async Task MalformedRowsAreCountedWithoutBlockingTheUpload()
+    public async Task UnreadableOptionalValuesAreLoadedAsEmptyAndReported()
     {
         var client = await fixture.CreateMutatingClientAsync();
 
@@ -261,24 +261,24 @@ public sealed class UploadFlowTests(FileBackedApiFixture fixture) : IClassFixtur
         Assert.True(result.Accepted, string.Join(" | ", result.Errors));
 
         var strategy = result.Files.Single(f => f.FileName == "product_strategy.csv");
-        Assert.Equal(1, strategy.RejectedCount);
-        Assert.NotEqual("0", result.Summary.Args["rejectedRows"]);
+        Assert.Equal(0, strategy.RejectedCount);
+        Assert.Empty(strategy.RejectionReasons);
 
-        // El motivo llega a la pantalla: la columna, qué esperaba y el valor recibido.
-        var reason = Assert.Single(strategy.RejectionReasons);
-        Assert.Equal(NoticeCodes.RowInvalidValue, reason.Reason.Code);
-        Assert.Equal("Invest_Count", reason.Reason.Args["column"]);
-        Assert.Equal("no-es-un-numero", reason.Reason.Args["value"]);
-        Assert.Equal(1, reason.Rows);
+        // El valor llega a la pantalla: la columna, qué esperaba y lo recibido.
+        var ignored = Assert.Single(strategy.IgnoredValues);
+        Assert.Equal(NoticeCodes.RowInvalidValue, ignored.Reason.Code);
+        Assert.Equal("Invest_Count", ignored.Reason.Args["column"]);
+        Assert.Equal("no-es-un-numero", ignored.Reason.Args["value"]);
+        Assert.Equal(1, ignored.Rows);
     }
 
     /// <summary>
-    /// Un EAI Master con todas sus filas rechazadas descarta la carga. Antes la pantalla
-    /// solo decía cuántas filas quedaron fuera; ahora dice por qué, sin que nadie tenga
-    /// que compartir el archivo.
+    /// El caso que lo motivó: un EAI Master con una columna de números ilegible en todas
+    /// las filas. Antes se rechazaban las 3.869 filas y la carga se descartaba; ahora cada
+    /// aplicación entra sin ese dato, y la pantalla dice cuál es.
     /// </summary>
     [Fact]
-    public async Task AMasterWithEveryRowRejectedExplainsWhy()
+    public async Task AMasterWithAnUnreadableColumnInEveryRowStillLoadsEveryApplication()
     {
         var client = await fixture.CreateMutatingClientAsync();
 
@@ -291,14 +291,14 @@ public sealed class UploadFlowTests(FileBackedApiFixture fixture) : IClassFixtur
 
             if (name == "eai_master.csv")
             {
-                // Cada fila con "N/A" en User Count, como deja un export sin el dato.
+                // Cada fila con un rango en User Count, como traen algunos inventarios.
                 var lines = Encoding.UTF8.GetString(content).Split('\n', StringSplitOptions.RemoveEmptyEntries);
                 var header = lines[0].TrimEnd('\r').Split(',');
                 var userCount = Array.IndexOf(header, "User Count");
                 var broken = lines.Skip(1).Select(line =>
                 {
                     var cells = line.TrimEnd('\r').Split(',');
-                    cells[userCount] = "N/A";
+                    cells[userCount] = "100-500";
                     return string.Join(',', cells);
                 }).ToList();
 
@@ -315,18 +315,19 @@ public sealed class UploadFlowTests(FileBackedApiFixture fixture) : IClassFixtur
         var result = await response.Content.ReadFromJsonAsync<UploadResultView>(Json);
 
         Assert.NotNull(result);
-        Assert.False(result.Accepted);
+        Assert.True(result.Accepted, string.Join(" | ", result.Errors));
+        Assert.Equal(masterRows, result.ApplicationCount);
 
         var master = result.Files.Single(f => f.CanonicalFileName == "eai_master.csv");
-        Assert.Equal(0, master.RowCount);
-        Assert.Equal(masterRows, master.RejectedCount);
+        Assert.Equal(masterRows, master.RowCount);
+        Assert.Equal(0, master.RejectedCount);
 
-        var reason = Assert.Single(master.RejectionReasons);
-        Assert.Equal("User Count", reason.Reason.Args["column"]);
-        Assert.Equal("integer", reason.Reason.Args["expected"]);
-        Assert.Equal("N/A", reason.Reason.Args["value"]);
-        Assert.Equal(masterRows, reason.Rows);
-        Assert.Equal([2, 3, 4, 5, 6], reason.SampleRows);
+        var ignored = Assert.Single(master.IgnoredValues);
+        Assert.Equal("User Count", ignored.Reason.Args["column"]);
+        Assert.Equal("integer", ignored.Reason.Args["expected"]);
+        Assert.Equal("100-500", ignored.Reason.Args["value"]);
+        Assert.Equal(masterRows, ignored.Rows);
+        Assert.Equal([2, 3, 4, 5, 6], ignored.SampleRows);
     }
 
     /// <summary>

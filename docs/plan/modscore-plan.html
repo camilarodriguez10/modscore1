@@ -308,7 +308,7 @@ pre em{color:var(--ink-3);font-style:normal}
     <div class="mast-meta">
       <span>Base documental · <b>34 capturas: BRD + dashboard Power BI v1.3 + archivos fuente</b></span>
       <span>Ruleset · <b>v1.3</b></span>
-      <span>Fases 00–13 entregadas · 14 y 15 en curso · dashboard ejecutivo · pantalla Code · mapping de columnas · <b>889 pruebas .NET, 74 unitarias y 56 e2e en verde</b></span>
+      <span>Fases 00–13 entregadas · 14 y 15 en curso · dashboard ejecutivo · pantalla Code · mapping de columnas · <b>937 pruebas .NET, 74 unitarias y 56 e2e en verde</b></span>
       <span>Duración estimada · <b>16 semanas</b></span>
     </div>
   </div>
@@ -992,7 +992,7 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
 
   <div class="ship">
     <div class="h">Criterio de aceptación cumplido</div>
-    <p><strong>889 pruebas .NET en verde</strong>, más 74 unitarias y 56 de punta a punta en la SPA —veintinueve de flujo y veintisiete de accesibilidad—, cero paquetes vulnerables —ya con EF Core y SQLite dentro—, y el build compila con todas las reglas de seguridad del analizador como errores. El motor reproduce exactamente los dos casos documentados: <span class="mono">EAI 14381 = 79,67</span> y <span class="mono">EAI 10969 = 79,61</span>, métrica por métrica.</p>
+    <p><strong>937 pruebas .NET en verde</strong>, más 74 unitarias y 56 de punta a punta en la SPA —veintinueve de flujo y veintisiete de accesibilidad—, cero paquetes vulnerables —ya con EF Core y SQLite dentro—, y el build compila con todas las reglas de seguridad del analizador como errores. El motor reproduce exactamente los dos casos documentados: <span class="mono">EAI 14381 = 79,67</span> y <span class="mono">EAI 10969 = 79,61</span>, métrica por métrica.</p>
     <p>El 14381 se reproduce <strong>extremo a extremo</strong>: generador → puerto <code>ISourceReader</code> → ensamblado → motor → <code>system-api</code> → <code>channel-api</code> → SPA. Cada eslabón de esa cadena está cubierto por tests, y el último se ve en pantalla.</p>
   </div>
 
@@ -1443,6 +1443,10 @@ endoflife.date · registros de paquetes ─────────►       │
     </table>
   </div>
   <div class="note">El mapping se aplica <strong>reescribiendo el encabezado</strong> con los nombres canónicos: el lector no cambia, el archivo guardado dice de dónde salió cada valor y las versiones viejas se releen igual. Revisar exige lo mismo que publicar, y ninguna fila de datos sale del navegador antes de cargar. De paso: <code>1.234,5</code> ya no se lee como 1,2345. El porqué, en el ADR 0027.</div>
+  <div class="rfc">
+    <b class="tag">2 de octubre · el export real de Power BI</b>
+    Con el encabezado real del EAI Master —«Suma de Kenna_Score», «MFA» junto al nombre completo, Year/Quarter/Month/Day y sin APP_ID— la lectura pasó a tolerar los exports reales: <strong>un valor ilegible en un campo opcional queda sin dato y la aplicación entra</strong>, informado como <em>Values loaded as empty</em>; <code>N/A</code> y <code>(En blanco)</code> son vacío; números en cualquier formato regional; el nombre exacto gana a un alias; un EAI repetido deja la última fila; y la deuda técnica se une por el EAI, que en la organización es el mismo código que el APP_ID. El export de ejemplo con ese formato carga 250 aplicaciones sin rechazos y la 14381 sigue en 79,67 (ADR 0028).
+  </div>
 
   <h3>Estructura del repositorio</h3>
   <pre>modernization-score/

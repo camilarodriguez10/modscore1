@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useMappingReview, useRulesTimeline, useUpload } from '../api/hooks';
-import type { ExpectedFileView, IngestionView, UploadFileView, UploadResultView } from '../api/types';
+import type { ExpectedFileView, IngestionView, UploadFileView, UploadRejectionView, UploadResultView } from '../api/types';
 import { Card, Label, fmt } from '../components/primitives';
 import { ScoreTrend } from '../components/ScoreTrend';
 import { countOf, formatNotice, rejectionHint, rejectionReasonText, sampleRowsText } from '../i18n/notices';
@@ -529,6 +529,8 @@ function UploadResult({ result }: { result: UploadResultView }) {
                         <span style={{ color: 'var(--app-critical-text)' }}>read, but every row was rejected</span>
                       ) : file.rejectedCount > 0 ? (
                         <span style={{ color: 'var(--app-serious-text)' }}>accepted, some rows rejected</span>
+                      ) : (file.ignoredValues ?? []).length > 0 ? (
+                        <span style={{ color: 'var(--app-serious-text)' }}>accepted, some values loaded as empty</span>
                       ) : (
                         <span style={{ color: 'var(--app-good-text)' }}>accepted</span>
                       )}
@@ -547,45 +549,86 @@ function UploadResult({ result }: { result: UploadResultView }) {
 }
 
 /**
- * Por qué quedaron filas fuera, archivo por archivo y agrupado por problema. Quien no
- * puede compartir el archivo necesita saber qué columna corregir sin mandárselo a nadie.
+ * Por qué quedaron filas fuera, y qué valores quedaron sin dato, archivo por archivo y
+ * agrupado por problema. Quien no puede compartir el archivo necesita saber qué columna
+ * corregir sin mandárselo a nadie.
  */
 function RejectionReasons({ files, accepted }: { files: readonly UploadFileView[]; accepted: boolean }) {
-  const withReasons = files.filter((file) => (file.rejectionReasons ?? []).length > 0);
+  return (
+    <>
+      <ReasonsCard
+        title="Why rows were rejected"
+        intro={`Each problem shows the column, what it expected and the value of the first row that had it. A row can have more than one problem, so the counts can add up to more than the rejected rows. ${
+          accepted
+            ? 'Fix the file and upload the set again to include those rows.'
+            : 'Nothing from this upload was kept: fix the file and upload the set again.'
+        }`}
+        files={files}
+        reasonsOf={(file) => file.rejectionReasons ?? []}
+        regionLabel={(file) => `Rejected rows in ${file.source}`}
+        summary={(file) =>
+          `${countOf(file.rejectedCount, 'row')} of ${(file.rowCount + file.rejectedCount).toLocaleString('en-US')} rejected`
+        }
+        tone="var(--app-serious-text)"
+      />
+      <ReasonsCard
+        title="Values loaded as empty"
+        intro="These cells could not be read, so the field was loaded with no data, exactly as if the cell were empty; the rest of each row was loaded. A field without data is left out of the calculation, as the BRD does with a missing value. Fix the file and upload it again to include them."
+        files={files}
+        reasonsOf={(file) => file.ignoredValues ?? []}
+        regionLabel={(file) => `Values loaded as empty in ${file.source}`}
+        summary={(file) => `${countOf(file.rowCount, 'row')} loaded`}
+        tone="var(--app-ink-2)"
+      />
+    </>
+  );
+}
+
+function ReasonsCard({
+  title,
+  intro,
+  files,
+  reasonsOf,
+  regionLabel,
+  summary,
+  tone,
+}: {
+  title: string;
+  intro: string;
+  files: readonly UploadFileView[];
+  reasonsOf: (file: UploadFileView) => readonly UploadRejectionView[];
+  regionLabel: (file: UploadFileView) => string;
+  summary: (file: UploadFileView) => string;
+  tone: string;
+}) {
+  const withReasons = files.filter((file) => reasonsOf(file).length > 0);
 
   if (withReasons.length === 0) return null;
 
   return (
-    <Card title="Why rows were rejected">
+    <Card title={title}>
       <div className="flex flex-col gap-5 px-4 py-3">
-        <p className="max-w-[72ch] text-[12.5px] text-ink-3">
-          Each problem shows the column, what it expected and the value of the first row that had it. A row can have
-          more than one problem, so the counts can add up to more than the rejected rows.{' '}
-          {accepted
-            ? 'Fix the file and upload the set again to include those rows.'
-            : 'Nothing from this upload was kept: fix the file and upload the set again.'}
-        </p>
+        <p className="max-w-[72ch] text-[12.5px] text-ink-3">{intro}</p>
 
         {withReasons.map((file) => (
-          <section key={file.fileName} aria-label={`Rejected rows in ${file.source}`} className="flex flex-col gap-2">
+          <section key={file.fileName} aria-label={regionLabel(file)} className="flex flex-col gap-2">
             <h3 className="flex flex-wrap items-baseline gap-x-2 text-[13px]">
               <span className="font-semibold text-ink">{file.source}</span>
               <span className="font-mono text-[12px] text-ink-3">{file.fileName}</span>
-              <span className="tnum text-[12.5px]" style={{ color: 'var(--app-serious-text)' }}>
-                {countOf(file.rejectedCount, 'row')} of {(file.rowCount + file.rejectedCount).toLocaleString('en-US')}{' '}
-                rejected
+              <span className="tnum text-[12.5px]" style={{ color: tone }}>
+                {summary(file)}
               </span>
             </h3>
 
             <ul className="flex flex-col divide-y divide-rule rounded-md border border-rule">
-              {file.rejectionReasons.map((item, index) => {
+              {reasonsOf(file).map((item, index) => {
                 const hint = rejectionHint(item.reason);
 
                 return (
                   <li key={`${item.reason.code}-${index}`} className="flex flex-col gap-1 px-3 py-2.5">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                       <span className="text-[13px] text-ink">{rejectionReasonText(item.reason, item.sampleRows[0])}</span>
-                      <span className="tnum shrink-0 font-mono text-[12px]" style={{ color: 'var(--app-serious-text)' }}>
+                      <span className="tnum shrink-0 font-mono text-[12px]" style={{ color: tone }}>
                         {countOf(item.rows, 'row')}
                       </span>
                     </div>

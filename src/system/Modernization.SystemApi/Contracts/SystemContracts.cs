@@ -245,7 +245,8 @@ public sealed record UploadResponse(
             f.Error,
             f.DetectedColumns,
             f.Candidates,
-            [.. f.RejectionReasons.Select(r => new RejectionReasonResponse(r.Reason, r.Rows, r.SampleRows))]))],
+            [.. f.RejectionReasons.Select(r => new RejectionReasonResponse(r.Reason, r.Rows, r.SampleRows))],
+            [.. f.IgnoredValues.Select(r => new RejectionReasonResponse(r.Reason, r.Rows, r.SampleRows))]))],
         o.Errors);
 }
 
@@ -264,7 +265,10 @@ public sealed record UploadFileResponse(
     IReadOnlyList<string> Candidates,
 
     // Por qué quedaron filas fuera, agrupado por problema y acotado por el lector.
-    IReadOnlyList<RejectionReasonResponse>? RejectionReasons = null);
+    IReadOnlyList<RejectionReasonResponse>? RejectionReasons = null,
+
+    // Valores de campos opcionales que quedaron sin dato; esas filas sí entraron.
+    IReadOnlyList<RejectionReasonResponse>? IgnoredValues = null);
 
 /// <summary>Un problema de las filas rechazadas: aviso de ejemplo, cuántas filas y las primeras.</summary>
 public sealed record RejectionReasonResponse(Notice Reason, int Rows, IReadOnlyList<int> SampleRows);

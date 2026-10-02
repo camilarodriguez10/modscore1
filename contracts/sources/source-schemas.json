@@ -7,10 +7,11 @@
       "source": "EAI Master",
       "fileName": "eai_master.csv",
       "keyColumn": "EAI_Code",
+      "uniqueKey": true,
       "description": "EAI inventory export. It is the backbone of the portfolio: an application that is not here does not exist.",
       "columns": [
-        { "name": "EAI_Code", "type": "string", "required": true, "aliases": ["EAI", "EAI Code", "EAI_CODE"] },
-        { "name": "APP_ID", "type": "string", "required": false, "aliases": ["App_Id", "Application ID"] },
+        { "name": "EAI_Code", "type": "code", "required": true, "aliases": ["EAI", "EAI Code", "EAI_CODE"] },
+        { "name": "APP_ID", "type": "code", "required": false, "aliases": ["App_Id", "Application ID"] },
         { "name": "Application_Name", "type": "string", "required": false, "aliases": ["Application Name"] },
         { "name": "Application Status", "type": "string", "required": false, "aliases": ["Application_Status"] },
         { "name": "Application_Disposition", "type": "string", "required": false, "aliases": ["Application Disposition", "Disposition"] },
@@ -30,10 +31,10 @@
         { "name": "DR_In_Scope", "type": "string", "required": false, "aliases": ["DR In-Scope", "DR In Scope"] },
         { "name": "Does this Application Utilize MFA?", "type": "string", "required": false, "aliases": ["MFA", "Utilizes MFA"] },
         { "name": "Primary_Business_Capability", "type": "string", "required": false, "aliases": ["Primary Business Capability"] },
-        { "name": "L1_Business_Capability_Count", "type": "int", "required": false, "aliases": ["L1 Business Capability Count"] },
+        { "name": "L1_Business_Capability_Count", "type": "int", "required": false, "aliases": ["L1 Business Capability Count", "Suma de L1_Business_Capability_Count"] },
         { "name": "Recovery_Point_Objective_Range", "type": "string", "required": false, "aliases": ["Recovery Point Objective Range", "RPO"] },
         { "name": "Recovery_Time_Objective_Range", "type": "string", "required": false, "aliases": ["Recovery Time Objective Range", "RTO"] },
-        { "name": "User Count", "type": "int", "required": false, "aliases": ["User_Count", "Users"] },
+        { "name": "User Count", "type": "int", "required": false, "aliases": ["User_Count", "Suma de User Count", "Users"] },
         { "name": "Kenna_Score", "type": "int", "required": false, "aliases": ["Kenna Score", "Suma de Kenna_Score"] },
         { "name": "Raw_Tech_Score", "type": "decimal", "required": false, "aliases": ["Raw Tech Score", "Suma de Raw_Tech_Score"] },
         { "name": "Operational_Score", "type": "decimal", "required": false, "aliases": ["Operational Score", "Suma de Operational_Score"] }
@@ -45,7 +46,7 @@
       "keyColumn": "EAI_CODE",
       "description": "Architectural composition per application, exported from CMT.",
       "columns": [
-        { "name": "EAI_CODE", "type": "string", "required": true, "aliases": ["EAI_Code", "EAI Code", "EAI"] },
+        { "name": "EAI_CODE", "type": "code", "required": true, "aliases": ["EAI_Code", "EAI Code", "EAI"] },
         { "name": "Modern_Count", "type": "int", "required": false, "aliases": ["Modern Count"] },
         { "name": "Heritage_Count", "type": "int", "required": false, "aliases": ["Heritage Count"] },
         { "name": "Obsolete_Count", "type": "int", "required": false, "aliases": ["Obsolete Count"] },
@@ -58,7 +59,7 @@
       "keyColumn": "EAI_CODE",
       "description": "Product count by strategy, exported from MTS.",
       "columns": [
-        { "name": "EAI_CODE", "type": "string", "required": true, "aliases": ["EAI_Code", "EAI Code", "EAI"] },
+        { "name": "EAI_CODE", "type": "code", "required": true, "aliases": ["EAI_Code", "EAI Code", "EAI"] },
         { "name": "Eliminate_Count", "type": "int", "required": false, "aliases": ["Suma de Eliminate_Count", "Eliminate Count"] },
         { "name": "Invest_Count", "type": "int", "required": false, "aliases": ["Suma de Invest_Count", "Invest Count"] },
         { "name": "Migrate_Count", "type": "int", "required": false, "aliases": ["Suma de Migrate_Count", "Migrate Count"] },
@@ -71,7 +72,7 @@
       "keyColumn": "APP_ID",
       "description": "Technical debt by APP_ID, not by EAI. The assembler resolves the mapping.",
       "columns": [
-        { "name": "APP_ID", "type": "string", "required": true, "aliases": ["App_Id", "Application ID"] },
+        { "name": "APP_ID", "type": "code", "required": true, "aliases": ["App_Id", "Application ID"] },
         { "name": "COMBINED_DENIAL_SCORE", "type": "decimal", "required": false },
         { "name": "COMBINED_ACCEPTED_SCORE", "type": "decimal", "required": false },
         { "name": "COMBINED_APP_SCORE", "type": "decimal", "required": false },
@@ -86,8 +87,8 @@
       "columns": [
         { "name": "FLAW_IDX_NUM", "type": "long", "required": true },
         { "name": "APP_NM", "type": "string", "required": false },
-        { "name": "EAI_CD", "type": "string", "required": true, "aliases": ["EAI_CODE", "EAI"] },
-        { "name": "APP_ID", "type": "string", "required": false },
+        { "name": "EAI_CD", "type": "code", "required": true, "aliases": ["EAI_CODE", "EAI"] },
+        { "name": "APP_ID", "type": "code", "required": false },
         { "name": "SVR_DSC", "type": "string", "required": true, "aliases": ["Severity", "SEVERITY_DESC"] },
         { "name": "FND_STT", "type": "string", "required": true, "aliases": ["Finding Status", "STATUS"] },
         { "name": "FRST_FND_DT", "type": "datetime", "required": false },
@@ -111,7 +112,7 @@
       "keyColumn": "EAI Code",
       "description": "Open-Source Score per application, exported from the Risk Profile Tool.",
       "columns": [
-        { "name": "EAI Code", "type": "string", "required": true, "aliases": ["EAI_CODE", "EAI_Code", "EAI"] },
+        { "name": "EAI Code", "type": "code", "required": true, "aliases": ["EAI_CODE", "EAI_Code", "EAI"] },
         { "name": "OSS Score", "type": "decimal", "required": false, "aliases": ["OSS_Score"] },
         { "name": "OPEN_SRC_SFTWR_HLTH_SCOR_UPDT_TS", "type": "datetime", "required": false }
       ]
@@ -122,7 +123,7 @@
       "keyColumn": "EAI",
       "description": "Monitoring capabilities per application. Booleans as TRUE/FALSE.",
       "columns": [
-        { "name": "EAI", "type": "string", "required": true, "aliases": ["EAI_CODE", "EAI Code"] },
+        { "name": "EAI", "type": "code", "required": true, "aliases": ["EAI_CODE", "EAI Code"] },
         { "name": "Agent", "type": "bool", "required": false },
         { "name": "APM", "type": "bool", "required": false },
         { "name": "Monitoring", "type": "bool", "required": false },
@@ -135,7 +136,7 @@
       "keyColumn": "EAI",
       "description": "Applications onboarded to API management. Without a row, exposure has no data.",
       "columns": [
-        { "name": "EAI", "type": "string", "required": true, "aliases": ["EAI_CODE", "EAI Code"] },
+        { "name": "EAI", "type": "code", "required": true, "aliases": ["EAI_CODE", "EAI Code"] },
         { "name": "Country", "type": "string", "required": false },
         { "name": "Application Short Name", "type": "string", "required": false, "aliases": ["Application_Short_Name"] },
         { "name": "Application Name", "type": "string", "required": false, "aliases": ["Application_Name"] },

@@ -169,6 +169,7 @@ public static class NoticeCodes
     public const string RowInvalidValue = "row.invalidValue";
     public const string RowNotConvertible = "row.notConvertible";
     public const string RowUnknownEai = "row.unknownEai";
+    public const string RowDuplicateKey = "row.duplicateKey";
 
     // ------------------------------------------- mapping de columnas antes de cargar
     public const string MappingInvalid = "mapping.invalid";

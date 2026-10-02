@@ -149,11 +149,12 @@ public sealed class FileSnapshotProviderTests : SnapshotProviderContract, IDispo
     }
 
     /// <summary>
-    /// Una fila mal formada se rechaza con su motivo y la lectura continua: un
-    /// dato malo en una fila no puede dejar sin score al resto del portafolio.
+    /// Un valor ilegible en un campo opcional deja ese campo sin dato y la fila entra
+    /// (ADR 0028): un dato malo en una columna no puede dejar sin la aplicación entera al
+    /// portafolio. Queda informado aparte, con su columna y su valor.
     /// </summary>
     [Fact]
-    public void MalformedRowIsRejectedWithoutStoppingTheRead()
+    public void AnUnreadableOptionalValueLeavesTheFieldEmptyAndKeepsTheRow()
     {
         var schema = SourceSchemaCatalog.Default.Require("product_strategy.csv");
         using var reader = new StringReader(
@@ -164,11 +165,32 @@ public sealed class FileSnapshotProviderTests : SnapshotProviderContract, IDispo
 
         var outcome = new CsvSourceReader(schema).Read(reader);
 
-        Assert.Equal(2, outcome.Rows.Count);
+        Assert.Equal(3, outcome.Rows.Count);
+        Assert.Empty(outcome.Rejections);
+        Assert.Null(outcome.Rows.Single(r => r.Text("EAI_CODE") == "1002").Int("Invest_Count"));
+        Assert.Equal(0, outcome.Rows.Single(r => r.Text("EAI_CODE") == "1002").Int("Eliminate_Count"));
+
+        var ignored = Assert.Single(outcome.IgnoredValues);
+        Assert.Equal("Invest_Count", ignored.Reason.Args["column"]);
+        Assert.Equal([3], ignored.SampleRows);
+    }
+
+    /// <summary>Un valor ilegible en un campo obligatorio sí rechaza la fila.</summary>
+    [Fact]
+    public void AnUnreadableRequiredValueRejectsTheRow()
+    {
+        var schema = SourceSchemaCatalog.Default.Require("veracode_sca_open_flaws.csv");
+        using var reader = new StringReader(
+            "FLAW_IDX_NUM,EAI_CD,SVR_DSC,FND_STT\n"
+            + "1,1001,1-Critical,Open\n"
+            + "not-a-number,1002,2-High,Open\n");
+
+        var outcome = new CsvSourceReader(schema).Read(reader);
+
+        Assert.Single(outcome.Rows);
         var rejection = Assert.Single(outcome.Rejections);
         Assert.Equal(3, rejection.RowNumber);
-        Assert.Equal("1002", rejection.Key);
-        Assert.Equal("Invest_Count", rejection.Reason.Args["column"]);
+        Assert.Equal("FLAW_IDX_NUM", rejection.Reason.Args["column"]);
     }
 
     [Fact]

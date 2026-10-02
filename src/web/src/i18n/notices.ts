@@ -205,6 +205,8 @@ const MESSAGES: Record<string, (a: Args) => string> = {
     (a.more ? ` (+${a.more} more in this row)` : ''),
   'row.notConvertible': () => 'The row could not be converted to the canonical model.',
   'row.unknownEai': (a) => `EAI '${a.key}' does not exist in the EAI master.`,
+  'row.duplicateKey': (a) =>
+    `'${a.column}' ${a.key} appears more than once; the last row was kept and this one was left out.`,
 
   'mapping.invalid': () => 'The column mapping sent with this file is not valid. Review it again and retry.',
   'mapping.needsSource': () => 'A column mapping belongs to one source: choose the source of this file first.',
@@ -334,9 +336,6 @@ export function formatNotice(notice: Notice | null | undefined): string {
 
 // ------------------------------------------------------ upload rejections
 
-/** Marcadores de «sin dato» que los exports escriben en lugar de dejar la celda vacía. */
-const NO_VALUE_MARKER = /^(n\/?a|#n\/?a|null|none|nan|-+|—|\?+|unknown|tbd|not applicable|sin dato|s\/d)$/i;
-
 /**
  * Qué le pasa a un grupo de filas rechazadas, en una frase: la columna, qué esperaba y
  * el valor de la primera fila que lo tuvo. Es el mismo aviso de linaje, redactado para
@@ -365,13 +364,15 @@ export function rejectionHint(reason: Notice): string | null {
     return 'Rows without the key are usually totals, subtotals or separator lines exported with the data.';
   }
 
+  if (reason.code === 'row.duplicateKey') {
+    return 'An export with one row per date (Year, Month, Day) repeats each application. The last row of each one is kept: export only the latest date, or sort the export from oldest to newest.';
+  }
+
   if (reason.code !== 'row.invalidValue') return null;
 
+  // Los marcadores de «sin dato» (N/A, -, (En blanco)…) ya se leen como vacíos y no
+  // llegan aquí (ADR 0028).
   const value = (a.value ?? '').trim();
-
-  if (NO_VALUE_MARKER.test(value)) {
-    return 'Leave the cell empty when there is no value: an empty cell is accepted and only leaves that metric out, while a placeholder rejects the whole row.';
-  }
 
   if ((a.expected === 'integer' || a.expected === 'long') && /^\d{1,3}(\.\d{3})+$/.test(value)) {
     return `If '${value}' means ${value.replaceAll('.', ',')}, the export uses a dot as thousands separator. Export the numbers without thousands separators.`;
@@ -390,7 +391,7 @@ export function rejectionHint(reason: Notice): string | null {
   }
 
   if (/[a-z]/i.test(value) && (a.expected === 'integer' || a.expected === 'long' || a.expected === 'number')) {
-    return 'The column has text where a number is expected. If every row fails here, check that the columns are not shifted, for example by commas inside unquoted values.';
+    return 'The column has text where a number is expected. If it happens in every row, the field may be loaded from the wrong column (check it with Review column mapping) or the columns may be shifted, for example by commas inside unquoted values.';
   }
 
   return null;

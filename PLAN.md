@@ -1198,6 +1198,15 @@ viejas se releen igual. De paso se corrigió la lectura de números con los dos 
 (`1.234,5` se leía 1,2345) y la etiqueta del selector de archivos, que las pruebas de
 accesibilidad nunca habían visto porque con datos generados la carga está apagada.
 
+**Ampliado el 2026-10-02 con el encabezado real del EAI Master**, exportado de Power BI
+([ADR 0028](docs/adr/0028-la-lectura-tolera-los-exports-reales.md)): un valor ilegible en un
+campo opcional queda sin dato y la fila entra (*Values loaded as empty*); `N/A`, `-` y
+`(En blanco)` son vacío; números en cualquier formato regional; `VERDADERO`/`FALSO`;
+identificadores normalizados; el nombre exacto gana a un alias y se reconocen los «Suma de»;
+un EAI repetido deja la última fila; y sin APP_ID en el maestro, la deuda técnica se une por el
+EAI, que en la organización es el mismo código. Verificado en vivo: el export de ejemplo con ese formato carga 250
+aplicaciones sin rechazos y la 14381 sigue en 79,67.
+
 ## 8bis. Ampliación solicitada — fases 10 a 12
 
 Siete puntos pedidos el 12 de septiembre de 2026, una vez entregadas las fases 00

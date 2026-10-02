@@ -270,14 +270,30 @@ La pestaña **Data → Mapping** muestra lo mismo sin elegir archivos: para cada
 columna que cargó cada campo en la carga vigente, los nombres con que se reconoce solo y las
 métricas que lo usan. El linaje, en cambio, describe lo que ya entró.
 
-### Si se rechazan filas
+### Si se rechazan filas o quedan valores sin dato
 
-Debajo del detalle por archivo, **Why rows were rejected** agrupa los rechazos por problema:
-la columna, qué esperaba, el valor de la primera fila que lo tuvo, cuántas filas y los números
-de las primeras. Cuenta todas las columnas malas de cada fila, no solo la primera, y agrega
-una pista cuando el valor delata la causa: un `N/A` donde la celda debería ir vacía, decimales
-en una columna de enteros, un punto como separador de miles o columnas corridas. Si el EAI
-Master queda sin filas válidas, la carga se descarta y el portafolio no cambia.
+La lectura tolera los exports reales, también los de Power BI y Excel en español
+([ADR 0028](docs/adr/0028-la-lectura-tolera-los-exports-reales.md)):
+
+- **Un valor ilegible en un campo opcional deja ese campo sin dato y la fila entra**, como hace
+  el BRD con un valor que falta. Solo se rechaza la fila sin clave, con un campo obligatorio
+  ilegible o con un EAI repetido (queda la última).
+- `N/A`, `-`, `NULL` o `(En blanco)` son celdas vacías, no errores.
+- Los números se leen en cualquier formato regional («97,67», «1.234», «650,00»), sí/no
+  también como `VERDADERO`/`FALSO`, y un EAI escrito como número («14,381», «14381.0») vuelve a
+  sus dígitos.
+- Se reconocen los campos resumidos («Suma de Kenna_Score», «Sum of …», «Promedio de …»), y el
+  nombre exacto del campo gana a un alias: con «MFA» y «Does this Application Utilize MFA?»,
+  carga el segundo.
+
+Debajo del detalle por archivo, **Why rows were rejected** y **Values loaded as empty** dicen
+qué pasó, agrupado por problema: la columna, qué esperaba, el valor de la primera fila que lo
+tuvo, cuántas filas y los números de las primeras, con una pista cuando el valor delata la
+causa. Si el EAI Master queda sin filas válidas, la carga se descarta y el portafolio no cambia.
+
+**Sin `APP_ID` en el EAI Master**, la deuda técnica, que viene por APP_ID, se une por el
+EAI_Code: en la organización el APP_ID es el mismo código que el EAI. Si el maestro trae la
+columna `APP_ID`, manda la columna.
 
 ### Para comparar en el tiempo: cuatro trimestres de ejemplo
 
@@ -339,7 +355,8 @@ dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHo
 | El `npm ci` termina con `ECONNRESET`, `ETIMEDOUT`, `E403`, `self-signed certificate` o `unable to get local issuer certificate` | La red de la empresa no deja llegar al registro de npm | Pedir a soporte el proxy o el registro interno de npm. Mientras tanto, [Sin Vite ni Node](#sin-vite-ni-node-el-sitio-ya-compilado), que no usa npm |
 | Vite dice que la versión de Node no es compatible, o `crypto.hash is not a function` | Node anterior a 20.19 o a 22.12 | Instalar Node 22.12 o superior |
 | `'AllowedHosts' debe listar los hosts del servicio (entorno 'Production')` | Faltó `--environment Development` en la línea de esa capa, o se pegó un bloque con `set` en PowerShell | Copiar de nuevo la línea completa, con `-- --environment Development --urls ...` al final |
-| El EAI Master queda con 0 filas y todas rechazadas, y la carga se descarta | Un problema que tienen todas las filas: una columna de números con texto (`N/A`, `-`), decimales donde van enteros, o una columna que se cargó por alias con otro contenido | Leer **Why rows were rejected**: dice la columna y el valor. Dejar vacías las celdas sin dato, o elegir la columna correcta con **Review column mapping** |
+| El EAI Master queda con 0 filas y todas rechazadas, y la carga se descarta | Desde el 2026-10-02 solo pasa si a todas les falta el EAI (o la columna EAI_Code está vacía); un valor ilegible en otro campo ya no rechaza la fila | Leer **Why rows were rejected**: dice la columna y el valor. Si el EAI viene en otra columna, elegirla con **Review column mapping** |
+| Muchas filas en **Values loaded as empty** | Una columna con un formato que no es un número —un rango («100-500»), texto— o un campo cargado desde otra columna | Revisar la columna que nombra; si el campo sale de otra columna, elegirla con **Review column mapping** |
 
 **Detener:** `Ctrl + C` en cada ventana. Si un puerto queda ocupado:
 `netstat -ano | findstr :5101` da el número de proceso al final de la línea, y
@@ -357,7 +374,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-889 pruebas .NET: 319 del motor, 216 de contratos y 354 de API. Las dos que importan más
+937 pruebas .NET: 319 del motor, 263 de contratos y 355 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **EAI 14381 = 79,67:** ejemplo trabajado del BRD, derivado desde datos crudos por el

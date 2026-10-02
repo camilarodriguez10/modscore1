@@ -20,13 +20,19 @@ RUN dotnet publish src/system/Modernization.SystemApi/Modernization.SystemApi.cs
     --configuration Release --no-restore --output /app /p:UseAppHost=false
 
 # ---------------------------------------------------------------- runtime
-# Chiseled: sin shell, sin gestor de paquetes y con usuario no root por defecto.
-# Lo que no esta en la imagen no se puede explotar.
+# Distroless sobre Azure Linux 3.0: sin shell, sin gestor de paquetes y con usuario no
+# root por defecto. Lo que no esta en la imagen no se puede explotar.
+#
+# Hasta el 2026-10-02 era 10.0-noble-chiseled (Ubuntu). Su openssl 3.0.13-0ubuntu3.15 tiene
+# CVE-2026-84782 (alta, corregida en 3.0.13-0ubuntu3.16) y Microsoft no habia vuelto a
+# publicar la imagen; esta, con openssl 3.3.7 y la misma postura, escaneada con el Trivy
+# del CI, no tiene ninguna vulnerabilidad conocida. Mismo runtime .NET, mismo usuario
+# (APP_UID 1654), globalizacion invariante.
 #
 # Sin HEALTHCHECK: la imagen no tiene shell ni curl para ejecutarlo, y Kubernetes no
 # lo usa; la salud la vigilan las probes de /health del Deployment.
-# checkov:skip=CKV_DOCKER_2:Imagen chiseled sin shell; la salud la cubren las probes de Kubernetes
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS runtime
+# checkov:skip=CKV_DOCKER_2:Imagen distroless sin shell; la salud la cubren las probes de Kubernetes
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-azurelinux3.0-distroless AS runtime
 WORKDIR /app
 COPY --from=build /app ./
 

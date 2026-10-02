@@ -135,7 +135,7 @@ Navegador ──cookie de sesión──▶ channel-api (BFF)  ──token de ser
 | Datos | Adaptadores Dummy · File (CSV por carga) · Database (EF Core 10 + SQLite verificado) |
 | SPA | React 19, Vite 7, TypeScript 5.9 estricto, React Router 7, TanStack Query 5, Tailwind 4, SVG propio |
 | Pruebas | xUnit (motor, contratos, API por HTTP en ambas capas), Vitest, Playwright con Edge |
-| Despliegue previsto | Kubernetes (`deploy/k8s`), imágenes chiseled no root, NetworkPolicy default-deny, mTLS del mesh |
+| Despliegue previsto | Kubernetes (`deploy/k8s`), imágenes distroless de Azure Linux, no root (chiseled de Ubuntu hasta el 2026-10-02), NetworkPolicy default-deny, mTLS del mesh |
 
 Proyectos clave:
 

@@ -254,7 +254,7 @@ La autenticación de personas se delega en el IdP corporativo por OIDC.
 |---|---|---|---|
 | 14.1.1 | Build y despliegue automatizados | Cumple | `ci.yml` · `seguridad.yml` · Dockerfiles · manifiestos |
 | 14.1.2 | Advertencias del compilador y análisis | Cumple | `TreatWarningsAsErrors` · todas las reglas de seguridad (`AnalysisLevelSecurity=latest-all`) |
-| 14.1.3 | Servidor endurecido | Cumple | Chiseled, no root, filesystem de solo lectura, capabilities fuera, PSA `restricted` |
+| 14.1.3 | Servidor endurecido | Cumple | Distroless (Azure Linux 3.0), sin shell, no root, filesystem de solo lectura, capabilities fuera, PSA `restricted` |
 | 14.1.5 | Integridad de la configuración | Parcial | Checkov en CI; firma de imágenes pendiente (H-17) |
 | 14.2.1 | Componentes al día y sin vulnerabilidades | Cumple | NuGetAudit · `dotnet list package --vulnerable` · `npm audit` · OSV · Renovate |
 | 14.2.2 | Funcionalidad innecesaria retirada | Cumple | OpenAPI solo en Development · sin source maps · diagnósticos del runtime desactivados |

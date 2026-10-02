@@ -417,7 +417,7 @@ The score formula is `Score = 20 + (Numerator ÷ Denominator) × 80`, computed o
 
 - **Priority:** P0 · **Owner:** platform/architecture · **Status:** Decision needed
 - **Context:**
-  - Manifests target Kubernetes (AKS assumed from BRD mentions): `deploy/k8s`, chiseled non-root images, Pod Security Admission restricted, default-deny NetworkPolicy and service-mesh mTLS.
+  - Manifests target Kubernetes (AKS assumed from BRD mentions): `deploy/k8s`, distroless non-root images (Azure Linux 3.0; Ubuntu chiseled until 2026-10-02), Pod Security Admission restricted, default-deny NetworkPolicy and service-mesh mTLS.
   - The database adapter is engine-agnostic and verified against SQLite with migrations. An unverified engine fails explicitly at startup.
 - **Question:** AKS or other? SQL Server or PostgreSQL? Managed identity for the database?
 - **Work after decision:**
@@ -645,6 +645,7 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
     - Gitleaks v8.30.1 over the full history: no leaks (4 commits).
     - Both images build: `system-api` 243 MB, `channel-api` 197 MB, non-root user.
     - Trivy: 0 fixable HIGH/CRITICAL vulnerabilities in either image (Ubuntu 24.04 chiseled, .NET 10.0.12, application dependencies).
+    - **2026-10-02:** the Ubuntu chiseled base brought openssl 3.0.13-0ubuntu3.15 with CVE-2026-84782 (HIGH, fixed in 3.0.13-0ubuntu3.16) and Microsoft had not republished the image (still the 2026-09-04 build). Both runtimes moved to `aspnet:10.0-azurelinux3.0-distroless`: same posture (no shell, no package manager, user 1654, invariant globalization), same .NET 10.0.12, openssl 3.3.7. Trivy 0.74.0 locally: 0 vulnerabilities of any severity in both images; Checkov clean; both start read-only and answer `/health`.
     - Checkov 3.3.17 first failed 4 checks, so the CI job would have failed:
       - CKV_K8S_40 on both Deployments: UID 1654 is below 10000. Fixed: `runAsUser`, `runAsGroup` and `fsGroup` are now 10001. Both images ran as UID 10001 with a read-only root filesystem, and `/health` and the SPA answered.
       - CKV_DOCKER_2 on both Dockerfiles: no `HEALTHCHECK`. Suppressed inline with a reason: chiseled images have no shell or curl, and Kubernetes uses its `/health` probes instead.

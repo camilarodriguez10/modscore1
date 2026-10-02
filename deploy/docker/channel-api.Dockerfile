@@ -31,10 +31,13 @@ RUN dotnet publish src/channel/Modernization.ChannelApi/Modernization.ChannelApi
     --configuration Release --no-restore --output /app /p:UseAppHost=false
 
 # ---------------------------------------------------------------- runtime
+# Distroless sobre Azure Linux 3.0, igual que la system-api y por el mismo motivo: la
+# noble-chiseled trae openssl con CVE-2026-84782 (ver system-api.Dockerfile).
+#
 # Sin HEALTHCHECK: la imagen no tiene shell ni curl para ejecutarlo, y Kubernetes no
 # lo usa; la salud la vigilan las probes de /health del Deployment.
-# checkov:skip=CKV_DOCKER_2:Imagen chiseled sin shell; la salud la cubren las probes de Kubernetes
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS runtime
+# checkov:skip=CKV_DOCKER_2:Imagen distroless sin shell; la salud la cubren las probes de Kubernetes
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-azurelinux3.0-distroless AS runtime
 WORKDIR /app
 COPY --from=build /app ./
 

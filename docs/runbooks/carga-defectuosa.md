@@ -35,7 +35,7 @@ defectuosa hace vigente la anterior.
    kubectl -n modernization-score exec deploy/system-api -- \
      sh -c 'mkdir -p /data/cuarentena'
    ```
-   La imagen chiseled no tiene shell. Hacerlo desde un pod de mantenimiento que monte
+   La imagen distroless no tiene shell. Hacerlo desde un pod de mantenimiento que monte
    el mismo volumen:
    ```bash
    kubectl -n modernization-score scale deploy/system-api --replicas=0

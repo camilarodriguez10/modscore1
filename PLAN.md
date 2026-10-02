@@ -599,7 +599,7 @@ Las tres Altas:
 | ASVS L2 al cierre de la Fase 08: 100 cumple · 15 parciales · 3 pendientes. **Vigente desde la Fase 14: 106 cumple · 11 parciales · 3 pendientes · 10 IdP o N/A** | [docs/security/asvs-l2.md](docs/security/asvs-l2.md) |
 | Runbooks: secretos, carga defectuosa, DR, incidente | [docs/runbooks/](docs/runbooks) |
 | Pipeline con gates de seguridad | `.github/workflows/ci.yml` (build, pruebas, CodeQL, Trivy, Checkov, SBOM) y `seguridad.yml` (Gitleaks y OSV en cada push) — acciones fijadas por SHA |
-| Contenedores y cluster | `deploy/docker` (chiseled, no root) · `deploy/k8s` (PSA restricted, NetworkPolicy default-deny, mTLS) |
+| Contenedores y cluster | `deploy/docker` (distroless de Azure Linux, no root) · `deploy/k8s` (PSA restricted, NetworkPolicy default-deny, mTLS) |
 | Prueba de carga | `tools/Modernization.LoadTest` |
 | Decisiones | ADR 0011 (sesión en el servidor) · 0012 (alcance sobre los datos) · 0013 (autenticado no significa inofensivo) |
 
@@ -1485,7 +1485,7 @@ modernization-score/
 │  ├─ git/                           # respaldo con verificaciones y archivos bloqueados
 │  └─ sesiones/                      # scripts históricos de las sesiones de trabajo
 └─ deploy/
-   ├─ docker/                        # imágenes chiseled, no root
+   ├─ docker/                        # imágenes distroless (Azure Linux), no root
    └─ k8s/                           # kustomize, PSA restricted, NetworkPolicy, mesh
 ```
 

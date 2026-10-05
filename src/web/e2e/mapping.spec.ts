@@ -153,6 +153,91 @@ for (const scheme of ['light', 'dark'] as const) {
 
       await expectNoSeriousViolations(page);
     });
+
+    test('leaves out the files that failed and recalculates with the rest, after confirming', async ({ page }) => {
+      await enableUploads(page);
+
+      const verdict = (fileName: string, canonicalFileName: string | null, source: string, error: unknown = null) => ({
+        fileName,
+        canonicalFileName,
+        source,
+        bytes: 64,
+        rowCount: error ? 0 : 3,
+        rejectedCount: 0,
+        error,
+        detectedColumns: [],
+        candidates: [],
+        rejectionReasons: [],
+        ignoredValues: [],
+      });
+
+      const bodies: string[] = [];
+
+      await page.route('**/api/ingestion/upload', async (route) => {
+        bodies.push(route.request().postData() ?? '');
+
+        await route.fulfill({
+          json:
+            bodies.length === 1
+              ? {
+                  accepted: false,
+                  version: null,
+                  applicationCount: 0,
+                  files: [
+                    verdict('containers.csv', null, '-', { code: 'match.unrecognized', args: {} }),
+                    verdict('eai.csv', 'eai_master.csv', 'EAI Master'),
+                    verdict('sca.csv', 'veracode_sca_open_flaws.csv', 'SCA Flaws', {
+                      code: 'csv.fieldTooLong',
+                      args: { max: '65536', row: '527', column: 'SUM_DSCR' },
+                    }),
+                  ],
+                  errors: [{ code: 'match.unrecognized', args: { file: 'containers.csv' } }],
+                  summary: { code: 'upload.rejected', args: { count: '2' } },
+                }
+              : {
+                  accepted: true,
+                  version: { id: '20261005-1300', label: 'Upload 1005', capturedAt: '2026-10-05T13:00:00Z', applicationCount: 3, isCurrent: true },
+                  applicationCount: 3,
+                  files: [verdict('eai.csv', 'eai_master.csv', 'EAI Master')],
+                  errors: [],
+                  summary: { code: 'upload.published', args: { count: '3' } },
+                },
+        });
+      });
+
+      await signIn(page, '/data');
+
+      await page.locator('input[type=file]').setInputFiles([
+        { name: 'containers.csv', mimeType: 'text/csv', buffer: Buffer.from('CLUSTER,NAMESPACE\nocp1,claims\n') },
+        { name: 'eai.csv', mimeType: 'text/csv', buffer: Buffer.from(`${header}\n1001,Claims,350,internal,10\n`) },
+        { name: 'sca.csv', mimeType: 'text/csv', buffer: Buffer.from('FLAW_IDX_NUM,EAI_CD,SVR_DSCR,FND_STTS_DSCR\n1,1001,1 - Critical,Open\n') },
+      ]);
+
+      await page.getByRole('button', { name: 'Upload and recalculate' }).click();
+
+      await expect(page.getByText('Upload rejected', { exact: true })).toBeVisible();
+      await expect(page.getByText('The SUM_DSCR cell in row 527', { exact: false }).first()).toBeVisible();
+
+      const leaveOut = page.locator('section', {
+        has: page.getByRole('heading', { name: 'Recalculate with the files that passed' }),
+      });
+      await expect(leaveOut).toContainText('SCA Flaws will have no data in this upload');
+      await expect(leaveOut).toContainText('It is not one of the sources of the model');
+
+      await expectNoSeriousViolations(page);
+
+      // Nada se publica hasta confirmar.
+      expect(bodies).toHaveLength(1);
+
+      await leaveOut.getByRole('button', { name: 'Leave out 2 files and recalculate' }).click();
+
+      await expect(page.getByText('Upload published', { exact: true })).toBeVisible();
+
+      expect(bodies).toHaveLength(2);
+      expect(bodies[1]).toContain('filename="eai.csv"');
+      expect(bodies[1]).not.toContain('containers.csv');
+      expect(bodies[1]).not.toContain('sca.csv');
+    });
   });
 }
 

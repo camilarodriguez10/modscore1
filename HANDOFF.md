@@ -41,7 +41,7 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | Las seis preguntas (pantalla 09) | Entregada el 2026-09-16 (PLAN §8.9, [ADR 0023](docs/adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md)). Salud, prioridades, complejidad, riesgo, obsolescencia y resiliencia en `/insights`, con los mismos filtros. Ningún dato nuevo hizo falta; lo que mejoraría el esfuerzo y el valor de negocio está en PENDING-ITEMS como DQ-01 a DQ-07 |
 | Dashboard ejecutivo | D1, D2 y D3 entregadas el 2026-09-18 (PLAN §8.10, [ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md), [ADR 0025](docs/adr/0025-las-definiciones-viajan-con-las-reglas.md)). La página de inicio (`/`): *Portfolio Health & Risk Intelligence*, con cinco indicadores, seis paneles y un detalle común; el inventario está en `/portfolio`. Currency Score = `Raw_Tech_Score` de CMT. Las 37 definiciones de las seis preguntas viajan con las reglas y se editan en *Rules → Portfolio analytics*; cada panel explica su cálculo y *Definitions* es el diccionario. Cinco filtros nuevos en todas las pantallas. Falta D4 (fuentes nuevas) |
 | Pantalla Code | C1 entregada el 2026-09-26 (PLAN §8.11, [ADR 0026](docs/adr/0026-el-analisis-de-codigo-llega-de-github-enterprise.md)). `/code`: componentes de cada repositorio contra su fin de vida (endoflife.date, foto versionada con 22 productos y 273 ciclos), bibliotecas con hallazgos, discrepancias con el Currency Score de CMT e índice de riesgo de código con detalle por aplicación. 15 parámetros nuevos (área `code`) editables desde el portal. **Repositorios de demostración** hasta integrar GitHub Enterprise (C2, GH-01 a GH-09) |
-| Pruebas | **945 .NET** (319 motor · 270 contratos · 356 API) · **75 unitarias** de la SPA · **56 de punta a punta** con Playwright (29 de flujo y 27 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-10-02 |
+| Pruebas | **945 .NET** (319 motor · 270 contratos · 356 API) · **78 unitarias** de la SPA · **58 de punta a punta** con Playwright (31 de flujo y 27 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-10-02 |
 | Dependencias | Cero paquetes vulnerables (`dotnet list package --vulnerable`), `npm audit` limpio |
 | CI | GitHub Actions en verde desde la corrida #5 (`55cf36f`, 2026-09-15), que pasó los 7 jobs: backend, SPA, gitleaks, OSV, CodeQL C# y JS/TS, e imágenes con Trivy v0.74.0 y Checkov. CodeQL sin hallazgos altos. Tras acelerarlo, la corrida #6 (`148c6ce`) tardó 7 min 3 s en lugar de 9 min 54 s; CodeQL C# sigue marcando el total (6 min 58 s). Antes hubo que corregir el lint, CodeQL en repositorio privado (`upload: never`, `actions: read`), la versión de Trivy y el UID de los pods. Para acortarlo: gitleaks y OSV están en `seguridad.yml` y corren en cada push; `ci.yml` se salta los cambios que solo tocan documentación; CodeQL C# compila solo `src/` sin los analizadores de Roslyn; hay caché de NuGet, y el job de imágenes no espera a los demás |
 | ASVS L2 | 106 cumple · 11 parciales · 3 pendientes · 10 IdP o N/A. Los parciales dependen de un entorno real |
@@ -412,6 +412,17 @@ que se come las filas siguientes, o un archivo fabricado. El mensaje dice ahora 
 (`csv.fieldTooLong` con `column`, del índice `Parser.Count` de CsvHelper) para buscar la celda
 sin compartir el archivo. Verificado en vivo: una descripción de 10 mil caracteres entra; una
 de 70 mil se rechaza con `SUM_DSCR` y su fila.
+
+**Recalcular con lo que pasó (2026-10-05).** Con los exports reales del 2026-10-05, la carga se
+rechazaba entera por dos archivos: uno de contenedores OCP (`P65_CONTAINERS_OCP_Weekly_DETAIL`,
+de la métrica *Containerized*, con peso 0 en el BRD v1.3 y sin fuente en el contrato) y el SCA
+(todavía con la versión de 4 096). La System sigue publicando todo o nada. En la SPA,
+`planLeaveOut` (`src/web/src/leaveOut.ts`) arma, desde el veredicto por archivo y lo último que
+se envió, la misma carga sin los archivos con error, con su fuente y su mapping alineados, solo
+si el EAI Master pasó; la tarjeta *Recalculate with the files that passed* la muestra y pide
+confirmar. Verificado en vivo con la System real y el sitio compilado: con los nombres de los
+archivos reales, la carga sin ellos publicó 250 aplicaciones con peso disponible 30 (solo EAI
+y deuda técnica). Pruebas: `leaveOut.test.ts` y una de punta a punta en claro y oscuro.
 
 **Lectura tolerante (2026-10-02, [ADR 0028](docs/adr/0028-la-lectura-tolera-los-exports-reales.md)).**
 Con el encabezado real del EAI Master, exportado de Power BI:

@@ -527,6 +527,12 @@ rechaza la fila: el campo queda sin dato y la aplicación entra. Los casos más 
 Si el EAI Master queda sin ninguna fila válida, la carga se descarta completa y el portafolio
 vigente no cambia.
 
+**Si la carga se rechaza por algunos archivos y el EAI Master pasó,** aparece **Recalculate
+with the files that passed**: lista los archivos con problemas y qué pasa si quedan fuera. Una
+fuente fuera queda sin dato en esa carga y sus métricas salen del score, como cualquier fuente
+que no se entrega; un archivo que no es de ninguna fuente no cambia nada. Pulsa **Leave out N
+files and recalculate** para publicar con el resto. Nada se publica sin esa confirmación.
+
 **Sin `APP_ID` en el EAI Master**, la deuda técnica se une por el EAI_Code, porque en la
 organización el APP_ID es el mismo código que el EAI. Si el maestro trae `APP_ID`, se usa esa
 columna.

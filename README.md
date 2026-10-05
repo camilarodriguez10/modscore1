@@ -283,6 +283,13 @@ qué pasó, agrupado por problema: la columna, qué esperaba, el valor de la pri
 tuvo, cuántas filas y los números de las primeras, con una pista cuando el valor delata la
 causa. Si el EAI Master queda sin filas válidas, la carga se descarta y el portafolio no cambia.
 
+**Si se rechaza por algunos archivos y el EAI Master pasó**, la tarjeta **Recalculate with the
+files that passed** dice cuáles quedarían fuera y qué significa: una fuente fuera queda sin dato
+en esa carga y sus métricas salen del score, como cualquier fuente ausente (ADR 0003); un archivo
+que no es de ninguna fuente (por ejemplo, el de contenedores OCP, de una métrica con peso 0) no
+cambia nada. Con **Leave out N files and recalculate** se vuelve a cargar sin ellos. La System
+sigue publicando todo o nada: dejar fuera un archivo lo confirma quien carga.
+
 **Sin `APP_ID` en el EAI Master**, la deuda técnica, que viene por APP_ID, se une por el
 EAI_Code: en la organización el APP_ID es el mismo código que el EAI. Si el maestro trae la
 columna `APP_ID`, manda la columna.
@@ -379,8 +386,8 @@ reproducen los casos documentados:
 TypeScript difieren.
 
 ```bash
-npm --prefix src/web test          # 75 pruebas unitarias (Vitest)
-npm --prefix src/web run test:e2e  # 56 escenarios: 29 de flujo y 27 de accesibilidad (axe)
+npm --prefix src/web test          # 78 pruebas unitarias (Vitest)
+npm --prefix src/web run test:e2e  # 58 escenarios: 31 de flujo y 27 de accesibilidad (axe)
 ```
 
 Las de punta a punta usan el Microsoft Edge instalado (no descargan navegadores) y levantan

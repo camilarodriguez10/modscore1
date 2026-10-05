@@ -8,6 +8,7 @@ import { formatDate } from './RoadmapPage';
 import { ApiError } from '../api/client';
 import { MappingReview } from './MappingReview';
 import { columnMapToSend, initialDecisions, readHeaderLine, type MappingDecisions } from '../mapping';
+import { planLeaveOut, type LeaveOutPlan, type UploadPayload } from '../leaveOut';
 
 /**
  * Cargas, dentro de la pantalla de Datos.
@@ -47,6 +48,8 @@ export function IngestionPanel({
   const [selected, setSelected] = useState<readonly File[]>([]);
   const [label, setLabel] = useState('');
   const [assigned, setAssigned] = useState<Record<string, string>>({});
+  // Lo último que se mandó, para poder repetirlo sin los archivos que fallaron.
+  const [lastSent, setLastSent] = useState<UploadPayload | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const totalBytes = selected.reduce((sum, file) => sum + file.size, 0);
@@ -62,29 +65,32 @@ export function IngestionPanel({
     (file) => !file.canonicalFileName && (file.candidates?.length ?? 0) > 0,
   );
 
+  // Si la carga se rechazó solo por algunos archivos, lo que queda sin ellos.
+  const leaveOut = upload.data && lastSent ? planLeaveOut(upload.data, lastSent) : null;
+
   const submit = (withAssignments: boolean) => {
     if (!canSubmit) return;
 
     const assignments = withAssignments ? selected.map((file) => assigned[file.name] ?? '-') : undefined;
+    const payload: UploadPayload = { files: selected, label, assignments };
+    setLastSent(payload);
 
-    upload.mutate(
-      { files: selected, label, assignments },
-      {
-        onSuccess: (result) => {
-          if (result.accepted) {
-            setSelected([]);
-            setLabel('');
-            setAssigned({});
-            if (inputRef.current) inputRef.current.value = '';
-          }
-        },
+    upload.mutate(payload, {
+      onSuccess: (result) => {
+        if (result.accepted) {
+          setSelected([]);
+          setLabel('');
+          setAssigned({});
+          if (inputRef.current) inputRef.current.value = '';
+        }
       },
-    );
+    });
   };
 
   const reset = () => {
     setSelected([]);
     setAssigned({});
+    setLastSent(null);
     upload.reset();
     closeReview();
     if (inputRef.current) inputRef.current.value = '';
@@ -138,29 +144,48 @@ export function IngestionPanel({
     if (!canSubmit || !review.data) return;
 
     const files = review.data.files;
+    const payload: UploadPayload = {
+      files: selected,
+      label,
+      assignments: selected.map((file) => decisions[file.name]?.source ?? '-'),
+      columnMaps: selected.map((file) => {
+        const reviewed = files.find((candidate) => candidate.fileName === file.name);
+        return reviewed ? columnMapToSend(reviewed, decisions[file.name]) : null;
+      }),
+    };
+    setLastSent(payload);
 
-    upload.mutate(
-      {
-        files: selected,
-        label,
-        assignments: selected.map((file) => decisions[file.name]?.source ?? '-'),
-        columnMaps: selected.map((file) => {
-          const reviewed = files.find((candidate) => candidate.fileName === file.name);
-          return reviewed ? columnMapToSend(reviewed, decisions[file.name]) : null;
-        }),
+    upload.mutate(payload, {
+      onSuccess: (result) => {
+        if (result.accepted) {
+          setSelected([]);
+          setLabel('');
+          setAssigned({});
+          closeReview();
+          if (inputRef.current) inputRef.current.value = '';
+        }
       },
-      {
-        onSuccess: (result) => {
-          if (result.accepted) {
-            setSelected([]);
-            setLabel('');
-            setAssigned({});
-            closeReview();
-            if (inputRef.current) inputRef.current.value = '';
-          }
-        },
+    });
+  };
+
+  /**
+   * Repite la carga sin los archivos que fallaron, cuando la persona lo confirma. Lo que se
+   * publica es una carga normal: la System la valida entera otra vez.
+   */
+  const uploadWithoutProblems = (plan: LeaveOutPlan) => {
+    setLastSent(plan.payload);
+
+    upload.mutate(plan.payload, {
+      onSuccess: (result) => {
+        if (result.accepted) {
+          setSelected([]);
+          setLabel('');
+          setAssigned({});
+          closeReview();
+          if (inputRef.current) inputRef.current.value = '';
+        }
       },
-    );
+    });
   };
 
   return (
@@ -197,6 +222,7 @@ export function IngestionPanel({
                 onChange={(event) => {
                   setSelected(Array.from(event.target.files ?? []));
                   setAssigned({});
+                  setLastSent(null);
                   upload.reset();
                   closeReview();
                 }}
@@ -321,6 +347,10 @@ export function IngestionPanel({
       )}
 
       {upload.data && <UploadResult result={upload.data} />}
+
+      {leaveOut && (
+        <LeaveOutFiles plan={leaveOut} onConfirm={() => uploadWithoutProblems(leaveOut)} pending={upload.isPending} />
+      )}
 
       {unidentified.length > 0 && (
         <AssignSources
@@ -461,6 +491,56 @@ function AssignSources({
           {pending ? 'Validating…' : 'Retry with these sources'}
         </button>
         {!complete && <span className="text-[12.5px] text-ink-3">Some files still need a source.</span>}
+      </div>
+    </Card>
+  );
+}
+
+/**
+ * Recalcular con los archivos que pasaron. La carga es todo o nada, así que dejar fuera un
+ * archivo lo decide quien carga, sabiendo qué fuente queda sin dato en esta carga.
+ */
+function LeaveOutFiles({
+  plan,
+  onConfirm,
+  pending,
+}: {
+  plan: LeaveOutPlan;
+  onConfirm: () => void;
+  pending: boolean;
+}) {
+  const count = countOf(plan.leftOut.length, 'file');
+
+  return (
+    <Card
+      title="Recalculate with the files that passed"
+      subtitle={`Leave out ${count} with problems and publish the other ${countOf(plan.payload.files.length, 'file')}. Nothing is published until you confirm.`}
+    >
+      <ul className="divide-y divide-rule">
+        {plan.leftOut.map((file) => (
+          <li key={file.fileName} className="flex flex-col gap-0.5 px-4 py-3">
+            <span className="font-mono text-[12.5px] text-ink">{file.fileName}</span>
+            <span className="text-[12.5px] text-ink-2">
+              {file.source
+                ? `${file.source} will have no data in this upload: its metrics are left out of the score, as with any missing source.`
+                : 'It is not one of the sources of the model, so leaving it out does not change the score.'}
+            </span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="flex flex-wrap items-center gap-3 border-t border-rule px-4 py-3">
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={pending}
+          className="rounded-sm bg-accent px-4 py-2 text-[13.5px] font-medium text-on-accent hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {pending ? 'Validating and recalculating…' : `Leave out ${count} and recalculate`}
+        </button>
+        <span className="text-[12.5px] text-ink-3">
+          The files that passed are validated again. Earlier uploads do not change.
+        </span>
       </div>
     </Card>
   );

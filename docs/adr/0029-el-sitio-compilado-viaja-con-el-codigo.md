@@ -32,7 +32,7 @@ bloqueado.
    `tsc -b && vite build`, con otra carpeta de salida). El camino C usa
    `--webroot C:\modscore1\sitio-compilado`; no hay nada que descargar aparte.
 2. **El CI exige que sea el build de ese commit.** El job SPA compila `src/web` desde el lock
-   y compara byte a byte con `git diff --no-index --exit-code dist ../../sitio-compilado`. Si
+   y compara byte a byte con `diff -rq dist ../../sitio-compilado`. Si
    difiere (desfasado o tocado a mano), el job falla, también en los PR. Se verificó antes de
    decidir que el build es reproducible: Windows con Node 24.14 y Linux (Alpine) con Node 24.21
    dan los mismos bytes.

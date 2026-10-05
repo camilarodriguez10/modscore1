@@ -137,7 +137,7 @@ jobs:
       # ni tocado a mano. En PRs tambien, para que no entre a main uno que no coincide.
       - name: El sitio compilado del repositorio corresponde a este codigo
         run: |
-          if ! git diff --no-index --stat --exit-code dist ../../sitio-compilado; then
+          if ! diff -rq dist ../../sitio-compilado; then
             echo "::error::sitio-compilado/ no corresponde al codigo de src/web. En src/web: npm run build:sitio-compilado, y commit de la carpeta."
             exit 1
           fi

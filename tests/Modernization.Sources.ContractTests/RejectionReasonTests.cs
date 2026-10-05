@@ -421,4 +421,69 @@ public sealed class VeracodeExportTests
         Assert.Equal("FasterXML", flaw.LibraryVendor);
         Assert.Equal("External", flaw.Accessibility);
     }
+
+    /// <summary>
+    /// Los valores reales, confirmados el 2026-10-05: severidad «1 - Critical» a «4 - Low», con
+    /// espacios alrededor del guion, y estado «Open». Se cuentan por la palabra, igual que
+    /// «1-Critical»; una aplicación que no está en el archivo no se considera escaneada.
+    /// </summary>
+    [Fact]
+    public async Task TheRealSeverityAndStatusValuesAreCountedPerApplication()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "modscore-sca-" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+
+        try
+        {
+            using var service = new UploadService(root);
+
+            static Domain.Sources.IncomingSourceFile File(string name, string content)
+            {
+                var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+                return new Domain.Sources.IncomingSourceFile(name, bytes.Length, () => new MemoryStream(bytes));
+            }
+
+            static string Flaw(int index, string eai, string severity)
+                => string.Join(',', [index.ToString(CultureInfo.InvariantCulture), "App", eai, eai, severity, "Open", .. Enumerable.Repeat(string.Empty, Header.Length - 6)]);
+
+            var sca = string.Join('\n', [
+                string.Join(',', Header),
+                Flaw(1, "1001", "1 - Critical"),
+                Flaw(2, "1001", "2 - High"),
+                Flaw(3, "1001", "2 - High"),
+                Flaw(4, "1001", "3 - Medium"),
+                Flaw(5, "1001", "4 - Low"),
+                Flaw(6, "1002", "4 - Low"),
+            ]) + "\n";
+
+            var outcome = await service.PublishAsync(
+                [
+                    File("eai.csv", "EAI_Code,Application_Name,Kenna_Score\n1001,Claims,120\n1002,Billing,300\n1003,Payments,\n"),
+                    File("0809 veracode_sca_open_flaws_6.csv", sca),
+                ],
+                "export de Veracode",
+                "tests",
+                DateTimeOffset.UtcNow);
+
+            Assert.True(outcome.Accepted, string.Join(" | ", outcome.Errors));
+
+            var snapshot = await new FileSnapshotProvider(root).GetAllAsync();
+
+            var claims = snapshot.Find("1001")?.ScaFlaws;
+            Assert.NotNull(claims);
+            Assert.Equal((1, 2, 1, 1), (claims.Critical, claims.High, claims.Medium, claims.Low));
+
+            var billing = snapshot.Find("1002")?.ScaFlaws;
+            Assert.NotNull(billing);
+            Assert.Equal((0, 0, 0, 1), (billing.Critical, billing.High, billing.Medium, billing.Low));
+
+            Assert.Null(snapshot.Find("1003")?.ScaFlaws);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
 }

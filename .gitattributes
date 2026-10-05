@@ -14,3 +14,7 @@
 *.db-shm binary
 *.db-wal binary
 *.zip   binary
+
+# El sitio compilado se versiona tal cual sale de Vite (ADR 0029): sin convertir finales de
+# linea, para que sea byte a byte el build que el CI compara, y plegado en los diffs.
+sitio-compilado/** -text linguist-generated=true

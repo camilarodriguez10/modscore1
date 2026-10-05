@@ -18,7 +18,7 @@ El plan completo está en [PLAN.md](PLAN.md). Las decisiones de arquitectura, en
 |---|---|
 | **Los comandos de abajo**, en tres ventanas | **.NET SDK 10** (<https://dotnet.microsoft.com/download/dotnet/10.0>) y **Node.js 22.12 o superior**, o 20.19+ (<https://nodejs.org>) |
 | **Con el sitio compilado**, en dos ventanas (variante de abajo) | **.NET SDK 10**. Node solo hace falta para compilar el sitio una vez, y eso puede hacerse en otro equipo y copiar la carpeta `src\web\dist` |
-| **Sin Vite ni Node**, en dos ventanas ([abajo](#sin-vite-ni-node-el-sitio-ya-compilado)) | **Solo .NET SDK 10**, y una cuenta de GitHub con acceso al repositorio para descargar el sitio que compila el CI |
+| **Sin Vite ni Node**, en dos ventanas ([abajo](#sin-vite-ni-node-el-sitio-ya-compilado)) | **Solo .NET SDK 10**. El sitio compilado viene con el código, en `sitio-compilado` (también en el ZIP de GitHub) |
 
 Hace falta el **SDK** de .NET, no solo el runtime: el runtime corre programas ya compilados,
 pero no compila. Para comprobarlo, en una terminal abierta después de instalar:
@@ -54,8 +54,8 @@ cada una abierta mientras se usa la aplicación.
   interno o externo`. Hace falta **Node.js 22.12 o superior** (o 20.19+): `node --version`.
 - **¿Solo vas a usar la aplicación, no a cambiar la interfaz?** Se puede prescindir de la
   ventana 3: la Channel sirve el sitio compilado. Se compila una vez con Node (ver
-  [Variantes](#variantes), «Con el sitio compilado») o se descarga ya compilado, sin Node ni
-  Vite (ver [Sin Vite ni Node](#sin-vite-ni-node-el-sitio-ya-compilado)).
+  [Variantes](#variantes), «Con el sitio compilado») o se usa el que ya viene compilado con
+  el código, sin Node ni Vite (ver [Sin Vite ni Node](#sin-vite-ni-node-el-sitio-ya-compilado)).
 - **La System arranca con carga de archivos** (`--DataSource:Provider=File`): la pantalla
   **Data** acepta CSV, y lo que subas y las reglas que publiques quedan en
   `C:\modscore1\data\local`. Git ignora esa carpeta porque puede tener datos reales. La
@@ -176,40 +176,25 @@ npm --prefix src/web run dev
 
 ### Sin Vite ni Node: el sitio ya compilado
 
-Para usar la aplicación sin instalar Node ni ejecutar Vite: solo corre `dotnet.exe`. En cada
-push de código a `main`, el job **SPA** del CI compila el sitio y lo deja como artefacto
-`sitio-compilado` (dura 90 días; **Run workflow** sobre `main` lo genera de nuevo). La
-Channel lo sirve con `--webroot` y no hay ventana 3. Es el camino C de la
+Para usar la aplicación sin instalar Node, sin ejecutar Vite y sin bajar nada del registro de
+npm: solo corre `dotnet.exe`. El sitio compilado **viaja con el código** en la carpeta
+`sitio-compilado`, así que también lo trae el ZIP de GitHub (**Code → Download ZIP**). El job
+**SPA** del CI comprueba en cada cambio que esa carpeta es byte a byte el build de `src/web`
+de ese commit ([ADR 0029](docs/adr/0029-el-sitio-compilado-viaja-con-el-codigo.md)). La
+Channel la sirve con `--webroot` y no hay ventana 3. Es el camino C de la
 [guía](docs/guia-localhost.md#camino-c--sin-vite-ni-node-windows-cmd-o-powershell).
 
-1. Con el código al día (`git pull`), abrir
-   <https://github.com/camilarodriguez10/modscore1/actions/workflows/ci.yml?query=branch%3Amain>,
-   entrar en la corrida más reciente y, en **Artifacts**, descargar `sitio-compilado`.
-2. Descomprimirlo en `src\web\dist` y compilar las dos capas, una sola vez.
-
-   En cmd:
+1. Con el código al día (`git pull` o un ZIP nuevo de `main`), comprobar que está el sitio:
+   `dir C:\modscore1\sitio-compilado\index.html` (en PowerShell,
+   `Test-Path C:\modscore1\sitio-compilado\index.html` responde `True`).
+2. Compilar las dos capas, una sola vez. La línea es la misma en cmd y en PowerShell; tiene que
+   terminar con `0 Errores`:
 
    ```bat
    cd /d C:\modscore1
-   if exist src\web\dist rmdir /S /Q src\web\dist
-   mkdir src\web\dist
-   tar -xf "%USERPROFILE%\Downloads\sitio-compilado.zip" -C src\web\dist
-   dir src\web\dist\index.html
    dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false
    ```
 
-   En PowerShell:
-
-   ```powershell
-   Set-Location C:\modscore1
-   if (Test-Path src\web\dist) { Remove-Item -Recurse -Force src\web\dist }
-   Expand-Archive -Path "$env:USERPROFILE\Downloads\sitio-compilado.zip" -DestinationPath src\web\dist
-   Test-Path src\web\dist\index.html
-   dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false
-   ```
-
-   El `dir` tiene que encontrar `index.html` (en PowerShell, `True`), y el build terminar con
-   `0 Errores`.
 3. Dos ventanas, en este orden. La línea de `dotnet` es la misma en cmd y en PowerShell; en
    PowerShell se entra a la carpeta con `Set-Location C:\modscore1`.
 
@@ -224,15 +209,18 @@ Channel lo sirve con `--webroot` y no hay ventana 3. Es el camino C de la
 
    ```bat
    cd /d C:\modscore1
-   dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore1\src\web\dist
+   dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore1\sitio-compilado
    ```
 
 4. Abrir <http://localhost:5100/> (no el 5173) y **Sign in**.
 
 `-p:UseAppHost=false` hace que quien ejecuta sea `dotnet.exe` y no un `.exe` propio: sirve en
-cualquier equipo, y también donde la empresa bloquea programas sin firmar. Los cambios en
-`src\web` no se ven hasta descargar un sitio nuevo; si se actualiza el código, se repiten los
-pasos 1 y 2 para que el sitio y las capas sean de la misma versión.
+cualquier equipo, y también donde la empresa bloquea programas sin firmar. Si se actualiza el
+código, se repite el paso 2: el sitio compilado llega con él, de la misma versión.
+
+**Quien cambie `src/web`** tiene que regenerar la carpeta y versionarla en el mismo commit:
+desde `src/web`, `npm run build:sitio-compilado`. Si no, el job SPA del CI falla con
+`sitio-compilado/ no corresponde al codigo de src/web`.
 
 ### La primera carga
 

@@ -18,8 +18,7 @@ on:
       - "data/history/**"
       - "data/*.db*"
       - ".claude/**"
-  # A mano, desde la pestana Actions: vuelve a dejar el sitio compilado cuando el ultimo
-  # artefacto ya vencio y no hubo pushes de codigo.
+  # A mano, desde la pestana Actions: repite la corrida sobre main sin un push nuevo.
   workflow_dispatch:
   pull_request:
     paths-ignore:
@@ -132,17 +131,16 @@ jobs:
             exit 1
           fi
 
-      # El sitio compilado, para levantarlo sin Vite ni Node: la capa Channel lo sirve con
-      # --webroot (camino C de docs/guia-localhost.md). Solo de main, despues de las
-      # comprobaciones de arriba; son archivos estaticos sin secretos ni source maps.
-      - name: Publicar el sitio compilado
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: sitio-compilado
-          path: src/web/dist/
-          if-no-files-found: error
-          retention-days: 90
+      # sitio-compilado/ viaja en el repositorio para levantar la aplicacion sin Vite ni Node
+      # (camino C de docs/guia-localhost.md, ADR 0029). El build es reproducible: tiene que
+      # ser byte a byte el que acaba de salir de este codigo y de este lock, ni desfasado
+      # ni tocado a mano. En PRs tambien, para que no entre a main uno que no coincide.
+      - name: El sitio compilado del repositorio corresponde a este codigo
+        run: |
+          if ! git diff --no-index --stat --exit-code dist ../../sitio-compilado; then
+            echo "::error::sitio-compilado/ no corresponde al codigo de src/web. En src/web: npm run build:sitio-compilado, y commit de la carpeta."
+            exit 1
+          fi
 
   # Punta a punta y accesibilidad (TD-04, TD-05). Levanta las dos capas y la SPA en el
   # runner y las recorre con Chromium: el Edge del equipo de desarrollo no existe aqui.
@@ -230,6 +228,11 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           queries: security-extended
+          # El sitio compilado es el mismo src/web, minificado y con React dentro: CodeQL ya
+          # analiza el codigo fuente, y el job SPA garantiza que el compilado sale de el.
+          config: |
+            paths-ignore:
+              - sitio-compilado
 
       # Solo lo que se despliega: la capa Channel arrastra por referencia los diez proyectos
       # de src/. Sin pruebas ni herramientas, y sin los analizadores de Roslyn, que ya exige

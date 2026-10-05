@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:sitio-compilado": "tsc -b && vite build --outDir ../../sitio-compilado --emptyOutDir",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",

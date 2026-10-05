@@ -28,7 +28,7 @@ Hay **tres caminos**, todos desde el código y con comandos para `cmd` y PowerSh
 |---|---|---|---|
 | Para quién | Cualquiera que va a **usar o modificar** la aplicación | Un equipo de empresa que **bloquea programas no firmados** | Quien solo va a **usar** la aplicación y no puede instalar Node, o donde Vite no arranca |
 | Sistema | Windows, macOS o Linux | Windows, desde `cmd` o PowerShell | Windows, desde `cmd` o PowerShell |
-| Hay que instalar | .NET SDK 10 y Node.js | .NET SDK 10 (Node solo para compilar el sitio una vez, en este equipo o en otro) | **Solo .NET SDK 10**. El sitio se descarga ya compilado de GitHub |
+| Hay que instalar | .NET SDK 10 y Node.js | .NET SDK 10 (Node solo para compilar el sitio una vez, en este equipo o en otro) | **Solo .NET SDK 10**. El sitio ya viene compilado con el código, en `sitio-compilado` |
 | Qué se ejecuta | `dotnet` y `node` (Vite) | **Solo `dotnet.exe`**, firmado por Microsoft | **Solo `dotnet.exe`**. Ni Node ni Vite |
 | Ventanas abiertas | Tres | Dos | Dos |
 | Cuánto toma | 20 minutos la primera vez | 15 minutos la primera vez | 10 minutos la primera vez |
@@ -76,8 +76,9 @@ El repositorio es **privado**. Si tienes acceso:
 git clone https://github.com/camilarodriguez10/modscore1.git
 ```
 
-Si no, pide una copia de la carpeta del proyecto y descomprímela donde quieras. Entra en
-ella:
+O, sin git, en la página del repositorio: **Code → Download ZIP**, y descomprímelo donde
+quieras (la carpeta se llama `modscore1-main`). Sin acceso, pide una copia de la carpeta del
+proyecto. Entra en ella:
 
 ```bash
 cd modscore1
@@ -377,11 +378,14 @@ compilar mientras no cambie el código.
 
 ## Camino C · sin Vite ni Node (Windows, `cmd` o PowerShell)
 
-Para **usar** la aplicación sin instalar Node y sin ejecutar Vite. El sitio son archivos
-HTML, JavaScript y CSS que no se ejecutan: GitHub Actions los compila en cada cambio de
-código de `main` y los deja para descargar como `sitio-compilado`. En el equipo solo corre
+Para **usar** la aplicación sin instalar Node, sin ejecutar Vite y sin bajar nada del registro
+de npm. El sitio son archivos HTML, JavaScript y CSS que no se ejecutan, y **viajan con el
+código** en la carpeta `sitio-compilado`: el ZIP de GitHub ya los trae. En el equipo solo corre
 `dotnet.exe`, igual que en el camino B, así que también sirve donde la empresa bloquea los
-`.exe` propios.
+`.exe` propios o los paquetes nuevos de npm.
+
+El CI comprueba en cada cambio que `sitio-compilado` es exactamente el build del código de
+`src\web` de ese mismo commit, así que sitio y capas siempre son de la misma versión.
 
 Lo que no se puede: ver al vuelo un cambio en `src\web`. Para tocar la interfaz, camino A.
 
@@ -389,49 +393,25 @@ Lo que no se puede: ver al vuelo un cambio en `src\web`. Para tocar la interfaz,
 
 Son los pasos [1](#paso-1--comprueba-que-dotnet-sí-corre) y
 [2](#paso-2--consigue-el-código-1) del camino B: `dotnet --list-sdks` tiene que listar una
-versión `10.`, y el código queda en `C:\modscore1`. Si ya tenías una copia, actualízala con
-`git pull` para que el sitio que descargues sea de la misma versión que las capas.
+versión `10.`, y el código queda en `C:\modscore1`. Sirve igual el ZIP de GitHub
+(**Code → Download ZIP**) que un `git clone`.
 
-### Paso 2 · descarga el sitio ya compilado
-
-Hace falta una cuenta de GitHub con acceso al repositorio, que es privado.
-
-1. Abre <https://github.com/camilarodriguez10/modscore1/actions/workflows/ci.yml?query=branch%3Amain>
-   e inicia sesión si te lo pide.
-2. Entra en la corrida **más reciente** de la lista. Sirve aunque tenga una cruz roja por otro
-   job, siempre que al final de la página, en **Artifacts**, aparezca `sitio-compilado`.
-3. Pulsa **sitio-compilado**. El navegador descarga `sitio-compilado.zip`.
-
-Después, desde la carpeta del proyecto, bórralo de una versión anterior si había y
-descomprímelo en `src\web\dist`.
+### Paso 2 · comprueba que el sitio vino con el código
 
 En `cmd`:
 
 ```bat
-cd /d C:\modscore1
-if exist src\web\dist rmdir /S /Q src\web\dist
-mkdir src\web\dist
-tar -xf "%USERPROFILE%\Downloads\sitio-compilado.zip" -C src\web\dist
-dir src\web\dist\index.html
+dir C:\modscore1\sitio-compilado\index.html
 ```
 
 En PowerShell:
 
 ```powershell
-Set-Location C:\modscore1
-if (Test-Path src\web\dist) { Remove-Item -Recurse -Force src\web\dist }
-Expand-Archive -Path "$env:USERPROFILE\Downloads\sitio-compilado.zip" -DestinationPath src\web\dist
-Test-Path src\web\dist\index.html
+Test-Path C:\modscore1\sitio-compilado\index.html
 ```
 
-El último comando tiene que encontrar `index.html` (en PowerShell, responder `True`). Si el
-navegador guardó el archivo en otra carpeta, cambia la ruta del `.zip`. `src\web\dist` solo
-tiene el sitio compilado y git la ignora: borrarla no toca el código.
-
-> **Si en Artifacts no aparece `sitio-compilado`, o dice que venció** (duran 90 días), quien
-> tenga permiso de escritura en el repositorio puede generarlo de nuevo: en la misma página,
-> **Run workflow** sobre `main`. A los pocos minutos aparece en la corrida nueva. Sin acceso
-> a GitHub, pide el `.zip` o la carpeta `dist` a quien lo tenga: se usan igual.
+Tiene que encontrar `index.html` (en PowerShell, responder `True`). Si no existe la carpeta,
+el código es anterior al 2026-10-05: descarga de nuevo el ZIP de `main`.
 
 ### Paso 3 · compila y levanta las dos capas
 
@@ -453,11 +433,11 @@ cd /d C:\modscore1
 dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\local
 ```
 
-**Ventana 2 — capa Channel, que sirve el sitio descargado:**
+**Ventana 2 — capa Channel, que sirve el sitio compilado:**
 
 ```bat
 cd /d C:\modscore1
-dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore1\src\web\dist
+dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore1\sitio-compilado
 ```
 
 Qué hace cada parte está en el [paso 5 del camino B](#paso-5--levanta-las-dos-capas-sin-volver-a-compilar);
@@ -470,8 +450,8 @@ explica en [Cargar archivos](#cargar-archivos), y haz las cinco comprobaciones d
 [paso 5 del camino A](#paso-5--entra-y-comprueba) con el puerto 5100 en lugar de 5173.
 
 Para detenerlo, **Ctrl + C** en cada ventana; la próxima vez basta con las dos ventanas del
-paso 3. Si actualizas el código con `git pull`, repite los pasos 2 y 3: el sitio y las capas
-tienen que ser de la misma versión.
+paso 3. Si actualizas el código (`git pull` o un ZIP nuevo), repite la compilación del paso 3:
+el sitio compilado llega con el código, de la misma versión.
 
 ---
 
@@ -601,7 +581,7 @@ permite ver.
 | `Unhandled exception ... 'AllowedHosts' debe listar los hosts del servicio (entorno 'Production')`, a veces con `DeploymentGuards.cs:line 32` y `Program.cs:line 214` | La capa arrancó como producción: no recibió el entorno de desarrollo. Lo más común es haber pegado un bloque de `cmd` con `set "..."` en **PowerShell** (la Terminal de Windows 11 abre PowerShell): ahí `set` crea una variable de PowerShell que el programa no ve, sin dar error | Usa los comandos con argumentos: al final de la línea, `--environment Development --urls http://localhost:5101` (después de `--` si es un `dotnet run`). Funcionan igual en cmd y en PowerShell. No hace falta tocar `AllowedHosts` |
 | `warn: ... Failed to determine the https port for redirect` | Solo un aviso: en local no hay HTTPS al que redirigir | Nada: la capa está funcionando. Si el sitio falla, la causa es otra; revisa primero que la System responda en <http://localhost:5101/health> |
 | `Now listening on: http://localhost:5000` | Faltó el argumento `--urls` | Detén con Ctrl + C y vuelve a arrancar con `--urls http://localhost:5101` (o `5100` en la Channel) al final de la línea |
-| Caminos B y C: `http://localhost:5100` responde 404 o una página vacía | `--webroot` no apunta a una carpeta con `index.html` | `dir C:\modscore1\src\web\dist\index.html` tiene que encontrar el archivo; si no, repite el paso 3 del camino B (o el paso 2 del C) y reinicia la ventana 2 |
+| Caminos B y C: `http://localhost:5100` responde 404 o una página vacía | `--webroot` no apunta a una carpeta con `index.html` | Camino B: `dir C:\modscore1\src\web\dist\index.html` tiene que encontrar el archivo; si no, repite el paso 3 y reinicia la ventana 2. Camino C: `dir C:\modscore1\sitio-compilado\index.html`, y que `--webroot` diga esa misma ruta |
 | `Failed to bind to address ... address already in use` | Otro programa ocupa 5100, 5101 o 5173 | Cierra lo que use el puerto (ver fila siguiente), o cambia el número en `--urls` |
 | Necesitas saber **quién** ocupa un puerto | — | Windows: `netstat -ano \| findstr :5100` y luego `tasklist \| findstr <PID>`. macOS/Linux: `lsof -i :5100` |
 | El sitio carga pero todo sale vacío o con error | La capa Channel está arriba, la System no | Mira la terminal 1: tiene que decir `Now listening on: http://localhost:5101` |
@@ -617,8 +597,7 @@ permite ver.
 | El `npm ci` termina con `ECONNRESET` o `ETIMEDOUT` | La red de la empresa no deja llegar al registro de npm | Pide a soporte el proxy o el registro interno de npm. Mientras tanto, sigue el **camino C**, que no usa npm |
 | Vite avisa que la versión de Node no es compatible, o `crypto.hash is not a function` | Node anterior a 22.12 (o a 20.19) | Instala Node 22.12 o superior y repite el paso 3; o sigue el **camino C**, sin Node |
 | La ventana de Vite nunca dice `ready`, o `src\web\node_modules\.bin\esbuild.cmd --version` se queda colgado o dice «acceso denegado» | La política de la empresa bloquea el `esbuild.exe` que Vite ejecuta por dentro, o el antivirus revisa uno a uno los archivos de `node_modules` | Sigue el **camino C**: el sitio llega compilado y no se ejecuta nada de Node. Si quieres el camino A, pide a soporte una exclusión para la carpeta del proyecto |
-| Camino C: en **Artifacts** no aparece `sitio-compilado`, o dice que venció | Los artefactos duran 90 días, y solo los deja una corrida de `main` con cambios de código | **Run workflow** sobre `main` en la página del workflow (hace falta permiso de escritura), o pide el `.zip` a quien lo tenga |
-| Camino C: `tar: Error opening archive` o `Expand-Archive` dice que no encuentra la ruta | El `.zip` no está en `Descargas` o se llama distinto (por ejemplo, `sitio-compilado (1).zip`) | Busca el archivo y cambia la ruta en el comando |
+| Camino C: no existe la carpeta `sitio-compilado` | El código es anterior al 2026-10-05, cuando el sitio compilado empezó a viajar con él | Descarga de nuevo el ZIP de `main` (o `git pull`) |
 | `dotnet test` falla con «el archivo está siendo usado por otro proceso» | La aplicación está corriendo | Detén todas las ventanas antes de compilar o probar |
 | Todo iba bien y dejó de arrancar tras mover la carpeta | Ruta dentro de OneDrive o demasiado larga | Muévela a algo como `C:\modscore` |
 | En Data, el EAI Master queda con `0` filas y todas rechazadas, y la carga se descarta | Desde el 2026-10-02 solo pasa si a todas les falta el EAI; un valor ilegible en otro campo ya no rechaza la fila | Lee **Why rows were rejected**; si el EAI viene en otra columna, elígela con **Review column mapping** |
@@ -631,7 +610,6 @@ permite ver.
 2. Borra la carpeta donde clonaste el repositorio.
 3. Lo que hayas cargado se va con esa carpeta, en `C:\modscore1\data\local` (si usaste otra
    ruta, bórrala aparte).
-4. En el camino C, borra también `sitio-compilado.zip` de `Descargas`.
 
 La aplicación no instala servicios ni toca el registro de Windows. Lo único instalado son el
 .NET SDK y, en los caminos A y B, Node, que se desinstalan como cualquier programa.

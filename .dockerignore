@@ -20,3 +20,5 @@ docs/
 *.JPG
 *.jpg
 *.md
+# Las imagenes compilan la SPA desde el codigo; la copia versionada es para el camino C.
+sitio-compilado/

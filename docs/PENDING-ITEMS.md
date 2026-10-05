@@ -1270,7 +1270,7 @@ and calculation.
 - **Context:**
   - Remote `origin` = `https://github.com/camilarodriguez10/modscore1.git`, a **private** repository (SEC-21).
   - `main` holds the baseline, phase 13 and the full backup of every created file except captures and images.
-  - Every push is still confirmed with the repository owner before it happens.
+  - Since 2026-10-05, every code change is pushed to `main` without asking, at the repository owner's request.
 - **Work:**
   1. Branch protection on `main`: required reviews, required status checks from the CI gates, no force push. Signed commits per plan §7.2 if the team uses them.
   2. Enable Renovate and secret scanning.

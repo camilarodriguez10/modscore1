@@ -46,7 +46,7 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | CI | GitHub Actions en verde desde la corrida #5 (`55cf36f`, 2026-09-15), que pasó los 7 jobs: backend, SPA, gitleaks, OSV, CodeQL C# y JS/TS, e imágenes con Trivy v0.74.0 y Checkov. CodeQL sin hallazgos altos. Tras acelerarlo, la corrida #6 (`148c6ce`) tardó 7 min 3 s en lugar de 9 min 54 s; CodeQL C# sigue marcando el total (6 min 58 s). Antes hubo que corregir el lint, CodeQL en repositorio privado (`upload: never`, `actions: read`), la versión de Trivy y el UID de los pods. Para acortarlo: gitleaks y OSV están en `seguridad.yml` y corren en cada push; `ci.yml` se salta los cambios que solo tocan documentación; CodeQL C# compila solo `src/` sin los analizadores de Roslyn; hay caché de NuGet, y el job de imágenes no espera a los demás |
 | ASVS L2 | 106 cumple · 11 parciales · 3 pendientes · 10 IdP o N/A. Los parciales dependen de un entorno real |
 | Hallazgos | Fase 08: 23 (19 cerrados, H-16 parcial, H-17/H-20/H-21 pendientes). Revisión 09–13: 7 (6 cerrados, 1 aceptado) |
-| Git | Repositorio **privado** <https://github.com/camilarodriguez10/modscore1>, rama `main`. Guarda todo lo creado —el estado local de `data/`, los scripts de las sesiones (`tools/sesiones/`) y la copia del plan (`docs/plan/`)— salvo las capturas del BRD y las imágenes. Los commits usan el correo de la cuenta. Cada push se confirma antes |
+| Git | Repositorio **privado** <https://github.com/camilarodriguez10/modscore1>, rama `main`. Guarda todo lo creado —el estado local de `data/`, los scripts de las sesiones (`tools/sesiones/`) y la copia del plan (`docs/plan/`)— salvo las capturas del BRD y las imágenes. Los commits usan el correo de la cuenta. Desde el 2026-10-05, cada cambio de código se sube a `main` sin preguntar, por pedido de la dueña del repositorio |
 | Memo de decisiones | <https://claude.ai/artifact/Gp7c9gHv5kTSdGETPfeCi5> (versión 2, del 2026-09-18, con la pregunta 9 respondida): las once reglas de scoring que el negocio tiene que confirmar, con evidencia y opciones. Fuente de verdad: [docs/scoring-decisions.md](docs/scoring-decisions.md); copia publicada en `docs/plan/scoring-decisions.html` |
 | Artefacto del plan | <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> (versión 24, del 2026-10-02, con la lectura tolerante de los exports reales; copia en `docs/plan/modscore-plan.html`, que hay que reemplazar al republicar; enlace anterior del mismo artefacto: <https://claude.ai/code/artifact/25507d1f-40a6-4e74-8c43-0337dbb63358>) |
 | Paquete portable | **Retirado el 2026-09-27** por decisión: la aplicación se levanta desde el código, con comandos para cmd y PowerShell ([README](README.md), «Levantar el stack», y la [guía](docs/guia-localhost.md)). Se borraron `artifacts/*.zip` y `tools/portable/`; la historia de git conserva los `.zip` anteriores (unos 93 MB cada uno). Para un equipo que no deja ejecutar `.exe` propios, el camino B de la guía sirve el sitio compilado (`src\web\dist`) desde la Channel con solo `dotnet.exe` |
@@ -644,7 +644,8 @@ partido. Para esas ediciones, el editor o `chr(92)`.
   tabla sin números detrás.
 - El cierre de cada fase es: pruebas y escaneo en verde, verificación en vivo, PLAN y README
   al día, artefacto republicado y decir qué no se pudo correr.
-- El push a GitHub publica fuera del equipo: se confirma antes, siempre.
+- Cada cambio de código se sube a GitHub (`main`) al terminarlo, sin preguntar: lo pidió la
+  dueña del repositorio el 2026-10-05. Lo demás que publique fuera del equipo se confirma antes.
 
 ---
 
@@ -691,5 +692,6 @@ Preferencias de quien lleva el proyecto:
 - conversación y documentación en español, sitio en inglés;
 - nunca librerías con vulnerabilidades;
 - arquitectura de microservicios con la seguridad al extremo;
-- confirmar antes de publicar cualquier cosa fuera del equipo, incluido cada push;
+- subir a GitHub cada cambio de código sin preguntar (desde el 2026-10-05); confirmar antes de
+  publicar cualquier otra cosa fuera del equipo;
 - en el repositorio va todo lo creado, salvo las capturas del BRD y las imágenes.

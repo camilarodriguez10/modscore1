@@ -41,7 +41,7 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | Las seis preguntas (pantalla 09) | Entregada el 2026-09-16 (PLAN §8.9, [ADR 0023](docs/adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md)). Salud, prioridades, complejidad, riesgo, obsolescencia y resiliencia en `/insights`, con los mismos filtros. Ningún dato nuevo hizo falta; lo que mejoraría el esfuerzo y el valor de negocio está en PENDING-ITEMS como DQ-01 a DQ-07 |
 | Dashboard ejecutivo | D1, D2 y D3 entregadas el 2026-09-18 (PLAN §8.10, [ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md), [ADR 0025](docs/adr/0025-las-definiciones-viajan-con-las-reglas.md)). La página de inicio (`/`): *Portfolio Health & Risk Intelligence*, con cinco indicadores, seis paneles y un detalle común; el inventario está en `/portfolio`. Currency Score = `Raw_Tech_Score` de CMT. Las 37 definiciones de las seis preguntas viajan con las reglas y se editan en *Rules → Portfolio analytics*; cada panel explica su cálculo y *Definitions* es el diccionario. Cinco filtros nuevos en todas las pantallas. Falta D4 (fuentes nuevas) |
 | Pantalla Code | C1 entregada el 2026-09-26 (PLAN §8.11, [ADR 0026](docs/adr/0026-el-analisis-de-codigo-llega-de-github-enterprise.md)). `/code`: componentes de cada repositorio contra su fin de vida (endoflife.date, foto versionada con 22 productos y 273 ciclos), bibliotecas con hallazgos, discrepancias con el Currency Score de CMT e índice de riesgo de código con detalle por aplicación. 15 parámetros nuevos (área `code`) editables desde el portal. **Repositorios de demostración** hasta integrar GitHub Enterprise (C2, GH-01 a GH-09) |
-| Pruebas | **937 .NET** (319 motor · 263 contratos · 355 API) · **74 unitarias** de la SPA · **56 de punta a punta** con Playwright (29 de flujo y 27 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-10-02 |
+| Pruebas | **940 .NET** (319 motor · 265 contratos · 356 API) · **74 unitarias** de la SPA · **56 de punta a punta** con Playwright (29 de flujo y 27 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-10-02 |
 | Dependencias | Cero paquetes vulnerables (`dotnet list package --vulnerable`), `npm audit` limpio |
 | CI | GitHub Actions en verde desde la corrida #5 (`55cf36f`, 2026-09-15), que pasó los 7 jobs: backend, SPA, gitleaks, OSV, CodeQL C# y JS/TS, e imágenes con Trivy v0.74.0 y Checkov. CodeQL sin hallazgos altos. Tras acelerarlo, la corrida #6 (`148c6ce`) tardó 7 min 3 s en lugar de 9 min 54 s; CodeQL C# sigue marcando el total (6 min 58 s). Antes hubo que corregir el lint, CodeQL en repositorio privado (`upload: never`, `actions: read`), la versión de Trivy y el UID de los pods. Para acortarlo: gitleaks y OSV están en `seguridad.yml` y corren en cada push; `ci.yml` se salta los cambios que solo tocan documentación; CodeQL C# compila solo `src/` sin los analizadores de Roslyn; hay caché de NuGet, y el job de imágenes no espera a los demás |
 | ASVS L2 | 106 cumple · 11 parciales · 3 pendientes · 10 IdP o N/A. Los parciales dependen de un entorno real |
@@ -383,6 +383,18 @@ Del 2026-09-28, por la primera carga con datos reales: el EAI Master quedó en 0
   una decisión de un reconocimiento.
 - **Números con los dos separadores:** el último es el decimal (`1.234,5` = 1234,5). Antes se
   quitaban las comas y quedaba 1,2345 sin aviso.
+
+**Cargas grandes (2026-10-05, [ADR 0030](docs/adr/0030-una-carga-grande-cabe-en-el-pod.md)).**
+El export real de SCA pesa 73 MB y el tope era 64 MB por archivo. Antes de subirlo se midió:
+con la System limitada como el pod (`-e DOTNET_GCHeapHardLimit=30000000 -e DOTNET_GCHeapCount=1`
+en el `dotnet run`), un SCA sintético de 350 mil filas terminaba en `OutOfMemoryException`.
+`CsvSourceReader.Row.Values` es ahora un arreglo sobre un índice de columnas compartido
+(`RowValues`), con `CacheFields` de CsvHelper; con eso entran 350 mil filas (pico de 675 MB) y
+490 mil (815 MB). Tope nuevo: **128 MB por archivo** en `PublishLimits` y `ChannelLimits`
+(una prueba exige que coincidan); 256 MB por carga y 500 mil filas, igual. Para medir de nuevo:
+generar el SCA replicando las filas del dummy, servirlo junto al sitio con `--webroot` y subirlo
+con `fetch` desde la página, con el token CSRF de la cookie; el pico, con `Get-Process`. La
+segunda lectura al publicar queda en TD-17.
 
 **Lectura tolerante (2026-10-02, [ADR 0028](docs/adr/0028-la-lectura-tolera-los-exports-reales.md)).**
 Con el encabezado real del EAI Master, exportado de Power BI:

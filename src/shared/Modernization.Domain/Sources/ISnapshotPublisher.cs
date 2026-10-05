@@ -141,8 +141,12 @@ public sealed record RejectionReason(Notice Reason, int Rows, IReadOnlyList<int>
 /// </summary>
 public static class PublishLimits
 {
-    /// <summary>Maximo por archivo. Un CSV mayor no es una carga, es un incidente.</summary>
-    public const long MaxFileBytes = 64L * 1024 * 1024;
+    /// <summary>
+    /// Maximo por archivo. Un export real de SCA pesa 73 MB; con el heap de un pod de 1 GiB
+    /// se midieron 490 mil filas (98 MB) sin problema, y el tope de filas del lector acota el
+    /// resto (ADR 0030). Un CSV mayor no es una carga, es un incidente.
+    /// </summary>
+    public const long MaxFileBytes = 128L * 1024 * 1024;
 
     /// <summary>Maximo por carga completa.</summary>
     public const long MaxTotalBytes = 256L * 1024 * 1024;

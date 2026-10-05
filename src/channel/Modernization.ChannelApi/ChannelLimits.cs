@@ -11,8 +11,8 @@ public static class ChannelLimits
     /// <summary>Cuerpo maximo de cualquier peticion salvo la carga.</summary>
     public const long DefaultMaxRequestBodyBytes = 1024 * 1024;
 
-    /// <summary>Debe coincidir con el tope por archivo de la capa System.</summary>
-    public const long UploadMaxFileBytes = 64L * 1024 * 1024;
+    /// <summary>Debe coincidir con el tope por archivo de la capa System (lo exige una prueba).</summary>
+    public const long UploadMaxFileBytes = 128L * 1024 * 1024;
 
     /// <summary>Debe coincidir con el tope por carga de la capa System.</summary>
     public const long UploadMaxTotalBytes = 256L * 1024 * 1024;

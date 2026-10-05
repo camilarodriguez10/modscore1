@@ -288,4 +288,17 @@ public sealed class UploadSecurityTests(LayeredApiFixture fixture) : IClassFixtu
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    /// <summary>
+    /// Si las capas discrepan, el sitio deja pasar un archivo que la System rechaza (o
+    /// marca como demasiado grande uno que entraría). 128 MB por archivo desde el
+    /// 2026-10-05: un export real de SCA pesa 73 MB (ADR 0030).
+    /// </summary>
+    [Fact]
+    public void TheChannelAndTheSystemShareTheUploadLimits()
+    {
+        Assert.Equal(128L * 1024 * 1024, Modernization.Domain.Sources.PublishLimits.MaxFileBytes);
+        Assert.Equal(Modernization.Domain.Sources.PublishLimits.MaxFileBytes, Modernization.ChannelApi.ChannelLimits.UploadMaxFileBytes);
+        Assert.Equal(Modernization.Domain.Sources.PublishLimits.MaxTotalBytes, Modernization.ChannelApi.ChannelLimits.UploadMaxTotalBytes);
+    }
 }

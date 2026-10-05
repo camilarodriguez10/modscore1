@@ -221,7 +221,7 @@ La autenticación de personas se delega en el IdP corporativo por OIDC.
 
 | Req. | Requisito | Estado | Evidencia |
 |---|---|---|---|
-| 12.1.1 | Archivos grandes que llenen el almacenamiento | Cumple | 256 MB por carga, 5 cada 10 minutos, una a la vez, staging limpiado |
+| 12.1.1 | Archivos grandes que llenen el almacenamiento | Cumple | 128 MB por archivo y 256 MB por carga, 5 cada 10 minutos, una a la vez, staging limpiado; la memoria de una carga grande se midió contra el pod (ADR 0030) |
 | 12.1.2 | Archivos comprimidos | N/A | Solo CSV |
 | 12.1.3 | Cuota por usuario | Cumple | Rate limit de cargas por usuario |
 | 12.2.1 | Tipo de archivo verificado | Cumple | Extensión, content-type y esquema · `OnlyCsvExtensionsAreAccepted` |

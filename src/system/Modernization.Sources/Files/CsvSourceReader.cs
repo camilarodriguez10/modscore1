@@ -41,11 +41,13 @@ public sealed class CsvSourceReader
     private const int MaxEchoedHeaderLength = 64;
 
     private readonly SourceSchema _schema;
+    private readonly ColumnIndex _columns;
 
     public CsvSourceReader(SourceSchema schema)
     {
         ArgumentNullException.ThrowIfNull(schema);
         _schema = schema;
+        _columns = new ColumnIndex(schema.Columns);
     }
 
     /// <summary>Fila leida como diccionario de columna canonica a valor convertido.</summary>
@@ -62,6 +64,66 @@ public sealed class CsvSourceReader
         public bool? Bool(string column) => Values.GetValueOrDefault(column) as bool?;
 
         public DateTimeOffset? Date(string column) => Values.GetValueOrDefault(column) as DateTimeOffset?;
+    }
+
+    /// <summary>Posición de cada columna canónica, una sola vez por archivo.</summary>
+    private sealed class ColumnIndex
+    {
+        public ColumnIndex(IReadOnlyList<ColumnSchema> columns)
+        {
+            Names = [.. columns.Select(c => c.Name)];
+            Positions = new Dictionary<string, int>(Names.Length, StringComparer.Ordinal);
+
+            for (var i = 0; i < Names.Length; i++)
+            {
+                Positions[Names[i]] = i;
+            }
+        }
+
+        public string[] Names { get; }
+
+        public Dictionary<string, int> Positions { get; }
+    }
+
+    /// <summary>
+    /// Los valores de una fila: un arreglo por fila sobre el índice de columnas del archivo.
+    /// Un diccionario por fila era la mayor parte de la memoria de una carga grande: con 350
+    /// mil filas de SCA y el heap de un pod de 1 GiB, la carga terminaba en OutOfMemory.
+    /// </summary>
+    private sealed class RowValues(ColumnIndex columns, object?[] values) : IReadOnlyDictionary<string, object?>
+    {
+        public object? this[string key]
+            => TryGetValue(key, out var value) ? value : throw new KeyNotFoundException(key);
+
+        public IEnumerable<string> Keys => columns.Names;
+
+        public IEnumerable<object?> Values => values;
+
+        public int Count => values.Length;
+
+        public bool ContainsKey(string key) => columns.Positions.ContainsKey(key);
+
+        public bool TryGetValue(string key, out object? value)
+        {
+            if (columns.Positions.TryGetValue(key, out var position))
+            {
+                value = values[position];
+                return true;
+            }
+
+            value = null;
+            return false;
+        }
+
+        public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
+        {
+            for (var i = 0; i < values.Length; i++)
+            {
+                yield return new KeyValuePair<string, object?>(columns.Names[i], values[i]);
+            }
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
 
     /// <summary>Cuántos problemas distintos se devuelven por archivo.</summary>
@@ -155,6 +217,11 @@ public sealed class CsvSourceReader
         BadDataFound = null,
         HasHeaderRecord = true,
         MaxFieldSize = MaxFieldLength,
+
+        // Un valor que se repite fila tras fila —la aplicación, la severidad, la librería—
+        // se guarda una sola vez en lugar de una copia por fila. La caché de CsvHelper es de
+        // tamaño fijo: un archivo de valores únicos no la hace crecer.
+        CacheFields = true,
     };
 
     private ReadOutcome ReadCore(TextReader reader)
@@ -293,15 +360,17 @@ public sealed class CsvSourceReader
         ReasonTally reasons,
         ReasonTally ignored)
     {
-        var values = new Dictionary<string, object?>(mapping.Count, StringComparer.Ordinal);
-        var errors = new List<Notice>();
-        var unreadable = new List<Notice>();
+        // Una columna que el archivo no trae queda en null, igual que un valor vacío.
+        var values = new object?[_columns.Names.Length];
+        List<Notice>? errors = null;
+        List<Notice>? unreadable = null;
 
-        foreach (var column in _schema.Columns)
+        for (var position = 0; position < values.Length; position++)
         {
+            var column = _schema.Columns[position];
+
             if (!mapping.TryGetValue(column.Name, out var index))
             {
-                values[column.Name] = null;
                 continue;
             }
 
@@ -310,22 +379,23 @@ public sealed class CsvSourceReader
 
             if (outcome.Ok)
             {
-                values[column.Name] = outcome.Value;
+                values[position] = outcome.Value;
             }
             else if (column.Required)
             {
-                errors.Add(outcome.Error!);
+                (errors ??= []).Add(outcome.Error!);
             }
             else
             {
                 // Opcional: queda sin dato, como si la celda viniera vacía, y se informa.
-                values[column.Name] = null;
-                unreadable.Add(outcome.Error!);
+                (unreadable ??= []).Add(outcome.Error!);
             }
         }
 
-        var key = values.GetValueOrDefault(_schema.KeyColumn) as string
-            ?? values.GetValueOrDefault(_schema.KeyColumn)?.ToString();
+        var keyValue = _columns.Positions.TryGetValue(_schema.KeyColumn, out var keyPosition)
+            ? values[keyPosition]
+            : null;
+        var key = keyValue as string ?? keyValue?.ToString();
 
         if (string.IsNullOrWhiteSpace(key))
         {
@@ -335,7 +405,7 @@ public sealed class CsvSourceReader
             return (null, new SourceRejection(rowNumber, missingKey, null));
         }
 
-        if (errors.Count > 0)
+        if (errors is { Count: > 0 })
         {
             foreach (var error in errors)
             {
@@ -350,12 +420,12 @@ public sealed class CsvSourceReader
         }
 
         // La fila entra; lo ilegible de sus campos opcionales queda informado aparte.
-        foreach (var value in unreadable)
+        foreach (var value in unreadable ?? [])
         {
             ignored.Add(value, rowNumber);
         }
 
-        return (new Row(rowNumber, values), null);
+        return (new Row(rowNumber, new RowValues(_columns, values)), null);
     }
 
     private static string Bounded(string header)

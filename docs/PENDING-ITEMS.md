@@ -61,7 +61,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 - **Reading tolerates real exports** (2026-10-02, ADR 0028), after the organization shared its EAI master header, exported from Power BI ("Suma de Kenna_Score", both "MFA" and "Does this Application Utilize MFA?", a Year/Quarter/Month/Day hierarchy, no APP_ID). An unreadable value in an **optional** field now leaves that field without data and keeps the row, reported as *Values loaded as empty*; before, it rejected the whole row, which in the EAI master is the whole application. No-value markers (`N/A`, `-`, `(En blanco)`…) read as empty; numbers in any regional format (an integer accepts zero decimals: "650,00" is 650, before it silently became 65000); `VERDADERO`/`FALSO`; identifiers normalized ("14,381" → "14381"); the exact field name wins over an alias and summary prefixes ("Suma de", "Sum of", "Promedio de"…) are recognized; a repeated EAI keeps the last row and reports the others; without APP_ID in the master, tech debt is linked by the EAI code, because the organization confirmed that its APP_ID is the same code as the EAI.
 - **Fixed on 2026-09-18:** the Insights risk index counted Kenna **below 50** as weak vulnerability management. Kenna runs from 0 to 1000 and higher is worse, so it counted the best applications. It now counts Kenna ≥ 670 (the BRD's Critical/High band), and the threshold is a parameter.
 - **Tests**:
-  - 937 .NET tests: 319 engine, 263 contracts, 355 API.
+  - 940 .NET tests: 319 engine, 265 contracts, 356 API.
   - 74 SPA unit tests.
   - 56 end-to-end scenarios: 29 flows and 27 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
   - Zero vulnerable packages, and `npm audit` is clean.
@@ -157,6 +157,7 @@ it is what the platform does today unless the row says otherwise.
 | TD-14 | Size of the rules editor screen | Maintainability | P3 | Development | Open |
 | TD-15 | Warm-up service and caches with many versions | Performance | P3 | Development | Open |
 | TD-16 | Column mapping of any upload in the lineage, and a first-time review | Product / data | P3 | Development | Open |
+| TD-17 | An upload reads each file twice | Performance | P3 | Development | Open |
 | PF-01 | Save and share what-if scenarios | Product | P3 | Product | Open |
 | PF-02 | Override rule UI and audit | Product | P2 | Product | Blocked by SR-04 |
 | PF-03 | Currency Score KPI | Product | P3 | Product | Done (2026-09-18) |
@@ -597,7 +598,7 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
 - **Priority:** P3 · **Owner:** development + platform · **Status:** Deferred to the last phase
 - **Context:**
   - Uploads are CSV, parsed as text, never served back or executed.
-  - Size limits: 64 MB per file, 256 MB total.
+  - Size limits: 128 MB per file (64 MB until 2026-10-05, ADR 0030), 256 MB total, 500,000 rows per file.
   - Files are recognized by header and written under canonical names ([ADR 0010](adr/0010-la-carga-de-archivos-como-superficie-de-ataque.md), [ADR 0015](adr/0015-el-archivo-se-reconoce-por-su-encabezado.md)).
   - Risk is low.
 - **Work:** scan in staging before publishing (for example with a cluster antivirus service or Defender for Storage).
@@ -971,6 +972,16 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
   - The organization's EAI master export has no `APP_ID`; its APP_ID is the same code as the EAI (confirmed on 2026-10-02), so tech debt is linked by the EAI code. If that ever changes, the export must bring `APP_ID` again, which takes precedence.
 - **Acceptance criteria:** the lineage shows the recorded column of each field for the selected upload, with the same wording as the Mapping tab. **Effort:** S.
 
+### TD-17 — An upload reads each file twice
+
+- **Priority:** P3 · **Owner:** development · **Status:** Open
+- **Context (2026-10-05, ADR 0030):**
+  - The organization's Veracode SCA export weighs 73 MB. The per-file limit went from 64 MB to 128 MB after measuring it against the System pod's memory (1 GiB, a 768 MiB heap).
+  - With the old reader, a 350,000-row synthetic SCA file ran out of memory in that heap. Rows are now compact (an array over a shared column index, repeated strings cached): 350,000 rows peak at 675 MB and 490,000 rows at 815 MB.
+  - An upload still reads every file twice: once to validate it, and again when publishing, to assemble the new version from what was stored. Both adapters do it.
+  - The margin with 490,000 rows is about 200 MB.
+- **Acceptance criteria:** publishing assembles the version from the validated read, or reads each file as a stream that keeps only what the snapshot needs (counts per EAI for SCA); a 128 MB SCA file stays under 512 MB in the same heap. **Effort:** M.
+
 ---
 
 ## 5. Product follow-ups
@@ -1325,8 +1336,8 @@ Numbers are for comparing changes on the same machine, not for sizing production
 | Suite | Count | Command |
 |---|---|---|
 | Engine (golden cases, mapping table, what-if, roadmap, rules editor, comparison, dashboard, insights, end-of-life catalog, code analyzer) | 319 | `dotnet test tests/Modernization.Scoring.Engine.Tests` |
-| Source contracts (Dummy, File, Database; rules stores; sample repositories; dummy timeline; column mapping; rejection reasons; regional values and Power BI exports) | 263 | `dotnet test tests/Modernization.Sources.ContractTests` |
-| API end-to-end through both layers and security | 355 | `dotnet test tests/Modernization.Api.Tests` |
+| Source contracts (Dummy, File, Database; rules stores; sample repositories; dummy timeline; column mapping; rejection reasons; regional values and Power BI exports; memory per row) | 265 | `dotnet test tests/Modernization.Sources.ContractTests` |
+| API end-to-end through both layers and security | 356 | `dotnet test tests/Modernization.Api.Tests` |
 | SPA unit (Vitest) | 74 | `npm --prefix src/web test` |
 | SPA end-to-end (Playwright, Edge locally, Chromium in CI) | 29 | `npm --prefix src/web run test:e2e` |
 | SPA accessibility (axe, the daily screens, the Code detail and the column mapping, in light and dark) | 27 | Same command; `e2e/accessibility.spec.ts` |

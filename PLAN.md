@@ -1209,6 +1209,13 @@ un EAI repetido deja la última fila; y sin APP_ID en el maestro, la deuda técn
 EAI, que en la organización es el mismo código. Verificado en vivo: el export de ejemplo con ese formato carga 250
 aplicaciones sin rechazos y la 14381 sigue en 79,67.
 
+**Ampliado el 2026-10-05 para el export real de SCA**, de 73 MB
+([ADR 0030](docs/adr/0030-una-carga-grande-cabe-en-el-pod.md)): el tope pasa de 64 a **128 MB
+por archivo**. Antes se midió contra la memoria del pod de la System (1 GiB): con la lectura
+anterior, un SCA de 350 mil filas la agotaba. Cada fila es ahora un arreglo sobre un índice de
+columnas compartido, con los textos repetidos una sola vez, y entran 490 mil filas (98 MB). La
+doble lectura de cada archivo al publicar queda en TD-17.
+
 ## 8bis. Ampliación solicitada — fases 10 a 12
 
 Siete puntos pedidos el 12 de septiembre de 2026, una vez entregadas las fases 00

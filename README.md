@@ -368,7 +368,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-943 pruebas .NET: 319 del motor, 268 de contratos y 356 de API. Las dos que importan más
+945 pruebas .NET: 319 del motor, 270 de contratos y 356 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **EAI 14381 = 79,67:** ejemplo trabajado del BRD, derivado desde datos crudos por el
@@ -379,7 +379,7 @@ reproducen los casos documentados:
 TypeScript difieren.
 
 ```bash
-npm --prefix src/web test          # 74 pruebas unitarias (Vitest)
+npm --prefix src/web test          # 75 pruebas unitarias (Vitest)
 npm --prefix src/web run test:e2e  # 56 escenarios: 29 de flujo y 27 de accesibilidad (axe)
 ```
 

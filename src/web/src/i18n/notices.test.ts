@@ -28,6 +28,15 @@ describe('formatNotice', () => {
     expect(formatNotice({ code: 'value.scaFlaws', args: { severity: 'High', count: '0' } })).toBe('No open High flaws');
   });
 
+  it('names the column of an oversized cell when the System knows it', () => {
+    expect(formatNotice({ code: 'csv.fieldTooLong', args: { max: '65536', row: '5624', column: 'SUM_DSCR' } })).toBe(
+      'The SUM_DSCR cell in row 5624 is longer than 65,536 characters: check that cell in the file. An unclosed quote makes it swallow the rows below it.',
+    );
+    expect(formatNotice({ code: 'csv.fieldTooLong', args: { max: '65536', row: '1', column: '' } })).toBe(
+      'A field in row 1 is longer than 65,536 characters: the file is corrupt or is not the expected export.',
+    );
+  });
+
   it('shows an unknown code instead of breaking the screen', () => {
     expect(formatNotice({ code: 'something.new', args: {} })).toBe('Unrecognized message (something.new)');
   });

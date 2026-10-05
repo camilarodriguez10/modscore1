@@ -29,10 +29,12 @@ public sealed class CsvSourceReader
     public const int MaxRows = 500_000;
 
     /// <summary>
-    /// Tope de caracteres por campo. Ninguna columna de las fuentes se acerca: un
-    /// campo mayor es un archivo corrupto, o uno fabricado para agotar memoria.
+    /// Tope de caracteres por campo. Las columnas que se cargan son cortas, pero un export real
+    /// trae texto libre que no se usa, como la descripción de cada vulnerabilidad en el de
+    /// Veracode SCA, y una celda pasó de 4 096 el 2026-10-05. Un campo mayor es un archivo corrupto
+    /// —una comilla sin cerrar se come las filas siguientes— o uno fabricado para agotar memoria.
     /// </summary>
-    public const int MaxFieldLength = 4096;
+    public const int MaxFieldLength = 65_536;
 
     /// <summary>Cuantas columnas del encabezado se devuelven cuando falta alguna obligatoria.</summary>
     private const int MaxEchoedHeaders = 40;
@@ -243,7 +245,7 @@ public sealed class CsvSourceReader
         var ignored = new ReasonTally();
         var rowNumber = 1;
 
-        while (csv.Read())
+        while (ReadNext(csv, headers))
         {
             rowNumber++;
 
@@ -426,6 +428,33 @@ public sealed class CsvSourceReader
         }
 
         return (new Row(rowNumber, new RowValues(_columns, values)), null);
+    }
+
+    /// <summary>
+    /// Avanza una fila. Una celda que pasa el tope se informa con su columna: el archivo es
+    /// confidencial, y la columna y la fila son lo que permite buscarla sin mandárselo a nadie.
+    /// </summary>
+    private bool ReadNext(CsvReader csv, string[] headers)
+    {
+        try
+        {
+            return csv.Read();
+        }
+        catch (MaxFieldSizeException ex)
+        {
+            // Count es cuántos campos de la fila ya se leyeron: el índice del que se pasó.
+            var index = ex.Context?.Parser?.Count;
+            var column = index is { } i && i >= 0 && i < headers.Length ? Bounded(headers[i]) : null;
+
+            throw new SourceSchemaException(
+                Notice.Of(
+                    NoticeCodes.CsvFieldTooLong,
+                    ("max", MaxFieldLength),
+                    ("row", ex.Context?.Parser?.Row),
+                    ("column", column),
+                    ("file", _schema.FileName)),
+                ex);
+        }
     }
 
     private static string Bounded(string header)

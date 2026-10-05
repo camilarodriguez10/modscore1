@@ -63,3 +63,13 @@ quedaba vivo.
   habitual, conviene TD-17 o más memoria para la System.
 - Las pruebas que leen filas siguen igual; se agregaron tres: memoria por fila, columnas de la
   fila y paridad de topes.
+
+## Ampliación del mismo día: el tope por campo
+
+Con los alias del export real de Veracode, el archivo se rechazó por una celda de más de 4 096
+caracteres en la fila 5624. El export trae texto libre que el cálculo no usa —lo más probable es
+que la celda sea la descripción de una vulnerabilidad, `SUM_DSCR`— y un texto largo lo supera. El tope por campo pasa a
+**65 536 caracteres**: sigue cortando una comilla sin cerrar, que se come las filas siguientes,
+o un campo fabricado para agotar memoria, y lo que se retiene sigue acotado por los 128 MB del
+archivo. El rechazo dice ahora la columna además de la fila, para encontrar la celda sin
+compartir el archivo.

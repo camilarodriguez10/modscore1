@@ -28,6 +28,23 @@ public sealed class CsvHardeningTests
         Assert.DoesNotContain("AAAAAAAAAA", ex.Message, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// El archivo es confidencial: la columna y la fila son lo que permite encontrar la celda
+    /// sin mandárselo a nadie.
+    /// </summary>
+    [Fact]
+    public void AFieldBeyondTheLimitNamesItsColumnAndRow()
+    {
+        var huge = new string('9', CsvSourceReader.MaxFieldLength + 1);
+        using var reader = new StringReader(
+            $"EAI_CODE,Eliminate_Count,Invest_Count,Migrate_Count,Tolerate_Count\n1001,0,3,0,1\n1002,0,{huge},0,1\n");
+
+        var ex = Assert.Throws<SourceSchemaException>(() => new CsvSourceReader(ProductStrategy).Read(reader));
+
+        Assert.Equal("Invest_Count", ex.Notice?.Args["column"]);
+        Assert.Equal("3", ex.Notice?.Args["row"]);
+    }
+
     [Fact]
     public void AFieldAtTheLimitIsStillRead()
     {

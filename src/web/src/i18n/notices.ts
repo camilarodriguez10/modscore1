@@ -193,7 +193,9 @@ const MESSAGES: Record<string, (a: Args) => string> = {
 
   'csv.noHeader': () => 'The file has no header.',
   'csv.fieldTooLong': (a) =>
-    `A field in row ${a.row} is longer than ${num(a.max)} characters: the file is corrupt or is not the expected export.`,
+    a.column
+      ? `The ${a.column} cell in row ${a.row} is longer than ${num(a.max)} characters: check that cell in the file. An unclosed quote makes it swallow the rows below it.`
+      : `A field in row ${a.row} is longer than ${num(a.max)} characters: the file is corrupt or is not the expected export.`,
   'csv.unreadable': (a) => (a.row ? `The file could not be read as CSV (row ${a.row}).` : 'The file could not be read as CSV.'),
   'csv.tooManyRows': (a) => `The file exceeds the limit of ${num(a.max)} rows.`,
   'csv.missingColumns': (a) => `Required columns are missing: ${a.missing}. The file has: ${a.found}.`,

@@ -423,6 +423,30 @@ public sealed class VeracodeExportTests
     }
 
     /// <summary>
+    /// La descripción de una vulnerabilidad (SUM_DSCR) puede pasar de 4 096 caracteres, entre
+    /// comillas y con saltos de línea. El cálculo no la usa, y el archivo entra.
+    /// </summary>
+    [Fact]
+    public void ALongQuotedDescriptionDoesNotRejectTheFile()
+    {
+        var summary = "\"" + string.Concat(Enumerable.Repeat("A crafted \"\"payload\"\" may cause a denial of service,\nsee the advisory. ", 120)) + "\"";
+        string[] cells = [.. Enumerable.Repeat(string.Empty, Header.Length)];
+        cells[0] = "300001";
+        cells[2] = "14982";
+        cells[4] = "1 - Critical";
+        cells[5] = "Open";
+        cells[Array.IndexOf(Header, "SUM_DSCR")] = summary;
+
+        using var reader = new StringReader(string.Join(',', Header) + "\n" + string.Join(',', cells) + "\n");
+
+        var outcome = new CsvSourceReader(Sca).Read(reader);
+
+        Assert.True(summary.Length > 4096);
+        Assert.Empty(outcome.Rejections);
+        Assert.Equal("1 - Critical", Assert.Single(outcome.Rows).Text("SVR_DSC"));
+    }
+
+    /// <summary>
     /// Los valores reales, confirmados el 2026-10-05: severidad «1 - Critical» a «4 - Low», con
     /// espacios alrededor del guion, y estado «Open». Se cuentan por la palabra, igual que
     /// «1-Critical»; una aplicación que no está en el archivo no se considera escaneada.

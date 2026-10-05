@@ -32,7 +32,7 @@ servicio para todos:
 | Cargas | 5 por 10 minutos, ventana deslizante | Mueven cientos de MB y reemplazan el portafolio |
 | Cuerpo por defecto | 1 MB | Ningún JSON del sistema necesita más |
 | Cuerpo de la carga | 256 MB, ampliado solo en su endpoint | El tope documentado desde la Fase 07 |
-| Campo de CSV | 4 096 caracteres | Ninguna columna real se acerca |
+| Campo de CSV | 65 536 caracteres (4 096 hasta el 2026-10-05) | Las columnas que se cargan son cortas, pero el export real de Veracode trajo una celda de más de 4 096, en texto libre que no se usa ([ADR 0030](0030-una-carga-grande-cabe-en-el-pod.md)) |
 | Publicación | una a la vez; la segunda se rechaza con motivo | No hay nada que ganar en paralelo |
 | Historia | calculada una vez por versión | Una versión publicada es inmutable |
 | Cliente de carga | sin reintentos, 5 minutos | Reintentar publicaría dos versiones |

@@ -506,7 +506,9 @@ la carga vigente, con qué nombres se reconoce solo y qué métricas lo usan.
 «Suma de …» se reconocen, `N/A`, `-` o `(En blanco)` cuentan como celda vacía, los números se
 leen con coma o punto decimal y `VERDADERO`/`FALSO` como sí/no. Si el export trae «MFA» y
 «Does this Application Utilize MFA?», carga el segundo; Year, Quarter, Month y Day no se usan.
-Si un EAI se repite (una fila por fecha), queda la última fila.
+Si un EAI se repite (una fila por fecha), queda la última fila. El export de Veracode SCA
+también se reconoce con sus nombres reales (`SVR_DSCR`, `FND_STTS_DSCR`, `CVSSV3_SCOR`…), y un
+archivo puede pesar hasta 128 MB.
 
 **Si la carga rechaza filas o deja valores sin dato.** Debajo del detalle por archivo,
 **Why rows were rejected** y **Values loaded as empty** dicen qué pasó, agrupado por problema:

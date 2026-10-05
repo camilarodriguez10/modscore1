@@ -273,6 +273,10 @@ La lectura tolera los exports reales, también los de Power BI y Excel en españ
 - Se reconocen los campos resumidos («Suma de Kenna_Score», «Sum of …», «Promedio de …»), y el
   nombre exacto del campo gana a un alias: con «MFA» y «Does this Application Utilize MFA?»,
   carga el segundo.
+- El export real de Veracode SCA se reconoce con sus nombres: `SVR_DSCR`, `FND_STTS_DSCR`,
+  `FND_AGE_DSCR`, `SCAN_TYP_DSCR`, `ROPEN_FND_DSCR`, `CVSSV3_SCOR`, `LIB_VND_NM` y
+  `ACCSBLTY_DSCR`. Sus columnas de más (`SCA_ID`, `CMPNT_NM`, `CRT_DT`…) no se usan. Hasta
+  128 MB por archivo.
 
 Debajo del detalle por archivo, **Why rows were rejected** y **Values loaded as empty** dicen
 qué pasó, agrupado por problema: la columna, qué esperaba, el valor de la primera fila que lo
@@ -364,7 +368,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-940 pruebas .NET: 319 del motor, 265 de contratos y 356 de API. Las dos que importan más
+942 pruebas .NET: 319 del motor, 267 de contratos y 356 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **EAI 14381 = 79,67:** ejemplo trabajado del BRD, derivado desde datos crudos por el

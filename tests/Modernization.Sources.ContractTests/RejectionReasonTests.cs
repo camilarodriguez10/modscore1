@@ -360,3 +360,65 @@ public sealed class PowerBiExportTests
         Assert.False(kenna.Matches("Recuento de Kenna_Score"));
     }
 }
+
+/// <summary>
+/// El export real de Veracode SCA de la organización (2026-10-05): 28 columnas, ocho campos
+/// con otro nombre que el contrato (SVR_DSCR, FND_STTS_DSCR…) y nueve columnas que el
+/// cálculo no usa. Antes se rechazaba el archivo entero por las dos obligatorias.
+/// </summary>
+public sealed class VeracodeExportTests
+{
+    private static readonly string[] Header =
+    [
+        "FLAW_IDX_NUM", "APP_NM", "EAI_CD", "APP_ID", "SVR_DSCR", "FND_STTS_DSCR", "FRST_FND_DT",
+        "LIB_FRST_FND_ACT_SCAN_DT", "ROPEN_DT", "LST_FND_DT", "RSLV_DT", "FND_AGE_DSCR", "SCAN_TYP_DSCR",
+        "ROPEN_FND_DSCR", "CVE_ID", "CVSSV3_SCOR", "SUM_DSCR", "VUL_NM", "CMPNT_NM", "CMPNT_VER_NUM", "LIB_NM",
+        "LIB_DSCR", "LIB_VND_NM", "PUB_DT", "ACCSBLTY_DSCR", "SCA_ID", "CRT_DT", "LST_UPDT_DT",
+    ];
+
+    private static SourceSchema Sca => SourceSchemaCatalog.Default.Require("veracode_sca_open_flaws.csv");
+
+    [Fact]
+    public void EveryFieldIsRecognizedAndTheExtraColumnsAreLeftOut()
+    {
+        var resolution = ColumnMapping.Resolve(Sca, Header);
+
+        Assert.True(resolution.IsValid);
+        Assert.DoesNotContain(resolution.Columns, c => c.How == ColumnMatch.Missing);
+
+        var byColumn = resolution.Columns.ToDictionary(c => c.Column.Name);
+        Assert.Equal(ColumnMatch.Alias, byColumn["SVR_DSC"].How);
+        Assert.Equal("SVR_DSCR", byColumn["SVR_DSC"].Header);
+        Assert.Equal("FND_STTS_DSCR", byColumn["FND_STT"].Header);
+        Assert.Equal(
+            ["LIB_FRST_FND_ACT_SCAN_DT", "ROPEN_DT", "SUM_DSCR", "CMPNT_NM", "CMPNT_VER_NUM", "LIB_DSCR", "SCA_ID", "CRT_DT", "LST_UPDT_DT"],
+            resolution.UnusedHeaders);
+    }
+
+    [Fact]
+    public void ARowOfTheExportBecomesAFlawWithItsSeverityAndStatus()
+    {
+        var row = string.Join(
+            ',',
+            "300001", "Chile - Agent Commissions", "14982", "14982", "1-Critical", "Open", "24/08/2023 21:24",
+            "24/08/2023 21:24", "", "05/09/2026 21:24", "", "1111", "SCA", "No", "CVE-2018-7489", "9.8", "Summary",
+            "Insecure deserialization", "jackson-databind", "2.9.8", "jackson-databind", "JSON library", "FasterXML",
+            "05/11/2022 21:24", "External", "77", "24/08/2023 21:24", "05/09/2026 21:24");
+        using var reader = new StringReader(string.Join(',', Header) + "\n" + row + "\n");
+
+        var outcome = new CsvSourceReader(Sca).Read(reader);
+
+        Assert.Empty(outcome.Rejections);
+        Assert.Empty(outcome.IgnoredValues);
+
+        var flaw = FileRecordMappers.ToScaFlaw(Assert.Single(outcome.Rows));
+        Assert.NotNull(flaw);
+        Assert.Equal("14982", flaw.EaiCode);
+        Assert.Equal("1-Critical", flaw.SeverityDescription);
+        Assert.Equal("Open", flaw.FindingStatus);
+        Assert.Equal(1111, flaw.FindingAge);
+        Assert.Equal(9.8m, flaw.Cvssv3Score);
+        Assert.Equal("FasterXML", flaw.LibraryVendor);
+        Assert.Equal("External", flaw.Accessibility);
+    }
+}

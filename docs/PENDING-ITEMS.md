@@ -61,7 +61,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 - **Reading tolerates real exports** (2026-10-02, ADR 0028), after the organization shared its EAI master header, exported from Power BI ("Suma de Kenna_Score", both "MFA" and "Does this Application Utilize MFA?", a Year/Quarter/Month/Day hierarchy, no APP_ID). An unreadable value in an **optional** field now leaves that field without data and keeps the row, reported as *Values loaded as empty*; before, it rejected the whole row, which in the EAI master is the whole application. No-value markers (`N/A`, `-`, `(En blanco)`…) read as empty; numbers in any regional format (an integer accepts zero decimals: "650,00" is 650, before it silently became 65000); `VERDADERO`/`FALSO`; identifiers normalized ("14,381" → "14381"); the exact field name wins over an alias and summary prefixes ("Suma de", "Sum of", "Promedio de"…) are recognized; a repeated EAI keeps the last row and reports the others; without APP_ID in the master, tech debt is linked by the EAI code, because the organization confirmed that its APP_ID is the same code as the EAI.
 - **Fixed on 2026-09-18:** the Insights risk index counted Kenna **below 50** as weak vulnerability management. Kenna runs from 0 to 1000 and higher is worse, so it counted the best applications. It now counts Kenna ≥ 670 (the BRD's Critical/High band), and the threshold is a parameter.
 - **Tests**:
-  - 940 .NET tests: 319 engine, 265 contracts, 356 API.
+  - 942 .NET tests: 319 engine, 267 contracts, 356 API.
   - 74 SPA unit tests.
   - 56 end-to-end scenarios: 29 flows and 27 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
   - Zero vulnerable packages, and `npm audit` is clean.
@@ -969,6 +969,7 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
   - A mapping is prepared with the files at hand (only their header is read). There is no way to prepare one for a source without a file.
   - The review lists every field of the contract; the EAI Master has 28. If exports keep only a few of them, a "show only the fields in this file" toggle would shorten it.
   - Since 2026-10-02 (ADR 0028), unreadable optional values are loaded as empty and listed in the upload result (*Values loaded as empty*). Like the column mapping, that list is not shown in the lineage of an older upload.
+  - The organization's Veracode SCA export (2026-10-05) names eight fields differently (`SVR_DSCR`, `FND_STTS_DSCR`, `CVSSV3_SCOR`…); they are aliases now. Scoring compares severity ("1-Critical"…) and status ("Open") as text, as the BRD describes for that file.
   - The organization's EAI master export has no `APP_ID`; its APP_ID is the same code as the EAI (confirmed on 2026-10-02), so tech debt is linked by the EAI code. If that ever changes, the export must bring `APP_ID` again, which takes precedence.
 - **Acceptance criteria:** the lineage shows the recorded column of each field for the selected upload, with the same wording as the Mapping tab. **Effort:** S.
 
@@ -1336,7 +1337,7 @@ Numbers are for comparing changes on the same machine, not for sizing production
 | Suite | Count | Command |
 |---|---|---|
 | Engine (golden cases, mapping table, what-if, roadmap, rules editor, comparison, dashboard, insights, end-of-life catalog, code analyzer) | 319 | `dotnet test tests/Modernization.Scoring.Engine.Tests` |
-| Source contracts (Dummy, File, Database; rules stores; sample repositories; dummy timeline; column mapping; rejection reasons; regional values and Power BI exports; memory per row) | 265 | `dotnet test tests/Modernization.Sources.ContractTests` |
+| Source contracts (Dummy, File, Database; rules stores; sample repositories; dummy timeline; column mapping; rejection reasons; regional values, Power BI and Veracode exports; memory per row) | 267 | `dotnet test tests/Modernization.Sources.ContractTests` |
 | API end-to-end through both layers and security | 356 | `dotnet test tests/Modernization.Api.Tests` |
 | SPA unit (Vitest) | 74 | `npm --prefix src/web test` |
 | SPA end-to-end (Playwright, Edge locally, Chromium in CI) | 29 | `npm --prefix src/web run test:e2e` |

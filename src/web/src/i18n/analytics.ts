@@ -293,10 +293,11 @@ export function dashboardExplanation(question: number, definitions: AnalyticsDoc
         area: null,
         considered: [
           SCORE_MODEL,
-          'Primary capability, region, country and CIO from the EAI master; target disposition from MAPS.',
+          'CIO for the rows, and region, country or primary capability for the columns, from the EAI master; target disposition from MAPS.',
         ],
         rules: [
           'Each cell is the average Modernization Score of its applications; its color is the score band: Solid 85–100, Acceptable 70–85, At risk 50–70, Critical 20–50.',
+          'The Total row and column average every application of that column or CIO, not the cells; the corner is the whole portfolio.',
           'Requiring intervention: applications in the At risk or Critical bands.',
           'Data coverage: the share of the model’s weight that had data. A high score with low coverage says little.',
           'The trend is the average score of every upload, with the same filters and scope.',
@@ -347,12 +348,12 @@ export function dashboardExplanation(question: number, definitions: AnalyticsDoc
         area: 'risk',
         considered: [
           'The Modernization Risk Vectors pillar: Kenna, DR in scope, critical and high SCA flaws, MFA and the open-source score.',
-          'Primary capability and the chosen axis for the heatmap.',
+          'CIO for the rows of the heatmap and the chosen axis for its columns.',
         ],
         rules: [
           'Risk Score = the risk pillar inverted to 0–100, higher is worse: (100 − pillar) ÷ 80 × 100.',
           `Levels: low below ${d.plain('risk.moderateFrom')}, moderate from ${d.plain('risk.moderateFrom')}, high from ${d.plain('risk.highFrom')}, critical from ${d.plain('risk.criticalFrom')}.`,
-          'Each cell is the average Risk Score of its applications.',
+          'Each cell is the average Risk Score of its applications. The Total row and column average every application of that column or CIO, not the cells.',
           `The ${d.plain('risk.hotspotCount')} riskiest applications are the highest Risk Scores.`,
           `Risk Concentration Index = the share of all risk carried by the riskiest ${number(d.raw('concentration.topShare') * 100, 0)} % of cells. An even spread gives about ${d.plain('concentration.topShare')}. Moderate from ${d.plain('concentration.moderateFrom')}, high from ${d.plain('concentration.highFrom')}, critical from ${d.plain('concentration.criticalFrom')}.`,
         ],

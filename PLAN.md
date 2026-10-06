@@ -1050,6 +1050,7 @@ decisión y Governance Adoption, fuera.
 | Pregunta 2 | Matriz criticidad × oportunidad, tamaño = riesgo. «Rules & Matrix to be defined globally» |
 | Pregunta 3 | Seis dimensiones: *Legacy Platforms* = Currency Score < X; *Tech Debt* = deudas técnicas abiertas; el resto TBD |
 | Pregunta 4 | El mismo mapa de calor de la pregunta 1, midiendo riesgo |
+| Ajuste del 2026-10-06 | Filas de los mapas 1 y 4 por **CIO**; la capacidad primaria pasa a ser columna junto a Region, Country y Target Disposition. **Totales** por fila, columna y portafolio, y totales en las demás secciones donde aplican |
 | Pregunta 5 | Explicar qué causa el riesgo, no solo un score; según los conceptos de **Currency Scoring** |
 | Pregunta 6 | Resiliencia como dimensión propia, según los conceptos de **Stability Scoring** |
 

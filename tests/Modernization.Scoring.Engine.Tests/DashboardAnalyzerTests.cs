@@ -210,13 +210,50 @@ public sealed class DashboardAnalyzerTests
         Assert.Equal(dashboard.Applications.Count, dashboard.Matrix.Cells.Sum(c => c.Applications));
         Assert.Equal(["Chile", "Mexico", "Peru"], dashboard.Matrix.Columns);
 
-        var policy = dashboard.Matrix.Cells.Single(c => c.Row == "Policy Servicing" && c.Column == "Chile");
-        Assert.Equal(3, policy.Applications);
-        Assert.Equal(ScoreBands.Of(policy.AverageScore), policy.Band);
+        // Las filas son el CIO desde el 2026-10-05; la capacidad primaria es un eje.
+        Assert.Equal(["CIO North", "CIO South"], dashboard.Matrix.Rows);
+
+        var north = dashboard.Matrix.Cells.Single(c => c.Row == "CIO North" && c.Column == "Chile");
+        Assert.Equal(dashboard.Applications.Count(a => a.Cio == "CIO North" && a.Country == "Chile"), north.Applications);
+        Assert.Equal(ScoreBands.Of(north.AverageScore), north.Band);
+    }
+
+    /// <summary>
+    /// Los totales promedian las aplicaciones de cada fila y columna, no las celdas: una celda
+    /// de una aplicación no pesa lo mismo que una de cuarenta.
+    /// </summary>
+    [Fact]
+    public void TheHeatmapTotalsAverageTheApplicationsOfEachRowAndColumn()
+    {
+        var dashboard = Analyze();
+        var matrix = dashboard.Matrix;
+
+        Assert.Equal(matrix.Rows, matrix.RowTotals.Select(t => t.Key));
+        Assert.Equal(matrix.Columns, matrix.ColumnTotals.Select(t => t.Key));
+        Assert.Equal(dashboard.Applications.Count, matrix.RowTotals.Sum(t => t.Applications));
+        Assert.Equal(dashboard.Applications.Count, matrix.ColumnTotals.Sum(t => t.Applications));
+
+        Assert.NotNull(matrix.Total);
+        Assert.Equal(dashboard.Applications.Count, matrix.Total.Applications);
+        Assert.Equal(dashboard.Health.AverageScore, matrix.Total.AverageScore);
+        Assert.Equal(dashboard.Risk.AverageRisk, matrix.Total.AverageRisk);
+        Assert.Equal(ScoreBands.Of(matrix.Total.AverageScore), matrix.Total.Band);
+
+        foreach (var total in matrix.RowTotals)
+        {
+            var members = dashboard.Applications.Where(a => (a.Cio ?? string.Empty) == total.Key).ToList();
+            Assert.Equal(members.Count, total.Applications);
+            Assert.InRange(total.AverageScore, members.Average(a => a.Score) - 0.01m, members.Average(a => a.Score) + 0.01m);
+        }
+
+        foreach (var total in matrix.ColumnTotals)
+        {
+            Assert.Equal(dashboard.Applications.Count(a => (a.Country ?? string.Empty) == total.Key), total.Applications);
+        }
     }
 
     [Theory]
-    [InlineData("cio", "CIO North")]
+    [InlineData("capability", "Policy Servicing")]
     [InlineData("region", "LATAM")]
     [InlineData("disposition", "Invest")]
     public void TheHeatmapAxisCanBeChosen(string axis, string expectedColumn)

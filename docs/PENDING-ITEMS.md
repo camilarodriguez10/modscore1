@@ -61,9 +61,9 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 - **Reading tolerates real exports** (2026-10-02, ADR 0028), after the organization shared its EAI master header, exported from Power BI ("Suma de Kenna_Score", both "MFA" and "Does this Application Utilize MFA?", a Year/Quarter/Month/Day hierarchy, no APP_ID). An unreadable value in an **optional** field now leaves that field without data and keeps the row, reported as *Values loaded as empty*; before, it rejected the whole row, which in the EAI master is the whole application. No-value markers (`N/A`, `-`, `(En blanco)`…) read as empty; numbers in any regional format (an integer accepts zero decimals: "650,00" is 650, before it silently became 65000); `VERDADERO`/`FALSO`; identifiers normalized ("14,381" → "14381"); the exact field name wins over an alias and summary prefixes ("Suma de", "Sum of", "Promedio de"…) are recognized; a repeated EAI keeps the last row and reports the others; without APP_ID in the master, tech debt is linked by the EAI code, because the organization confirmed that its APP_ID is the same code as the EAI.
 - **Fixed on 2026-09-18:** the Insights risk index counted Kenna **below 50** as weak vulnerability management. Kenna runs from 0 to 1000 and higher is worse, so it counted the best applications. It now counts Kenna ≥ 670 (the BRD's Critical/High band), and the threshold is a parameter.
 - **Tests**:
-  - 945 .NET tests: 319 engine, 270 contracts, 356 API.
+  - 946 .NET tests: 320 engine, 270 contracts, 356 API.
   - 78 SPA unit tests.
-  - 58 end-to-end scenarios: 31 flows and 27 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
+  - 59 end-to-end scenarios: 32 flows and 27 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
   - Zero vulnerable packages, and `npm audit` is clean.
 
 ### What needs the team
@@ -181,6 +181,7 @@ it is what the platform does today unless the row says otherwise.
 | DD-06 | Health band names and cut-offs: mockup vs model | Dashboard definitions | P2 | Business owner of the score | Decision needed |
 | DD-07 | Tech Debt KPI (the home page is decided) | Dashboard definitions | P3 | Product | Decision needed (KPI only) |
 | DD-08 | Who may change the definitions: the rules administrator, or a separate role | Dashboard definitions | P3 | Security + enterprise architecture | Decision needed |
+| DD-09 | Portfolio population: which applications the score and the dashboard leave out | Dashboard definitions / data | P1 | Business owner of the score + EAI data owner | Decision needed |
 | OP-01 | Runbook walkthrough with operations | Operations | P1 | Operations | Open |
 | OP-02 | Backups of the data volume and the rules store | Operations | P1 | Operations | Open |
 | OP-03 | Upload retention policy | Operations / compliance | P1 | Data owners + compliance | Decision needed |
@@ -970,6 +971,7 @@ All are **P1**, owner **security + platform**, status **Open (phase 14)**. "Part
   - The review lists every field of the contract; the EAI Master has 28. If exports keep only a few of them, a "show only the fields in this file" toggle would shorten it.
   - Since 2026-10-02 (ADR 0028), unreadable optional values are loaded as empty and listed in the upload result (*Values loaded as empty*). Like the column mapping, that list is not shown in the lineage of an older upload.
   - The organization's Veracode SCA export (2026-10-05) names eight fields differently (`SVR_DSCR`, `FND_STTS_DSCR`, `CVSSV3_SCOR`…); they are aliases now. Scoring compares severity ("1 - Critical"…) and status ("Open") as text, as the BRD describes for that file. Its free-text vulnerability summary (`SUM_DSCR`) can exceed 4,096 characters, so the per-field limit is 65,536 and an oversized cell is reported with its column and row.
+  - Dashboard (2026-10-06, business request): the heatmaps of questions 1 and 4 have one row per CIO, and primary capability became a column option next to region, country and target disposition. Totals per row, column and portfolio (averaged over applications, not cells), and totals in the prioritization matrix, complexity, obsolescence, resilience and the donuts. The footer claimed a SaaS/cancelled/decommissioned exclusion that no filter applied; it now says every EAI master application counts (DD-09). Causes of differences with the Power BI report: `docs/runbooks/conciliar-con-power-bi.md`.
   - When an upload is rejected only because of some files and the EAI master passed, *Recalculate with the files that passed* offers to upload again without them (2026-10-05). The System still publishes all or nothing; leaving a file out is confirmed by the person uploading. A source left out has no data in that upload. The organization also sends an OCP containers export (*Containerized*, weight 0 in BRD v1.3) that matches no source.
   - The organization's EAI master export has no `APP_ID`; its APP_ID is the same code as the EAI (confirmed on 2026-10-02), so tech debt is linked by the EAI code. If that ever changes, the export must bring `APP_ID` again, which takes precedence.
 - **Acceptance criteria:** the lineage shows the recorded column of each field for the selected upload, with the same wording as the Mapping tab. **Effort:** S.
@@ -1163,6 +1165,13 @@ where a default saturates or leaves a level empty.
 - **Default:** one role.
 - **Effort:** S–M: a second role, a check per part of the draft, and the screen hiding the tabs a role cannot edit.
 
+### DD-09 — Portfolio population: which applications are left out
+- **Priority:** P1 · **Owner:** business owner of the score + EAI data owner · **Status:** Decision needed
+- **Context (2026-10-06):** the organization's Power BI report says it excludes SaaS, cancelled and decommissioned applications and keeps only Common Service and Core Business applications, and its LATAM view filters Application Status with a multiple selection. The site's footer said the same, but no filter did it: every application in the EAI master upload counts. The footer now says so. This is the first suspect when the LATAM averages do not match the report.
+- **Question:** which EAI master column marks "Common Service" and "Core Business" (it is not among the 28 columns of the contract), which `Application Status` values are cancelled or decommissioned, and is SaaS `Cloud_Type = SaaS`?
+- **Default until then:** no exclusion; the *App status* filter narrows by hand.
+- **Effort:** S once the fields are known: a population rule in the rules contract (versioned and audited like the rest), applied before scoring and shown in the footer and in each answer.
+
 ---
 
 ## 5quater. Code screen and GitHub Enterprise integration
@@ -1337,11 +1346,11 @@ Numbers are for comparing changes on the same machine, not for sizing production
 
 | Suite | Count | Command |
 |---|---|---|
-| Engine (golden cases, mapping table, what-if, roadmap, rules editor, comparison, dashboard, insights, end-of-life catalog, code analyzer) | 319 | `dotnet test tests/Modernization.Scoring.Engine.Tests` |
+| Engine (golden cases, mapping table, what-if, roadmap, rules editor, comparison, dashboard, insights, end-of-life catalog, code analyzer) | 320 | `dotnet test tests/Modernization.Scoring.Engine.Tests` |
 | Source contracts (Dummy, File, Database; rules stores; sample repositories; dummy timeline; column mapping; rejection reasons; regional values, Power BI and Veracode exports; memory per row) | 270 | `dotnet test tests/Modernization.Sources.ContractTests` |
 | API end-to-end through both layers and security | 356 | `dotnet test tests/Modernization.Api.Tests` |
 | SPA unit (Vitest) | 78 | `npm --prefix src/web test` |
-| SPA end-to-end (Playwright, Edge locally, Chromium in CI) | 31 | `npm --prefix src/web run test:e2e` |
+| SPA end-to-end (Playwright, Edge locally, Chromium in CI) | 32 | `npm --prefix src/web run test:e2e` |
 | SPA accessibility (axe, the daily screens, the Code detail and the column mapping, in light and dark) | 27 | Same command; `e2e/accessibility.spec.ts` |
 | SPA end-to-end against an already running site | Same | With the site running (for example the Channel serving `src/web/dist`), from `src/web`: `MODSCORE_E2E_BASE_URL=http://localhost:5100 npx playwright test` |
 | SPA lint (ESLint, required by CI) | 0 errors | `npm --prefix src/web run lint` |

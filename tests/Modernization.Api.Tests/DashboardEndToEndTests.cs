@@ -78,7 +78,7 @@ public sealed class DashboardEndToEndTests(LayeredApiFixture fixture) : IClassFi
     }
 
     [Theory]
-    [InlineData("cio")]
+    [InlineData("capability")]
     [InlineData("region")]
     [InlineData("disposition")]
     [InlineData("country")]

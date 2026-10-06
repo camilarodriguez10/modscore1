@@ -33,8 +33,11 @@ public sealed record PortfolioDashboard
 /// <summary>Opciones de una consulta: el eje del mapa de calor y la base de usuarios significativa.</summary>
 public sealed record DashboardOptions(string Axis = "country", int SignificantUserBase = 1000)
 {
-    /// <summary>Los ejes que admite el mapa de calor, contra la capacidad primaria.</summary>
-    public static readonly IReadOnlyList<string> Axes = ["region", "country", "cio", "disposition"];
+    /// <summary>
+    /// Los ejes que admite el mapa de calor, contra el CIO. Hasta el 2026-10-05 las filas eran
+    /// la capacidad primaria y el CIO era un eje; el negocio pidió invertirlo.
+    /// </summary>
+    public static readonly IReadOnlyList<string> Axes = ["region", "country", "capability", "disposition"];
 }
 
 /// <summary>
@@ -48,12 +51,29 @@ public sealed record DashboardOptions(string Axis = "country", int SignificantUs
 /// </remarks>
 public sealed record DashboardKpi(string Key, decimal? Value, int Count, int Base, decimal Share, string? Level);
 
-/// <summary>Mapa de calor: filas de capacidad, columnas del eje elegido.</summary>
+/// <summary>Mapa de calor: filas de CIO, columnas del eje elegido, y sus totales.</summary>
+/// <remarks>
+/// Los totales promedian las aplicaciones de la fila, de la columna o de toda la grilla, no
+/// las celdas: una celda de una aplicación no pesa lo mismo que una de cuarenta. <c>Total</c>
+/// es null solo cuando no hay ninguna aplicación.
+/// </remarks>
 public sealed record DashboardHeatmap(
     string Axis,
     IReadOnlyList<string> Rows,
     IReadOnlyList<string> Columns,
-    IReadOnlyList<DashboardHeatmapCell> Cells);
+    IReadOnlyList<DashboardHeatmapCell> Cells,
+    IReadOnlyList<DashboardHeatmapTotal> RowTotals,
+    IReadOnlyList<DashboardHeatmapTotal> ColumnTotals,
+    DashboardHeatmapTotal? Total);
+
+/// <summary>El total de una fila, de una columna o de la grilla: lo mismo que una celda.</summary>
+public sealed record DashboardHeatmapTotal(
+    string Key,
+    int Applications,
+    decimal AverageScore,
+    string Band,
+    decimal? AverageRisk,
+    string? RiskLevel);
 
 /// <summary>
 /// Una celda del mapa de calor.

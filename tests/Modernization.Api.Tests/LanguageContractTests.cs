@@ -223,7 +223,7 @@ public sealed class SpanishFreeChannelTests(QueryExperienceFixture fixture) : IC
         }
 
         await Ok("/api/dashboard");
-        await Ok("/api/dashboard?axis=cio&capability=Distribution&status=Active");
+        await Ok("/api/dashboard?axis=capability&capability=Distribution&status=Active");
         await Ok("/api/dashboard?axis=disposition&criticalOnly=true");
         await Get("/api/dashboard?axis=planeta");
         await Get("/api/insights");

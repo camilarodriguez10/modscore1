@@ -73,7 +73,7 @@ export function DashboardPage() {
           <div className="grid gap-4 xl:grid-cols-2">
             <HealthPanel view={data} axis={axis} onAxis={setAxis} onSelect={setSelection} />
             <PrioritizationPanel prioritization={dashboard.prioritization} search={search} onSelect={setSelection} />
-            <ComplexityPanel complexity={dashboard.complexity} onSelect={setSelection} />
+            <ComplexityPanel complexity={dashboard.complexity} applications={dashboard.applications} onSelect={setSelection} />
             <RiskPanel view={data} axis={axis} onAxis={setAxis} onSelect={setSelection} search={search} />
             <ObsolescencePanel obsolescence={dashboard.obsolescence} />
             <ResiliencePanel resilience={dashboard.resilience} onSelect={setSelection} />

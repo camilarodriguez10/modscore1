@@ -375,7 +375,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-945 pruebas .NET: 319 del motor, 270 de contratos y 356 de API. Las dos que importan más
+946 pruebas .NET: 320 del motor, 270 de contratos y 356 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **EAI 14381 = 79,67:** ejemplo trabajado del BRD, derivado desde datos crudos por el
@@ -387,7 +387,7 @@ TypeScript difieren.
 
 ```bash
 npm --prefix src/web test          # 78 pruebas unitarias (Vitest)
-npm --prefix src/web run test:e2e  # 58 escenarios: 31 de flujo y 27 de accesibilidad (axe)
+npm --prefix src/web run test:e2e  # 59 escenarios: 32 de flujo y 27 de accesibilidad (axe)
 ```
 
 Las de punta a punta usan el Microsoft Edge instalado (no descargan navegadores) y levantan
@@ -452,16 +452,27 @@ falta— con cinco indicadores y un panel por cada una de las seis preguntas:
 | Panel | Qué muestra |
 |---|---|
 | Indicadores | Health Score, aplicaciones en riesgo, candidatas a modernizar, exposición de *currency* (EOS/EOL redefinido) y huecos de resiliencia, con su tendencia por carga |
-| 1 · Salud | Mapa de calor de capacidad primaria contra región, país, CIO o disposición objetivo; reparto por tramo; tendencia |
-| 2 · Prioridad | Matriz criticidad × oportunidad (burbuja = riesgo) y el top 10 |
+| 1 · Salud | Mapa de calor de CIO contra región, país, capacidad primaria o disposición objetivo, con totales por fila, por columna y del portafolio; reparto por tramo; tendencia |
+| 2 · Prioridad | Matriz criticidad × oportunidad (burbuja = riesgo) con totales por fila y columna, y el top 10 |
 | 3 · Complejidad | Seis dimensiones en un treemap —las que aún no tienen fuente, punteadas— y cuatro oportunidades de reducción |
-| 4 · Riesgo | El mismo mapa de calor midiendo riesgo, el top 5 y el índice de concentración |
+| 4 · Riesgo | El mismo mapa de calor midiendo riesgo, con sus totales; el top 5 y el índice de concentración |
 | 5 · Obsolescencia | Qué conceptos explican los puntos perdidos y cuánto pesa la vigencia tecnológica |
 | 6 · Resiliencia | Nivel por dimensión y por aplicación; las dimensiones sin fuente se dicen como tales |
 
 Cada celda, burbuja, barra o indicador abre el mismo detalle lateral, con los mismos
 campos en todos los paneles. El eje del mapa de calor viaja en la URL junto a los
-filtros: `/?region=LATAM&axis=cio`.
+filtros: `/?region=LATAM&axis=capability`.
+
+**Totales (2026-10-06).** Los mapas de calor promedian cada fila, cada columna y todo el
+portafolio sobre las aplicaciones, no sobre las celdas. La matriz de prioridad cuenta por fila
+y columna; complejidad cuenta las aplicaciones con al menos una dimensión (una vez cada una);
+obsolescencia suma los puntos perdidos; resiliencia dice cuántas aplicaciones tienen dato en
+cada dimensión; las donas cierran con el total. Todos se pueden abrir como cualquier celda.
+
+**Si el score no coincide con el reporte de Power BI**, el
+[runbook](docs/runbooks/conciliar-con-power-bi.md) lista las causas en orden y dónde se ve
+cada una en el sitio. La primera para los promedios: el sitio todavía no excluye SaaS,
+canceladas ni dadas de baja (DD-09).
 
 **Cada panel explica su cálculo.** «How this is calculated», al pie de cada panel del
 dashboard y de cada pregunta de Insights, dice qué datos considera, cómo se calcula con los

@@ -1121,9 +1121,23 @@ export interface DashboardKpi {
 
 export interface DashboardHeatmap {
   axis: string;
+  /** CIO, desde el 2026-10-05. */
   rows: readonly string[];
   columns: readonly string[];
   cells: readonly DashboardHeatmapCell[];
+  /** Promedian las aplicaciones de la fila, de la columna o de toda la grilla, no las celdas. */
+  rowTotals: readonly DashboardHeatmapTotal[];
+  columnTotals: readonly DashboardHeatmapTotal[];
+  total: DashboardHeatmapTotal | null;
+}
+
+export interface DashboardHeatmapTotal {
+  key: string;
+  applications: number;
+  averageScore: number;
+  band: string;
+  averageRisk: number | null;
+  riskLevel: string | null;
 }
 
 export interface DashboardHeatmapCell {

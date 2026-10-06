@@ -49,11 +49,12 @@ export function scaleShort(value: number | null | undefined): string {
 const AXES: Record<string, string> = {
   region: 'Region',
   country: 'Country',
-  cio: 'CIO',
+  capability: 'Primary capability',
   disposition: 'Target disposition',
 };
 
-export const AXIS_KEYS = ['region', 'country', 'cio', 'disposition'] as const;
+/** Las columnas de los mapas de calor 1 y 4; las filas son el CIO desde el 2026-10-05. */
+export const AXIS_KEYS = ['region', 'country', 'capability', 'disposition'] as const;
 
 export function axisLabel(axis: string): string {
   return AXES[axis] ?? axis;

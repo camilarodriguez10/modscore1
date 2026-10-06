@@ -48,12 +48,16 @@ test.describe('dashboard', () => {
   test('the heatmap axis and the new filters travel in the URL', async ({ page }) => {
     await signIn(page, '/');
 
-    await page.getByRole('group', { name: 'Heatmap axis' }).first().getByRole('button', { name: 'CIO' }).click();
-    await expect(page).toHaveURL(/axis=cio/);
+    await page
+      .getByRole('group', { name: 'Heatmap axis' })
+      .first()
+      .getByRole('button', { name: 'Primary capability' })
+      .click();
+    await expect(page).toHaveURL(/axis=capability/);
 
     await page.getByLabel('Primary capability').selectOption({ index: 1 });
     await expect(page).toHaveURL(/capability=/);
-    await expect(page).toHaveURL(/axis=cio/);
+    await expect(page).toHaveURL(/axis=capability/);
 
     // El filtro sigue puesto al cambiar de pantalla, como todos los demas.
     await page.getByRole('link', { name: 'Portfolio', exact: true }).click();
@@ -69,10 +73,26 @@ test.describe('dashboard', () => {
   });
 
   test('the old dashboard address still works and keeps its filters', async ({ page }) => {
-    await signIn(page, '/dashboard?axis=cio');
+    await signIn(page, '/dashboard?axis=capability');
 
-    await expect(page).toHaveURL(/\/\?axis=cio$/);
+    await expect(page).toHaveURL(/\/\?axis=capability$/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Portfolio Health & Risk Intelligence');
+  });
+
+  test('the health heatmap has one row per CIO and totals that open their applications', async ({ page }) => {
+    await signIn(page, '/');
+
+    const health = page.getByRole('region', { name: 'How healthy is the portfolio?' });
+    await expect(health.getByRole('columnheader', { name: 'CIO' })).toBeVisible();
+    await expect(health.getByRole('columnheader', { name: 'Total' })).toBeVisible();
+    await expect(health.getByRole('rowheader', { name: 'Total' })).toBeVisible();
+    await expect(health.getByRole('group', { name: 'Heatmap axis' }).getByRole('button', { name: 'CIO' })).toHaveCount(0);
+
+    await health.getByRole('button', { name: /^Whole portfolio: \d+ applications/ }).click();
+
+    const detail = page.getByRole('dialog');
+    await expect(detail).toBeVisible();
+    await expect(detail).toContainText('Whole portfolio');
   });
 
   test('each panel explains its calculation with the values in force', async ({ page }) => {

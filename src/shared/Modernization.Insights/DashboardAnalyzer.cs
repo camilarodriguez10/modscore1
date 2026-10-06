@@ -138,13 +138,14 @@ public static class DashboardAnalyzer
     }
 
     /// <summary>
-    /// La grilla de capacidad contra el eje elegido. Una aplicación sin capacidad o sin
-    /// valor en el eje cae en la fila o columna vacía, que la interfaz nombra «sin asignar».
+    /// La grilla de CIO contra el eje elegido, con el total de cada fila, de cada columna y
+    /// de toda la grilla. Una aplicación sin CIO o sin valor en el eje cae en la fila o
+    /// columna vacía, que la interfaz nombra «sin asignar».
     /// </summary>
     private static DashboardHeatmap Matrix(List<Fact> facts, string axis)
     {
         var cells = facts
-            .GroupBy(f => (Row: f.Application.PrimaryBusinessCapability ?? string.Empty, Column: f.AxisValue(axis) ?? string.Empty))
+            .GroupBy(f => (Row: f.Application.Cio ?? string.Empty, Column: f.AxisValue(axis) ?? string.Empty))
             .Select(g =>
             {
                 var risks = g.Where(f => f.RiskScore is not null).Select(f => f.RiskScore!.Value).ToList();
@@ -167,15 +168,39 @@ public static class DashboardAnalyzer
             .ThenBy(c => c.Column, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
+        var rows = cells.Select(c => c.Row).Distinct(StringComparer.Ordinal).ToList();
+        var columns = cells
+            .Select(c => c.Column)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(c => c.Length == 0)
+            .ThenBy(c => c, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
         return new DashboardHeatmap(
             axis,
-            [.. cells.Select(c => c.Row).Distinct(StringComparer.Ordinal)],
-            [.. cells
-                .Select(c => c.Column)
-                .Distinct(StringComparer.Ordinal)
-                .OrderBy(c => c.Length == 0)
-                .ThenBy(c => c, StringComparer.OrdinalIgnoreCase)],
-            cells);
+            rows,
+            columns,
+            cells,
+            [.. rows.Select(row => Summarize(row, facts.Where(f => (f.Application.Cio ?? string.Empty) == row)))],
+            [.. columns.Select(column => Summarize(column, facts.Where(f => (f.AxisValue(axis) ?? string.Empty) == column)))],
+            facts.Count == 0 ? null : Summarize(string.Empty, facts));
+    }
+
+    /// <summary>Promedio de score y de riesgo sobre las aplicaciones, igual que una celda.</summary>
+    private static DashboardHeatmapTotal Summarize(string key, IEnumerable<Fact> group)
+    {
+        var members = group.ToList();
+        var risks = members.Where(f => f.RiskScore is not null).Select(f => f.RiskScore!.Value).ToList();
+        var averageScore = Round(members.Average(f => f.Score));
+        decimal? averageRisk = risks.Count == 0 ? null : Round(risks.Average());
+
+        return new DashboardHeatmapTotal(
+            key,
+            members.Count,
+            averageScore,
+            ScoreBands.Of(averageScore),
+            averageRisk,
+            averageRisk is { } risk ? members[0].Rules.RiskLevel(risk) : null);
     }
 
     // ------------------------------------------------ 2. ¿qué modernizar?
@@ -550,7 +575,7 @@ public static class DashboardAnalyzer
         public string? AxisValue(string axis) => axis switch
         {
             "region" => Application.Region,
-            "cio" => Application.Cio,
+            "capability" => Application.PrimaryBusinessCapability,
             "disposition" => Application.Disposition is { } d ? MapsNames.Display(d) : null,
             _ => Application.Country,
         };

@@ -234,9 +234,15 @@ function Workspace({ name, canAdministerRules }: { name: string; canAdministerRu
       </main>
 
       <footer className="border-t border-rule px-6 py-3">
+        {/*
+          Hasta el 2026-10-06 decía que se excluían SaaS, canceladas y dadas de baja, pero ningún
+          filtro lo hacía: era el pie del reporte de Power BI. Se dice lo que de verdad entra
+          hasta que el negocio confirme los campos y valores de esa exclusión (DD-09).
+        */}
         <p className="mx-auto max-w-[1240px] font-mono text-[11px] text-ink-3">
-          Excludes SaaS, cancelled and decommissioned applications. Only Common Service and Core
-          Business Applications.
+          Every application in the current EAI Master upload. The Power BI report also leaves out SaaS, cancelled and
+          decommissioned applications and keeps only Common Service and Core Business applications; that filter is not
+          applied yet.
         </p>
       </footer>
     </div>

@@ -43,8 +43,8 @@ export function axisValue(application: DashboardApplication, axis: string): stri
   const value =
     axis === 'region'
       ? application.region
-      : axis === 'cio'
-        ? application.cio
+      : axis === 'capability'
+        ? application.capability
         : axis === 'disposition'
           ? application.disposition
           : application.country;
@@ -103,6 +103,26 @@ export function QuestionPanel({
   );
 }
 
+/**
+ * Lo que se abre al elegir una celda o un total de los mapas de calor: las filas son el CIO, y
+ * null en la fila o la columna es «todas».
+ */
+function heatmapSelection(
+  row: string | null,
+  column: string | null,
+  axis: string,
+  hint: string,
+): Selection {
+  const rowName = row === null ? 'All CIOs' : groupLabel(row);
+  const columnName = column === null ? `all ${axisLabel(axis).toLowerCase()} values` : groupLabel(column);
+
+  return {
+    title: row === null && column === null ? 'Whole portfolio' : `${rowName} · ${columnName}`,
+    hint,
+    predicate: (a) => (row === null || (a.cio ?? '') === row) && (column === null || axisValue(a, axis) === column),
+  };
+}
+
 /** El eje de los mapas de calor. Es uno solo para las preguntas 1 y 4. */
 export function AxisPicker({ axis, onAxis }: { axis: string; onAxis: (axis: string) => void }) {
   return (
@@ -153,18 +173,18 @@ export function HealthPanel({
       right={<AxisPicker axis={axis} onAxis={onAxis} />}
     >
       <div className="flex flex-col gap-2">
-        <SubHeading>Average score by primary capability and {axisLabel(axis).toLowerCase()}</SubHeading>
+        <SubHeading>Average score by CIO and {axisLabel(axis).toLowerCase()}</SubHeading>
         <Heatmap
           matrix={matrix}
           measure="health"
+          rowsLabel="CIO"
           onSelect={(row, column) =>
-            onSelect({
-              title: `${groupLabel(row)} · ${groupLabel(column)}`,
-              hint: 'Applications in this cell of the health heatmap',
-              predicate: (a) => (a.capability ?? '') === row && axisValue(a, axis) === column,
-            })
+            onSelect(heatmapSelection(row, column, axis, 'Applications in this part of the health heatmap'))
           }
         />
+        <p className="text-[11.5px] text-ink-3">
+          The Total row and column average every application in them, not the cells.
+        </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -256,7 +276,7 @@ export function PrioritizationPanel({
           </span>
 
           <div>
-            <div className="grid grid-cols-[3.2rem_repeat(4,minmax(0,1fr))] gap-[3px]">
+            <div className="grid grid-cols-[3.2rem_repeat(4,minmax(0,1fr))_3rem] gap-[3px]">
               {[3, 2, 1, 0].map((criticality) => (
                 <div key={criticality} className="contents">
                   <span className="self-center pr-1 text-right text-[10.5px] text-ink-2">{scaleLabel(criticality)}</span>
@@ -311,6 +331,17 @@ export function PrioritizationPanel({
                       </div>
                     );
                   })}
+                  <MatrixTotal
+                    count={prioritization.points.filter((p) => p.criticality === criticality).length}
+                    label={`Criticality ${scaleLabel(criticality)}, total`}
+                    onSelect={() =>
+                      onSelect({
+                        title: `Criticality ${scaleLabel(criticality)}`,
+                        hint: 'Every opportunity level',
+                        predicate: (a) => a.criticality === criticality && a.opportunity !== null,
+                      })
+                    }
+                  />
                 </div>
               ))}
               <span />
@@ -319,6 +350,33 @@ export function PrioritizationPanel({
                   {scaleLabel(opportunity)}
                 </span>
               ))}
+              <span className="pt-1 text-center text-[10.5px] font-semibold text-ink">Total</span>
+              <span className="self-center pr-1 text-right text-[10.5px] font-semibold text-ink">Total</span>
+              {[0, 1, 2, 3].map((opportunity) => (
+                <MatrixTotal
+                  key={opportunity}
+                  count={prioritization.points.filter((p) => p.opportunity === opportunity).length}
+                  label={`Opportunity ${scaleLabel(opportunity)}, total`}
+                  onSelect={() =>
+                    onSelect({
+                      title: `Opportunity ${scaleLabel(opportunity)}`,
+                      hint: 'Every criticality level',
+                      predicate: (a) => a.opportunity === opportunity,
+                    })
+                  }
+                />
+              ))}
+              <MatrixTotal
+                count={prioritization.points.length}
+                label="Applications in the matrix"
+                onSelect={() =>
+                  onSelect({
+                    title: 'Applications in the matrix',
+                    hint: 'Every application with a criticality and an opportunity',
+                    predicate: (a) => a.opportunity !== null,
+                  })
+                }
+              />
             </div>
             <p className="mt-0.5 text-center text-[10.5px] font-medium text-ink-3">Modernization opportunity</p>
           </div>
@@ -389,7 +447,18 @@ export function PrioritizationPanel({
 
 // ---------------------------------------------- 3 · complejidad
 
-export function ComplexityPanel({ complexity, onSelect }: { complexity: DashboardComplexity; onSelect: Select }) {
+export function ComplexityPanel({
+  complexity,
+  applications,
+  onSelect,
+}: {
+  complexity: DashboardComplexity;
+  applications: readonly DashboardApplication[];
+  onSelect: Select;
+}) {
+  // Una aplicación puede caer en varias dimensiones: el total cuenta aplicaciones, no pertenencias.
+  const withComplexity = applications.filter((a) => a.complexity.length > 0).length;
+
   const measured = complexity.dimensions
     .filter((d) => d.applications !== null)
     .sort((a, b) => (b.applications ?? 0) - (a.applications ?? 0));
@@ -477,9 +546,27 @@ export function ComplexityPanel({ complexity, onSelect }: { complexity: Dashboar
           </ul>
         )}
 
+        <button
+          type="button"
+          onClick={() =>
+            onSelect({
+              title: 'Applications with measured complexity',
+              hint: 'In at least one measured dimension',
+              predicate: (a) => a.complexity.length > 0,
+            })
+          }
+          className="flex flex-wrap items-baseline justify-between gap-2 rounded-sm border-2 border-[var(--app-ink-3)] px-3 py-2 text-left hover:border-[var(--app-ink)]"
+        >
+          <span className="text-[12.5px] font-semibold text-ink">Total</span>
+          <span className="tnum font-mono text-[12px] text-ink">
+            {countOf(withComplexity, 'application')} in at least one dimension ·{' '}
+            {fmt(applications.length === 0 ? 0 : (withComplexity / applications.length) * 100, 0)}% of the portfolio
+          </span>
+        </button>
+
         <p className="text-[11.5px] text-ink-3">
           Every measured dimension uses a provisional definition. Shares add up the measured complexity; an application can
-          fall in more than one dimension.
+          fall in more than one dimension, so the total counts each application once.
         </p>
       </div>
 
@@ -530,20 +617,18 @@ export function RiskPanel({
       right={<AxisPicker axis={axis} onAxis={onAxis} />}
     >
       <div className="flex flex-col gap-2">
-        <SubHeading>Average risk by primary capability and {axisLabel(axis).toLowerCase()}</SubHeading>
+        <SubHeading>Average risk by CIO and {axisLabel(axis).toLowerCase()}</SubHeading>
         <Heatmap
           matrix={matrix}
           measure="risk"
+          rowsLabel="CIO"
           onSelect={(row, column) =>
-            onSelect({
-              title: `${groupLabel(row)} · ${groupLabel(column)}`,
-              hint: 'Applications in this cell of the risk heatmap',
-              predicate: (a) => (a.capability ?? '') === row && axisValue(a, axis) === column,
-            })
+            onSelect(heatmapSelection(row, column, axis, 'Applications in this part of the risk heatmap'))
           }
         />
         <p className="text-[11.5px] text-ink-3">
-          Risk goes from 0 to 100, higher is worse: the Modernization Risk Vectors pillar, inverted.
+          Risk goes from 0 to 100, higher is worse: the Modernization Risk Vectors pillar, inverted. The Total row and
+          column average every application in them, not the cells.
         </p>
       </div>
 
@@ -627,6 +712,25 @@ export function ObsolescencePanel({ obsolescence }: { obsolescence: DashboardObs
                 <span className="tnum text-right font-mono text-[11.5px] text-ink-2">{fmt(factor.share, 0)}%</span>
               </li>
             ))}
+            {measured.length > 0 && (
+              <li className="grid grid-cols-[minmax(0,12rem)_1fr_3rem] items-center gap-2 border-t border-rule pt-1.5">
+                <span className="text-[12px] leading-tight font-semibold text-ink">Total</span>
+                <span className="tnum font-mono text-[11px] text-ink-2">
+                  {fmt(
+                    measured.reduce((sum, factor) => sum + factor.lostPoints, 0),
+                    0,
+                  )}{' '}
+                  points lost across the portfolio
+                </span>
+                <span className="tnum text-right font-mono text-[11.5px] font-semibold text-ink">
+                  {fmt(
+                    measured.reduce((sum, factor) => sum + factor.share, 0),
+                    0,
+                  )}
+                  %
+                </span>
+              </li>
+            )}
             {pending.map((factor) => (
               <li key={factor.key} className="grid grid-cols-[minmax(0,12rem)_1fr] items-center gap-2">
                 <span className="text-[12px] leading-tight text-ink-2">{factorName(factor.key)}</span>
@@ -677,6 +781,11 @@ export function ResiliencePanel({ resilience, onSelect }: { resilience: Dashboar
                   <span className="text-[12px] leading-tight text-ink">
                     {resilienceName(dimension.key)}
                     <span className="block text-[10.5px] text-ink-3">{resilienceSource(dimension.key)}</span>
+                    {dimension.status !== 'needs-data' && (
+                      <span className="tnum block font-mono text-[10.5px] text-ink-2">
+                        Total: {countOf(dimension.withData, 'application')}
+                      </span>
+                    )}
                   </span>
                   {dimension.status === 'needs-data' || !field ? (
                     <span className="rounded-sm border border-dashed border-rule px-2 py-1 text-[11px] text-ink-3">
@@ -729,6 +838,20 @@ export function ResiliencePanel({ resilience, onSelect }: { resilience: Dashboar
         recovery or operational data.
       </p>
     </QuestionPanel>
+  );
+}
+
+/** El total de una fila o columna de la matriz de priorización: cuántas aplicaciones hay. */
+function MatrixTotal({ count, label, onSelect }: { count: number; label: string; onSelect: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-label={`${label}: ${countOf(count, 'application')}`}
+      className="tnum flex min-h-[2.2rem] items-center justify-center rounded-sm border-2 border-[var(--app-ink-3)] font-mono text-[12px] font-bold text-ink hover:border-[var(--app-ink)]"
+    >
+      {count}
+    </button>
   );
 }
 

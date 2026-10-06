@@ -33,8 +33,9 @@ describe('dashboard names', () => {
     expect(scaleShort(null)).toBe('—');
   });
 
-  it('names the heatmap axes, including target disposition', () => {
-    expect(AXIS_KEYS).toEqual(['region', 'country', 'cio', 'disposition']);
+  it('names the heatmap axes: the CIO is the rows, so primary capability is a column option', () => {
+    expect(AXIS_KEYS).toEqual(['region', 'country', 'capability', 'disposition']);
+    expect(axisLabel('capability')).toBe('Primary capability');
     expect(axisLabel('disposition')).toBe('Target disposition');
   });
 
@@ -64,6 +65,6 @@ describe('heatmap selection', () => {
     expect(axisValue(row, 'region')).toBe('LATAM');
     expect(axisValue(row, 'country')).toBe('Chile');
     expect(axisValue(row, 'disposition')).toBe('Invest');
-    expect(axisValue(row, 'cio')).toBe('');
+    expect(axisValue({ ...row, capability: null }, 'capability')).toBe('');
   });
 });

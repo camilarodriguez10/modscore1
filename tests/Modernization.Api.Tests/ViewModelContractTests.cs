@@ -63,6 +63,7 @@ public sealed partial class ViewModelContractTests
         [typeof(Insights.DashboardKpi)] = "DashboardKpi",
         [typeof(Insights.DashboardHeatmap)] = "DashboardHeatmap",
         [typeof(Insights.DashboardHeatmapCell)] = "DashboardHeatmapCell",
+        [typeof(Insights.DashboardHeatmapTotal)] = "DashboardHeatmapTotal",
         [typeof(Insights.DashboardHealth)] = "DashboardHealth",
         [typeof(Insights.BandShare)] = "BandShareView",
         [typeof(Insights.DashboardPrioritization)] = "DashboardPrioritization",

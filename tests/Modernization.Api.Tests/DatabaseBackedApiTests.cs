@@ -128,8 +128,8 @@ public sealed class DatabaseUploadTests(DatabaseBackedApiFixture fixture) : ICla
             new Uri("/api/applications/14381/explain", UriKind.Relative), Json);
 
         Assert.NotNull(explain);
-        Assert.Equal(79.67m, explain.Formula.Score);
-        Assert.Equal("20 + (44.75 / 60) x 80 = 79.67", explain.Formula.Expression);
+        Assert.Equal(80.70m, explain.Formula.Score);
+        Assert.Equal("20 + (45.529 / 60) x 80 = 80.70", explain.Formula.Expression);
 
         // La carga quedo registrada como version, con su autor.
         var ingestion = await client.GetFromJsonAsync<IngestionView>(

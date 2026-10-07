@@ -41,7 +41,7 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | Las seis preguntas (pantalla 09) | Entregada el 2026-09-16 (PLAN §8.9, [ADR 0023](docs/adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md)). Salud, prioridades, complejidad, riesgo, obsolescencia y resiliencia en `/insights`, con los mismos filtros. Ningún dato nuevo hizo falta; lo que mejoraría el esfuerzo y el valor de negocio está en PENDING-ITEMS como DQ-01 a DQ-07 |
 | Dashboard ejecutivo | D1, D2 y D3 entregadas el 2026-09-18 (PLAN §8.10, [ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md), [ADR 0025](docs/adr/0025-las-definiciones-viajan-con-las-reglas.md)). La página de inicio (`/`): *Portfolio Health & Risk Intelligence*, con cinco indicadores, seis paneles y un detalle común; el inventario está en `/portfolio`. Currency Score = `Raw_Tech_Score` de CMT. Las 37 definiciones de las seis preguntas viajan con las reglas y se editan en *Rules → Portfolio analytics*; cada panel explica su cálculo y *Definitions* es el diccionario. Cinco filtros nuevos en todas las pantallas. Falta D4 (fuentes nuevas) |
 | Pantalla Code | C1 entregada el 2026-09-26 (PLAN §8.11, [ADR 0026](docs/adr/0026-el-analisis-de-codigo-llega-de-github-enterprise.md)). `/code`: componentes de cada repositorio contra su fin de vida (endoflife.date, foto versionada con 22 productos y 273 ciclos), bibliotecas con hallazgos, discrepancias con el Currency Score de CMT e índice de riesgo de código con detalle por aplicación. 15 parámetros nuevos (área `code`) editables desde el portal. **Repositorios de demostración** hasta integrar GitHub Enterprise (C2, GH-01 a GH-09) |
-| Pruebas | **958 .NET** (328 motor · 273 contratos · 357 API) · **78 unitarias** de la SPA · **59 de punta a punta** con Playwright (32 de flujo y 27 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-10-02 |
+| Pruebas | **974 .NET** (344 motor · 273 contratos · 357 API) · **78 unitarias** de la SPA · **59 de punta a punta** con Playwright (32 de flujo y 27 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-10-02 |
 | Dependencias | Cero paquetes vulnerables (`dotnet list package --vulnerable`), `npm audit` limpio |
 | CI | GitHub Actions en verde desde la corrida #5 (`55cf36f`, 2026-09-15), que pasó los 7 jobs: backend, SPA, gitleaks, OSV, CodeQL C# y JS/TS, e imágenes con Trivy v0.74.0 y Checkov. CodeQL sin hallazgos altos. Tras acelerarlo, la corrida #6 (`148c6ce`) tardó 7 min 3 s en lugar de 9 min 54 s; CodeQL C# sigue marcando el total (6 min 58 s). Antes hubo que corregir el lint, CodeQL en repositorio privado (`upload: never`, `actions: read`), la versión de Trivy y el UID de los pods. Para acortarlo: gitleaks y OSV están en `seguridad.yml` y corren en cada push; `ci.yml` se salta los cambios que solo tocan documentación; CodeQL C# compila solo `src/` sin los analizadores de Roslyn; hay caché de NuGet, y el job de imágenes no espera a los demás |
 | ASVS L2 | 106 cumple · 11 parciales · 3 pendientes · 10 IdP o N/A. Los parciales dependen de un entorno real |
@@ -62,9 +62,12 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
   El score global se calcula sobre métricas planas, no como promedio de pilares.
 - **Pilares.** Modernization Risk Vectors 50, Architecture & Maturity 40, Stability 10.
   **18 métricas** en `contracts/ruleset-v1.3.json`; seis tienen peso 0 y solo se muestran.
-- **Casos dorados.** EAI 14381 = **79,67** (ejemplo del BRD, desde datos crudos) y EAI 10969
-  = **79,61** (dashboard). Si alguno cambia, el modelo dejó de coincidir: investigar antes de
-  tocar nada más.
+- **Casos dorados.** La captura del reporte v1.3 del 2026-10-07 = **66,12**, con el ruleset de
+  fábrica. EAI 14381 = **79,67** (ejemplo del BRD, desde datos crudos) y EAI 10969 = **79,61**
+  (captura anterior del dashboard), con las bandas de OSS y Raw Tech del BRD
+  (`TestRulesets.WithBrdBands`); con el de fábrica dan **80,70** y **80,26** (ADR 0032). Si
+  alguno cambia sin una decisión que lo explique, el modelo dejó de coincidir: investigar
+  antes de tocar nada más.
 - **Pantallas** (sitio en inglés):
   - Portfolio, con filtros en la URL y descarga CSV;
   - detalle, cálculo, what-if y plan futuro por aplicación;
@@ -472,7 +475,7 @@ Con el encabezado real del EAI Master, exportado de Power BI:
   los datos de ejemplo tienen APP_ID distintos del EAI. Un primer cruce por el APP_ID del archivo
   de SCA se reemplazó el mismo día.
 - `PowerBiExportUploadTests` carga el maestro de ejemplo convertido al formato de Power BI y
-  exige que la 14381 siga en 79,67.
+  exige que la 14381 siga en 80,70 (79,67 con las bandas del BRD).
 
 **Cuidado:** el Bash de este equipo reduce las barras invertidas dobles de los scripts de
 Python en heredoc, así que una secuencia de escape que debía llegar escrita al archivo termina

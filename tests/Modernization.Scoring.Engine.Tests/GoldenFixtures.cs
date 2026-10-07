@@ -81,6 +81,52 @@ internal static class GoldenFixtures
     ///   Stability    10,00 / 10 -> 100,00
     ///   Global       59,61 / 80 -> 79,61
     /// </summary>
+    /// <summary>
+    /// La captura del reporte v1.3 que se compartio el 2026-10-07 (una aplicacion critica de
+    /// LATAM): 66,12, con riesgo 47,68, arquitectura 80,70 y estabilidad 100. OSS y Raw Tech
+    /// entran con su valor bruto (ADR 0032).
+    ///
+    ///   Risk         1,60 + 7,00 + 2,00 + 1,60 + 1,40 + 3,70 = 17,30 / 50 -> 47,68
+    ///   Architecture 4,424 + 5,00 + 7,306 + 7,621 + 6,00 = 30,351 / 40 -> 80,70
+    ///   Stability    5,00 + 5,00 = 10,00 / 10 -> 100,00
+    ///   Global       57,651 / 100 -> 66,12
+    /// </summary>
+    internal static ApplicationSnapshot ReportCapture20261007() => new()
+    {
+        EaiCode = "CAPTURE-20261007",
+        ApplicationName = "Report capture 2026-10-07",
+        CapturedAt = CapturedAt,
+
+        KennaScore = 846,                    // 670-1000          -> 20  x 8%  = 1,60
+        CriticalApplicationIndicator = true,
+        DisasterRecoveryInScope = true,      // Yes               -> 100 x 7%  = 7,00
+        ScaFlaws = new ScaFlawCounts { Critical = 54, High = 189, Medium = 0, Low = 0 },  // 20 x 10% y 20 x 8%
+        UtilizesMfa = false,                 // No (with users)   -> 20  x 7%  = 1,40
+        UserCount = null,
+        OpenSourceScore = 37m,               // valor bruto       -> 37  x 10% = 3,70
+
+        RawTechScore = 88.48m,               // valor bruto       -> 88,48 x 5% = 4,424
+        NativeApi = ApiExposure.Apim,        // APIM              -> 100 x 5%  = 5,00
+        ArchitecturalValue = new ArchitecturalValue
+        {
+            ModernCount = 408,
+            HeritageCount = 415,
+            NotApprovedForUseCount = 105,
+            ObsoleteCount = 0,               // 67 800 / 928 = 73,06 x 10% = 7,306
+        },
+        ProductStrategy = new ProductStrategy { ProvidedValue = 76.21m },  // x 10% = 7,621
+        TechDebtScore = 1.5m,                // 0.1-2.4           -> 60  x 10% = 6,00
+
+        Monitoring = new MonitoringCapabilities
+        {
+            ElasticAgent = true,
+            ApplicationPerformanceMonitoring = true,
+            SyntheticMonitoring = true,
+            GeneralMonitoring = true,        // Enabled           -> 100 x 5%  = 5,00
+        },
+        OperationalScore = 80m,              // 80-100            -> 100 x 5%  = 5,00
+    };
+
     internal static ApplicationSnapshot Eai10969() => new()
     {
         EaiCode = "10969",

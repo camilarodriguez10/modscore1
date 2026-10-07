@@ -1000,7 +1000,7 @@ function LeversTab({
   return (
     <Card
       title="What-if levers"
-      subtitle="A lever that is turned off leaves the What-If Lab, the reachable ceiling and target searches. Levers that raise a metric take it to the top band of the formula, so editing a band moves their target too."
+      subtitle="A lever that is turned off leaves the What-If Lab, the reachable ceiling and target searches. Levers that raise a metric take it to the top band of the formula, or to 100 when the formula uses the value as it comes, so editing a band moves their target too."
     >
       <div className="overflow-x-auto">
         <table className="w-full min-w-[46rem] text-left text-[13px]">

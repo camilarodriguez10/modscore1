@@ -150,7 +150,7 @@ public sealed class UploadFlowTests(FileBackedApiFixture fixture) : IClassFixtur
             new Uri("/api/applications/14381/overview", UriKind.Relative), Json);
 
         Assert.NotNull(overview);
-        Assert.Equal(79.67m, overview.Score);
+        Assert.Equal(80.70m, overview.Score);
         Assert.Equal(60m, overview.Denominator);
     }
 
@@ -374,6 +374,6 @@ public sealed class UploadFlowTests(FileBackedApiFixture fixture) : IClassFixtur
 
         Assert.NotNull(history);
         Assert.True(history.Count >= 2);
-        Assert.All(history.Where(p => p.Score is not null), p => Assert.Equal(79.67m, p.Score));
+        Assert.All(history.Where(p => p.Score is not null), p => Assert.Equal(80.70m, p.Score));
     }
 }

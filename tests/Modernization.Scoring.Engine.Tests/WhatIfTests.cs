@@ -17,7 +17,8 @@ public sealed class WhatIfTests
     /// <summary>
     /// EAI 10969 con MFA en "No (with users)". Todo lo demas identico al
     /// dashboard, asi que el denominador sigue siendo 80 y la palanca de MFA
-    /// vale exactamente 7 × (100 − 20) ÷ 100 = 5,60 puntos.
+    /// vale exactamente 7 × (100 − 20) ÷ 100 = 5,60 puntos. Con OSS y Raw Tech en su
+    /// valor bruto (ADR 0032), el numerador de la 10969 es 60,259.
     /// </summary>
     private static ApplicationSnapshot WithoutMfa()
         => GoldenFixtures.Eai10969() with { UtilizesMfa = false };
@@ -27,30 +28,31 @@ public sealed class WhatIfTests
     {
         var snapshot = WithoutMfa();
 
-        // Linea base: 59,609 − 7,00 + 1,40 = 54,009 sobre 80 => 74,01
+        // Linea base: 60,259 − 7,00 + 1,40 = 54,659 sobre 80 => 74,66
         var baseline = _engine.Calculate(snapshot);
-        Assert.Equal(54.009m, baseline.Numerator);
+        Assert.Equal(54.659m, baseline.Numerator);
         Assert.Equal(80m, baseline.Denominator);
-        Assert.Equal(74.01m, baseline.Score);
+        Assert.Equal(74.66m, baseline.Score);
 
         var scenario = _whatIf.Evaluate(snapshot, [new LeverSelection("mfa.enable")]);
 
-        Assert.Equal(59.609m, scenario.Projected.Numerator);
-        Assert.Equal(79.61m, scenario.Projected.Score);
+        Assert.Equal(60.259m, scenario.Projected.Numerator);
+        Assert.Equal(80.26m, scenario.Projected.Score);
         Assert.Equal(5.60m, scenario.Delta);
     }
 
     /// <summary>
-    /// Cada palanca vale <c>peso × 80 ÷ 100</c> cuando lleva la metrica de 20 a 100
-    /// con el denominador en 80. Son los numeros publicados en el plan.
+    /// Cada palanca vale <c>peso × (100 − desde) ÷ 100</c> con el denominador en 80: de 20 a
+    /// 100 en las metricas por bandas (los numeros publicados en el plan), y de 30 a 100 en
+    /// OSS, que va con su valor bruto (ADR 0032).
     /// </summary>
     [Theory]
-    [InlineData("sca.remediateHigh", 8, 6.40)]
-    [InlineData("kenna.reduce", 8, 6.40)]
-    [InlineData("mfa.enable", 7, 5.60)]
-    [InlineData("dr.include", 7, 5.60)]
-    [InlineData("oss.improve", 10, 8.00)]
-    public void LeverGainMatchesItsWeight(string leverKey, int weight, double expectedDelta)
+    [InlineData("sca.remediateHigh", 8, 20, 6.40)]
+    [InlineData("kenna.reduce", 8, 20, 6.40)]
+    [InlineData("mfa.enable", 7, 20, 5.60)]
+    [InlineData("dr.include", 7, 20, 5.60)]
+    [InlineData("oss.improve", 10, 30, 7.00)]
+    public void LeverGainMatchesItsWeight(string leverKey, int weight, int from, double expectedDelta)
     {
         // Se parte de una aplicacion con todas esas metricas en su peor valor.
         var snapshot = GoldenFixtures.Eai10969() with
@@ -67,8 +69,8 @@ public sealed class WhatIfTests
         Assert.Equal((decimal)expectedDelta, effect.Delta);
         Assert.Equal(0m, effect.DenominatorDelta);
 
-        // La formula del plan, verificada aparte del motor.
-        Assert.Equal((decimal)expectedDelta, Math.Round(0.8m * weight * 80m / 80m, 2));
+        // La formula, verificada aparte del motor.
+        Assert.Equal((decimal)expectedDelta, Math.Round(weight * (100m - from) / 100m, 2));
     }
 
     /// <summary>
@@ -343,7 +345,7 @@ public sealed class WhatIfTests
 
         Assert.False(snapshot.UtilizesMfa);
         Assert.Null(snapshot.TechDebtScore);
-        Assert.Equal(74.01m, _engine.Calculate(snapshot).Score);
+        Assert.Equal(74.66m, _engine.Calculate(snapshot).Score);
     }
 
     [Fact]

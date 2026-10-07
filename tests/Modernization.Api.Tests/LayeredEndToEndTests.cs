@@ -26,14 +26,15 @@ public sealed class LayeredEndToEndTests(LayeredApiFixture fixture) : IClassFixt
 
         Assert.NotNull(view);
 
-        // El score documentado en el BRD, servido por el BFF.
-        Assert.Equal(44.75m, view.Formula.Numerator);
+        // El caso de referencia servido por el BFF: 79,67 en el BRD con bandas, 80,70 con OSS
+        // y Raw Tech en su valor bruto (ADR 0032).
+        Assert.Equal(45.5285m, view.Formula.Numerator);
         Assert.Equal(60m, view.Formula.Denominator);
-        Assert.Equal(79.67m, view.Formula.Score);
+        Assert.Equal(80.70m, view.Formula.Score);
         Assert.Equal("v1.3", view.Formula.RulesetVersion);
 
         // La formula llega con los numeros reales ya sustituidos.
-        Assert.Equal("20 + (44.75 / 60) x 80 = 79.67", view.Formula.Expression);
+        Assert.Equal("20 + (45.529 / 60) x 80 = 80.70", view.Formula.Expression);
         Assert.Equal(5, view.Formula.Steps.Count);
 
         // Cada metrica incluida explica su regla y su procedencia.
@@ -62,8 +63,10 @@ public sealed class LayeredEndToEndTests(LayeredApiFixture fixture) : IClassFixt
         Assert.NotNull(view);
         Assert.NotEmpty(view.Waterfall);
 
-        // El ultimo acumulado del waterfall es el numerador de la formula.
-        Assert.Equal(view.Formula.Numerator, view.Waterfall[^1].Cumulative);
+        // El ultimo acumulado del waterfall es el numerador de la formula, redondeado a dos
+        // decimales como todo acumulado: con OSS y Raw Tech en su valor bruto el numerador
+        // puede tener mas (45,5285 en la 14381).
+        Assert.Equal(Math.Round(view.Formula.Numerator, 2, MidpointRounding.AwayFromZero), view.Waterfall[^1].Cumulative);
 
         // Y viene ordenado de mayor a menor aporte.
         var weighted = view.Waterfall.Select(w => w.WeightedScore).ToList();
@@ -79,13 +82,13 @@ public sealed class LayeredEndToEndTests(LayeredApiFixture fixture) : IClassFixt
             new Uri($"/api/applications/{ReferenceEai}/overview", UriKind.Relative), Json);
 
         Assert.NotNull(view);
-        Assert.Equal(79.67m, view.Score);
+        Assert.Equal(80.70m, view.Score);
         Assert.Equal(3, view.Pillars.Count);
 
         var risk = view.Pillars.Single(p => p.Key == "risk");
         Assert.Equal(50m, risk.TotalWeight);
         Assert.Equal(25m, risk.AvailableWeight);
-        Assert.Equal(74.40m, risk.Score);
+        Assert.Equal(77.26m, risk.Score);
 
         // El dashboard muestra peso nominal y disponible por separado.
         Assert.All(view.Pillars, p => Assert.True(p.AvailableWeight <= p.TotalWeight));

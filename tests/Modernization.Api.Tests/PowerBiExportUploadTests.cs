@@ -14,7 +14,7 @@ namespace Modernization.Api.Tests;
 /// <remarks>
 /// Antes de la lectura tolerante (ADR 0028) una carga así terminaba con el EAI Master en
 /// cero filas. Se arma desde la carga inicial de la prueba para comparar contra el caso de
-/// referencia: la 14381 tiene que seguir dando 79,67.
+/// referencia: la 14381 tiene que seguir dando 80,70 (79,67 con las bandas del BRD, ADR 0032).
 /// </remarks>
 public sealed class PowerBiExportUploadTests(FileBackedApiFixture fixture) : IClassFixture<FileBackedApiFixture>
 {
@@ -131,7 +131,7 @@ public sealed class PowerBiExportUploadTests(FileBackedApiFixture fixture) : ICl
             new Uri("/api/applications/14381/overview", UriKind.Relative), Json);
 
         Assert.NotNull(overview);
-        Assert.Equal(79.67m, overview.Score);
+        Assert.Equal(80.70m, overview.Score);
         Assert.Equal(60m, overview.Denominator);
     }
 }

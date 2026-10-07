@@ -14,8 +14,8 @@ public sealed class RulesComparisonTests
 
         var comparison = RulesComparison.Compare(GoldenFixtures.Eai14381(), model, model);
 
-        Assert.Equal(79.67m, comparison.ScoreFrom);
-        Assert.Equal(79.67m, comparison.ScoreTo);
+        Assert.Equal(80.70m, comparison.ScoreFrom);
+        Assert.Equal(80.70m, comparison.ScoreTo);
         Assert.Equal(0m, comparison.Delta);
         Assert.Equal(model.Ruleset.Metrics.Count, comparison.Metrics.Count);
         Assert.All(comparison.Metrics, m => Assert.False(m.Changed));
@@ -24,7 +24,7 @@ public sealed class RulesComparisonTests
 
     /// <summary>
     /// El caso calculado a mano en la Fase 12: EAI 10969 con Kenna en 5 y MFA en 10 pasa
-    /// de 79,61 a 82,01 (numerador 62,009 sobre 80).
+    /// de 80,26 a 82,66 (numerador 62,659 sobre 80, con OSS y Raw Tech en su valor bruto).
     /// </summary>
     [Fact]
     public void MovingWeightShowsUpMetricByMetricAndInTheScore()
@@ -37,8 +37,8 @@ public sealed class RulesComparisonTests
 
         var comparison = RulesComparison.Compare(GoldenFixtures.Eai10969(), RulesModel.BuiltIn, edit.Candidate!);
 
-        Assert.Equal(79.61m, comparison.ScoreFrom);
-        Assert.Equal(82.01m, comparison.ScoreTo);
+        Assert.Equal(80.26m, comparison.ScoreFrom);
+        Assert.Equal(82.66m, comparison.ScoreTo);
         Assert.Equal(2.40m, comparison.Delta);
 
         var kenna = comparison.Metrics.Single(m => m.Key == "kenna");

@@ -46,7 +46,7 @@ public sealed class DummyTimelineTests
         {
             var snapshot = await new DummySnapshotProvider(DummyTimeline.Rewind(Current, quarters)).GetAllAsync();
 
-            Assert.Equal(79.67m, engine.Calculate(snapshot.Find(DummyPortfolio.ReferenceEaiCode)!).Score);
+            Assert.Equal(80.70m, engine.Calculate(snapshot.Find(DummyPortfolio.ReferenceEaiCode)!).Score);
         }
     }
 

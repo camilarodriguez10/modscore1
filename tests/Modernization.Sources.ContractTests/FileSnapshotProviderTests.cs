@@ -112,9 +112,9 @@ public sealed class FileSnapshotProviderTests : SnapshotProviderContract, IDispo
 
         var result = engine.Calculate(reference);
 
-        Assert.Equal(44.75m, result.Numerator);
+        Assert.Equal(45.5285m, result.Numerator);
         Assert.Equal(60m, result.Denominator);
-        Assert.Equal(79.67m, result.Score);
+        Assert.Equal(80.70m, result.Score);
     }
 
     // ------------------------------------------------------------- esquemas

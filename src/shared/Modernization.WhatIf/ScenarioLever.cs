@@ -160,7 +160,7 @@ public sealed class LeverCatalog
             return new ScenarioLever
             {
                 Key = "oss.improve",
-                Name = "Raise the Open-Source Score to the top band",
+                Name = "Raise the Open-Source Score to its best level",
                 Action = "Replace or upgrade the lowest-rated open source components",
                 MetricKey = "oss",
                 PillarKey = "risk",
@@ -200,7 +200,7 @@ public sealed class LeverCatalog
             return new ScenarioLever
             {
                 Key = "rawTech.improve",
-                Name = "Raise the RAW Tech Score to the top band",
+                Name = "Raise the RAW Tech Score to its best level",
                 Action = "Upgrade the components approaching their end-of-life date",
                 MetricKey = "rawTech",
                 PillarKey = "architecture",
@@ -485,9 +485,18 @@ internal sealed class BandTarget
 
     public BandTarget(Ruleset ruleset, string metricKey)
     {
-        var bands = ruleset.Metrics
+        var mapping = ruleset.Metrics
             .FirstOrDefault(m => string.Equals(m.Key, metricKey, StringComparison.Ordinal))?
-            .Mapping.Bands;
+            .Mapping;
+
+        // Sin bandas, el valor es el puntaje (ADR 0032): lo mejor es el tope de la escala.
+        if (mapping?.Kind == MappingKind.Identity)
+        {
+            _top = [new BandDefinition { Min = 100m, Max = 100m, Score = 100m, Label = "100" }];
+            return;
+        }
+
+        var bands = mapping?.Bands;
 
         if (bands is not { Count: > 0 })
         {

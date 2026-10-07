@@ -205,7 +205,8 @@ public abstract class SnapshotProviderContract
 
     /// <summary>
     /// Verificacion extremo a extremo: el EAI documentado en el BRD debe llegar a
-    /// 79,67 pasando por lectura, ensamblado y scoring. Es la prueba de que
+    /// 80,70 (79,67 con las bandas del BRD; OSS y Raw Tech van con su valor bruto desde el
+    /// 2026-10-07, ADR 0032) pasando por lectura, ensamblado y scoring. Es la prueba de que
     /// cambiar de adaptador no cambia un score.
     /// </summary>
     [Fact]
@@ -218,9 +219,9 @@ public abstract class SnapshotProviderContract
 
         var result = Engine.Calculate(reference);
 
-        Assert.Equal(44.75m, result.Numerator);
+        Assert.Equal(45.5285m, result.Numerator);
         Assert.Equal(60m, result.Denominator);
-        Assert.Equal(79.67m, result.Score);
+        Assert.Equal(80.70m, result.Score);
     }
 
     // ---------------------------------------------------- casos borde cubiertos

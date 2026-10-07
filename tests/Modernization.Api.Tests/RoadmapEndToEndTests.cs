@@ -32,7 +32,7 @@ public sealed class RoadmapEndToEndTests(LayeredApiFixture fixture) : IClassFixt
         Assert.NotEmpty(view.DispositionDefinition!);
         Assert.NotEmpty(view.RoadmapDefinition!);
         Assert.NotEmpty(view.LeverRationale!);
-        Assert.Equal(79.67m, view.BaselineScore);
+        Assert.Equal(80.70m, view.BaselineScore);
     }
 
     /// <summary>
@@ -93,7 +93,7 @@ public sealed class RoadmapEndToEndTests(LayeredApiFixture fixture) : IClassFixt
         Assert.NotNull(view);
         Assert.Equal(NoticeCodes.OutlookProjected, view.Outlook.Code);
         Assert.Equal("Maintain (Patch)", view.Outlook.Args["roadmap"]);
-        Assert.Equal("79.67", view.Outlook.Args["baseline"]);
+        Assert.Equal("80.7", view.Outlook.Args["baseline"]);
     }
 
     // ------------------------------------------------------ vista de portafolio

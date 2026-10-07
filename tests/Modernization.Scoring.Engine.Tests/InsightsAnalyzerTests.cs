@@ -207,7 +207,9 @@ public sealed class InsightsAnalyzerTests
     [Fact]
     public void MissingDataIsCountedApartFromLostPoints()
     {
-        var insights = Analyze();
+        // Con todos los factores a la vista: Raw Tech, que va con su valor bruto, tambien pierde
+        // puntos, y la deuda tecnica sin dato queda fuera de los diez primeros.
+        var insights = Analyze(new InsightsOptions(TopCount: 30));
 
         var techDebt = Assert.Single(insights.Obsolescence, o => o.MetricKey == "techDebt");
 

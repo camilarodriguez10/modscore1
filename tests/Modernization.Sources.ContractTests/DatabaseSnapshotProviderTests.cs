@@ -157,7 +157,7 @@ public sealed class DatabaseAdapterTests
         var reference = snapshot.Find("14381");
 
         Assert.NotNull(reference);
-        Assert.Equal(79.67m, Engine.Calculate(reference).Score);
+        Assert.Equal(80.70m, Engine.Calculate(reference).Score);
     }
 
     [Fact]

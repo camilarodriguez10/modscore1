@@ -16,7 +16,11 @@ public sealed class RulesEditorTests
     private static RulesDraft Weights(params (string Key, decimal Weight)[] weights)
         => new(Metrics: [.. weights.Select(w => new MetricDraft(w.Key, w.Weight))]);
 
-    private static RulesDraft Oss(IReadOnlyList<BandDraft> bands) => new(Metrics: [new MetricDraft("oss", 10, bands)]);
+    /// <summary>
+    /// Un borrador que edita las bandas de Operational Score. Hasta el 2026-10-07 eran las de
+    /// OSS, que desde entonces va con su valor bruto y ya no tiene bandas (ADR 0032).
+    /// </summary>
+    private static RulesDraft Operational(IReadOnlyList<BandDraft> bands) => new(Metrics: [new MetricDraft("operational", 5, bands)]);
 
     private static List<string> Codes(RulesEdit edit) => [.. edit.Errors.Select(e => e.Code)];
 
@@ -73,9 +77,10 @@ public sealed class RulesEditorTests
 
         var result = edit.Candidate!.Engine.Calculate(GoldenFixtures.Eai10969());
 
-        Assert.Equal(62.009m, result.Numerator);
+        // 60,259 (OSS y Raw Tech con su valor bruto) − 0,60 de Kenna + 3,00 de MFA.
+        Assert.Equal(62.659m, result.Numerator);
         Assert.Equal(80m, result.Denominator);
-        Assert.Equal(82.01m, result.Score);
+        Assert.Equal(82.66m, result.Score);
 
         Assert.Contains(edit.Changes, c =>
             c.Code == NoticeCodes.ChangeWeight
@@ -138,7 +143,7 @@ public sealed class RulesEditorTests
     [Fact]
     public void OverlappingBandsAreRejected()
     {
-        var edit = Edit(Oss([new(0, 59, 20, "0-59"), new(50, 74, 60, "50-74"), new(75, 100, 100, "75-100")]));
+        var edit = Edit(Operational([new(0, 59, 20, "0-59"), new(50, 74, 60, "50-74"), new(75, 100, 100, "75-100")]));
 
         Assert.Contains(NoticeCodes.RulesBandOrder, Codes(edit));
     }
@@ -148,15 +153,15 @@ public sealed class RulesEditorTests
     {
         Assert.Contains(
             NoticeCodes.RulesBandBounds,
-            Codes(Edit(Oss([new(59, 0, 20, "low"), new(60, 100, 100, "high")]))));
+            Codes(Edit(Operational([new(59, 0, 20, "low"), new(60, 100, 100, "high")]))));
 
         Assert.Equal(
             2,
-            Edit(Oss([new(0, 59, 20, " "), new(60, 100, 100, "hi")])).Errors.Count(e => e.Code == NoticeCodes.RulesBandLabel));
+            Edit(Operational([new(0, 59, 20, " "), new(60, 100, 100, "hi")])).Errors.Count(e => e.Code == NoticeCodes.RulesBandLabel));
 
         Assert.Contains(
             NoticeCodes.RulesBandCount,
-            Codes(Edit(Oss([.. Enumerable.Range(0, 11).Select(i => new BandDraft(i * 10, (i * 10) + 5, 50, "band"))]))));
+            Codes(Edit(Operational([.. Enumerable.Range(0, 11).Select(i => new BandDraft(i * 10, (i * 10) + 5, 50, "band"))]))));
     }
 
     [Fact]
@@ -321,32 +326,45 @@ public sealed class LeverTargetTests
     private static ApplicationSnapshot Apply(LeverCatalog catalog, string key, ApplicationSnapshot snapshot)
         => catalog.All.Single(l => l.Key == key).Apply(snapshot, null);
 
-    /// <summary>Con las reglas de fabrica, los objetivos son los que eran constantes: 75, 339, 75 y 80.</summary>
+    /// <summary>
+    /// Con las reglas de fabrica: Kenna y Operational van a su mejor banda (339 y 80); OSS y
+    /// Raw Tech, que van con su valor bruto desde el 2026-10-07 (ADR 0032), a 100.
+    /// </summary>
     [Fact]
     public void FactoryTargetsAreTheTopBandsOfV13()
     {
         var catalog = LeverCatalog.Default;
         var low = GoldenFixtures.Eai10969() with { OpenSourceScore = 40m, KennaScore = 800, RawTechScore = 10m, OperationalScore = 50m };
 
-        Assert.Equal(75m, Apply(catalog, "oss.improve", low).OpenSourceScore);
+        Assert.Equal(100m, Apply(catalog, "oss.improve", low).OpenSourceScore);
         Assert.Equal(339, Apply(catalog, "kenna.reduce", low).KennaScore);
-        Assert.Equal(75m, Apply(catalog, "rawTech.improve", low).RawTechScore);
+        Assert.Equal(100m, Apply(catalog, "rawTech.improve", low).RawTechScore);
         Assert.Equal(80m, Apply(catalog, "operational.improve", low).OperationalScore);
 
         var missing = low with { OpenSourceScore = null, KennaScore = null };
 
-        Assert.Equal(75m, Apply(catalog, "oss.improve", missing).OpenSourceScore);
+        Assert.Equal(100m, Apply(catalog, "oss.improve", missing).OpenSourceScore);
         Assert.Equal(339, Apply(catalog, "kenna.reduce", missing).KennaScore);
     }
 
-    /// <summary>Antes, la palanca fijaba 75 aunque la aplicacion tuviera 92: nunca empeora un valor.</summary>
+    /// <summary>Una palanca nunca empeora un valor que ya esta en la mejor banda.</summary>
     [Fact]
     public void AValueAlreadyInTheTopBandIsLeftAlone()
     {
-        var high = GoldenFixtures.Eai10969() with { OpenSourceScore = 92m, KennaScore = 120 };
+        var high = GoldenFixtures.Eai10969() with { OperationalScore = 92m, KennaScore = 120 };
 
-        Assert.Equal(92m, Apply(LeverCatalog.Default, "oss.improve", high).OpenSourceScore);
+        Assert.Equal(92m, Apply(LeverCatalog.Default, "operational.improve", high).OperationalScore);
         Assert.Equal(120, Apply(LeverCatalog.Default, "kenna.reduce", high).KennaScore);
+    }
+
+    /// <summary>Con el valor bruto, ya lograda es estar en 100: un 92 todavia puede subir.</summary>
+    [Fact]
+    public void ARawValueMetricIsAchievedOnlyAtOneHundred()
+    {
+        var lever = LeverCatalog.Default.All.Single(l => l.Key == "oss.improve");
+
+        Assert.False(lever.IsAlreadyAchieved(GoldenFixtures.Eai10969() with { OpenSourceScore = 92m }));
+        Assert.True(lever.IsAlreadyAchieved(GoldenFixtures.Eai10969() with { OpenSourceScore = 100m }));
     }
 
     [Fact]
@@ -354,17 +372,17 @@ public sealed class LeverTargetTests
     {
         var edit = RulesEditor.Apply(
             RulesModel.BuiltIn,
-            new RulesDraft(Metrics: [new MetricDraft("oss", 10, [new(0, 59, 20, "0-59"), new(60, 79, 60, "60-79"), new(80, 100, 100, "80-100")])]));
+            new RulesDraft(Metrics: [new MetricDraft("operational", 5, [new(0, 69.99m, 20, "0-69.99"), new(70, 84.99m, 60, "70-84.99"), new(85, 100, 100, "85-100")])]));
 
         Assert.True(edit.IsValid, string.Join(" | ", edit.Errors));
 
-        var lever = edit.Candidate!.LeverCatalog.All.Single(l => l.Key == "oss.improve");
-        var snapshot = GoldenFixtures.Eai10969() with { OpenSourceScore = 75m };
+        var lever = edit.Candidate!.LeverCatalog.All.Single(l => l.Key == "operational.improve");
+        var snapshot = GoldenFixtures.Eai10969() with { OperationalScore = 80m };
 
         Assert.False(lever.IsAlreadyAchieved(snapshot));
-        Assert.Equal(80m, lever.Apply(snapshot, null).OpenSourceScore);
+        Assert.Equal(85m, lever.Apply(snapshot, null).OperationalScore);
 
-        Assert.Contains(edit.Changes, c => c.Code == NoticeCodes.ChangeBands && c.Args["to"] == "0-59=20; 60-79=60; 80-100=100");
+        Assert.Contains(edit.Changes, c => c.Code == NoticeCodes.ChangeBands && c.Args["to"] == "0-69.99=20; 70-84.99=60; 85-100=100");
     }
 }
 
@@ -398,8 +416,8 @@ public sealed class RulesImpactTests
 
         var mover = Assert.Single(impact.Movers, m => m.EaiCode == "10969");
 
-        Assert.Equal(79.61m, mover.Before);
-        Assert.Equal(82.01m, mover.After);
+        Assert.Equal(80.26m, mover.Before);
+        Assert.Equal(82.66m, mover.After);
         Assert.Equal(2.40m, mover.Delta);
         Assert.Equal(2, impact.Up + impact.Down + impact.Unchanged);
     }
@@ -410,11 +428,11 @@ public sealed class RulesImpactTests
     {
         var narrow = RulesEditor.Apply(
             RulesModel.BuiltIn,
-            new RulesDraft(Metrics: [new MetricDraft("oss", 10, [new(0, 10, 20, "0-10"), new(11, 20, 60, "11-20"), new(21, 30, 100, "21-30")])])).Candidate!;
+            new RulesDraft(Metrics: [new MetricDraft("operational", 5, [new(0, 10, 20, "0-10"), new(11, 20, 60, "11-20"), new(21, 30, 100, "21-30")])])).Candidate!;
 
         var impact = RulesImpactSimulator.Simulate(Portfolio(), RulesModel.BuiltIn, narrow, Start);
 
         Assert.True(impact.NoLongerScored >= 1);
-        Assert.Contains(impact.Movers, m => m.EaiCode == "10969" && m.After is null && m.Before == 79.61m);
+        Assert.Contains(impact.Movers, m => m.EaiCode == "10969" && m.After is null && m.Before == 80.26m);
     }
 }

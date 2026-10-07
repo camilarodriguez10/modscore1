@@ -240,7 +240,7 @@ La carpeta `data\local` empieza vacía, así que cada pantalla avisa que no hay 
    rechazó y por qué.
 
 Cada carga queda como una versión en **Upload history** y sobrevive al reinicio. Con los CSV
-de ejemplo, la aplicación 14381 tiene que dar **79.67**.
+de ejemplo, la aplicación 14381 tiene que dar **80.70**.
 
 ### Antes de cargar: el mapping de columnas
 
@@ -379,12 +379,15 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-958 pruebas .NET: 328 del motor, 273 de contratos y 357 de API. Las dos que importan más
+974 pruebas .NET: 344 del motor, 273 de contratos y 357 de API. Las dos que importan más
 reproducen los casos documentados:
 
-- **EAI 14381 = 79,67:** ejemplo trabajado del BRD, derivado desde datos crudos por el
-  pipeline completo.
-- **EAI 10969 = 79,61:** dashboard Power BI v1.3, métrica por métrica.
+- **Captura del reporte v1.3 del 2026-10-07 = 66,12:** métrica por métrica, con OSS y Raw Tech
+  en su valor bruto ([ADR 0032](docs/adr/0032-oss-y-raw-tech-con-valor-bruto.md)).
+- **EAI 14381 = 79,67:** ejemplo trabajado del BRD, con las bandas de OSS y Raw Tech del BRD,
+  derivado desde datos crudos por el pipeline completo. Con el ruleset de fábrica da **80,70**.
+- **EAI 10969 = 79,61:** una captura anterior del dashboard Power BI v1.3, también con bandas.
+  Con el ruleset de fábrica da **80,26**.
 
 `ViewModelContractTests` falla si un modelo de vista de la capa Channel y su tipo
 TypeScript difieren.
@@ -727,7 +730,7 @@ dotnet run --project tools/Modernization.DummyData -- data/dummy
 
 Genera 250 aplicaciones deterministas y las exporta como ocho CSV con los nombres
 de columna reales de cada archivo observado. Devuelve código de error si el EAI de
-referencia deja de dar 79,67.
+referencia deja de dar 80,70.
 
 ## Estructura
 

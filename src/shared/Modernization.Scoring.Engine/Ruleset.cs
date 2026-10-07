@@ -105,10 +105,10 @@ public sealed record Ruleset
                 throw new RulesetException($"La metrica '{metric.Key}' tiene peso negativo.");
             }
 
-            if (metric.ZeroIsNoData && metric.Mapping.Kind != MappingKind.NumericBands)
+            if (metric.ZeroIsNoData && metric.Mapping.Kind is not (MappingKind.NumericBands or MappingKind.Identity))
             {
                 throw new RulesetException(
-                    $"La metrica '{metric.Key}' declara zeroIsNoData, que solo aplica a bandas numericas.");
+                    $"La metrica '{metric.Key}' declara zeroIsNoData, que solo aplica a valores numericos.");
             }
         }
 

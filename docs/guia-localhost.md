@@ -215,8 +215,9 @@ la evolución en el tiempo. Luego, cinco comprobaciones de treinta segundos:
 1. Al entrar se abre el **Dashboard**. En la pestaña **Portfolio** tiene que haber una tabla
    con unas 250 aplicaciones.
 2. Abre `http://localhost:5173/applications/14381/calculation`. El score tiene que ser
-   exactamente **79.67**: es el ejemplo trabajado del documento de negocio, y si ese número
-   sale, el cálculo está bien de punta a punta.
+   exactamente **80.70**: es el ejemplo trabajado del documento de negocio (79.67 con sus
+   bandas; desde el 2026-10-07, OSS y Raw Tech van con su valor bruto, como el reporte), y si
+   ese número sale, el cálculo está bien de punta a punta.
 3. **Insights** muestra las seis preguntas del portafolio.
 4. **Dashboard** muestra cinco indicadores y seis paneles; un clic en un indicador abre la
    lista de aplicaciones que cuenta.
@@ -241,7 +242,7 @@ dotnet test ModernizationScore.slnx
 npm --prefix src/web test
 ```
 
-Deben terminar en verde: 958 pruebas .NET y 78 de la interfaz.
+Deben terminar en verde: 974 pruebas .NET y 78 de la interfaz.
 
 ---
 
@@ -542,7 +543,7 @@ llevarán a **Data**. Es lo esperado, no un error. Luego:
    obligatorio.
 2. Pulsa **Upload and recalculate**. La pantalla dice cuántas filas leyó, cuántas rechazó y
    por qué.
-3. Con los CSV de ejemplo, Portfolio muestra 250 aplicaciones y la 14381 da **79.67**.
+3. Con los CSV de ejemplo, Portfolio muestra 250 aplicaciones y la 14381 da **80.70**.
 
 **Con tus propios exports: revisa el mapping antes de cargar.** Si tus archivos no traen
 exactamente los nombres de columna esperados, decide primero qué columna carga cada campo:
@@ -697,7 +698,7 @@ La aplicación no instala servicios ni toca el registro de Windows. Lo único in
 - [ ] Data acepta la primera carga con los CSV de `data\dummy`, o muestra los cuatro
       trimestres copiados de `data\timeline`.
 - [ ] Portfolio muestra ~250 aplicaciones.
-- [ ] `/applications/14381/calculation` da **79.67**.
+- [ ] `/applications/14381/calculation` da **80.70**.
 - [ ] **Insights** responde las seis preguntas.
 - [ ] **Dashboard** muestra cinco indicadores y seis paneles, y un clic abre el detalle.
 - [ ] **Code** avisa en ámbar que los repositorios son de demostración y muestra la

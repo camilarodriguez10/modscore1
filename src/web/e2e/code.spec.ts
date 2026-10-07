@@ -114,7 +114,8 @@ test.describe('code', () => {
 
     const uploads = dialog.locator('section').filter({ has: page.getByRole('heading', { name: 'Across uploads' }) });
     await expect(uploads.getByRole('row')).toHaveCount(5);
-    // El ejemplo del BRD no cambia entre trimestres.
-    await expect(uploads.getByRole('row').nth(1)).toContainText('79.67');
+    // El ejemplo del BRD no cambia entre trimestres: 80.70 con OSS y Raw Tech en su valor bruto
+    // (79.67 con las bandas del BRD, ADR 0032).
+    await expect(uploads.getByRole('row').nth(1)).toContainText('80.70');
   });
 });

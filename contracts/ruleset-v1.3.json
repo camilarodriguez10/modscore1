@@ -122,16 +122,9 @@
       "weight": 10,
       "input": "openSourceScore",
       "source": { "system": "RPT", "report": "OSS_Score_by_EAI", "field": "OSS Score" },
-      "mapping": {
-        "kind": "numericBands",
-        "bands": [
-          { "min": 0,  "max": 59,  "score": 20,  "label": "0-59" },
-          { "min": 60, "max": 74,  "score": 60,  "label": "60-74" },
-          { "min": 75, "max": 100, "score": 100, "label": "75-100" }
-        ]
-      },
+      "mapping": { "kind": "identity", "identityLabel": "raw value × weight, as the v1.3 report does" },
       "zeroIsNoData": true,
-      "note": "BRD 'ALL Sections': a 0 is excluded like a null (ADR 0019). Rows with EAI Code 0 in the real file are not applications and match nothing."
+      "note": "Raw value × 10% since 2026-10-07 (ADR 0032): the v1.3 report uses the OSS Score as it comes (37 → 3.70). The BRD worked example mapped it by bands (0-59 → 20, 60-74 → 60, 75-100 → 100). BRD 'ALL Sections': a 0 is excluded like a null (ADR 0019). Rows with EAI Code 0 in the real file are not applications and match nothing."
     },
 
     {
@@ -141,16 +134,9 @@
       "weight": 5,
       "input": "rawTechScore",
       "source": { "system": "CMT", "report": "Currency Model Detail Report", "field": "Raw_Tech_Score" },
-      "mapping": {
-        "kind": "numericBands",
-        "bands": [
-          { "min": 0,  "max": 59,  "score": 20,  "label": "0-59" },
-          { "min": 60, "max": 74,  "score": 60,  "label": "60-74" },
-          { "min": 75, "max": 100, "score": 100, "label": "75-100" }
-        ]
-      },
+      "mapping": { "kind": "identity", "identityLabel": "raw value × weight, as the v1.3 report does" },
       "zeroIsNoData": true,
-      "note": "Calculated at component level from each component's end-of-life date. BRD 'ALL Sections': a 0 is excluded like a null (ADR 0019)."
+      "note": "Raw value × 5% since 2026-10-07 (ADR 0032): the v1.3 report uses the Raw_Tech_Score as it comes (88.48 → 4.42). The BRD worked example mapped it by bands (0-59 → 20, 60-74 → 60, 75-100 → 100). Calculated at component level from each component's end-of-life date. BRD 'ALL Sections': a 0 is excluded like a null (ADR 0019)."
     },
     {
       "key": "api.native",

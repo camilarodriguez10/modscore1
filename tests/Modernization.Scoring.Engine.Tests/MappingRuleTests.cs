@@ -34,23 +34,36 @@ public sealed class MappingRuleTests
 
     // ------------------------------------------------------- OSS y RAW Tech
 
+    /// <summary>
+    /// Desde el 2026-10-07 (ADR 0032), OSS y Raw Tech entran con su valor bruto, como el
+    /// reporte v1.3: 37 vale 37, no la banda 20. Fuera de 0-100 se acota.
+    /// </summary>
     [Theory]
-    [InlineData(1, 20)]      // el 0 se excluye (ADR 0019)
-    [InlineData(59, 20)]
-    [InlineData(60, 60)]
-    [InlineData(74, 60)]
-    [InlineData(75, 100)]
+    [InlineData(1, 1)]       // el 0 se excluye (ADR 0019)
+    [InlineData(37, 37)]
+    [InlineData(59.5, 59.5)]
+    [InlineData(74, 74)]
     [InlineData(100, 100)]
-    public void OpenSourceScore_MapsByBand(int oss, decimal expected)
-        => Assert.Equal(expected, ScoreOf(Empty() with { OpenSourceScore = oss }, "oss"));
+    [InlineData(130, 100)]
+    public void OpenSourceScore_IsTheRawValue(double oss, double expected)
+        => Assert.Equal((decimal)expected, ScoreOf(Empty() with { OpenSourceScore = (decimal)oss }, "oss"));
 
     [Theory]
-    [InlineData(59, 20)]
-    [InlineData(60, 60)]
-    [InlineData(74, 60)]
-    [InlineData(75, 100)]
-    public void RawTechScore_MapsByBand(int rawTech, decimal expected)
-        => Assert.Equal(expected, ScoreOf(Empty() with { RawTechScore = rawTech }, "rawTech"));
+    [InlineData(59, 59)]
+    [InlineData(88.48, 88.48)]
+    [InlineData(100, 100)]
+    public void RawTechScore_IsTheRawValue(double rawTech, double expected)
+        => Assert.Equal((decimal)expected, ScoreOf(Empty() with { RawTechScore = (decimal)rawTech }, "rawTech"));
+
+    [Fact]
+    public void AZeroOssOrRawTechIsStillExcludedLikeAMissingValue()
+    {
+        var result = _engine.Calculate(Empty() with { OpenSourceScore = 0m, RawTechScore = 0m });
+
+        Assert.All(
+            result.Metrics.Where(m => m.MetricKey is "oss" or "rawTech"),
+            metric => Assert.Equal(NoticeCodes.ExclusionZeroValue, metric.Exclusion?.Code));
+    }
 
     // -------------------------------------------------------------- Tech Debt
 

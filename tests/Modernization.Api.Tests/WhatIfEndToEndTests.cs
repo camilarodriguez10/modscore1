@@ -41,7 +41,7 @@ public sealed class WhatIfEndToEndTests(LayeredApiFixture fixture) : IClassFixtu
             new Uri($"/api/applications/{ReferenceEai}/whatif", UriKind.Relative), Json);
 
         Assert.NotNull(view);
-        Assert.Equal(79.67m, view.BaselineScore);
+        Assert.Equal(80.70m, view.BaselineScore);
         Assert.Equal(60m, view.BaselineWeight);
 
         Assert.NotEmpty(view.Actionable);
@@ -111,7 +111,7 @@ public sealed class WhatIfEndToEndTests(LayeredApiFixture fixture) : IClassFixtu
         var view = await response.Content.ReadFromJsonAsync<ScenarioView>(Json);
 
         Assert.NotNull(view);
-        Assert.Equal(79.67m, view.BaselineScore);
+        Assert.Equal(80.70m, view.BaselineScore);
         Assert.Equal(60m, view.BaselineWeight);
         Assert.Equal(70m, view.ProjectedWeight);
         Assert.True(view.Delta > 0);
@@ -289,7 +289,7 @@ public sealed class WhatIfEndToEndTests(LayeredApiFixture fixture) : IClassFixtu
 
         Assert.NotNull(beforeView);
         Assert.NotNull(afterView);
-        Assert.Equal(79.67m, beforeView.Score);
+        Assert.Equal(80.70m, beforeView.Score);
         Assert.Equal(beforeView.Score, afterView.Score);
         Assert.Equal(beforeView.Denominator, afterView.Denominator);
     }

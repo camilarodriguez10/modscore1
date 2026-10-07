@@ -28,7 +28,8 @@ public sealed class DummyPortfolio
     /// <summary>
     /// EAI de referencia del BRD. Se inyecta con valores exactos para que el
     /// pipeline completo (lectura, ensamblado, scoring) se pueda verificar
-    /// extremo a extremo contra un resultado publicado: 79,67.
+    /// extremo a extremo contra un resultado conocido: 80,70 con el ruleset de fabrica, o 79,67
+    /// con las bandas de OSS y Raw Tech del BRD (ADR 0032).
     /// </summary>
     public const string ReferenceEaiCode = "14381";
 
@@ -349,7 +350,8 @@ public sealed class DummyPortfolio
     }
 
     /// <summary>
-    /// EAI 14381 del BRD, con los valores exactos que producen 79,67.
+    /// EAI 14381 del BRD, con los valores exactos que producen 79,67 con las bandas del BRD y
+    /// 80,70 con OSS y Raw Tech en su valor bruto (ADR 0032).
     /// Deliberadamente ausente de tech_debt, SCA y APIM: esas tres metricas deben
     /// quedar sin dato para que el denominador sea 60 y no 100.
     /// </summary>

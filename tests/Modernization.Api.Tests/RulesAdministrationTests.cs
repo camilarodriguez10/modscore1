@@ -275,7 +275,7 @@ public sealed class RulesAdministrationTests
 
         var overview = await OverviewAsync(client, "14381");
         Assert.Equal("v1.3", overview.RulesetVersion);
-        Assert.Equal(79.67m, overview.Score);
+        Assert.Equal(80.70m, overview.Score);
     }
 
     // ----------------------------------------------------- publicacion
@@ -349,7 +349,7 @@ public sealed class RulesAdministrationTests
 
         var overview = await OverviewAsync(client, "14381");
         Assert.Equal("v1.5", overview.RulesetVersion);
-        Assert.Equal(79.67m, overview.Score);
+        Assert.Equal(80.70m, overview.Score);
     }
 
     /// <summary>

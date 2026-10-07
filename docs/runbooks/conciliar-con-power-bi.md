@@ -3,9 +3,14 @@
 **Síntoma:** el score de una aplicación, o el promedio de una región, no coincide con el
 reporte *Modernization Score v1.3* de Power BI.
 
-**Lo que ya está probado:** el motor reproduce el BRD y el reporte. La EAI 14381 da 79,67
-(ejemplo del BRD) y la 10969 da 79,61 (dashboard v1.3, métrica por métrica). Por eso, cuando
-no coincide, lo primero es revisar **qué datos entraron**, no la fórmula.
+**Lo que ya está probado:** el motor reproduce el BRD y el reporte. La captura del reporte
+del 2026-10-07 da 66,12 métrica por métrica, y con las bandas del BRD la EAI 14381 da 79,67
+(ejemplo del BRD) y la 10969 79,61. Por eso, cuando no coincide, lo primero es revisar **qué
+datos entraron**, no la fórmula.
+
+**Ya corregido el 2026-10-07: OSS y Raw Tech con su valor bruto.** El reporte usa el valor tal
+como llega (37 × 10 % = 3,70; 88,48 × 5 % = 4,42); el sitio lo pasaba por las bandas del BRD
+(20 y 100). Ahora usa el valor bruto ([ADR 0032](../adr/0032-oss-y-raw-tech-con-valor-bruto.md)).
 
 **Cómo comparar:** en el sitio, abre la aplicación (Portfolio → la EAI) y mira **cómo se
 calculó**. Ahí aparecen los tres pilares y cada métrica: valor crudo, puntos, peso y, si quedó

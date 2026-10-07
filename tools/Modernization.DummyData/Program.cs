@@ -46,7 +46,8 @@ if (reference is null)
 }
 
 var result = engine.Calculate(reference);
-var ok = result.Score == 79.67m;
+// 80,70 con OSS y Raw Tech en su valor bruto (ADR 0032); 79,67 con las bandas del BRD.
+var ok = result.Score == 80.70m;
 
 // Linea de tiempo: tres trimestres hacia atras mas el actual, del mas viejo al mas nuevo.
 var timeline = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(directory)) ?? ".", "timeline");
@@ -91,7 +92,7 @@ for (var quarters = TimelineQuarters; quarters >= 0; quarters--)
 }
 
 
-Line($"EAI {reference.EaiCode} — numerador {result.Numerator}, denominador {result.Denominator}, score {result.Score} (BRD 79,67) {(ok ? "OK" : "FALLA")}");
+Line($"EAI {reference.EaiCode} — numerador {result.Numerator}, denominador {result.Denominator}, score {result.Score} (esperado 80,70) {(ok ? "OK" : "FALLA")}");
 
 var scores = snapshot.Applications.Select(a => engine.Calculate(a).Score).ToList();
 Line($"Portafolio — min {scores.Min():0.00} · promedio {scores.Average():0.00} · max {scores.Max():0.00}");

@@ -37,7 +37,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 
 ### What is already done
 
-- Score engine reproducing both documented cases exactly: **EAI 14381 = 79.67** (BRD worked example) and **EAI 10969 = 79.61** (Power BI v1.3 dashboard).
+- Score engine reproducing the documented cases exactly: the **2026-10-07 report capture = 66.12** with the built-in rules, and **EAI 14381 = 79.67** (BRD worked example) and **EAI 10969 = 79.61** (earlier dashboard capture) with the BRD bands for OSS and Raw Tech. Since 2026-10-07 those two metrics use their raw value, as the report does (ADR 0032): with the built-in rules the two cases give 80.70 and 80.26.
 - Two-layer API-led backend (.NET 10: Channel BFF + System), React 19 SPA in English, three interchangeable data adapters (Dummy, File, Database/SQLite) with shared contract tests.
 - What-if engine, roadmap/future plan (MAPS), history of uploads, global URL filters, lineage.
 - Rules administration from the portal (phase 12): draft, full-portfolio impact simulation, immutable published versions, step-up reauthentication, audit.
@@ -61,7 +61,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 - **Reading tolerates real exports** (2026-10-02, ADR 0028), after the organization shared its EAI master header, exported from Power BI ("Suma de Kenna_Score", both "MFA" and "Does this Application Utilize MFA?", a Year/Quarter/Month/Day hierarchy, no APP_ID). An unreadable value in an **optional** field now leaves that field without data and keeps the row, reported as *Values loaded as empty*; before, it rejected the whole row, which in the EAI master is the whole application. No-value markers (`N/A`, `-`, `(En blanco)`…) read as empty; numbers in any regional format (an integer accepts zero decimals: "650,00" is 650, before it silently became 65000); `VERDADERO`/`FALSO`; identifiers normalized ("14,381" → "14381"); the exact field name wins over an alias and summary prefixes ("Suma de", "Sum of", "Promedio de"…) are recognized; a repeated EAI keeps the last row and reports the others; without APP_ID in the master, tech debt is linked by the EAI code, because the organization confirmed that its APP_ID is the same code as the EAI.
 - **Fixed on 2026-09-18:** the Insights risk index counted Kenna **below 50** as weak vulnerability management. Kenna runs from 0 to 1000 and higher is worse, so it counted the best applications. It now counts Kenna ≥ 670 (the BRD's Critical/High band), and the threshold is a parameter.
 - **Tests**:
-  - 958 .NET tests: 328 engine, 273 contracts, 357 API.
+  - 974 .NET tests: 344 engine, 273 contracts, 357 API.
   - 78 SPA unit tests.
   - 59 end-to-end scenarios: 32 flows and 27 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
   - Zero vulnerable packages, and `npm audit` is clean.
@@ -426,7 +426,7 @@ The score formula is `Score = 20 + (Numerator ÷ Denominator) × 80`, computed o
   - Add the EF Core provider package (vulnerability-free) and a migration set for the engine.
   - Run the database contract suite against it.
   - Add a deployment migration job.
-- **Acceptance criteria:** contract tests green against the chosen engine; golden 79.67 read from it; migration job documented.
+- **Acceptance criteria:** contract tests green against the chosen engine; the reference application's 80.70 read from it; migration job documented.
 - **Effort:** M. **Risk if not done:** no production deployment.
 
 ### PA-02 — Authentication through Azure API Management with OAuth · ADR 0020
@@ -1347,7 +1347,7 @@ Numbers are for comparing changes on the same machine, not for sizing production
 
 | Suite | Count | Command |
 |---|---|---|
-| Engine (golden cases, mapping table, what-if, roadmap, rules editor, comparison, dashboard, insights, end-of-life catalog, code analyzer) | 328 | `dotnet test tests/Modernization.Scoring.Engine.Tests` |
+| Engine (golden cases, mapping table, what-if, roadmap, rules editor, comparison, dashboard, insights, end-of-life catalog, code analyzer) | 344 | `dotnet test tests/Modernization.Scoring.Engine.Tests` |
 | Source contracts (Dummy, File, Database; rules stores; sample repositories; dummy timeline; column mapping; rejection reasons; regional values, Power BI and Veracode exports; memory per row) | 273 | `dotnet test tests/Modernization.Sources.ContractTests` |
 | API end-to-end through both layers and security | 357 | `dotnet test tests/Modernization.Api.Tests` |
 | SPA unit (Vitest) | 78 | `npm --prefix src/web test` |

@@ -22,7 +22,8 @@ namespace Modernization.Sources.Dummy;
 /// seguía abierto.
 /// </para>
 /// <para>
-/// El EAI de referencia del BRD no cambia: su 79,67 es el mismo en cada trimestre.
+/// El EAI de referencia del BRD no cambia: su 80,70 (79,67 con las bandas del BRD) es el mismo
+/// en cada trimestre.
 /// </para>
 /// </remarks>
 [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generador determinista de datos de prueba: la reproducibilidad por semilla es el requisito.")]

@@ -49,7 +49,7 @@ registro de incidentes, con hora y responsable.
 
 - **Rules** muestra la versión restaurada como activa.
 - La aplicación de referencia 14381 vuelve a su score esperado con las reglas de fábrica:
-  **79,67**.
+  **80,70** (79,67 con las bandas del BRD, ADR 0032).
 - El promedio del portafolio y la distribución por tramo coinciden con los de antes del
   cambio defectuoso.
 - La auditoría tiene el 4211 de la restauración.

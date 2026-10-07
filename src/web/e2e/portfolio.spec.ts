@@ -29,10 +29,11 @@ test.describe('portfolio', () => {
     }
   });
 
-  test('the BRD worked example explains its calculation: 79.67', async ({ page }) => {
+  // 79.67 en el BRD con bandas; 80.70 con OSS y Raw Tech en su valor bruto, como el reporte (ADR 0032).
+  test('the BRD worked example explains its calculation: 80.70', async ({ page }) => {
     await signIn(page, '/applications/14381/calculation');
 
-    await expect(page.getByText('79.67').first()).toBeVisible();
+    await expect(page.getByText('80.70').first()).toBeVisible();
   });
 
   test('the roadmap downloads as CSV with its grouping', async ({ page }) => {

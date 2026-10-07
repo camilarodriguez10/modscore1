@@ -152,7 +152,7 @@ public sealed class RenamedUploadTests : IDisposable
 
     /// <summary>
     /// Criterio de la Fase 10: los exports suben sin renombrar. En disco quedan con el
-    /// nombre canonico —nunca el del cliente— y el caso de referencia sigue dando 79,67.
+    /// nombre canonico —nunca el del cliente— y el caso de referencia sigue dando 80,70 (79,67 con las bandas del BRD, ADR 0032).
     /// </summary>
     [Fact]
     public async Task TheFileAdapterPublishesRenamedExportsUnderCanonicalNames()
@@ -176,7 +176,7 @@ public sealed class RenamedUploadTests : IDisposable
         var snapshot = await new FileSnapshotProvider(versions, SourceSchemaCatalog.Default).GetAllAsync();
         var golden = new ScoringEngine(RulesetCatalog.Default).Calculate(snapshot.Find("14381")!);
 
-        Assert.Equal(79.67m, golden.Score);
+        Assert.Equal(80.70m, golden.Score);
     }
 
     [Fact]

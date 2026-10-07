@@ -114,7 +114,7 @@ public sealed class RoadmapTests
 
         var plan = _planner.Build(snapshot, Start);
 
-        Assert.Equal(79.67m, plan.Baseline.Score);
+        Assert.Equal(80.70m, plan.Baseline.Score);
         Assert.NotNull(plan.Projected);
         Assert.True(plan.ProjectedDelta > 0);
 

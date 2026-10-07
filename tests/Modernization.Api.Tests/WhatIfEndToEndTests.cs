@@ -101,9 +101,10 @@ public sealed class WhatIfEndToEndTests(LayeredApiFixture fixture) : IClassFixtu
     {
         var client = await MutatingClientAsync();
 
+        // SCA crítico sin dato en la 14381: remediarlo suma los 10 de peso de la métrica.
         using var response = await client.PostAsJsonAsync(
             new Uri($"/api/applications/{ReferenceEai}/whatif/scenario", UriKind.Relative),
-            new { levers = new[] { new { key = "dr.include" } } },
+            new { levers = new[] { new { key = "sca.remediateCritical" } } },
             Json);
 
         response.EnsureSuccessStatusCode();
@@ -112,9 +113,29 @@ public sealed class WhatIfEndToEndTests(LayeredApiFixture fixture) : IClassFixtu
         Assert.NotNull(view);
         Assert.Equal(79.67m, view.BaselineScore);
         Assert.Equal(60m, view.BaselineWeight);
-        Assert.Equal(67m, view.ProjectedWeight);
+        Assert.Equal(70m, view.ProjectedWeight);
         Assert.True(view.Delta > 0);
-        Assert.Equal("dr.include", Assert.Single(view.Applied).Key);
+        Assert.Equal("sca.remediateCritical", Assert.Single(view.Applied).Key);
+    }
+
+    /// <summary>
+    /// La 14381 no es crítica, y DR solo puntúa en críticas (dashboard v1.3, 2026-10-07):
+    /// incluirla en el plan de DR no cambiaría nada, así que el laboratorio no lo ofrece y
+    /// dice por qué.
+    /// </summary>
+    [Fact]
+    public async Task TheDisasterRecoveryLeverIsNotOfferedToANonCriticalApplication()
+    {
+        var client = await fixture.CreateAuthenticatedChannelClientAsync();
+
+        var view = await client.GetFromJsonAsync<WhatIfLabView>(
+            new Uri($"/api/applications/{ReferenceEai}/whatif", UriKind.Relative), Json);
+
+        Assert.NotNull(view);
+        Assert.DoesNotContain(view.Actionable, l => l.Key == "dr.include");
+
+        var dr = Assert.Single(view.NotActionable, l => l.Key == "dr.include");
+        Assert.Equal(NoticeCodes.LeverNotCritical, dr.NotActionableReason?.Code);
     }
 
     /// <summary>
@@ -132,7 +153,6 @@ public sealed class WhatIfEndToEndTests(LayeredApiFixture fixture) : IClassFixtu
             {
                 levers = new[]
                 {
-                    new { key = "dr.include" },
                     new { key = "sca.remediateCritical" },
                     new { key = "techDebt.clear" },
                 },
@@ -260,7 +280,7 @@ public sealed class WhatIfEndToEndTests(LayeredApiFixture fixture) : IClassFixtu
 
         using var _ = await client.PostAsJsonAsync(
             new Uri($"/api/applications/{ReferenceEai}/whatif/scenario", UriKind.Relative),
-            new { levers = new[] { new { key = "dr.include" }, new { key = "techDebt.clear" } } },
+            new { levers = new[] { new { key = "sca.remediateCritical" }, new { key = "techDebt.clear" } } },
             Json);
 
         using var after = await client.GetAsync(

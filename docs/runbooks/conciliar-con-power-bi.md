@@ -37,6 +37,18 @@ Risk al pilar: pilar = 100 − Risk × 0,8. Un Risk de 55 equivale a un pilar de
 
 ## 2. Si no coincide el score de una aplicación
 
+**Ya corregido el 2026-10-07: DR en aplicaciones no críticas.** El reporte deja DR sin dato
+cuando el Critical Application Indicator es «N»; el sitio lo puntuaba igual (Sí 100, No 20).
+Desde `criticalOnly` en el ruleset ([ADR 0031](../adr/0031-dr-solo-puntua-en-aplicaciones-criticas.md))
+hace lo mismo que el reporte. Si la versión de reglas activa es anterior, sigue con la regla
+vieja: restaura la v1.3 de fábrica en **Rules → Versions** y publícala.
+
+**Confirmado por el dueño del reporte, sin cambios:** Architectural Value es el promedio de los
+componentes ponderado por cantidad (Modern 100, Heritage 60, Not Approved 20, Obsolete 20). La
+deuda técnica sale de la vista `V_TECH_DEBT_APP_SCORE` y el Operational Score de
+`MV_APP_MDRNZTN_DTL`: si los archivos cargados no salen de ahí, son la primera sospecha para
+esas dos métricas.
+
 Revisa en este orden. Cada causa dice dónde se ve en el sitio.
 
 1. **Falta una fuente en la carga.** Una métrica sin dato sale del cálculo y el peso se

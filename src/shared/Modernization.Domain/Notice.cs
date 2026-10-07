@@ -101,9 +101,11 @@ public static class NoticeCodes
     public const string ExclusionMonitoring = "exclusion.monitoringNotReported";
     public const string ExclusionCompositeEmpty = "exclusion.compositeNoProducts";
     public const string ExclusionZeroValue = "exclusion.zeroValue";
+    public const string ExclusionNotCritical = "exclusion.notCritical";
 
     // ------------------------------------------------------------- what-if
     public const string LeverCompositeProvided = "lever.compositeProvided";
+    public const string LeverNotCritical = "lever.notCritical";
     public const string ScenarioWeightAdded = "scenario.weightAdded";
     public const string ScenarioInteraction = "scenario.interaction";
     public const string TargetAlreadyMet = "target.alreadyMet";

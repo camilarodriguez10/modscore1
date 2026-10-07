@@ -42,7 +42,9 @@
       "mapping": {
         "kind": "categorical",
         "cases": { "Yes": 100, "No": 20 }
-      }
+      },
+      "criticalOnly": true,
+      "note": "v1.3 dashboard, 'DR Inscope Value': if Critical Application Indicator = N then null, else Yes = 100, No = 20, anything else null. Confirmed by the report owner on 2026-10-07. An unknown indicator does not exclude, as in the report."
     },
     {
       "key": "sca.critical",
@@ -214,7 +216,7 @@
       "pillar": "architecture",
       "weight": 10,
       "input": "techDebtScore",
-      "source": { "system": "EAI", "report": "tech_debt", "field": "COMBINED_APP_SCORE" },
+      "source": { "system": "EAI", "report": "V_TECH_DEBT_APP_SCORE (tech_debt)", "field": "COMBINED_APP_SCORE" },
       "mapping": {
         "kind": "numericBands",
         "bands": [
@@ -296,7 +298,7 @@
       "pillar": "stability",
       "weight": 5,
       "input": "operationalScore",
-      "source": { "system": "CMT", "report": "ServiceNow incident & problem, ventana 12 meses", "field": "Operational_Score" },
+      "source": { "system": "Visibility", "report": "MV_APP_MDRNZTN_DTL (ServiceNow incident & problem, 12-month window)", "field": "Operational_Score" },
       "mapping": {
         "kind": "numericBands",
         "bands": [

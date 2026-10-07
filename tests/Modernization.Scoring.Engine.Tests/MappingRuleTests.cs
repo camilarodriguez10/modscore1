@@ -201,6 +201,47 @@ public sealed class MappingRuleTests
         Assert.False(metric.IsIncluded);
     }
 
+    // ------------------------------------------------------------------- DR
+
+    /// <summary>
+    /// La regla de DR del dashboard v1.3, confirmada el 2026-10-07: con el Critical
+    /// Application Indicator en "N" la métrica queda sin dato; si no, Yes = 100 y No = 20.
+    /// Un indicador desconocido no excluye.
+    /// </summary>
+    [Theory]
+    [InlineData(true, true, 100)]
+    [InlineData(true, false, 20)]
+    [InlineData(null, true, 100)]
+    [InlineData(null, false, 20)]
+    public void DisasterRecovery_ScoresUnlessTheApplicationIsNotCritical(bool? critical, bool inScope, int expected)
+        => Assert.Equal(
+            expected,
+            ScoreOf(Empty() with { CriticalApplicationIndicator = critical, DisasterRecoveryInScope = inScope }, "dr.inScope"));
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void DisasterRecovery_IsLeftOutOfANonCriticalApplication(bool inScope)
+    {
+        var snapshot = Empty() with { CriticalApplicationIndicator = false, DisasterRecoveryInScope = inScope };
+        var metric = _engine.Calculate(snapshot).Metrics.Single(m => m.MetricKey == "dr.inScope");
+
+        Assert.False(metric.IsIncluded);
+        Assert.Null(metric.MappedScore);
+        Assert.Equal(NoticeCodes.ExclusionNotCritical, metric.Exclusion?.Code);
+    }
+
+    /// <summary>
+    /// Solo DR lleva la regla: las demás métricas de una aplicación no crítica se puntúan
+    /// igual que antes.
+    /// </summary>
+    [Fact]
+    public void OnlyDisasterRecoveryDependsOnCriticality()
+    {
+        Assert.Equal(["dr.inScope"], RulesetCatalog.Default.Metrics.Where(m => m.CriticalOnly).Select(m => m.Key));
+        Assert.Equal(100m, ScoreOf(Empty() with { CriticalApplicationIndicator = false, KennaScore = 120 }, "kenna"));
+    }
+
     // ------------------------------------------------------------ Compuestos
 
     [Fact]
@@ -217,6 +258,29 @@ public sealed class MappingRuleTests
 
         // (100x15 + 60x1) / 16 = 97,50
         Assert.Equal(97.5m, ScoreOf(snapshot, "archValue"));
+    }
+
+    /// <summary>
+    /// El ejemplo con que el dueño del reporte explicó el cálculo el 2026-10-07: 408
+    /// componentes Modern, 415 Heritage y 105 Not Approved for Use, ninguno Obsolete.
+    /// (40 800 + 24 900 + 2 100) / 928 = 73,06.
+    /// </summary>
+    [Fact]
+    public void ArchitecturalValue_MatchesTheReportOwnersWorkedExample()
+    {
+        var snapshot = Empty() with
+        {
+            ArchitecturalValue = new ArchitecturalValue
+            {
+                ModernCount = 408,
+                HeritageCount = 415,
+                NotApprovedForUseCount = 105,
+                ObsoleteCount = 0,
+            },
+        };
+
+        // El motor guarda la precisión completa (73,0603…); el reporte muestra dos decimales.
+        Assert.Equal(73.06m, Math.Round(ScoreOf(snapshot, "archValue")!.Value, 2));
     }
 
     [Fact]

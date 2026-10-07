@@ -41,7 +41,7 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | Las seis preguntas (pantalla 09) | Entregada el 2026-09-16 (PLAN §8.9, [ADR 0023](docs/adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md)). Salud, prioridades, complejidad, riesgo, obsolescencia y resiliencia en `/insights`, con los mismos filtros. Ningún dato nuevo hizo falta; lo que mejoraría el esfuerzo y el valor de negocio está en PENDING-ITEMS como DQ-01 a DQ-07 |
 | Dashboard ejecutivo | D1, D2 y D3 entregadas el 2026-09-18 (PLAN §8.10, [ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md), [ADR 0025](docs/adr/0025-las-definiciones-viajan-con-las-reglas.md)). La página de inicio (`/`): *Portfolio Health & Risk Intelligence*, con cinco indicadores, seis paneles y un detalle común; el inventario está en `/portfolio`. Currency Score = `Raw_Tech_Score` de CMT. Las 37 definiciones de las seis preguntas viajan con las reglas y se editan en *Rules → Portfolio analytics*; cada panel explica su cálculo y *Definitions* es el diccionario. Cinco filtros nuevos en todas las pantallas. Falta D4 (fuentes nuevas) |
 | Pantalla Code | C1 entregada el 2026-09-26 (PLAN §8.11, [ADR 0026](docs/adr/0026-el-analisis-de-codigo-llega-de-github-enterprise.md)). `/code`: componentes de cada repositorio contra su fin de vida (endoflife.date, foto versionada con 22 productos y 273 ciclos), bibliotecas con hallazgos, discrepancias con el Currency Score de CMT e índice de riesgo de código con detalle por aplicación. 15 parámetros nuevos (área `code`) editables desde el portal. **Repositorios de demostración** hasta integrar GitHub Enterprise (C2, GH-01 a GH-09) |
-| Pruebas | **946 .NET** (320 motor · 270 contratos · 356 API) · **78 unitarias** de la SPA · **59 de punta a punta** con Playwright (32 de flujo y 27 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-10-02 |
+| Pruebas | **955 .NET** (328 motor · 270 contratos · 357 API) · **78 unitarias** de la SPA · **59 de punta a punta** con Playwright (32 de flujo y 27 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-10-02 |
 | Dependencias | Cero paquetes vulnerables (`dotnet list package --vulnerable`), `npm audit` limpio |
 | CI | GitHub Actions en verde desde la corrida #5 (`55cf36f`, 2026-09-15), que pasó los 7 jobs: backend, SPA, gitleaks, OSV, CodeQL C# y JS/TS, e imágenes con Trivy v0.74.0 y Checkov. CodeQL sin hallazgos altos. Tras acelerarlo, la corrida #6 (`148c6ce`) tardó 7 min 3 s en lugar de 9 min 54 s; CodeQL C# sigue marcando el total (6 min 58 s). Antes hubo que corregir el lint, CodeQL en repositorio privado (`upload: never`, `actions: read`), la versión de Trivy y el UID de los pods. Para acortarlo: gitleaks y OSV están en `seguridad.yml` y corren en cada push; `ci.yml` se salta los cambios que solo tocan documentación; CodeQL C# compila solo `src/` sin los analizadores de Roslyn; hay caché de NuGet, y el job de imágenes no espera a los demás |
 | ASVS L2 | 106 cumple · 11 parciales · 3 pendientes · 10 IdP o N/A. Los parciales dependen de un entorno real |
@@ -247,6 +247,18 @@ decommissioned applications. Only Common Service and Core Business Applications�
 del reporte de Power BI, y nada lo aplicaba. Ahora dice que entra todo el EAI Master, y la
 decisión quedó en DD-09. Las causas de diferencia con el reporte están en
 `docs/runbooks/conciliar-con-power-bi.md`.
+
+**DR solo en críticas (2026-10-07, [ADR 0031](docs/adr/0031-dr-solo-puntua-en-aplicaciones-criticas.md)).**
+El dueño del reporte compartió la regla de DR: con el Critical Application Indicator en «N», DR
+queda sin dato. `MetricDefinition.CriticalOnly` (JSON `criticalOnly`, declarado en
+`dr.inScope`) lo aplica en `MetricExtractors.Extract` antes de leer el valor
+(`exclusion.notCritical`); un indicador desconocido no excluye. `LeverCatalog.ForCriticalOnly`
+deja como no accionable la palanca de una métrica así en una aplicación no crítica
+(`lever.notCritical`); en los datos de ejemplo la 14381 no es crítica, así que las pruebas de
+escenarios usan `sca.remediateCritical`. Confirmó también la fórmula de Architectural Value
+(prueba con su ejemplo: 73,06) y el origen de deuda técnica (`V_TECH_DEBT_APP_SCORE`) y
+Operational Score (`MV_APP_MDRNZTN_DTL`), que quedaron en el ruleset y en el contrato. Una
+versión de reglas publicada antes no trae el campo: hay que restaurar la de fábrica y publicarla.
 | ¿Qué causa la obsolescencia? | 5 | Puntos perdidos agrupados en conceptos; EOS/EOL esperan a TLM |
 | ¿Dónde faltan defensas? | 6 | Recuperación y vulnerabilidad operacional; disponibilidad, dependencias y puntos únicos de falla esperan su fuente |
 

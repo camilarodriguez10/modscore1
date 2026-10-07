@@ -306,7 +306,7 @@ public sealed class LeverCatalog
 
         _all = [.. Blueprints.Select(blueprint =>
         {
-            var lever = blueprint.Build(ruleset);
+            var lever = ForCriticalOnly(blueprint.Build(ruleset), ruleset);
             var setting = settings.Find(lever.Key);
 
             return lever with
@@ -343,6 +343,32 @@ public sealed class LeverCatalog
             $"{string.Join(", ", _enabled.Select(l => l.Key).Order(StringComparer.Ordinal))}.");
 
     // -----------------------------------------------------------------------
+
+    /// <summary>
+    /// Una palanca sobre una métrica que solo puntúa en aplicaciones críticas
+    /// (<see cref="MetricDefinition.CriticalOnly"/>) no se puede mover en una que no lo es:
+    /// no cambiaría nada, y ofrecerla sería ruido. Sale del ruleset activo, no de la palanca.
+    /// </summary>
+    private static ScenarioLever ForCriticalOnly(ScenarioLever lever, Ruleset ruleset)
+    {
+        var metric = ruleset.Metrics.FirstOrDefault(m => string.Equals(m.Key, lever.MetricKey, StringComparison.Ordinal));
+
+        if (metric is not { CriticalOnly: true })
+        {
+            return lever;
+        }
+
+        var achieved = lever.IsAlreadyAchieved;
+        var reason = lever.NotActionableReason;
+
+        return lever with
+        {
+            IsAlreadyAchieved = s => s.CriticalApplicationIndicator == false || achieved(s),
+            NotActionableReason = s => s.CriticalApplicationIndicator == false
+                ? Notice.Of(NoticeCodes.LeverNotCritical)
+                : reason?.Invoke(s),
+        };
+    }
 
     private static void Validate(LeverSettings settings)
     {

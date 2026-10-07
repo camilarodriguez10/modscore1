@@ -173,6 +173,14 @@ public sealed record MetricDefinition
     /// </summary>
     public bool ZeroIsNoData { get; init; }
 
+    /// <summary>
+    /// La metrica solo puntua en aplicaciones criticas: con el Critical Application
+    /// Indicator en "N" queda sin dato y sale del calculo. Es la regla de DR del dashboard
+    /// v1.3 ("DR Inscope Value"), confirmada el 2026-10-07. Un indicador desconocido no
+    /// excluye, igual que en el reporte.
+    /// </summary>
+    public bool CriticalOnly { get; init; }
+
     /// <summary>Nota de trazabilidad al BRD o al dashboard.</summary>
     public string? Note { get; init; }
 }

@@ -108,10 +108,12 @@ const MESSAGES: Record<string, (a: Args) => string> = {
     a.system
       ? `${a.system} reported 0, which the BRD excludes from scoring like a missing value`
       : 'Reported as 0, which the BRD excludes from scoring like a missing value',
+  'exclusion.notCritical': () => 'Only scored for critical applications, and this one is not critical',
 
   // ---------------------------------------------------------------- what-if
   'lever.compositeProvided': (a) =>
     `${a.system} delivers the composite value already calculated, without the per-product detail: there are no counts to reclassify.`,
+  'lever.notCritical': () => 'This metric only counts for critical applications, and this one is not critical: moving it changes nothing.',
   'scenario.weightAdded': (a) =>
     `The combined result is not the sum of the parts: these levers bring data to metrics that had none and raise the calculation weight from ${num(a.from)} to ${num(a.to)}. Adding up the individual deltas would give ${score(a.sum)} instead of ${score(a.delta)}.`,
   'scenario.interaction': (a) =>

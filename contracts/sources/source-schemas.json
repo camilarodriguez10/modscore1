@@ -70,7 +70,7 @@
       "source": "Tech Debt",
       "fileName": "tech_debt.csv",
       "keyColumn": "APP_ID",
-      "description": "Technical debt by APP_ID, not by EAI. The assembler resolves the mapping.",
+      "description": "Technical debt by APP_ID, not by EAI; exported from the view V_TECH_DEBT_APP_SCORE. The assembler resolves the mapping.",
       "columns": [
         { "name": "APP_ID", "type": "code", "required": true, "aliases": ["App_Id", "Application ID"] },
         { "name": "COMBINED_DENIAL_SCORE", "type": "decimal", "required": false },

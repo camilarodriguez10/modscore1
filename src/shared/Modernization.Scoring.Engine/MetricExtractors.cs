@@ -57,7 +57,7 @@ public static class MetricExtractors
             ["automationDevSecOps"] = static (s, m) => FromNumber(s.AutomationDevSecOpsScore, m, string.Empty),
             ["containerized"] = static (s, _) => ExtractContainerized(s),
             ["monitoring"] = static (s, _) => ExtractMonitoring(s),
-            ["operationalScore"] = static (s, m) => FromNumber(s.OperationalScore, m, "CMT"),
+            ["operationalScore"] = static (s, m) => FromNumber(s.OperationalScore, m, "Visibility"),
             ["roadmap"] = static (s, _) => ExtractRoadmap(s),
         };
 
@@ -74,6 +74,13 @@ public static class MetricExtractors
             throw new RulesetException(
                 $"La metrica '{metric.Key}' declara el input '{input}', que no existe. " +
                 $"Inputs validos: {string.Join(", ", Registry.Keys.Order(StringComparer.Ordinal))}.");
+        }
+
+        // Solo para criticas: con el indicador en "N" no se lee el valor. Un indicador
+        // desconocido sigue de largo, como en el dashboard v1.3.
+        if (metric.CriticalOnly && snapshot.CriticalApplicationIndicator == false)
+        {
+            return MetricInput.NoData(Notice.Of(NoticeCodes.ExclusionNotCritical));
         }
 
         return extractor(snapshot, metric);

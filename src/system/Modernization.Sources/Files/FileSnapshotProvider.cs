@@ -116,15 +116,16 @@ public sealed class FileSnapshotProvider : IApplicationSnapshotProvider
         cancellationToken.ThrowIfCancellationRequested();
 
         var directory = Path.Combine(_rootDirectory, version.Id);
+        var manifest = UploadManifest.TryRead(directory);
 
-        var eai = ReadFile(directory, "eai_master.csv", version, FileRecordMappers.ToEai);
-        var archValue = ReadFile(directory, "architectural_value_by_eai.csv", version, FileRecordMappers.ToArchitecturalValue);
-        var productStrategy = ReadFile(directory, "product_strategy.csv", version, FileRecordMappers.ToProductStrategy);
-        var techDebt = ReadFile(directory, "tech_debt.csv", version, FileRecordMappers.ToTechDebt);
-        var sca = ReadFile(directory, "veracode_sca_open_flaws.csv", version, FileRecordMappers.ToScaFlaw);
-        var oss = ReadFile(directory, "oss_score_by_eai.csv", version, FileRecordMappers.ToOssScore);
-        var monitoring = ReadFile(directory, "monitoreo.csv", version, FileRecordMappers.ToMonitoring);
-        var apim = ReadFile(directory, "apim_onboarded_eais.csv", version, FileRecordMappers.ToApimOnboarding);
+        var eai = ReadFile(directory, manifest, "eai_master.csv", version, FileRecordMappers.ToEai);
+        var archValue = ReadFile(directory, manifest, "architectural_value_by_eai.csv", version, FileRecordMappers.ToArchitecturalValue);
+        var productStrategy = ReadFile(directory, manifest, "product_strategy.csv", version, FileRecordMappers.ToProductStrategy);
+        var techDebt = ReadFile(directory, manifest, "tech_debt.csv", version, FileRecordMappers.ToTechDebt);
+        var sca = ReadFile(directory, manifest, "veracode_sca_open_flaws.csv", version, FileRecordMappers.ToScaFlaw);
+        var oss = ReadFile(directory, manifest, "oss_score_by_eai.csv", version, FileRecordMappers.ToOssScore);
+        var monitoring = ReadFile(directory, manifest, "monitoreo.csv", version, FileRecordMappers.ToMonitoring);
+        var apim = ReadFile(directory, manifest, "apim_onboarded_eais.csv", version, FileRecordMappers.ToApimOnboarding);
 
         var assembled = SnapshotAssembler.Assemble(new SnapshotAssembler.Input
         {
@@ -145,20 +146,21 @@ public sealed class FileSnapshotProvider : IApplicationSnapshotProvider
     }
 
     /// <summary>
-    /// Lee un archivo de la carga. Un archivo ausente no es un error: significa
-    /// que esa fuente no se entrego, y sus metricas quedan sin dato — exactamente
+    /// Lee una fuente de la carga, con todos sus archivos. Un archivo ausente no es un error:
+    /// significa que esa fuente no se entrego, y sus metricas quedan sin dato — exactamente
     /// lo mismo que una aplicacion ausente de un archivo presente.
     /// </summary>
     private SourceReadResult<TRecord> ReadFile<TRecord>(
         string directory,
+        UploadManifest? manifest,
         string fileName,
         SnapshotVersion version,
         Func<CsvSourceReader.Row, TRecord?> map)
     {
         var schema = _catalog.Require(fileName);
-        var path = Path.Combine(directory, fileName);
+        var parts = PartsOf(directory, manifest, fileName);
 
-        if (!File.Exists(path))
+        if (parts.Count == 0)
         {
             return new SourceReadResult<TRecord>
             {
@@ -171,9 +173,15 @@ public sealed class FileSnapshotProvider : IApplicationSnapshotProvider
             };
         }
 
-        using var reader = new StreamReader(path);
-        var outcome = new CsvSourceReader(schema).Read(reader);
+        var read = new CsvSourceReader(schema).ReadParts(
+            [.. parts.Select(p => new CsvSourceReader.SourcePart(() => new StreamReader(p.Path), p.Label))]);
 
+        if (read.FirstError is { } error)
+        {
+            throw new SourceSchemaException(error);
+        }
+
+        var outcome = read.Merged;
         var records = new List<TRecord>(outcome.Rows.Count);
         var rejections = new List<SourceRejection>(outcome.Rejections);
 
@@ -197,13 +205,43 @@ public sealed class FileSnapshotProvider : IApplicationSnapshotProvider
         {
             SourceName = schema.Source,
             Provider = ProviderName,
-            Origin = $"{version.Id}/{fileName}",
+            Origin = parts.Count == 1 ? $"{version.Id}/{fileName}" : $"{version.Id}/{fileName} ({parts.Count} files)",
             Records = records,
             Rejections = rejections,
             ExtractedAt = version.CapturedAt,
         };
     }
+
+    /// <summary>
+    /// Los archivos guardados de una fuente, en el orden en que llegaron. Una carga anterior
+    /// al 2026-10-07 no los declara: tiene uno por fuente, con el nombre canónico.
+    /// </summary>
+    private static List<(string Path, string? Label)> PartsOf(string directory, UploadManifest? manifest, string fileName)
+    {
+        var declared = manifest?.Parts
+            .Where(p => string.Equals(p.FileName, fileName, StringComparison.OrdinalIgnoreCase))
+            .ToList() ?? [];
+
+        if (declared.Count == 0)
+        {
+            var path = Path.Combine(directory, fileName);
+            return File.Exists(path) ? [(path, null)] : [];
+        }
+
+        // El manifiesto lo escribe esta misma aplicación, pero se lee como cualquier entrada:
+        // un nombre guardado es un archivo plano de la carga, nunca una ruta.
+        return [.. declared
+            .Where(p => IncomingFiles.IsPlainFileName(p.StoredAs))
+            .Select(p => (Path.Combine(directory, p.StoredAs), p.ClientFileName))
+            .Where(p => File.Exists(p.Item1))];
+    }
 }
+
+/// <summary>
+/// Un archivo guardado de una fuente: la fuente, el nombre con que quedó en la carga y el
+/// nombre con que llegó.
+/// </summary>
+public sealed record UploadPart(string FileName, string StoredAs, string? ClientFileName);
 
 /// <summary>Metadatos de una carga, guardados junto a sus CSV.</summary>
 public sealed record UploadManifest
@@ -220,6 +258,12 @@ public sealed record UploadManifest
     /// 2026-09-28, que no lo registraban.
     /// </summary>
     public IReadOnlyList<SourceColumnMap> ColumnMaps { get; init; } = [];
+
+    /// <summary>
+    /// Los archivos de cada fuente, en el orden en que llegaron. Una fuente puede llegar en
+    /// varios desde el 2026-10-07 (ADR 0034). Vacío en las cargas anteriores.
+    /// </summary>
+    public IReadOnlyList<UploadPart> Parts { get; init; } = [];
 
     private static readonly System.Text.Json.JsonSerializerOptions Options =
         new(System.Text.Json.JsonSerializerDefaults.Web) { WriteIndented = true };

@@ -1,4 +1,5 @@
 import type { MappingFieldView, MappingFileView, MappingMatch, MappingReviewView } from './api/types';
+import { isWorkbook, readWorkbookHeaderLine } from './xlsx';
 
 /**
  * El mapping de columnas previo a la carga, del lado del navegador.
@@ -21,9 +22,12 @@ const HEADER_BYTES = 64 * 1024;
 
 /**
  * La primera línea del archivo, leída en el navegador. Es lo único que viaja para revisar
- * el mapping: las filas de datos no salen del equipo hasta que se carga.
+ * el mapping: las filas de datos no salen del equipo hasta que se carga. De un libro de
+ * Excel, la fila de encabezado de su primera hoja visible, escrita como línea CSV.
  */
 export async function readHeaderLine(file: Blob): Promise<string> {
+  if (await isWorkbook(file)) return readWorkbookHeaderLine(file);
+
   const text = await file.slice(0, HEADER_BYTES).text();
   const withoutBom = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
   const end = withoutBom.search(/\r?\n/);

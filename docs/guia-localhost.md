@@ -539,8 +539,10 @@ la misma carpeta).
 llevarán a **Data**. Es lo esperado, no un error. Luego:
 
 1. En **Upload files**, arrastra los ocho CSV de `data\dummy`, o los tuyos. **No hace falta
-   renombrarlos**: cada archivo se reconoce por su encabezado. `eai_master.csv` es
-   obligatorio.
+   renombrarlos**: cada archivo se reconoce por su encabezado. El maestro EAI es
+   obligatorio. Sirven CSV y libros de Excel (`.xlsx`, se lee la primera hoja visible), y una
+   fuente puede venir en varios archivos, por ejemplo APIM en uno por región: se cargan
+   juntos.
 2. Pulsa **Upload and recalculate**. La pantalla dice cuántas filas leyó, cuántas rechazó y
    por qué.
 3. Con los CSV de ejemplo, Portfolio muestra 250 aplicaciones y la 14381 da **80.70**.

@@ -15,7 +15,8 @@ namespace Modernization.Sources.Database;
 /// <para>
 /// Los archivos se leen y validan con el mismo <see cref="CsvSourceReader"/> y los
 /// mismos contratos de columna, asi que un CSV que el adaptador de archivos acepta
-/// es exactamente el que este acepta.
+/// es exactamente el que este acepta. Lo mismo vale para una fuente en varios archivos y
+/// para un libro de Excel, que se convierte a CSV en un directorio temporal (ADR 0034).
 /// </para>
 /// </remarks>
 public sealed class DatabaseSnapshotPublisher(
@@ -65,26 +66,45 @@ public sealed class DatabaseSnapshotPublisher(
                 Notice.Of(NoticeCodes.UploadBusy));
         }
 
+        // Los libros de Excel se convierten aquí; se borra pase lo que pase.
+        var scratch = Path.Combine(Path.GetTempPath(), "modscore-upload-" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+
         try
         {
             var parsed = new ParsedLoad();
-            var outcomes = new List<PublishedFileOutcome>(files.Count);
             var errors = new List<Notice>();
-            var seen = new HashSet<string>(StringComparer.Ordinal);
+            var verdicts = new PublishedFileOutcome?[files.Count];
+            var prepared = new List<PreparedFile>(files.Count);
+            var fingerprints = new Dictionary<string, string>(StringComparer.Ordinal);
 
-            foreach (var file in files)
+            for (var index = 0; index < files.Count; index++)
             {
-                var outcome = Parse(file, parsed, seen);
-                outcomes.Add(outcome);
+                var (failure, file) = await PrepareAsync(files[index], scratch, fingerprints, cancellationToken).ConfigureAwait(false);
 
-                if (outcome.Error is not null)
+                if (failure is not null)
                 {
-                    errors.Add(outcome.Error.With("file", outcome.ClientFileName));
+                    verdicts[index] = failure;
+                }
+                else
+                {
+                    prepared.Add(file! with { Index = index });
                 }
             }
 
+            foreach (var source in prepared.GroupBy(p => p.Schema.FileName, StringComparer.Ordinal))
+            {
+                ReadSource([.. source], parsed, verdicts);
+            }
+
+            var outcomes = verdicts.Select(v => v!).ToList();
+
+            foreach (var outcome in outcomes.Where(o => o.Error is not null))
+            {
+                errors.Add(outcome.Error!.With("file", outcome.ClientFileName));
+            }
+
             // El maestro EAI es la espina dorsal: sin el no hay portafolio.
-            if (!seen.Contains("eai_master.csv"))
+            if (!outcomes.Any(o => o.Error is null && o.CanonicalFileName == "eai_master.csv"))
             {
                 errors.Add(Notice.Of(NoticeCodes.UploadMissingMaster, ("master", "eai_master.csv")));
             }
@@ -106,135 +126,227 @@ public sealed class DatabaseSnapshotPublisher(
         }
         finally
         {
+            if (Directory.Exists(scratch))
+            {
+                Directory.Delete(scratch, recursive: true);
+            }
+
             _publishing.Release();
         }
     }
 
     // -----------------------------------------------------------------------
 
+    /// <summary>Un archivo identificado y con su mapping resuelto, listo para leer sus filas.</summary>
+    private sealed record PreparedFile(
+        int Index,
+        string ClientName,
+        long Bytes,
+        SourceSchema Schema,
+        SourceFileMatch Match,
+        ColumnResolution Resolution,
+        Func<TextReader> Open);
+
     /// <summary>
-    /// Lee un archivo entrante contra su contrato y acumula sus filas. El nombre
-    /// del cliente solo sirve para emparejar; lo que se guarda es la fuente.
+    /// Identifica un archivo entrante y resuelve su mapping. El nombre del cliente solo sirve
+    /// para emparejar; lo que se guarda es la fuente. Las filas se leen después, con los demás
+    /// archivos de la misma fuente.
     /// </summary>
-    private PublishedFileOutcome Parse(IncomingSourceFile file, ParsedLoad parsed, HashSet<string> seen)
+    private async Task<(PublishedFileOutcome? Failure, PreparedFile? Prepared)> PrepareAsync(
+        IncomingSourceFile file,
+        string scratch,
+        Dictionary<string, string> fingerprints,
+        CancellationToken cancellationToken)
     {
         var clientName = Path.GetFileName(file.ClientFileName);
 
         if (file.Length > PublishLimits.MaxFileBytes)
         {
-            return new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0,
+            return (new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0,
                 Notice.Of(
                     NoticeCodes.FileTooLarge,
                     ("size", Megabytes(file.Length)),
-                    ("max", Megabytes(PublishLimits.MaxFileBytes))));
+                    ("max", Megabytes(PublishLimits.MaxFileBytes)))), null);
         }
 
         // Un mapping es de una fuente concreta, igual que en el adaptador de archivos.
         if (file.ColumnMap is not null && string.IsNullOrWhiteSpace(file.AssignedFileName))
         {
-            return new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0,
-                Notice.Of(NoticeCodes.MappingNeedsSource));
+            return (new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0,
+                Notice.Of(NoticeCodes.MappingNeedsSource)), null);
+        }
+
+        string fingerprint;
+
+        await using (var hashed = file.OpenRead())
+        {
+            fingerprint = await IncomingFiles.HashAsync(hashed, cancellationToken).ConfigureAwait(false);
+        }
+
+        // Dos archivos de una fuente se suman: el mismo archivo dos veces duplicaría sus filas.
+        if (!fingerprints.TryAdd(fingerprint, clientName))
+        {
+            return (new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0,
+                Notice.Of(NoticeCodes.FileIdentical, ("other", fingerprints[fingerprint]))), null);
+        }
+
+        Func<Stream> open = file.OpenRead;
+        IncomingFileKind kind;
+
+        await using (var head = file.OpenRead())
+        {
+            kind = XlsxSourceConverter.Detect(head);
+        }
+
+        // Un libro de Excel se convierte antes de mirarlo: desde aquí es un CSV más.
+        if (kind != IncomingFileKind.Text)
+        {
+            Directory.CreateDirectory(scratch);
+            var name = Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture);
+            var workbook = Path.Combine(scratch, name + ".xlsx");
+            var converted = Path.Combine(scratch, name + ".csv");
+
+            await using (var input = file.OpenRead())
+            await using (var output = File.Create(workbook))
+            {
+                await input.CopyToAsync(output, cancellationToken).ConfigureAwait(false);
+            }
+
+            try
+            {
+                XlsxSourceConverter.Convert(workbook, converted);
+            }
+            catch (SourceSchemaException ex)
+            {
+                return (new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0,
+                    ex.Notice ?? Notice.Of(NoticeCodes.XlsxUnreadable)), null);
+            }
+            finally
+            {
+                File.Delete(workbook);
+            }
+
+            open = () => File.OpenRead(converted);
         }
 
         // Se identifica por el encabezado, igual que en el adaptador de archivos:
         // el stream se abre una vez para leer la firma y otra para leer las filas.
         SourceFileMatch match;
 
-        using (var probe = file.OpenRead())
-        using (var probeReader = new StreamReader(probe))
+        using (var probeReader = new StreamReader(open()))
         {
             match = _matcher.MatchReader(probeReader, clientName, file.AssignedFileName);
         }
 
         if (match.Schema is null)
         {
-            return new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0, match.Problem)
+            return (new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0, match.Problem)
             {
                 DetectedColumns = match.DetectedColumns,
                 Candidates = match.Candidates,
-            };
+            }, null);
         }
 
         var schema = match.Schema;
-
-        if (!seen.Add(schema.FileName))
-        {
-            return new PublishedFileOutcome(clientName, schema.FileName, schema.Source, file.Length, 0, 0,
-                Notice.Of(NoticeCodes.FileDuplicate, ("source", schema.Source)))
-            {
-                DetectedColumns = match.DetectedColumns,
-            };
-        }
 
         try
         {
             ColumnResolution resolution;
 
-            using (var headerStream = file.OpenRead())
-            using (var headerReader = new StreamReader(headerStream))
+            using (var headerReader = new StreamReader(open()))
             {
                 resolution = ColumnMapping.Resolve(schema, CsvSourceReader.ReadHeader(headerReader), file.ColumnMap);
             }
 
             if (!resolution.IsValid && file.ColumnMap is not null)
             {
-                seen.Remove(schema.FileName);
-
                 var problem = resolution.Problems.Count == 1
                     ? resolution.Problems[0]
                     : resolution.Problems[0].With("more", resolution.Problems.Count - 1);
 
-                return new PublishedFileOutcome(clientName, schema.FileName, schema.Source, file.Length, 0, 0, problem)
+                return (new PublishedFileOutcome(clientName, schema.FileName, schema.Source, file.Length, 0, 0, problem)
                 {
                     DetectedColumns = match.DetectedColumns,
-                };
+                }, null);
             }
 
             // Con un mapping, el encabezado se reescribe al leer: el lector de siempre lee
             // exactamente las columnas elegidas.
-            var stream = file.OpenRead();
-            using var reader = file.ColumnMap is null
-                ? new StreamReader(stream)
-                : ColumnMapping.Open(new StreamReader(stream), resolution);
-            var outcome = new CsvSourceReader(schema).Read(reader);
+            var mapped = file.ColumnMap is not null;
 
-            var rejected = parsed.Add(schema, outcome);
-            parsed.ColumnMaps.Add(resolution.ToColumnMap());
-
-            return new PublishedFileOutcome(
+            return (null, new PreparedFile(
+                0,
                 clientName,
-                schema.FileName,
-                schema.Source,
                 file.Length,
-                outcome.Rows.Count - rejected,
-                outcome.Rejections.Count + rejected,
-                null)
-            {
-                DetectedColumns = match.DetectedColumns,
-                RejectionReasons = rejected == 0
-                    ? outcome.Reasons
-                    : [.. outcome.Reasons, new RejectionReason(Notice.Of(NoticeCodes.RowNotConvertible), rejected, [])],
-                IgnoredValues = outcome.IgnoredValues,
-            };
+                schema,
+                match,
+                resolution,
+                () => mapped ? ColumnMapping.Open(new StreamReader(open()), resolution) : new StreamReader(open())));
         }
         catch (SourceSchemaException ex)
         {
-            seen.Remove(schema.FileName);
-
-            return new PublishedFileOutcome(
-                clientName,
-                schema.FileName,
-                schema.Source,
-                file.Length,
-                0,
-                0,
+            return (new PublishedFileOutcome(clientName, schema.FileName, schema.Source, file.Length, 0, 0,
                 ex.Notice ?? Notice.Of(NoticeCodes.CsvUnreadable, ("row", 1)))
             {
                 DetectedColumns = match.DetectedColumns,
                 Candidates = _catalog.ExpectedFileNames,
-            };
+            }, null);
         }
     }
+
+    /// <summary>
+    /// Lee juntos los archivos de una fuente, acumula sus filas y deja el veredicto de cada
+    /// archivo con los números de fila de su propio archivo.
+    /// </summary>
+    private void ReadSource(IReadOnlyList<PreparedFile> parts, ParsedLoad parsed, PublishedFileOutcome?[] verdicts)
+    {
+        var schema = parts[0].Schema;
+        var read = new CsvSourceReader(schema).ReadParts(
+            [.. parts.Select(p => new CsvSourceReader.SourcePart(p.Open, p.ClientName))]);
+
+        if (read.FirstError is not null)
+        {
+            for (var i = 0; i < parts.Count; i++)
+            {
+                var part = parts[i];
+
+                verdicts[part.Index] = read.Parts[i].Error is { } error
+                    ? new PublishedFileOutcome(part.ClientName, schema.FileName, schema.Source, part.Bytes, 0, 0, error)
+                    {
+                        DetectedColumns = part.Match.DetectedColumns,
+                        Candidates = _catalog.ExpectedFileNames,
+                    }
+                    : Verdict(part, read.Parts[i].Outcome!, 0);
+            }
+
+            return;
+        }
+
+        var notConvertible = parsed.Add(schema, read.Merged, parts.Count);
+
+        for (var i = 0; i < parts.Count; i++)
+        {
+            verdicts[parts[i].Index] = Verdict(parts[i], read.Parts[i].Outcome!, notConvertible[i]);
+            parsed.ColumnMaps.Add(parts[i].Resolution.ToColumnMap());
+        }
+    }
+
+    private static PublishedFileOutcome Verdict(PreparedFile part, CsvSourceReader.ReadOutcome outcome, int notConvertible)
+        => new(
+            part.ClientName,
+            part.Schema.FileName,
+            part.Schema.Source,
+            part.Bytes,
+            outcome.Rows.Count - notConvertible,
+            outcome.Rejections.Count + notConvertible,
+            null)
+        {
+            DetectedColumns = part.Match.DetectedColumns,
+            RejectionReasons = notConvertible == 0
+                ? outcome.Reasons
+                : [.. outcome.Reasons, new RejectionReason(Notice.Of(NoticeCodes.RowNotConvertible), notConvertible, [])],
+            IgnoredValues = outcome.IgnoredValues,
+        };
 
     private async Task<SnapshotVersion> CommitAsync(
         ParsedLoad parsed,
@@ -368,26 +480,33 @@ public sealed class DatabaseSnapshotPublisher(
         /// <summary>Qué columna de cada archivo cargó cada campo.</summary>
         public List<SourceColumnMap> ColumnMaps { get; } = [];
 
-        /// <summary>Convierte las filas leidas y devuelve cuantas no se pudieron convertir.</summary>
-        public int Add(SourceSchema schema, CsvSourceReader.ReadOutcome outcome)
+        /// <summary>
+        /// Convierte las filas leidas de una fuente y devuelve, por archivo, cuantas no se
+        /// pudieron convertir.
+        /// </summary>
+        public int[] Add(SourceSchema schema, CsvSourceReader.ReadOutcome outcome, int parts)
         {
             foreach (var rejection in outcome.Rejections)
             {
                 Reject(schema, rejection.RowNumber, rejection.Reason, rejection.Key);
             }
 
-            return schema.FileName switch
+            var rejected = new int[parts];
+
+            switch (schema.FileName)
             {
-                "eai_master.csv" => Convert(schema, outcome, Eai, FileRecordMappers.ToEai),
-                "architectural_value_by_eai.csv" => Convert(schema, outcome, ArchitecturalValue, FileRecordMappers.ToArchitecturalValue),
-                "product_strategy.csv" => Convert(schema, outcome, ProductStrategy, FileRecordMappers.ToProductStrategy),
-                "tech_debt.csv" => Convert(schema, outcome, TechDebt, FileRecordMappers.ToTechDebt),
-                "veracode_sca_open_flaws.csv" => Convert(schema, outcome, ScaFlaws, FileRecordMappers.ToScaFlaw),
-                "oss_score_by_eai.csv" => Convert(schema, outcome, OssScore, FileRecordMappers.ToOssScore),
-                "monitoreo.csv" => Convert(schema, outcome, Monitoring, FileRecordMappers.ToMonitoring),
-                "apim_onboarded_eais.csv" => Convert(schema, outcome, ApimOnboarding, FileRecordMappers.ToApimOnboarding),
-                _ => throw new SourceSchemaException(Notice.Of(NoticeCodes.ContractUnmapped, ("file", schema.FileName))),
-            };
+                case "eai_master.csv": Convert(schema, outcome, Eai, FileRecordMappers.ToEai, rejected); break;
+                case "architectural_value_by_eai.csv": Convert(schema, outcome, ArchitecturalValue, FileRecordMappers.ToArchitecturalValue, rejected); break;
+                case "product_strategy.csv": Convert(schema, outcome, ProductStrategy, FileRecordMappers.ToProductStrategy, rejected); break;
+                case "tech_debt.csv": Convert(schema, outcome, TechDebt, FileRecordMappers.ToTechDebt, rejected); break;
+                case "veracode_sca_open_flaws.csv": Convert(schema, outcome, ScaFlaws, FileRecordMappers.ToScaFlaw, rejected); break;
+                case "oss_score_by_eai.csv": Convert(schema, outcome, OssScore, FileRecordMappers.ToOssScore, rejected); break;
+                case "monitoreo.csv": Convert(schema, outcome, Monitoring, FileRecordMappers.ToMonitoring, rejected); break;
+                case "apim_onboarded_eais.csv": Convert(schema, outcome, ApimOnboarding, FileRecordMappers.ToApimOnboarding, rejected); break;
+                default: throw new SourceSchemaException(Notice.Of(NoticeCodes.ContractUnmapped, ("file", schema.FileName)));
+            }
+
+            return rejected;
         }
 
         public void AddTo(ModernizationDbContext db, string versionId)
@@ -408,15 +527,14 @@ public sealed class DatabaseSnapshotPublisher(
             }
         }
 
-        private int Convert<TRecord>(
+        private void Convert<TRecord>(
             SourceSchema schema,
             CsvSourceReader.ReadOutcome outcome,
             List<TRecord> target,
-            Func<CsvSourceReader.Row, TRecord?> map)
+            Func<CsvSourceReader.Row, TRecord?> map,
+            int[] rejected)
             where TRecord : class
         {
-            var rejected = 0;
-
             foreach (var row in outcome.Rows)
             {
                 var record = map(row);
@@ -424,14 +542,12 @@ public sealed class DatabaseSnapshotPublisher(
                 if (record is null)
                 {
                     Reject(schema, row.Number, Notice.Of(NoticeCodes.RowNotConvertible), row.Text(schema.KeyColumn));
-                    rejected++;
+                    rejected[Math.Clamp(row.Part, 0, rejected.Length - 1)]++;
                     continue;
                 }
 
                 target.Add(record);
             }
-
-            return rejected;
         }
 
         private void Reject(SourceSchema schema, int rowNumber, Notice reason, string? key)

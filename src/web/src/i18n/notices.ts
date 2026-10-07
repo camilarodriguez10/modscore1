@@ -189,7 +189,8 @@ const MESSAGES: Record<string, (a: Args) => string> = {
     `The upload was rejected: ${num(a.count)} ${plural(a.count, 'file')} could not be identified by ${a.count === '1' ? 'its' : 'their'} header. Assign the source below and upload again.`,
 
   'file.tooLarge': (a) => `It weighs ${a.size} MB and the per-file maximum is ${a.max} MB.`,
-  'file.duplicate': (a) => `It duplicates a file already received for the '${a.source}' source.`,
+  'file.identical': (a) =>
+    `It is identical to ${a.other}: the same file was selected twice, and loading both would count its rows twice. Remove one of them.`,
   'file.noName': () => 'A file without a name was received.',
   'file.extension': (a) => `Only ${a.extension} files are accepted.`,
   'file.contentType': (a) => `The content type '${a.contentType}' is not accepted.`,
@@ -209,6 +210,15 @@ const MESSAGES: Record<string, (a: Args) => string> = {
   'csv.missingColumns': (a) => `Required columns are missing: ${a.missing}. The file has: ${a.found}.`,
   'contract.unmapped': (a) => `The '${a.file}' contract has no database mapping.`,
 
+  'xlsx.unreadable': () =>
+    'The file could not be read as an Excel workbook. Open it in Excel and save it again as .xlsx, or as CSV.',
+  'xlsx.protected': () =>
+    'The workbook is password protected or in the old .xls format. Save it as .xlsx without a password, or as CSV.',
+  'xlsx.noSheet': () => 'The workbook has no sheet with data: the first visible sheet is the one that is read.',
+  'xlsx.tooLarge': () =>
+    'The workbook is too large to read safely. Save it as CSV, or split it into several files with the same columns: they are loaded together.',
+  'xlsx.tooManyColumns': (a) => `The first row of the sheet has more than ${num(a.max)} columns.`,
+
   'row.missingKey': (a) => `No value in the key column '${a.column}'.`,
   'row.invalidValue': (a) =>
     `'${a.column}' expected ${EXPECTED_VALUE[a.expected ?? ''] ?? 'a known type'} and received '${a.value}'.` +
@@ -217,6 +227,8 @@ const MESSAGES: Record<string, (a: Args) => string> = {
   'row.unknownEai': (a) => `EAI '${a.key}' does not exist in the EAI master.`,
   'row.duplicateKey': (a) =>
     `'${a.column}' ${a.key} appears more than once; the last row was kept and this one was left out.`,
+  'row.duplicateKeyInFile': (a) =>
+    `'${a.column}' ${a.key} appears again in ${a.file}, a later file of the same source; the row from that file was kept and this one was left out.`,
 
   'mapping.invalid': () => 'The column mapping sent with this file is not valid. Review it again and retry.',
   'mapping.needsSource': () => 'A column mapping belongs to one source: choose the source of this file first.',
@@ -328,7 +340,7 @@ const MESSAGES: Record<string, (a: Args) => string> = {
 };
 
 /** Codigos que llevan el archivo en la propia frase y no necesitan prefijo. */
-const FILE_IN_SENTENCE = new Set(['contract.unmapped']);
+const FILE_IN_SENTENCE = new Set(['contract.unmapped', 'row.duplicateKeyInFile']);
 
 /**
  * La frase de un aviso. Un codigo que este catalogo no conoce no rompe la pantalla:
@@ -376,6 +388,10 @@ export function rejectionHint(reason: Notice): string | null {
 
   if (reason.code === 'row.duplicateKey') {
     return 'An export with one row per date (Year, Month, Day) repeats each application. The last row of each one is kept: export only the latest date, or sort the export from oldest to newest.';
+  }
+
+  if (reason.code === 'row.duplicateKeyInFile') {
+    return 'Files of the same source are loaded together, in the order they were selected. When an application is in more than one, the row of the last file is the one loaded.';
   }
 
   if (reason.code !== 'row.invalidValue') return null;

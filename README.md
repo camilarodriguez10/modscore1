@@ -239,6 +239,13 @@ La carpeta `data\local` empieza vacía, así que cada pantalla avisa que no hay 
    cada archivo carga cada campo (ver abajo). La pantalla dice cuántas filas leyó, cuántas
    rechazó y por qué.
 
+Los archivos pueden ser CSV o libros de Excel (`.xlsx`): de un libro se lee la primera hoja
+visible, y su primera fila con valores es el encabezado. Una fuente puede llegar en varios
+archivos, por ejemplo uno por región: se cargan juntos y cada uno dice cuántas filas aportó. Si
+una aplicación del maestro está en dos archivos, queda la fila del último. El mismo archivo
+elegido dos veces se rechaza, porque sumaría dos veces sus filas
+([ADR 0034](docs/adr/0034-excel-y-varios-archivos-por-fuente.md)).
+
 Cada carga queda como una versión en **Upload history** y sobrevive al reinicio. Con los CSV
 de ejemplo, la aplicación 14381 tiene que dar **80.70**.
 
@@ -379,7 +386,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-979 pruebas .NET: 349 del motor, 273 de contratos y 357 de API. Las dos que importan más
+1 047 pruebas .NET: 349 del motor, 339 de contratos y 359 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **Captura del reporte v1.3 del 2026-10-07 = 66,12:** métrica por métrica, con OSS y Raw Tech
@@ -393,8 +400,8 @@ reproducen los casos documentados:
 TypeScript difieren.
 
 ```bash
-npm --prefix src/web test          # 78 pruebas unitarias (Vitest)
-npm --prefix src/web run test:e2e  # 61 escenarios: 34 de flujo y 27 de accesibilidad (axe)
+npm --prefix src/web test          # 95 pruebas unitarias (Vitest)
+npm --prefix src/web run test:e2e  # 62 escenarios: 35 de flujo y 27 de accesibilidad (axe)
 ```
 
 Las de punta a punta usan el Microsoft Edge instalado (no descargan navegadores) y levantan
@@ -689,7 +696,7 @@ Las rutas van absolutas: `dotnet run --project` arranca con la carpeta del proye
 como raíz, y una ruta relativa como `.\data\local` termina dentro de
 `src\system\Modernization.SystemApi` —el portafolio aparece sin cargas, sin ningún error—.
 
-Con el adaptador de archivos, la pantalla **Data** permite subir los CSV y
+Con el adaptador de archivos, la pantalla **Data** permite subir los CSV o libros de Excel y
 recalcular. Cada carga se publica como una versión consultable, y la evolución del
 score aparece en esa misma pantalla. Las reglas publicadas se guardan en `.rules\`, dentro
 de la misma carpeta.

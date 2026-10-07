@@ -359,6 +359,88 @@ public sealed class UploadFlowTests(FileBackedApiFixture fixture) : IClassFixtur
         Assert.All(result.Files, file => Assert.NotNull(file.CanonicalFileName));
     }
 
+    /// <summary>
+    /// ADR 0034 por las dos capas: un libro de Excel entra con su tipo de contenido, se suma
+    /// al CSV de la misma fuente y cada archivo trae su propio veredicto.
+    /// </summary>
+    [Fact]
+    public async Task AnExcelWorkbookJoinsTheCsvOfTheSameSourceThroughBothLayers()
+    {
+        var client = await fixture.CreateMutatingClientAsync();
+
+        // Una aplicación del maestro que no sea la de referencia: su score lo siguen otras pruebas.
+        var master = Encoding.UTF8.GetString(fixture.ReadSeedFiles().Single(f => f.Name == "eai_master.csv").Content);
+        var eai = master.Split('\n')
+            .Skip(1)
+            .Select(line => line.Split(',')[0].Trim())
+            .First(code => code.Length > 0 && code != "14381");
+
+        using var form = SeedForm("Carga con Excel");
+        var workbook = new ByteArrayContent(MinimalWorkbook(
+            ["EAI", "Country", "Application Short Name", "Application Name"],
+            [eai, "Chile", "XX", "Another application"]));
+        workbook.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        form.Add(workbook, "files", "APIM_Onboarded_EAIs_US.xlsx");
+
+        using var response = await client.PostAsync(new Uri(UploadPath, UriKind.Relative), form);
+        response.EnsureSuccessStatusCode();
+
+        var result = await response.Content.ReadFromJsonAsync<UploadResultView>(Json);
+
+        Assert.NotNull(result);
+        Assert.True(result.Accepted, string.Join(" | ", result.Errors));
+        Assert.Equal(9, result.Files.Count);
+
+        var excel = result.Files.Single(f => f.FileName == "APIM_Onboarded_EAIs_US.xlsx");
+        Assert.Equal("apim_onboarded_eais.csv", excel.CanonicalFileName);
+        Assert.Equal(1, excel.RowCount);
+        Assert.Null(excel.Error);
+        Assert.Equal(2, result.Files.Count(f => f.CanonicalFileName == "apim_onboarded_eais.csv"));
+    }
+
+    /// <summary>Un libro mínimo, con texto en línea y sin estilos, como lo escriben otras herramientas.</summary>
+    private static byte[] MinimalWorkbook(params string[][] rows)
+    {
+        const string Rels = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+        var sheet = new StringBuilder("<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetData>");
+
+        foreach (var row in rows)
+        {
+            sheet.Append("<row>");
+
+            foreach (var cell in row)
+            {
+                sheet.Append("<c t=\"inlineStr\"><is><t>").Append(System.Security.SecurityElement.Escape(cell)).Append("</t></is></c>");
+            }
+
+            sheet.Append("</row>");
+        }
+
+        sheet.Append("</sheetData></worksheet>");
+
+        var parts = new Dictionary<string, string>
+        {
+            ["_rels/.rels"] = $"<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"r1\" Type=\"{Rels}/officeDocument\" Target=\"xl/workbook.xml\"/></Relationships>",
+            ["xl/workbook.xml"] = $"<workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"{Rels}\"><sheets><sheet name=\"US\" sheetId=\"1\" r:id=\"s1\"/></sheets></workbook>",
+            ["xl/_rels/workbook.xml.rels"] = $"<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\"><Relationship Id=\"s1\" Type=\"{Rels}/worksheet\" Target=\"worksheets/sheet1.xml\"/></Relationships>",
+            ["xl/worksheets/sheet1.xml"] = sheet.ToString(),
+        };
+
+        using var buffer = new MemoryStream();
+
+        using (var archive = new System.IO.Compression.ZipArchive(buffer, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+        {
+            foreach (var (name, content) in parts)
+            {
+                using var stream = archive.CreateEntry(name).Open();
+                stream.Write(Encoding.UTF8.GetBytes(content));
+            }
+        }
+
+        return buffer.ToArray();
+    }
+
     /// <summary>Cada carga se acumula como version consultable, no reemplaza a la anterior.</summary>
     [Fact]
     public async Task EachUploadAddsToTheHistory()

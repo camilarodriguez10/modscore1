@@ -12,6 +12,13 @@ export interface LeftOutFile {
   fileName: string;
   /** La fuente que se reconoció, o null si el archivo no es de ninguna. */
   source: string | null;
+  /**
+   * True si otro archivo de la misma fuente pasó: la fuente sigue cargada, solo sin las filas
+   * de este (ADR 0034).
+   */
+  partial: boolean;
+  /** El archivo del que este es copia exacta, que sí se carga; null si no es una copia. */
+  copyOf: string | null;
 }
 
 export interface LeaveOutPlan {
@@ -50,11 +57,19 @@ export function planLeaveOut(result: UploadResultView, sent: UploadPayload): Lea
   }
 
   const keep = (_: unknown, index: number) => !failed[index];
+  const passedSources = new Set(
+    result.files.filter((file, index) => !failed[index] && file.canonicalFileName).map((file) => file.canonicalFileName),
+  );
 
   return {
     leftOut: result.files
       .filter((_, index) => failed[index])
-      .map((file) => ({ fileName: file.fileName, source: file.canonicalFileName ? file.source : null })),
+      .map((file) => ({
+        fileName: file.fileName,
+        source: file.canonicalFileName ? file.source : null,
+        partial: Boolean(file.canonicalFileName) && passedSources.has(file.canonicalFileName),
+        copyOf: file.error?.code === 'file.identical' ? (file.error.args.other ?? null) : null,
+      })),
     payload: {
       files: sent.files.filter(keep),
       label: sent.label,

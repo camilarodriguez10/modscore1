@@ -153,7 +153,7 @@ public static class NoticeCodes
     public const string UploadRejectedUnidentified = "upload.rejectedUnidentified";
 
     public const string FileTooLarge = "file.tooLarge";
-    public const string FileDuplicate = "file.duplicate";
+    public const string FileIdentical = "file.identical";
     public const string FileNoName = "file.noName";
     public const string FileExtension = "file.extension";
     public const string FileContentType = "file.contentType";
@@ -168,6 +168,13 @@ public static class NoticeCodes
     public const string CsvUnreadable = "csv.unreadable";
     public const string CsvTooManyRows = "csv.tooManyRows";
     public const string CsvMissingColumns = "csv.missingColumns";
+
+    // ------------------------------------------- libros de Excel (.xlsx)
+    public const string XlsxUnreadable = "xlsx.unreadable";
+    public const string XlsxProtected = "xlsx.protected";
+    public const string XlsxNoSheet = "xlsx.noSheet";
+    public const string XlsxTooLarge = "xlsx.tooLarge";
+    public const string XlsxTooManyColumns = "xlsx.tooManyColumns";
     public const string ContractUnmapped = "contract.unmapped";
 
     public const string RowMissingKey = "row.missingKey";
@@ -175,6 +182,7 @@ public static class NoticeCodes
     public const string RowNotConvertible = "row.notConvertible";
     public const string RowUnknownEai = "row.unknownEai";
     public const string RowDuplicateKey = "row.duplicateKey";
+    public const string RowDuplicateKeyInFile = "row.duplicateKeyInFile";
 
     // ------------------------------------------- mapping de columnas antes de cargar
     public const string MappingInvalid = "mapping.invalid";

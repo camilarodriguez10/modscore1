@@ -55,6 +55,9 @@ public sealed class CsvSourceReader
     /// <summary>Fila leida como diccionario de columna canonica a valor convertido.</summary>
     public sealed record Row(int Number, IReadOnlyDictionary<string, object?> Values)
     {
+        /// <summary>De qué archivo salió, cuando la fuente llega en varios: 0 es el primero.</summary>
+        public int Part { get; init; }
+
         public string? Text(string column) => Values.GetValueOrDefault(column) as string;
 
         public int? Int(string column) => Values.GetValueOrDefault(column) as int?;
@@ -150,13 +153,143 @@ public sealed class CsvSourceReader
         public IReadOnlyList<RejectionReason> IgnoredValues { get; init; } = [];
     }
 
-    public ReadOutcome Read(TextReader reader)
+    /// <summary>Un archivo de una fuente que llega en varios. Se abre al leerlo.</summary>
+    /// <param name="Open">Abre el archivo; quien lee lo cierra.</param>
+    /// <param name="Label">El nombre con que llegó, para decir de cuál es cada fila.</param>
+    public sealed record SourcePart(Func<TextReader> Open, string? Label);
+
+    /// <summary>Lo leído de un archivo, o por qué no se pudo leer.</summary>
+    public sealed record PartOutcome(ReadOutcome? Outcome, Notice? Error);
+
+    /// <summary>Lo leído de todos los archivos de una fuente: el conjunto y cada uno.</summary>
+    public sealed record PartsOutcome(ReadOutcome Merged, IReadOnlyList<PartOutcome> Parts)
+    {
+        /// <summary>El motivo del primer archivo que no se pudo leer, si hubo alguno.</summary>
+        public Notice? FirstError => Parts.Select(p => p.Error).FirstOrDefault(e => e is not null);
+    }
+
+    public ReadOutcome Read(TextReader reader) => Read(reader, 0);
+
+    /// <summary>
+    /// Lee una fuente que llega en varios archivos —uno por región, por ejemplo— como una
+    /// sola: las filas de todos, en el orden en que llegaron (ADR 0034).
+    /// </summary>
+    /// <remarks>
+    /// Cada archivo se lee y se informa por separado, con sus propios números de fila. Donde
+    /// la clave no puede repetirse, una clave que vuelve en un archivo posterior queda de ese
+    /// archivo, igual que dentro de uno solo queda la última fila, y la anterior se rechaza
+    /// diciendo en qué archivo volvió. En el conjunto, cada rechazo lleva el nombre de su archivo.
+    /// </remarks>
+    public PartsOutcome ReadParts(IReadOnlyList<SourcePart> parts)
+    {
+        ArgumentNullException.ThrowIfNull(parts);
+
+        var results = new PartOutcome[parts.Count];
+
+        for (var index = 0; index < parts.Count; index++)
+        {
+            try
+            {
+                using var reader = parts[index].Open();
+                results[index] = new PartOutcome(Read(reader, index), null);
+            }
+            catch (SourceSchemaException ex)
+            {
+                results[index] = new PartOutcome(null, ex.Notice ?? Notice.Of(NoticeCodes.CsvUnreadable, ("row", 1)));
+            }
+        }
+
+        if (results.Any(r => r.Error is not null))
+        {
+            return new PartsOutcome(new ReadOutcome([], []), results);
+        }
+
+        if (parts.Count > 1 && _schema.UniqueKey)
+        {
+            KeepLastAcrossParts(results, parts);
+        }
+
+        var rows = new List<Row>(results.Sum(r => r.Outcome!.Rows.Count));
+        var rejections = new List<SourceRejection>();
+
+        for (var index = 0; index < results.Length; index++)
+        {
+            var outcome = results[index].Outcome!;
+            rows.AddRange(outcome.Rows);
+
+            rejections.AddRange(parts.Count > 1 && parts[index].Label is { } label
+                ? outcome.Rejections.Select(r => r with { Reason = r.Reason.With("part", label) })
+                : outcome.Rejections);
+        }
+
+        return new PartsOutcome(
+            new ReadOutcome(rows, rejections)
+            {
+                Reasons = [.. results.SelectMany(r => r.Outcome!.Reasons)],
+                IgnoredValues = [.. results.SelectMany(r => r.Outcome!.IgnoredValues)],
+            },
+            results);
+    }
+
+    /// <summary>
+    /// Una fila por clave entre archivos: del último al primero, una clave que ya apareció en
+    /// un archivo posterior se rechaza en el anterior.
+    /// </summary>
+    private void KeepLastAcrossParts(PartOutcome[] results, IReadOnlyList<SourcePart> parts)
+    {
+        var owner = new Dictionary<string, int>(StringComparer.Ordinal);
+
+        for (var index = results.Length - 1; index >= 0; index--)
+        {
+            var outcome = results[index].Outcome!;
+            var kept = new List<Row>(outcome.Rows.Count);
+            var rejections = new List<SourceRejection>(outcome.Rejections);
+            ReasonTally? superseded = null;
+
+            foreach (var row in outcome.Rows)
+            {
+                var key = KeyOf(row);
+
+                if (owner.TryGetValue(key, out var later))
+                {
+                    var notice = Notice.Of(
+                        NoticeCodes.RowDuplicateKeyInFile,
+                        ("column", _schema.KeyColumn),
+                        ("key", key),
+                        ("file", parts[later].Label ?? string.Empty));
+
+                    rejections.Add(new SourceRejection(row.Number, notice, key));
+                    (superseded ??= new ReasonTally()).Add(notice, row.Number);
+                    continue;
+                }
+
+                kept.Add(row);
+            }
+
+            foreach (var row in kept)
+            {
+                owner.TryAdd(KeyOf(row), index);
+            }
+
+            results[index] = results[index] with
+            {
+                Outcome = outcome with
+                {
+                    Rows = kept,
+                    Rejections = rejections,
+                    Reasons = superseded is null ? outcome.Reasons : [.. outcome.Reasons, .. superseded.Summary()],
+                },
+            };
+        }
+    }
+
+    private ReadOutcome Read(TextReader reader, int part)
     {
         ArgumentNullException.ThrowIfNull(reader);
 
         try
         {
-            return ReadCore(reader);
+            return ReadCore(reader, part);
         }
         catch (MaxFieldSizeException ex)
         {
@@ -226,7 +359,7 @@ public sealed class CsvSourceReader
         CacheFields = true,
     };
 
-    private ReadOutcome ReadCore(TextReader reader)
+    private ReadOutcome ReadCore(TextReader reader, int part)
     {
         using var csv = new CsvReader(reader, Configuration());
 
@@ -254,7 +387,7 @@ public sealed class CsvSourceReader
                 throw new SourceSchemaException(Notice.Of(NoticeCodes.CsvTooManyRows, ("max", MaxRows), ("file", _schema.FileName)));
             }
 
-            var (row, rejection) = ReadRow(csv, mapping, rowNumber, reasons, ignored);
+            var (row, rejection) = ReadRow(csv, mapping, rowNumber, reasons, ignored, part);
 
             if (row is not null)
             {
@@ -360,7 +493,8 @@ public sealed class CsvSourceReader
         Dictionary<string, int> mapping,
         int rowNumber,
         ReasonTally reasons,
-        ReasonTally ignored)
+        ReasonTally ignored,
+        int part)
     {
         // Una columna que el archivo no trae queda en null, igual que un valor vacío.
         var values = new object?[_columns.Names.Length];
@@ -427,7 +561,7 @@ public sealed class CsvSourceReader
             ignored.Add(value, rowNumber);
         }
 
-        return (new Row(rowNumber, new RowValues(_columns, values)), null);
+        return (new Row(rowNumber, new RowValues(_columns, values)) { Part = part }, null);
     }
 
     /// <summary>

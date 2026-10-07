@@ -17,11 +17,15 @@ public sealed class IngestionService(
     SourceSchemaCatalog catalog,
     TimeProvider clock)
 {
-    /// <summary>Tope de archivos por carga. Son ocho fuentes; mas es un error.</summary>
-    public const int MaxFiles = 12;
+    /// <summary>
+    /// Tope de archivos por carga. Son ocho fuentes y desde el 2026-10-07 cada una puede
+    /// llegar en varios archivos, uno por región por ejemplo (ADR 0034); el tope de bytes de
+    /// la carga sigue siendo el mismo.
+    /// </summary>
+    public const int MaxFiles = 40;
 
-    /// <summary>Extension aceptada. Los exports observados son CSV.</summary>
-    private const string AllowedExtension = ".csv";
+    /// <summary>Extensiones aceptadas: CSV y libros de Excel. Qué es cada archivo lo decide su contenido.</summary>
+    private static readonly string[] AllowedExtensions = [".csv", ".xlsx"];
 
     private static readonly string[] AllowedContentTypes =
     [
@@ -29,6 +33,7 @@ public sealed class IngestionService(
         "application/csv",
         "text/plain",
         "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "application/octet-stream",
     ];
 
@@ -130,9 +135,9 @@ public sealed class IngestionService(
                 continue;
             }
 
-            if (!name.EndsWith(AllowedExtension, StringComparison.OrdinalIgnoreCase))
+            if (!AllowedExtensions.Any(extension => name.EndsWith(extension, StringComparison.OrdinalIgnoreCase)))
             {
-                rejected.Add(Notice.Of(NoticeCodes.FileExtension, ("extension", AllowedExtension), ("file", name)));
+                rejected.Add(Notice.Of(NoticeCodes.FileExtension, ("extension", string.Join(" or ", AllowedExtensions)), ("file", name)));
                 continue;
             }
 

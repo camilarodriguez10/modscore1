@@ -1,4 +1,5 @@
 import { AxeBuilder } from '@axe-core/playwright';
+import { deflateRawSync } from 'node:zlib';
 import { expect, test, type Page } from '@playwright/test';
 import { signIn } from './support';
 
@@ -253,4 +254,129 @@ test('the Mapping tab says which file and column load each field of the database
 
   await page.getByRole('button', { name: 'Go to Uploads to review it with your files' }).click();
   await expect(page).toHaveURL(/tab=uploads/);
+});
+
+/** Un libro de Excel mínimo, armado como lo escribe Excel: partes comprimidas en un ZIP. */
+function workbook(rows: string[][]): Buffer {
+  const main = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  const rels = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  const pkg = 'http://schemas.openxmlformats.org/package/2006/relationships';
+  const cells = (row: string[], r: number) =>
+    row.map((value, c) => `<c r="${String.fromCharCode(65 + c)}${r}" t="inlineStr"><is><t>${value}</t></is></c>`).join('');
+
+  const parts: Record<string, string> = {
+    '_rels/.rels': `<Relationships xmlns="${pkg}"><Relationship Id="r1" Type="${rels}/officeDocument" Target="xl/workbook.xml"/></Relationships>`,
+    'xl/workbook.xml': `<workbook xmlns="${main}" xmlns:r="${rels}"><sheets><sheet name="US" sheetId="1" r:id="s1"/></sheets></workbook>`,
+    'xl/_rels/workbook.xml.rels': `<Relationships xmlns="${pkg}"><Relationship Id="s1" Type="${rels}/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`,
+    'xl/worksheets/sheet1.xml': `<worksheet xmlns="${main}"><sheetData>${rows.map((row, i) => `<row r="${i + 1}">${cells(row, i + 1)}</row>`).join('')}</sheetData></worksheet>`,
+  };
+
+  const locals: Buffer[] = [];
+  const directory: Buffer[] = [];
+  let offset = 0;
+
+  for (const [name, content] of Object.entries(parts)) {
+    const fileName = Buffer.from(name);
+    const raw = Buffer.from(content);
+    const data = deflateRawSync(raw);
+
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(8, 8);
+    local.writeUInt32LE(data.length, 18);
+    local.writeUInt32LE(raw.length, 22);
+    local.writeUInt16LE(fileName.length, 26);
+
+    const entry = Buffer.alloc(46);
+    entry.writeUInt32LE(0x02014b50, 0);
+    entry.writeUInt16LE(8, 10);
+    entry.writeUInt32LE(data.length, 20);
+    entry.writeUInt32LE(raw.length, 24);
+    entry.writeUInt16LE(fileName.length, 28);
+    entry.writeUInt32LE(offset, 42);
+
+    locals.push(local, fileName, data);
+    directory.push(entry, fileName);
+    offset += 30 + fileName.length + data.length;
+  }
+
+  const size = directory.reduce((sum, part) => sum + part.length, 0);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(Object.keys(parts).length, 8);
+  end.writeUInt16LE(Object.keys(parts).length, 10);
+  end.writeUInt32LE(size, 12);
+  end.writeUInt32LE(offset, 16);
+
+  return Buffer.concat([...locals, ...directory, end]);
+}
+
+test('an Excel workbook sends only its header, and the files of one source are reported together', async ({ page }) => {
+  await enableUploads(page);
+
+  const apimHeader = 'EAI,Country,Application Short Name,Application Name';
+  let previewBody: { files: { fileName: string; header: string }[] } | null = null;
+
+  await page.route('**/api/ingestion/mapping/preview', async (route) => {
+    previewBody = route.request().postDataJSON() as typeof previewBody;
+    await route.fulfill({ json: { files: [] } });
+  });
+
+  const apim = (fileName: string, error: { code: string; args: Record<string, string> } | null = null) => ({
+    fileName,
+    canonicalFileName: 'apim_onboarded_eais.csv',
+    source: 'APIM Onboarding',
+    bytes: 900,
+    rowCount: error ? 0 : 14,
+    rejectedCount: 0,
+    error,
+    detectedColumns: [],
+    candidates: [],
+    rejectionReasons: [],
+    ignoredValues: [],
+  });
+
+  await page.route('**/api/ingestion/upload', async (route) => {
+    await route.fulfill({
+      json: {
+        accepted: false,
+        version: null,
+        applicationCount: 0,
+        files: [
+          { ...apim('master.csv'), canonicalFileName: 'eai_master.csv', source: 'EAI Master' },
+          apim('APIM_Onboarded_EAIs_EMEA.csv'),
+          apim('APIM_Onboarded_EAIs_US.xlsx', { code: 'csv.fieldTooLong', args: { max: '65536', row: '12' } }),
+        ],
+        errors: [{ code: 'csv.fieldTooLong', args: { max: '65536', row: '12', file: 'APIM_Onboarded_EAIs_US.xlsx' } }],
+        summary: { code: 'upload.rejected', args: { count: '1' } },
+      },
+    });
+  });
+
+  await signIn(page, '/data');
+
+  await page.locator('input[type=file]').setInputFiles([
+    { name: 'master.csv', mimeType: 'text/csv', buffer: Buffer.from('EAI_Code,Application_Name\n1001,Claims\n') },
+    { name: 'APIM_Onboarded_EAIs_EMEA.csv', mimeType: 'text/csv', buffer: Buffer.from(`${apimHeader}\n1001,Spain,CL,Claims\n`) },
+    {
+      name: 'APIM_Onboarded_EAIs_US.xlsx',
+      mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      buffer: workbook([apimHeader.split(','), ['2002', 'USA', 'SECRET', 'Do not send this row']]),
+    },
+  ]);
+
+  await page.getByRole('button', { name: 'Review column mapping' }).click();
+  await expect.poll(() => previewBody).not.toBeNull();
+
+  // Del libro viajó solo su encabezado, leído en el navegador.
+  expect(previewBody!.files[2]).toEqual({ fileName: 'APIM_Onboarded_EAIs_US.xlsx', header: apimHeader });
+  expect(JSON.stringify(previewBody)).not.toContain('SECRET');
+
+  await page.getByRole('button', { name: 'Upload and recalculate' }).click();
+
+  const detail = page.getByRole('table').filter({ hasText: 'Recognized source' });
+  await expect(detail.getByRole('row').filter({ hasText: 'APIM_Onboarded_EAIs_EMEA.csv' })).toContainText('file 1 of 2');
+  await expect(detail.getByRole('row').filter({ hasText: 'APIM_Onboarded_EAIs_US.xlsx' })).toContainText('file 2 of 2');
+
+  await expect(page.getByText('APIM Onboarding is still loaded from its other files; only the rows of this one are left out.')).toBeVisible();
 });

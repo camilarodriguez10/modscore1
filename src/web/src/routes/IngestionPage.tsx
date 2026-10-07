@@ -9,6 +9,7 @@ import { ApiError } from '../api/client';
 import { MappingReview } from './MappingReview';
 import { columnMapToSend, initialDecisions, readHeaderLine, type MappingDecisions } from '../mapping';
 import { planLeaveOut, type LeaveOutPlan, type UploadPayload } from '../leaveOut';
+import { partLabels } from '../uploadParts';
 
 /**
  * Cargas, dentro de la pantalla de Datos.
@@ -20,6 +21,9 @@ import { planLeaveOut, type LeaveOutPlan, type UploadPayload } from '../leaveOut
  * Desde la Fase 10 el archivo se reconoce por su encabezado y no por su nombre, asi
  * que ya no hay que renombrar los exports antes de subirlos. Cuando el encabezado no
  * alcanza, la pantalla muestra lo que leyo y deja asignar la fuente a mano.
+ *
+ * Desde el 2026-10-07 (ADR 0034) acepta libros de Excel, y varios archivos de una misma
+ * fuente —uno por región, por ejemplo— se cargan juntos.
  */
 export function IngestionPanel({
   data,
@@ -110,13 +114,17 @@ export function IngestionPanel({
   const startReview = async (current?: MappingDecisions) => {
     if (!canSubmit) return;
 
-    let headers: string[];
+    const headers: string[] = [];
 
-    try {
-      headers = await Promise.all(selected.map((file) => readHeaderLine(file)));
-    } catch {
-      setHeaderError('The header of the files could not be read in this browser.');
-      return;
+    for (const file of selected) {
+      try {
+        headers.push(await readHeaderLine(file));
+      } catch {
+        setHeaderError(
+          `The header of ${file.name} could not be read in this browser. You can still upload the files: each column is then recognized by its name or a known alias.`,
+        );
+        return;
+      }
     }
 
     setHeaderError(null);
@@ -210,7 +218,7 @@ export function IngestionPanel({
           <div className="flex flex-col gap-4 px-4 py-5">
             <div className="flex flex-col gap-1.5">
               <label htmlFor="upload-files">
-                <Label>CSV files</Label>
+                <Label>CSV or Excel files</Label>
               </label>
               <input
                 ref={inputRef}
@@ -218,7 +226,7 @@ export function IngestionPanel({
                 type="file"
                 multiple
                 aria-describedby="upload-files-hint"
-                accept=".csv,text/csv"
+                accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 onChange={(event) => {
                   setSelected(Array.from(event.target.files ?? []));
                   setAssigned({});
@@ -229,7 +237,8 @@ export function IngestionPanel({
                 className="rounded-sm border border-rule bg-surface px-3 py-2 text-[13px] text-ink-2 file:mr-3 file:rounded-sm file:border-0 file:bg-accent file:px-3 file:py-1.5 file:text-[12.5px] file:font-medium file:text-on-accent"
               />
               <p id="upload-files-hint" className="font-mono text-[11px] text-ink-3">
-                any file name works: each file is recognized by its header · up to{' '}
+                any file name works: each file is recognized by its header · CSV or Excel (.xlsx, first visible sheet) ·
+                files of the same source, such as one per region, are loaded together · up to{' '}
                 {fmt(data.maxFileBytes / 1024 / 1024, 0)} MB per file · {fmt(data.maxTotalBytes / 1024 / 1024, 0)}{' '}
                 MB in total
               </p>
@@ -249,11 +258,11 @@ export function IngestionPanel({
 
             {selected.length > 0 && (
               <ul className="flex flex-col gap-1 rounded-sm border border-rule bg-surface-2 px-3 py-2.5">
-                {selected.map((file) => {
+                {selected.map((file, index) => {
                   const isOversized = file.size > data.maxFileBytes;
 
                   return (
-                    <li key={file.name} className="flex items-baseline justify-between gap-3 text-[12.5px]">
+                    <li key={`${file.name}-${index}`} className="flex items-baseline justify-between gap-3 text-[12.5px]">
                       <span className={isOversized ? 'text-ink-3 line-through' : 'text-ink'}>
                         {file.name}
                         {assigned[file.name] && (
@@ -517,13 +526,17 @@ function LeaveOutFiles({
       subtitle={`Leave out ${count} with problems and publish the other ${countOf(plan.payload.files.length, 'file')}. Nothing is published until you confirm.`}
     >
       <ul className="divide-y divide-rule">
-        {plan.leftOut.map((file) => (
-          <li key={file.fileName} className="flex flex-col gap-0.5 px-4 py-3">
+        {plan.leftOut.map((file, index) => (
+          <li key={`${file.fileName}-${index}`} className="flex flex-col gap-0.5 px-4 py-3">
             <span className="font-mono text-[12.5px] text-ink">{file.fileName}</span>
             <span className="text-[12.5px] text-ink-2">
-              {file.source
-                ? `${file.source} will have no data in this upload: its metrics are left out of the score, as with any missing source.`
-                : 'It is not one of the sources of the model, so leaving it out does not change the score.'}
+              {file.copyOf
+                ? `It is a copy of ${file.copyOf}, which is loaded: leaving it out changes nothing.`
+                : file.source && file.partial
+                ? `${file.source} is still loaded from its other files; only the rows of this one are left out.`
+                : file.source
+                  ? `${file.source} will have no data in this upload: its metrics are left out of the score, as with any missing source.`
+                  : 'It is not one of the sources of the model, so leaving it out does not change the score.'}
             </span>
           </li>
         ))}
@@ -548,6 +561,7 @@ function LeaveOutFiles({
 
 /** El veredicto de la carga, archivo por archivo. */
 function UploadResult({ result }: { result: UploadResultView }) {
+  const parts = partLabels(result.files);
   const color = result.accepted ? 'var(--app-good-text)' : 'var(--app-critical-text)';
   const wash = result.accepted ? 'var(--app-good-wash)' : 'var(--app-critical-wash)';
 
@@ -587,10 +601,15 @@ function UploadResult({ result }: { result: UploadResultView }) {
                 </tr>
               </thead>
               <tbody>
-                {result.files.map((file) => (
-                  <tr key={file.fileName} className="border-b border-rule last:border-0">
+                {result.files.map((file, index) => (
+                  <tr key={`${file.fileName}-${index}`} className="border-b border-rule last:border-0">
                     <td className="px-4 py-2.5 font-mono text-[12px] text-ink">{file.fileName}</td>
-                    <td className="px-4 py-2.5 text-ink-2">{file.source}</td>
+                    <td className="px-4 py-2.5 text-ink-2">
+                      {file.source}
+                      {parts[index] && (
+                        <span className="ml-1.5 font-mono text-[11px] text-ink-3">· {parts[index]}</span>
+                      )}
+                    </td>
                     <td className="tnum px-4 py-2.5 text-right font-mono text-ink">
                       {file.rowCount.toLocaleString('en-US')}
                     </td>
@@ -690,8 +709,8 @@ function ReasonsCard({
       <div className="flex flex-col gap-5 px-4 py-3">
         <p className="max-w-[72ch] text-[12.5px] text-ink-3">{intro}</p>
 
-        {withReasons.map((file) => (
-          <section key={file.fileName} aria-label={regionLabel(file)} className="flex flex-col gap-2">
+        {withReasons.map((file, index) => (
+          <section key={`${file.fileName}-${index}`} aria-label={regionLabel(file)} className="flex flex-col gap-2">
             <h3 className="flex flex-wrap items-baseline gap-x-2 text-[13px]">
               <span className="font-semibold text-ink">{file.source}</span>
               <span className="font-mono text-[12px] text-ink-3">{file.fileName}</span>

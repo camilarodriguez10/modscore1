@@ -59,9 +59,13 @@ export function LineagePanel({ version }: { version?: string | undefined }) {
 
               {source.rejections.length > 0 && (
                 <ul className="flex flex-col gap-1 border-t border-rule pt-3">
-                  {source.rejections.slice(0, 3).map((rejection) => (
-                    <li key={`${rejection.rowNumber}-${rejection.key}`} className="text-[12px] text-ink-2">
-                      <span className="tnum font-mono text-ink-3">row {rejection.rowNumber}</span>{' '}
+                  {source.rejections.slice(0, 3).map((rejection, index) => (
+                    <li key={`${rejection.rowNumber}-${rejection.key}-${index}`} className="text-[12px] text-ink-2">
+                      {/* Una fuente en varios archivos: la fila es de su archivo (ADR 0034). */}
+                      <span className="tnum font-mono text-ink-3">
+                        row {rejection.rowNumber}
+                        {rejection.reason.args?.part ? ` of ${rejection.reason.args.part}` : ''}
+                      </span>{' '}
                       {formatNotice(rejection.reason)}
                     </li>
                   ))}

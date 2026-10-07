@@ -383,7 +383,7 @@ public static class ColumnMapping
     }
 
     /// <summary>Una línea CSV con comillas donde hacen falta.</summary>
-    private static string ToCsvLine(IReadOnlyList<string> fields)
+    internal static string ToCsvLine(IReadOnlyList<string> fields)
     {
         var line = new StringBuilder();
 

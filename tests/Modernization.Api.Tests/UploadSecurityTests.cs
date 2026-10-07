@@ -131,9 +131,10 @@ public sealed class UploadSecurityTests(LayeredApiFixture fixture) : IClassFixtu
     [Theory]
     [InlineData("payload.exe")]
     [InlineData("script.js")]
-    [InlineData("archivo.xlsx")]
+    [InlineData("archivo.xls")]
+    [InlineData("macros.xlsm")]
     [InlineData("sin-extension")]
-    public async Task OnlyCsvExtensionsAreAccepted(string fileName)
+    public async Task OnlyCsvAndExcelWorkbookExtensionsAreAccepted(string fileName)
     {
         var client = await MutatingClientAsync();
 

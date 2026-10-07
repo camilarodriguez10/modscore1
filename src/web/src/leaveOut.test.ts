@@ -51,13 +51,43 @@ describe('planLeaveOut', () => {
     );
 
     expect(plan?.leftOut).toEqual([
-      { fileName: 'containers.csv', source: null },
-      { fileName: 'sca.csv', source: 'SCA Flaws' },
+      { fileName: 'containers.csv', source: null, partial: false, copyOf: null },
+      { fileName: 'sca.csv', source: 'SCA Flaws', partial: false, copyOf: null },
     ]);
     expect(plan?.payload.files.map((file) => file.name)).toEqual(['eai.csv', 'debt.csv']);
     expect(plan?.payload.assignments).toEqual(['eai_master.csv', '-']);
     expect(plan?.payload.columnMaps).toEqual([{ 'User Count': 'Users' }, null]);
     expect(plan?.payload.label).toBe('Upload 1005');
+  });
+
+  it('says when the source stays loaded from its other files', () => {
+    const regions: UploadPayload = {
+      files: [csv('eai.csv'), csv('APIM_EMEA.csv'), csv('APIM_US.xlsx')],
+      label: 'Upload 1007',
+    };
+
+    const plan = planLeaveOut(
+      rejected([
+        fileView('eai.csv', 'eai_master.csv', 'EAI Master'),
+        fileView('APIM_EMEA.csv', 'apim_onboarded_eais.csv', 'APIM Onboarding'),
+        fileView('APIM_US.xlsx', 'apim_onboarded_eais.csv', 'APIM Onboarding', true),
+      ]),
+      regions,
+    );
+
+    expect(plan?.leftOut).toEqual([{ fileName: 'APIM_US.xlsx', source: 'APIM Onboarding', partial: true, copyOf: null }]);
+    expect(plan?.payload.files.map((file) => file.name)).toEqual(['eai.csv', 'APIM_EMEA.csv']);
+  });
+
+  it('says when the file left out is a copy of one that is loaded', () => {
+    const copy = { ...fileView('APIM_EMEA (1).csv', null, '-', true), error: { code: 'file.identical', args: { other: 'APIM_EMEA.csv' } } };
+
+    const plan = planLeaveOut(
+      rejected([fileView('eai.csv', 'eai_master.csv', 'EAI Master'), fileView('APIM_EMEA.csv', 'apim_onboarded_eais.csv', 'APIM Onboarding'), copy]),
+      { files: [csv('eai.csv'), csv('APIM_EMEA.csv'), csv('APIM_EMEA (1).csv')], label: '' },
+    );
+
+    expect(plan?.leftOut).toEqual([{ fileName: 'APIM_EMEA (1).csv', source: null, partial: false, copyOf: 'APIM_EMEA.csv' }]);
   });
 
   it('offers nothing when the EAI Master is the file that failed', () => {

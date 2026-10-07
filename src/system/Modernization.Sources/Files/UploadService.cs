@@ -18,6 +18,10 @@ namespace Modernization.Sources.Files;
 /// completo valida y ensambla, se mueve a su version definitiva.</item>
 /// <item>Una carga que no produce ninguna aplicacion se rechaza: reemplazar el
 /// portafolio por uno vacio es peor que no cargar nada.</item>
+/// <item>Desde el 2026-10-07 (ADR 0034) una fuente puede llegar en varios archivos —uno por
+/// región, por ejemplo—, que se cargan juntos; dos archivos idénticos se rechazan, porque
+/// sumarían dos veces lo mismo. Un libro de Excel (.xlsx) se convierte a CSV apenas llega, y
+/// desde ahí los dos formatos siguen el mismo camino.</item>
 /// </list>
 /// </remarks>
 public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? catalog = null, int retainVersions = 0)
@@ -94,21 +98,42 @@ public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? cat
         {
             Directory.CreateDirectory(staging);
 
-            var accepted = new Dictionary<string, SourceSchema>(StringComparer.Ordinal);
+            // Primero cada archivo por separado: se guarda, se identifica y se resuelve su
+            // mapping. Después cada fuente con todos sus archivos, que se leen juntos.
+            var verdicts = new PublishedFileOutcome?[files.Count];
+            var staged = new List<StagedFile>(files.Count);
+            var fingerprints = new Dictionary<string, string>(StringComparer.Ordinal);
+            var partsPerSource = new Dictionary<string, int>(StringComparer.Ordinal);
 
-            foreach (var file in files)
+            for (var index = 0; index < files.Count; index++)
             {
-                var outcome = await StageAsync(file, staging, accepted, cancellationToken).ConfigureAwait(false);
-                outcomes.Add(outcome);
+                var (failure, file) = await StageAsync(files[index], staging, fingerprints, partsPerSource, cancellationToken)
+                    .ConfigureAwait(false);
 
-                if (outcome.Error is not null)
+                if (failure is not null)
                 {
-                    errors.Add(outcome.Error.With("file", outcome.ClientFileName));
+                    verdicts[index] = failure;
+                }
+                else
+                {
+                    staged.Add(file! with { Index = index });
                 }
             }
 
+            foreach (var source in staged.GroupBy(s => s.Schema.FileName, StringComparer.Ordinal))
+            {
+                ReadSource([.. source], verdicts);
+            }
+
+            outcomes.AddRange(verdicts.Select(v => v!));
+
+            foreach (var outcome in outcomes.Where(o => o.Error is not null))
+            {
+                errors.Add(outcome.Error!.With("file", outcome.ClientFileName));
+            }
+
             // El maestro EAI es la espina dorsal: sin el no hay portafolio.
-            if (!accepted.ContainsKey("eai_master.csv"))
+            if (!outcomes.Any(o => o.Error is null && o.CanonicalFileName == "eai_master.csv"))
             {
                 // El maestro EAI es el inventario: sin el no hay portafolio que puntuar.
                 errors.Add(Notice.Of(NoticeCodes.UploadMissingMaster, ("master", "eai_master.csv")));
@@ -121,7 +146,7 @@ public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? cat
 
             try
             {
-                var version = await CommitAsync(staging, label, uploadedBy, capturedAt, outcomes, cancellationToken)
+                var version = await CommitAsync(staging, label, uploadedBy, capturedAt, outcomes, staged, cancellationToken)
                     .ConfigureAwait(false);
 
                 // La retencion se aplica despues de publicar: si la carga no llega a
@@ -209,45 +234,93 @@ public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? cat
 
     // -----------------------------------------------------------------------
 
+    /// <summary>Un archivo guardado en staging, identificado y con su mapping resuelto.</summary>
+    private sealed record StagedFile(
+        int Index,
+        string ClientName,
+        long Bytes,
+        SourceSchema Schema,
+        string StoredAs,
+        string StoredPath,
+        SourceFileMatch Match,
+        ColumnResolution Resolution);
+
     /// <summary>
-    /// Escribe un archivo en staging tras identificarlo y validarlo.
+    /// Escribe un archivo en staging tras identificarlo y resolver su mapping. Las filas se
+    /// leen después, con los demás archivos de la misma fuente.
     /// </summary>
     /// <remarks>
     /// El archivo aterriza primero con un <b>nombre generado</b>: hasta leer el
     /// encabezado no se sabe que fuente es, y el nombre del cliente no participa ni
     /// en la decision ni en la ruta. Solo cuando el contrato queda identificado, el
-    /// archivo se mueve a su nombre canonico.
+    /// archivo se mueve a su nombre canonico, o al de su parte si la fuente ya tenía uno.
     /// </remarks>
-    private async Task<PublishedFileOutcome> StageAsync(
+    private async Task<(PublishedFileOutcome? Failure, StagedFile? Staged)> StageAsync(
         IncomingSourceFile file,
         string staging,
-        Dictionary<string, SourceSchema> accepted,
+        Dictionary<string, string> fingerprints,
+        Dictionary<string, int> partsPerSource,
         CancellationToken cancellationToken)
     {
         var clientName = Path.GetFileName(file.ClientFileName);
 
         if (file.Length > MaxFileBytes)
         {
-            return new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0,
-                Notice.Of(NoticeCodes.FileTooLarge, ("size", Megabytes(file.Length)), ("max", Megabytes(MaxFileBytes))));
+            return (new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0,
+                Notice.Of(NoticeCodes.FileTooLarge, ("size", Megabytes(file.Length)), ("max", Megabytes(MaxFileBytes)))), null);
         }
 
         // Un mapping es de una fuente concreta: sin la fuente asignada no hay contra qué
         // contrato validarlo.
         if (file.ColumnMap is not null && string.IsNullOrWhiteSpace(file.AssignedFileName))
         {
-            return new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0,
-                Notice.Of(NoticeCodes.MappingNeedsSource));
+            return (new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0,
+                Notice.Of(NoticeCodes.MappingNeedsSource)), null);
         }
 
         var scratch = Path.Combine(
             staging,
             Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture) + ".part");
 
+        string fingerprint;
+
         await using (var input = file.OpenRead())
         await using (var output = System.IO.File.Create(scratch))
         {
-            await input.CopyToAsync(output, cancellationToken).ConfigureAwait(false);
+            fingerprint = await IncomingFiles.CopyAndHashAsync(input, output, cancellationToken).ConfigureAwait(false);
+        }
+
+        // Dos archivos de una fuente se suman: el mismo archivo dos veces duplicaría sus filas.
+        if (!fingerprints.TryAdd(fingerprint, clientName))
+        {
+            System.IO.File.Delete(scratch);
+
+            return (new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0,
+                Notice.Of(NoticeCodes.FileIdentical, ("other", fingerprints[fingerprint]))), null);
+        }
+
+        // Un libro de Excel se convierte antes de mirarlo: desde aquí es un CSV más.
+        if (XlsxSourceConverter.Detect(scratch) != IncomingFileKind.Text)
+        {
+            var converted = scratch + ".csv";
+
+            try
+            {
+                XlsxSourceConverter.Convert(scratch, converted);
+            }
+            catch (SourceSchemaException ex)
+            {
+                System.IO.File.Delete(converted);
+
+                return (new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0,
+                    ex.Notice ?? Notice.Of(NoticeCodes.XlsxUnreadable)), null);
+            }
+            finally
+            {
+                System.IO.File.Delete(scratch);
+            }
+
+            scratch = converted;
         }
 
         var match = _matcher.MatchFile(scratch, clientName, file.AssignedFileName);
@@ -256,28 +329,19 @@ public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? cat
         {
             System.IO.File.Delete(scratch);
 
-            return new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0, match.Problem)
+            return (new PublishedFileOutcome(clientName, null, "-", file.Length, 0, 0, match.Problem)
             {
                 DetectedColumns = match.DetectedColumns,
                 Candidates = match.Candidates,
-            };
+            }, null);
         }
 
         var schema = match.Schema;
+        var part = partsPerSource.GetValueOrDefault(schema.FileName) + 1;
+        var storedAs = IncomingFiles.PartFileName(schema.FileName, part);
 
-        if (!accepted.TryAdd(schema.FileName, schema))
-        {
-            System.IO.File.Delete(scratch);
-
-            return new PublishedFileOutcome(clientName, schema.FileName, schema.Source, file.Length, 0, 0,
-                Notice.Of(NoticeCodes.FileDuplicate, ("source", schema.Source)))
-            {
-                DetectedColumns = match.DetectedColumns,
-            };
-        }
-
-        // El destino es el nombre canonico del contrato, dentro de staging.
-        var destination = Path.Combine(staging, schema.FileName);
+        // El destino es el nombre canonico del contrato, o el de su parte, dentro de staging.
+        var destination = Path.Combine(staging, storedAs);
         ColumnResolution resolution;
 
         try
@@ -286,17 +350,16 @@ public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? cat
 
             if (!resolution.IsValid && file.ColumnMap is not null)
             {
-                accepted.Remove(schema.FileName);
                 System.IO.File.Delete(scratch);
 
                 var problem = resolution.Problems.Count == 1
                     ? resolution.Problems[0]
                     : resolution.Problems[0].With("more", resolution.Problems.Count - 1);
 
-                return new PublishedFileOutcome(clientName, schema.FileName, schema.Source, file.Length, 0, 0, problem)
+                return (new PublishedFileOutcome(clientName, schema.FileName, schema.Source, file.Length, 0, 0, problem)
                 {
                     DetectedColumns = match.DetectedColumns,
-                };
+                }, null);
             }
 
             if (file.ColumnMap is not null)
@@ -317,54 +380,56 @@ public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? cat
         }
         catch (SourceSchemaException ex)
         {
-            accepted.Remove(schema.FileName);
             System.IO.File.Delete(scratch);
             System.IO.File.Delete(destination);
 
-            return new PublishedFileOutcome(clientName, schema.FileName, schema.Source, file.Length, 0, 0,
+            return (new PublishedFileOutcome(clientName, schema.FileName, schema.Source, file.Length, 0, 0,
                 ex.Notice ?? Notice.Of(NoticeCodes.CsvUnreadable, ("row", 1)))
             {
                 DetectedColumns = match.DetectedColumns,
-            };
+            }, null);
         }
 
-        try
-        {
-            using var reader = new StreamReader(destination);
-            var outcome = new CsvSourceReader(schema).Read(reader);
+        partsPerSource[schema.FileName] = part;
 
-            return new PublishedFileOutcome(
-                clientName,
-                schema.FileName,
-                schema.Source,
-                file.Length,
-                outcome.Rows.Count,
-                outcome.Rejections.Count,
-                null)
-            {
-                DetectedColumns = match.DetectedColumns,
-                RejectionReasons = outcome.Reasons,
-                IgnoredValues = outcome.IgnoredValues,
-                ColumnMap = resolution.ToColumnMap(),
-            };
-        }
-        catch (SourceSchemaException ex)
-        {
-            accepted.Remove(schema.FileName);
-            System.IO.File.Delete(destination);
+        return (null, new StagedFile(0, clientName, file.Length, schema, storedAs, destination, match, resolution));
+    }
 
-            return new PublishedFileOutcome(
-                clientName,
-                schema.FileName,
-                schema.Source,
-                file.Length,
-                0,
-                0,
-                ex.Notice ?? Notice.Of(NoticeCodes.CsvUnreadable, ("row", 1)))
-            {
-                DetectedColumns = match.DetectedColumns,
-                Candidates = _catalog.ExpectedFileNames,
-            };
+    /// <summary>
+    /// Lee juntos los archivos de una fuente y deja el veredicto de cada uno: sus filas, sus
+    /// rechazos y por qué, con los números de fila de su propio archivo.
+    /// </summary>
+    private void ReadSource(IReadOnlyList<StagedFile> parts, PublishedFileOutcome?[] verdicts)
+    {
+        var schema = parts[0].Schema;
+        var read = new CsvSourceReader(schema).ReadParts(
+            [.. parts.Select(p => new CsvSourceReader.SourcePart(() => new StreamReader(p.StoredPath), p.ClientName))]);
+
+        for (var i = 0; i < parts.Count; i++)
+        {
+            var part = parts[i];
+            var result = read.Parts[i];
+
+            verdicts[part.Index] = result.Error is { } error
+                ? new PublishedFileOutcome(part.ClientName, schema.FileName, schema.Source, part.Bytes, 0, 0, error)
+                {
+                    DetectedColumns = part.Match.DetectedColumns,
+                    Candidates = _catalog.ExpectedFileNames,
+                }
+                : new PublishedFileOutcome(
+                    part.ClientName,
+                    schema.FileName,
+                    schema.Source,
+                    part.Bytes,
+                    result.Outcome!.Rows.Count,
+                    result.Outcome.Rejections.Count,
+                    null)
+                {
+                    DetectedColumns = part.Match.DetectedColumns,
+                    RejectionReasons = result.Outcome.Reasons,
+                    IgnoredValues = result.Outcome.IgnoredValues,
+                    ColumnMap = part.Resolution.ToColumnMap(),
+                };
         }
     }
 
@@ -378,6 +443,7 @@ public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? cat
         string uploadedBy,
         DateTimeOffset capturedAt,
         IReadOnlyList<PublishedFileOutcome> outcomes,
+        IReadOnlyList<StagedFile> staged,
         CancellationToken cancellationToken)
     {
         var id = UploadManifest.NewId(capturedAt);
@@ -399,9 +465,10 @@ public sealed class UploadService(string rootDirectory, SourceSchemaCatalog? cat
             Label = label,
             CapturedAt = capturedAt,
             ApplicationCount = 0,
-            Files = [.. outcomes.Where(o => o.CanonicalFileName is not null).Select(o => o.CanonicalFileName!)],
+            Files = [.. staged.Select(s => s.StoredAs)],
             UploadedBy = uploadedBy,
             ColumnMaps = [.. outcomes.Where(o => o.ColumnMap is not null).Select(o => o.ColumnMap!)],
+            Parts = [.. staged.Select(s => new UploadPart(s.Schema.FileName, s.StoredAs, s.ClientName))],
         };
         probeManifest.Write(staging);
 

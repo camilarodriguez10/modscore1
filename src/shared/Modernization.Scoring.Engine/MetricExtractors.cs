@@ -57,7 +57,7 @@ public static class MetricExtractors
             ["automationDevSecOps"] = static (s, m) => FromNumber(s.AutomationDevSecOpsScore, m, string.Empty),
             ["containerized"] = static (s, _) => ExtractContainerized(s),
             ["monitoring"] = static (s, _) => ExtractMonitoring(s),
-            ["operationalScore"] = static (s, m) => FromNumber(s.OperationalScore, m, "Visibility"),
+            ["operationalScore"] = static (s, m) => FromNumber(s.OperationalScore, m, "CMT"),
             ["roadmap"] = static (s, _) => ExtractRoadmap(s),
         };
 

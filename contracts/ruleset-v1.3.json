@@ -298,7 +298,7 @@
       "pillar": "stability",
       "weight": 5,
       "input": "operationalScore",
-      "source": { "system": "Visibility", "report": "MV_APP_MDRNZTN_DTL (ServiceNow incident & problem, 12-month window)", "field": "Operational_Score" },
+      "source": { "system": "CMT", "report": "EAI/CMT export, Operational_Score (ServiceNow incident & problem, 12-month window)", "field": "Operational_Score" },
       "mapping": {
         "kind": "numericBands",
         "bands": [

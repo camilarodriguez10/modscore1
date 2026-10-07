@@ -20,8 +20,8 @@ En la misma conversación confirmó dos cosas más que no cambian el cálculo:
 - **Architectural Value** es el promedio de los componentes ponderado por cantidad: Modern
   100, Heritage 60, Not Approved for Use 20, Obsolete 20. Con su ejemplo (408 Modern, 415
   Heritage, 105 Not Approved) da 73,06. Es lo que el sitio ya hacía.
-- **Origen de dos métricas:** la deuda técnica sale de la vista `V_TECH_DEBT_APP_SCORE` y el
-  Operational Score de los datos de visibilidad `MV_APP_MDRNZTN_DTL`.
+- **Origen de dos métricas:** la deuda técnica sale de la vista `V_TECH_DEBT_APP_SCORE`, y en
+  origen el Operational Score sale de los datos de visibilidad `MV_APP_MDRNZTN_DTL`.
 
 ## Decisión
 
@@ -35,9 +35,11 @@ En la misma conversación confirmó dos cosas más que no cambian el cálculo:
 3. **El laboratorio de escenarios no ofrece una palanca que no movería nada.** Si la métrica
    de una palanca es `criticalOnly` y la aplicación no es crítica, la palanca queda como no
    accionable, con el motivo `lever.notCritical`. Sale del ruleset activo, no de la palanca.
-4. **El origen de deuda técnica y Operational Score** queda en el ruleset y en el contrato de
-   fuentes. Operational Score sigue llegando en el EAI Master: si un día llega como archivo
-   aparte desde `MV_APP_MDRNZTN_DTL`, hará falta su encabezado para declararlo como fuente.
+4. **El origen de la deuda técnica** (`V_TECH_DEBT_APP_SCORE`) queda en el ruleset y en el
+   contrato de fuentes. **El Operational Score se sigue leyendo del archivo EAI/CMT, columna
+   `Operational_Score`** (decisión del 2026-10-07), aunque en origen
+   salga de `MV_APP_MDRNZTN_DTL`. El encabezado se reconoce sin importar mayúsculas
+   (`operational_score`).
 
 ## Alternativas consideradas
 

@@ -45,9 +45,10 @@ vieja: restaura la v1.3 de fábrica en **Rules → Versions** y publícala.
 
 **Confirmado por el dueño del reporte, sin cambios:** Architectural Value es el promedio de los
 componentes ponderado por cantidad (Modern 100, Heritage 60, Not Approved 20, Obsolete 20). La
-deuda técnica sale de la vista `V_TECH_DEBT_APP_SCORE` y el Operational Score de
-`MV_APP_MDRNZTN_DTL`: si los archivos cargados no salen de ahí, son la primera sospecha para
-esas dos métricas.
+deuda técnica sale de la vista `V_TECH_DEBT_APP_SCORE`: si el archivo cargado no sale de ahí, es
+la primera sospecha para esa métrica. El Operational Score se lee del archivo EAI/CMT, columna
+`Operational_Score` (en origen, `MV_APP_MDRNZTN_DTL`): si no coincide, compara ese valor del
+export con el del reporte.
 
 Revisa en este orden. Cada causa dice dónde se ve en el sitio.
 

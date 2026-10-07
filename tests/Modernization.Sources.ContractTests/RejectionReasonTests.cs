@@ -284,6 +284,24 @@ public sealed class PowerBiExportTests
         Assert.Equal(1234, second.Int("User Count"));
     }
 
+    /// <summary>
+    /// El Operational Score se lee del archivo EAI/CMT, columna Operational_Score (decisión
+    /// del 2026-10-07), escrita como venga: el encabezado no distingue mayúsculas.
+    /// </summary>
+    [Theory]
+    [InlineData("Operational_Score")]
+    [InlineData("operational_score")]
+    [InlineData("OPERATIONAL_SCORE")]
+    public void TheOperationalScoreIsReadFromTheEaiFileInAnyCase(string header)
+    {
+        var master = SourceSchemaCatalog.Default.Require("eai_master.csv");
+        using var reader = new StringReader($"EAI_Code,Application_Name,{header}\n14381,Claims,85\n");
+
+        var row = Assert.Single(new CsvSourceReader(master).Read(reader).Rows);
+
+        Assert.Equal(85m, row.Decimal("Operational_Score"));
+    }
+
     [Fact]
     public void TheMappingReviewProposesTheSameColumnsTheReaderLoads()
     {

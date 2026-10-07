@@ -41,12 +41,12 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | Las seis preguntas (pantalla 09) | Entregada el 2026-09-16 (PLAN §8.9, [ADR 0023](docs/adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md)). Salud, prioridades, complejidad, riesgo, obsolescencia y resiliencia en `/insights`, con los mismos filtros. Ningún dato nuevo hizo falta; lo que mejoraría el esfuerzo y el valor de negocio está en PENDING-ITEMS como DQ-01 a DQ-07 |
 | Dashboard ejecutivo | D1, D2 y D3 entregadas el 2026-09-18 (PLAN §8.10, [ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md), [ADR 0025](docs/adr/0025-las-definiciones-viajan-con-las-reglas.md)). La página de inicio (`/`): *Portfolio Health & Risk Intelligence*, con cinco indicadores, seis paneles y un detalle común; el inventario está en `/portfolio`. Currency Score = `Raw_Tech_Score` de CMT. Las 37 definiciones de las seis preguntas viajan con las reglas y se editan en *Rules → Portfolio analytics*; cada panel explica su cálculo y *Definitions* es el diccionario. Cinco filtros nuevos en todas las pantallas. Falta D4 (fuentes nuevas) |
 | Pantalla Code | C1 entregada el 2026-09-26 (PLAN §8.11, [ADR 0026](docs/adr/0026-el-analisis-de-codigo-llega-de-github-enterprise.md)). `/code`: componentes de cada repositorio contra su fin de vida (endoflife.date, foto versionada con 22 productos y 273 ciclos), bibliotecas con hallazgos, discrepancias con el Currency Score de CMT e índice de riesgo de código con detalle por aplicación. 15 parámetros nuevos (área `code`) editables desde el portal. **Repositorios de demostración** hasta integrar GitHub Enterprise (C2, GH-01 a GH-09) |
-| Pruebas | **955 .NET** (328 motor · 270 contratos · 357 API) · **78 unitarias** de la SPA · **59 de punta a punta** con Playwright (32 de flujo y 27 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-10-02 |
+| Pruebas | **958 .NET** (328 motor · 273 contratos · 357 API) · **78 unitarias** de la SPA · **59 de punta a punta** con Playwright (32 de flujo y 27 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-10-02 |
 | Dependencias | Cero paquetes vulnerables (`dotnet list package --vulnerable`), `npm audit` limpio |
 | CI | GitHub Actions en verde desde la corrida #5 (`55cf36f`, 2026-09-15), que pasó los 7 jobs: backend, SPA, gitleaks, OSV, CodeQL C# y JS/TS, e imágenes con Trivy v0.74.0 y Checkov. CodeQL sin hallazgos altos. Tras acelerarlo, la corrida #6 (`148c6ce`) tardó 7 min 3 s en lugar de 9 min 54 s; CodeQL C# sigue marcando el total (6 min 58 s). Antes hubo que corregir el lint, CodeQL en repositorio privado (`upload: never`, `actions: read`), la versión de Trivy y el UID de los pods. Para acortarlo: gitleaks y OSV están en `seguridad.yml` y corren en cada push; `ci.yml` se salta los cambios que solo tocan documentación; CodeQL C# compila solo `src/` sin los analizadores de Roslyn; hay caché de NuGet, y el job de imágenes no espera a los demás |
 | ASVS L2 | 106 cumple · 11 parciales · 3 pendientes · 10 IdP o N/A. Los parciales dependen de un entorno real |
 | Hallazgos | Fase 08: 23 (19 cerrados, H-16 parcial, H-17/H-20/H-21 pendientes). Revisión 09–13: 7 (6 cerrados, 1 aceptado) |
-| Git | Repositorio **privado** <https://github.com/camilarodriguez10/modscore1>, rama `main`. Guarda todo lo creado —el estado local de `data/`, los scripts de las sesiones (`tools/sesiones/`) y la copia del plan (`docs/plan/`)— salvo las capturas del BRD y las imágenes. Los commits usan el correo de la cuenta. Desde el 2026-10-05, cada cambio de código se sube a `main` sin preguntar, por pedido de la dueña del repositorio |
+| Git | Repositorio **privado** <https://github.com/camilarodriguez10/modscore1>, rama `main`. Guarda todo lo creado —el estado local de `data/`, los scripts de las sesiones (`tools/sesiones/`) y la copia del plan (`docs/plan/`)— salvo las capturas del BRD y las imágenes. Los commits usan el correo de la cuenta. Desde el 2026-10-05, cada cambio de código se sube a `main` sin preguntar, a pedido de quien administra el repositorio |
 | Memo de decisiones | <https://claude.ai/artifact/Gp7c9gHv5kTSdGETPfeCi5> (versión 2, del 2026-09-18, con la pregunta 9 respondida): las once reglas de scoring que el negocio tiene que confirmar, con evidencia y opciones. Fuente de verdad: [docs/scoring-decisions.md](docs/scoring-decisions.md); copia publicada en `docs/plan/scoring-decisions.html` |
 | Artefacto del plan | <https://claude.ai/artifact/5cFSpe2puMikBkB3u5HRKd> (versión 24, del 2026-10-02, con la lectura tolerante de los exports reales; copia en `docs/plan/modscore-plan.html`, que hay que reemplazar al republicar; enlace anterior del mismo artefacto: <https://claude.ai/code/artifact/25507d1f-40a6-4e74-8c43-0337dbb63358>) |
 | Paquete portable | **Retirado el 2026-09-27** por decisión: la aplicación se levanta desde el código, con comandos para cmd y PowerShell ([README](README.md), «Levantar el stack», y la [guía](docs/guia-localhost.md)). Se borraron `artifacts/*.zip` y `tools/portable/`; la historia de git conserva los `.zip` anteriores (unos 93 MB cada uno). Para un equipo que no deja ejecutar `.exe` propios, el camino B de la guía sirve el sitio compilado (`src\web\dist`) desde la Channel con solo `dotnet.exe` |
@@ -256,9 +256,11 @@ queda sin dato. `MetricDefinition.CriticalOnly` (JSON `criticalOnly`, declarado 
 deja como no accionable la palanca de una métrica así en una aplicación no crítica
 (`lever.notCritical`); en los datos de ejemplo la 14381 no es crítica, así que las pruebas de
 escenarios usan `sca.remediateCritical`. Confirmó también la fórmula de Architectural Value
-(prueba con su ejemplo: 73,06) y el origen de deuda técnica (`V_TECH_DEBT_APP_SCORE`) y
-Operational Score (`MV_APP_MDRNZTN_DTL`), que quedaron en el ruleset y en el contrato. Una
-versión de reglas publicada antes no trae el campo: hay que restaurar la de fábrica y publicarla.
+(prueba con su ejemplo: 73,06) y el origen de la deuda técnica (`V_TECH_DEBT_APP_SCORE`), que
+quedó en el ruleset y en el contrato. **El Operational Score se sigue leyendo del archivo
+EAI/CMT, columna `Operational_Score`** (decisión del 2026-10-07; en origen sale de
+`MV_APP_MDRNZTN_DTL`). Una versión de reglas publicada antes no trae `criticalOnly`: hay que
+restaurar la de fábrica y publicarla.
 | ¿Qué causa la obsolescencia? | 5 | Puntos perdidos agrupados en conceptos; EOS/EOL esperan a TLM |
 | ¿Dónde faltan defensas? | 6 | Recuperación y vulnerabilidad operacional; disponibilidad, dependencias y puntos únicos de falla esperan su fuente |
 
@@ -699,8 +701,8 @@ partido. Para esas ediciones, el editor o `chr(92)`.
   tabla sin números detrás.
 - El cierre de cada fase es: pruebas y escaneo en verde, verificación en vivo, PLAN y README
   al día, artefacto republicado y decir qué no se pudo correr.
-- Cada cambio de código se sube a GitHub (`main`) al terminarlo, sin preguntar: lo pidió la
-  dueña del repositorio el 2026-10-05. Lo demás que publique fuera del equipo se confirma antes.
+- Cada cambio de código se sube a GitHub (`main`) al terminarlo, sin preguntar: lo pidió quien
+  administra el repositorio el 2026-10-05. Lo demás que publique fuera del equipo se confirma antes.
 
 ---
 

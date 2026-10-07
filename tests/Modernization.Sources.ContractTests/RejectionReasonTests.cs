@@ -586,3 +586,74 @@ public sealed class ProductStrategyExportTests
         Assert.Equal(2, record.TolerateCount);
     }
 }
+
+/// <summary>
+/// La deuda técnica llega desde el 2026-10-07 de una fuente nueva, con los nombres de puntaje
+/// recortados: COMBINED_DENIAL_SCOR, COMBINED_ACCEPTED_SCOR y COMBINED_APP_SCOR. APP_ID y
+/// LAST_UPDATED_DATE no cambian, y la fecha viene como 16/04/2026.
+/// </summary>
+public sealed class TechDebtExportTests : IDisposable
+{
+    private static readonly string[] Header =
+        ["APP_ID", "COMBINED_DENIAL_SCOR", "COMBINED_ACCEPTED_SCOR", "COMBINED_APP_SCOR", "LAST_UPDATED_DATE"];
+
+    private static SourceSchema TechDebt => SourceSchemaCatalog.Default.Require("tech_debt.csv");
+
+    private readonly string _root = Path.Combine(
+        Path.GetTempPath(),
+        "modscore-deuda-" + Guid.NewGuid().ToString("N", CultureInfo.InvariantCulture));
+
+    public TechDebtExportTests() => Directory.CreateDirectory(_root);
+
+    public void Dispose() => Directory.Delete(_root, recursive: true);
+
+    [Fact]
+    public void TheNewExportIsRecognizedAndEveryFieldIsLoaded()
+    {
+        Assert.Equal("tech_debt.csv", new SourceFileMatcher().Match(Header, "tech_debt_new_source.csv", null).Schema?.FileName);
+
+        var resolution = ColumnMapping.Resolve(TechDebt, Header);
+        var byColumn = resolution.Columns.ToDictionary(c => c.Column.Name, c => c.Header);
+
+        Assert.True(resolution.IsValid);
+        Assert.Equal("COMBINED_DENIAL_SCOR", byColumn["COMBINED_DENIAL_SCORE"]);
+        Assert.Equal("COMBINED_ACCEPTED_SCOR", byColumn["COMBINED_ACCEPTED_SCORE"]);
+        Assert.Equal("COMBINED_APP_SCOR", byColumn["COMBINED_APP_SCORE"]);
+        Assert.Empty(resolution.UnusedHeaders);
+    }
+
+    [Fact]
+    public void ARowOfTheCsvExportBecomesItsDebtScores()
+        => AssertTheExampleRow(new StringReader(string.Join(',', Header) + "\n1081,2,1,1.5,16/04/2026\n"));
+
+    [Fact]
+    public void TheSameRowInAnExcelWorkbookLoadsTheSame()
+    {
+        var workbook = Path.Combine(_root, "tech_debt.xlsx");
+        var csv = Path.Combine(_root, "tech_debt.csv");
+        File.WriteAllBytes(workbook, TestWorkbooks.Single(
+            [.. Header],
+            [1081, 2, 1, 1.5, new DateTime(2026, 4, 16, 0, 0, 0, DateTimeKind.Unspecified)]));
+
+        XlsxSourceConverter.Convert(workbook, csv);
+
+        using var reader = new StreamReader(csv);
+        AssertTheExampleRow(reader);
+    }
+
+    private static void AssertTheExampleRow(TextReader reader)
+    {
+        var outcome = new CsvSourceReader(TechDebt).Read(reader);
+
+        Assert.Empty(outcome.Rejections);
+        Assert.Empty(outcome.IgnoredValues);
+
+        var record = FileRecordMappers.ToTechDebt(Assert.Single(outcome.Rows));
+        Assert.NotNull(record);
+        Assert.Equal("1081", record.AppId);
+        Assert.Equal(2m, record.CombinedDenialScore);
+        Assert.Equal(1m, record.CombinedAcceptedScore);
+        Assert.Equal(1.5m, record.CombinedAppScore);
+        Assert.Equal(new DateTimeOffset(2026, 4, 16, 0, 0, 0, TimeSpan.Zero), record.LastUpdatedDate);
+    }
+}

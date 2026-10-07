@@ -73,9 +73,9 @@
       "description": "Technical debt by APP_ID, not by EAI; exported from the view V_TECH_DEBT_APP_SCORE. The assembler resolves the mapping.",
       "columns": [
         { "name": "APP_ID", "type": "code", "required": true, "aliases": ["App_Id", "Application ID"] },
-        { "name": "COMBINED_DENIAL_SCORE", "type": "decimal", "required": false },
-        { "name": "COMBINED_ACCEPTED_SCORE", "type": "decimal", "required": false },
-        { "name": "COMBINED_APP_SCORE", "type": "decimal", "required": false },
+        { "name": "COMBINED_DENIAL_SCORE", "type": "decimal", "required": false, "aliases": ["COMBINED_DENIAL_SCOR"] },
+        { "name": "COMBINED_ACCEPTED_SCORE", "type": "decimal", "required": false, "aliases": ["COMBINED_ACCEPTED_SCOR"] },
+        { "name": "COMBINED_APP_SCORE", "type": "decimal", "required": false, "aliases": ["COMBINED_APP_SCOR"] },
         { "name": "LAST_UPDATED_DATE", "type": "datetime", "required": false }
       ]
     },

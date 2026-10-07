@@ -228,7 +228,13 @@ public static class DashboardAnalyzer
             points.Count(p => p.Candidate),
             facts.Count - points.Count,
             rules.Candidates.MinCriticality,
-            rules.Candidates.MinOpportunity);
+            rules.Candidates.MinOpportunity,
+            // Sin plan: sin roadmap y sin plan automatico. Lo marcado Eliminate no cuenta aqui: sale
+            // del portafolio aunque no tenga roadmap, y por eso no recibe plan automatico.
+            facts.Count(f => f.Opportunity is null && f.Application.Roadmap is null
+                && f.Application.Disposition != ApplicationDisposition.Eliminate),
+            points.Count(p => p.AutomaticTarget is not null),
+            facts.Select(f => f.AutomaticTarget).FirstOrDefault(t => t is not null));
     }
 
     // ---------------------------------------------- 3. ¿dónde hay complejidad?
@@ -524,6 +530,9 @@ public static class DashboardAnalyzer
         public decimal Uplift { get; private init; }
         public int Weeks { get; private init; }
         public bool Candidate { get; private init; }
+
+        /// <summary>El objetivo del plan automatico, si la oportunidad sale de uno.</summary>
+        public decimal? AutomaticTarget { get; private init; }
         public string? Recovery { get; private init; }
         public string? Operational { get; private init; }
         public string? Resilience { get; private init; }
@@ -563,6 +572,7 @@ public static class DashboardAnalyzer
                 Opportunity = opportunity,
                 Uplift = uplift is { } u ? Math.Round(u, 2, MidpointRounding.AwayFromZero) : 0m,
                 Weeks = plan?.TotalWeeks ?? 0,
+                AutomaticTarget = opportunity is not null ? plan?.AutomaticTarget : null,
                 Candidate = opportunity is { } o
                     && criticality >= rules.Candidates.MinCriticality
                     && o >= rules.Candidates.MinOpportunity,
@@ -590,7 +600,8 @@ public static class DashboardAnalyzer
             Uplift,
             Weeks,
             Application.Roadmap is { } roadmap ? MapsNames.Display(roadmap) : null,
-            Candidate);
+            Candidate,
+            AutomaticTarget);
 
         public DashboardApplication ToRow() => new(
             Application.EaiCode,

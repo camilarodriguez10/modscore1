@@ -41,7 +41,7 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | Las seis preguntas (pantalla 09) | Entregada el 2026-09-16 (PLAN §8.9, [ADR 0023](docs/adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md)). Salud, prioridades, complejidad, riesgo, obsolescencia y resiliencia en `/insights`, con los mismos filtros. Ningún dato nuevo hizo falta; lo que mejoraría el esfuerzo y el valor de negocio está en PENDING-ITEMS como DQ-01 a DQ-07 |
 | Dashboard ejecutivo | D1, D2 y D3 entregadas el 2026-09-18 (PLAN §8.10, [ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md), [ADR 0025](docs/adr/0025-las-definiciones-viajan-con-las-reglas.md)). La página de inicio (`/`): *Portfolio Health & Risk Intelligence*, con cinco indicadores, seis paneles y un detalle común; el inventario está en `/portfolio`. Currency Score = `Raw_Tech_Score` de CMT. Las 37 definiciones de las seis preguntas viajan con las reglas y se editan en *Rules → Portfolio analytics*; cada panel explica su cálculo y *Definitions* es el diccionario. Cinco filtros nuevos en todas las pantallas. Falta D4 (fuentes nuevas) |
 | Pantalla Code | C1 entregada el 2026-09-26 (PLAN §8.11, [ADR 0026](docs/adr/0026-el-analisis-de-codigo-llega-de-github-enterprise.md)). `/code`: componentes de cada repositorio contra su fin de vida (endoflife.date, foto versionada con 22 productos y 273 ciclos), bibliotecas con hallazgos, discrepancias con el Currency Score de CMT e índice de riesgo de código con detalle por aplicación. 15 parámetros nuevos (área `code`) editables desde el portal. **Repositorios de demostración** hasta integrar GitHub Enterprise (C2, GH-01 a GH-09) |
-| Pruebas | **974 .NET** (344 motor · 273 contratos · 357 API) · **78 unitarias** de la SPA · **59 de punta a punta** con Playwright (32 de flujo y 27 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-10-02 |
+| Pruebas | **979 .NET** (349 motor · 273 contratos · 357 API) · **78 unitarias** de la SPA · **61 de punta a punta** con Playwright (34 de flujo y 27 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-10-07 |
 | Dependencias | Cero paquetes vulnerables (`dotnet list package --vulnerable`), `npm audit` limpio |
 | CI | GitHub Actions en verde desde la corrida #5 (`55cf36f`, 2026-09-15), que pasó los 7 jobs: backend, SPA, gitleaks, OSV, CodeQL C# y JS/TS, e imágenes con Trivy v0.74.0 y Checkov. CodeQL sin hallazgos altos. Tras acelerarlo, la corrida #6 (`148c6ce`) tardó 7 min 3 s en lugar de 9 min 54 s; CodeQL C# sigue marcando el total (6 min 58 s). Antes hubo que corregir el lint, CodeQL en repositorio privado (`upload: never`, `actions: read`), la versión de Trivy y el UID de los pods. Para acortarlo: gitleaks y OSV están en `seguridad.yml` y corren en cada push; `ci.yml` se salta los cambios que solo tocan documentación; CodeQL C# compila solo `src/` sin los analizadores de Roslyn; hay caché de NuGet, y el job de imágenes no espera a los demás |
 | ASVS L2 | 106 cumple · 11 parciales · 3 pendientes · 10 IdP o N/A. Los parciales dependen de un entorno real |
@@ -264,6 +264,25 @@ quedó en el ruleset y en el contrato. **El Operational Score se sigue leyendo d
 EAI/CMT, columna `Operational_Score`** (decisión del 2026-10-07; en origen sale de
 `MV_APP_MDRNZTN_DTL`). Una versión de reglas publicada antes no trae `criticalOnly`: hay que
 restaurar la de fábrica y publicarla.
+
+**Plan automático a 90 (2026-10-07, [ADR 0033](docs/adr/0033-plan-automatico-a-90-sin-roadmap.md)).**
+La pregunta 2 quedaba vacía con los datos reales: el export del EAI Master no trae la columna
+`Roadmap`, y la oportunidad eran los puntos del roadmap de MAPS. Ahora una aplicación sin
+roadmap (y no marcada *Eliminate*) recibe un plan automático hacia
+`RoadmapParameters.AutomaticPlanTarget` (`automaticPlanTarget: 90` en
+`contracts/roadmap-v1.json`; null lo apaga). `WhatIfEngine.PlanToTarget` es `ReachTarget` sin
+la poda: las palancas de mayor efecto, una tras otra, hasta que el motor confirma el objetivo,
+o todas las que suman si no alcanza. `RoadmapPlanner` lo guarda en una
+`ConditionalWeakTable<ApplicationSnapshot, ScenarioResult>` por planificador (reglas) y
+aplicación: con 4 000 aplicaciones, ~2 s la primera vez y 68 ms después.
+`ApplicationRoadmapPlan.AutomaticTarget` / `IsAutomatic` lo distinguen; el contrato
+`RoadmapPlanResponse` lo lleva al final con valor por defecto. En el dashboard,
+`DashboardPrioritization` cambia `WithoutRoadmap` por `WithoutPlan` (sin roadmap ni plan, sin
+contar las Eliminate) y suma `AutomaticPlans` y `AutomaticTarget`; `DashboardMatrixPoint` trae
+`AutomaticTarget`. La pantalla Roadmap usa `outlook.automaticPlan`, `automaticPlanShort` y
+`automaticPlanMet`. Insights no lo usa, porque ordena por puntos por semana y el plan no tiene
+semanas. Un catálogo publicado antes no trae el objetivo y deja los planes apagados; el objetivo
+aún no se edita desde *Rules*.
 | ¿Qué causa la obsolescencia? | 5 | Puntos perdidos agrupados en conceptos; EOS/EOL esperan a TLM |
 | ¿Dónde faltan defensas? | 6 | Recuperación y vulnerabilidad operacional; disponibilidad, dependencias y puntos únicos de falla esperan su fuente |
 

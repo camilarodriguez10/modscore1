@@ -123,6 +123,12 @@ public sealed record RoadmapCatalog
         {
             throw new RoadmapException("'significantUserBase' no puede ser negativo.");
         }
+
+        if (Parameters.AutomaticPlanTarget is < 20m or > 100m)
+        {
+            throw new RoadmapException(
+                $"'automaticPlanTarget' debe estar dentro de la escala 20-100; se declaro {Parameters.AutomaticPlanTarget}.");
+        }
     }
 
     public RoadmapDefinition Require(RoadmapType roadmap)
@@ -156,6 +162,14 @@ public sealed record RoadmapParameters
 
     /// <summary>Usuarios a partir de los cuales una baja es un proyecto de migracion.</summary>
     public required int SignificantUserBase { get; init; }
+
+    /// <summary>
+    /// Score objetivo del plan automatico de una aplicacion sin roadmap de MAPS: las palancas
+    /// que la llevan hasta ahi. Null apaga los planes automaticos. 90 en el catalogo de fabrica
+    /// (pedido del 2026-10-07): sin esto, un export sin la columna Roadmap deja la pregunta 2
+    /// del dashboard vacia.
+    /// </summary>
+    public decimal? AutomaticPlanTarget { get; init; }
 }
 
 public sealed record DispositionDefinition

@@ -23,7 +23,8 @@ public sealed record RoadmapPlanResponse(
     IReadOnlyList<AlertResponse> Alerts,
     DateOnly StartDate,
     DateOnly? CompletionDate,
-    int TotalWeeks)
+    int TotalWeeks,
+    decimal? AutomaticTarget = null)
 {
     public static RoadmapPlanResponse From(ApplicationRoadmapPlan p) => new(
         p.EaiCode,
@@ -49,7 +50,8 @@ public sealed record RoadmapPlanResponse(
             a.Evidence))],
         p.StartDate,
         p.CompletionDate,
-        p.TotalWeeks);
+        p.TotalWeeks,
+        p.AutomaticTarget);
 }
 
 public sealed record MilestoneResponse(

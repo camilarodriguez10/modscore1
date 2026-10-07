@@ -190,8 +190,12 @@ public sealed class RoadmapTests
         Assert.Equal(first.ProjectedDelta, second.ProjectedDelta);
     }
 
+    /// <summary>
+    /// Sin roadmap de MAPS no hay hitos ni roadmap, y se avisa; desde el 2026-10-07 hay un plan
+    /// automatico hacia el objetivo del catalogo (90): las palancas que lo alcanzan.
+    /// </summary>
     [Fact]
-    public void ApplicationWithoutRoadmapHasNoPlan()
+    public void ApplicationWithoutRoadmapGetsAnAutomaticPlanToTheCatalogTarget()
     {
         var snapshot = GoldenFixtures.Eai14381() with
         {
@@ -205,6 +209,87 @@ public sealed class RoadmapTests
         Assert.Empty(plan.Milestones);
         Assert.Null(plan.CompletionDate);
         Assert.Contains(plan.Alerts, a => a.Rule.Key == "roadmap.missing");
+
+        Assert.True(plan.IsAutomatic);
+        Assert.Equal(90m, plan.AutomaticTarget);
+        Assert.Equal(90m, _catalog.Parameters.AutomaticPlanTarget);
+        Assert.NotNull(plan.Projected);
+        Assert.True(plan.Projected.Projected.Score >= 90m, $"Proyecta {plan.Projected.Projected.Score}.");
+        Assert.NotEmpty(plan.Projected.Applied);
+        Assert.False(plan.LeavesPortfolio);
+    }
+
+    [Fact]
+    public void AnUnreachableTargetUsesEveryLeverThatAddsPoints()
+    {
+        var engine = new ScoringEngine(RulesetCatalog.Default);
+        var whatIf = new WhatIfEngine(engine);
+        var snapshot = GoldenFixtures.Eai14381() with { Disposition = ApplicationDisposition.Invest, Roadmap = null };
+
+        var plan = whatIf.PlanToTarget(snapshot, 100m);
+        var positive = whatIf.EvaluateAllLevers(snapshot).Levers.Where(e => e.Delta > 0).Select(e => e.Key).Order();
+
+        Assert.True(plan.Projected.Score < 100m);
+        Assert.Equal(positive, plan.Applied.Select(a => a.Key).Order());
+    }
+
+    [Fact]
+    public void AnApplicationAlreadyAtTheTargetHasNothingToPlan()
+    {
+        var snapshot = GoldenFixtures.Eai10969() with
+        {
+            Roadmap = null,
+            Disposition = ApplicationDisposition.Invest,
+            KennaScore = 100,
+            ScaFlaws = new ScaFlawCounts { Critical = 0, High = 0, Medium = 0, Low = 0 },
+            OpenSourceScore = 100m,
+            RawTechScore = 100m,
+            TechDebtScore = 0m,
+        };
+
+        var plan = _planner.Build(snapshot, Start);
+
+        Assert.True(plan.Baseline.Score >= 90m);
+        Assert.NotNull(plan.Projected);
+        Assert.Empty(plan.Projected.Applied);
+        Assert.Equal(0m, plan.ProjectedDelta);
+    }
+
+    /// <summary>Proyectar una mejora en algo que se va a eliminar justificaria invertir en lo que se apaga.</summary>
+    [Fact]
+    public void AnApplicationToBeEliminatedGetsNoAutomaticPlan()
+    {
+        var snapshot = GoldenFixtures.Eai14381() with { Disposition = ApplicationDisposition.Eliminate, Roadmap = null };
+
+        var plan = _planner.Build(snapshot, Start);
+
+        Assert.False(plan.IsAutomatic);
+        Assert.Null(plan.Projected);
+    }
+
+    [Fact]
+    public void AutomaticPlansCanBeTurnedOff()
+    {
+        var engine = new ScoringEngine(RulesetCatalog.Default);
+        var catalog = _catalog with { Parameters = _catalog.Parameters with { AutomaticPlanTarget = null } };
+        var planner = new RoadmapPlanner(catalog, new WhatIfEngine(engine), engine);
+
+        var plan = planner.Build(GoldenFixtures.Eai14381() with { Disposition = ApplicationDisposition.Invest, Roadmap = null }, Start);
+
+        Assert.False(plan.IsAutomatic);
+        Assert.Null(plan.Projected);
+    }
+
+    /// <summary>Cuesta varios calculos por aplicacion: una sola vez por aplicacion y reglas.</summary>
+    [Fact]
+    public void TheAutomaticPlanIsCalculatedOncePerApplication()
+    {
+        var snapshot = GoldenFixtures.Eai14381() with { Disposition = ApplicationDisposition.Invest, Roadmap = null };
+
+        var first = _planner.Build(snapshot, Start);
+        var second = _planner.Build(snapshot, Start.AddDays(7));
+
+        Assert.Same(first.Projected, second.Projected);
     }
 
     // ------------------------------------------------- alertas de coherencia

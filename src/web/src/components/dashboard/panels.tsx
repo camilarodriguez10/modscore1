@@ -261,6 +261,45 @@ export function PrioritizationPanel({
   const inQuadrant = (criticality: number, opportunity: number) =>
     criticality >= prioritization.minCriticality && opportunity >= prioritization.minOpportunity;
 
+  const leaving = Math.max(prioritization.outsideMatrix - prioritization.withoutPlan, 0);
+
+  // Sin ningun roadmap no hay oportunidad que medir: se dice por que, en vez de una matriz vacia.
+  if (prioritization.points.length === 0) {
+    return (
+      <QuestionPanel
+        number={2}
+        question="Which applications should be modernized first?"
+        decision="Which applications should receive modernization funding first?"
+      >
+        <div className="flex flex-col gap-2 rounded-sm border border-dashed border-rule px-4 py-4 text-[13px] text-ink-2">
+          <p className="font-medium text-ink">No application can be placed in the prioritization matrix.</p>
+          {prioritization.withoutPlan > 0 ? (
+            <>
+              <p>
+                {countOf(prioritization.withoutPlan, 'application')} have no MAPS roadmap in this upload and automatic
+                plans are turned off, and the modernization opportunity is the number of points a plan adds to the score.
+              </p>
+              <p>
+                The EAI Master needs a <span className="font-mono text-[12px]">Roadmap</span> column with one of the MAPS
+                values: Maintain (Patch), Maintain (Evolve), Rehost, Refactor, Reimagine, Retire or Consolidate. In{' '}
+                <Link to="/data?tab=mapping" className="text-accent underline-offset-2 hover:underline">
+                  Data → Mapping
+                </Link>
+                , if the Roadmap field says it is not in the file, the export does not bring it; if it has a column, its values
+                are not the MAPS ones.
+              </p>
+            </>
+          ) : (
+            <p>
+              {countOf(leaving, 'application')} leave the portfolio according to their roadmap, so there is no improvement to
+              measure.
+            </p>
+          )}
+        </div>
+      </QuestionPanel>
+    );
+  }
+
   return (
     <QuestionPanel
       number={2}
@@ -384,8 +423,16 @@ export function PrioritizationPanel({
 
         <p className="text-[11.5px] text-ink-3">
           The shaded cells are the candidates: criticality and opportunity {scaleLabel(prioritization.minCriticality).toLowerCase()} or
-          above. {countOf(prioritization.outsideMatrix, 'application')} stay out of the matrix because they leave the portfolio or have
-          no plan.
+          above. {countOf(prioritization.outsideMatrix, 'application')} stay out of the matrix:{' '}
+          {countOf(prioritization.withoutPlan, 'application')} without a plan and {countOf(leaving, 'application')} that leave the
+          portfolio.
+          {prioritization.automaticPlans > 0 && prioritization.automaticTarget !== null && (
+            <>
+              {' '}
+              {countOf(prioritization.automaticPlans, 'application')} without a MAPS roadmap use an automatic plan with the levers
+              that take them to {fmt(prioritization.automaticTarget, 0)}.
+            </>
+          )}
         </p>
       </div>
 
@@ -416,7 +463,11 @@ export function PrioritizationPanel({
                     </Link>
                     <span className="block font-mono text-[10.5px] text-ink-3">
                       {point.eaiCode}
-                      {point.roadmapName ? ` · ${point.roadmapName}` : ''}
+                      {point.roadmapName
+                        ? ` · ${point.roadmapName}`
+                        : point.automaticTarget !== null
+                          ? ` · automatic plan to ${fmt(point.automaticTarget, 0)}`
+                          : ''}
                     </span>
                   </td>
                   <td className="py-1.5 text-center font-mono" title={scaleLabel(point.criticality)}>

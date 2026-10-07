@@ -95,6 +95,58 @@ test.describe('dashboard', () => {
     await expect(detail).toContainText('Whole portfolio');
   });
 
+  /**
+   * Una aplicacion sin roadmap de MAPS entra a la matriz con un plan automatico hasta 90
+   * (2026-10-07). Con los datos de ejemplo todas tienen roadmap: la respuesta se ajusta.
+   */
+  test('an application without a MAPS roadmap shows its automatic plan to 90', async ({ page }) => {
+    await page.route('**/api/dashboard*', async (route) => {
+      const response = await route.fetch();
+      const body = (await response.json()) as {
+        dashboard: { prioritization: { top: { roadmapName: string | null; automaticTarget: number | null }[]; automaticPlans: number; automaticTarget: number | null } };
+      };
+      const prioritization = body.dashboard.prioritization;
+      prioritization.top[0] = { ...prioritization.top[0]!, roadmapName: null, automaticTarget: 90 };
+      prioritization.automaticPlans = 1;
+      prioritization.automaticTarget = 90;
+      await route.fulfill({ response, json: body });
+    });
+
+    await signIn(page, '/');
+
+    const panel = page.getByRole('region', { name: 'Which applications should be modernized first?' });
+    await expect(panel.getByText(/automatic plan to 90/).first()).toBeVisible();
+    await expect(panel).toContainText('use an automatic plan with the levers that take them to 90');
+  });
+
+  /** Sin ningun plan, la pregunta 2 dice por que en vez de mostrar una matriz vacia. */
+  test('without any plan the prioritization says why instead of an empty matrix', async ({ page }) => {
+    await page.route('**/api/dashboard*', async (route) => {
+      const response = await route.fetch();
+      const body = (await response.json()) as {
+        dashboard: { applications: unknown[]; prioritization: Record<string, unknown> };
+      };
+      const total = body.dashboard.applications.length;
+      Object.assign(body.dashboard.prioritization, {
+        points: [],
+        top: [],
+        candidates: 0,
+        outsideMatrix: total,
+        withoutPlan: total,
+        automaticPlans: 0,
+        automaticTarget: null,
+      });
+      await route.fulfill({ response, json: body });
+    });
+
+    await signIn(page, '/');
+
+    const panel = page.getByRole('region', { name: 'Which applications should be modernized first?' });
+    await expect(panel).toContainText('No application can be placed in the prioritization matrix.');
+    await expect(panel).toContainText('have no MAPS roadmap in this upload');
+    await expect(panel.getByRole('link', { name: 'Data → Mapping' })).toBeVisible();
+  });
+
   test('each panel explains its calculation with the values in force', async ({ page }) => {
     await signIn(page, '/');
 

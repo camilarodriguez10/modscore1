@@ -379,7 +379,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-974 pruebas .NET: 344 del motor, 273 de contratos y 357 de API. Las dos que importan más
+979 pruebas .NET: 349 del motor, 273 de contratos y 357 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **Captura del reporte v1.3 del 2026-10-07 = 66,12:** métrica por métrica, con OSS y Raw Tech
@@ -394,7 +394,7 @@ TypeScript difieren.
 
 ```bash
 npm --prefix src/web test          # 78 pruebas unitarias (Vitest)
-npm --prefix src/web run test:e2e  # 59 escenarios: 32 de flujo y 27 de accesibilidad (axe)
+npm --prefix src/web run test:e2e  # 61 escenarios: 34 de flujo y 27 de accesibilidad (axe)
 ```
 
 Las de punta a punta usan el Microsoft Edge instalado (no descargan navegadores) y levantan
@@ -460,7 +460,7 @@ falta— con cinco indicadores y un panel por cada una de las seis preguntas:
 |---|---|
 | Indicadores | Health Score, aplicaciones en riesgo, candidatas a modernizar, exposición de *currency* (EOS/EOL redefinido) y huecos de resiliencia, con su tendencia por carga |
 | 1 · Salud | Mapa de calor de CIO contra región, país, capacidad primaria o disposición objetivo, con totales por fila, por columna y del portafolio; reparto por tramo; tendencia |
-| 2 · Prioridad | Matriz criticidad × oportunidad (burbuja = riesgo) con totales por fila y columna, y el top 10 |
+| 2 · Prioridad | Matriz criticidad × oportunidad (burbuja = riesgo) con totales por fila y columna, y el top 10. Sin roadmap de MAPS, la oportunidad sale de un plan automático hasta 90 ([ADR 0033](docs/adr/0033-plan-automatico-a-90-sin-roadmap.md)) |
 | 3 · Complejidad | Seis dimensiones en un treemap —las que aún no tienen fuente, punteadas— y cuatro oportunidades de reducción |
 | 4 · Riesgo | El mismo mapa de calor midiendo riesgo, con sus totales; el top 5 y el índice de concentración |
 | 5 · Obsolescencia | Qué conceptos explican los puntos perdidos y cuánto pesa la vigencia tecnológica |

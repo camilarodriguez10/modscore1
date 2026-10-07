@@ -125,6 +125,9 @@ public static class NoticeCodes
     public const string OutlookLeavesPortfolio = "outlook.leavesPortfolio";
     public const string OutlookNoScoreEffect = "outlook.noScoreEffect";
     public const string OutlookProjected = "outlook.projected";
+    public const string OutlookAutomaticPlan = "outlook.automaticPlan";
+    public const string OutlookAutomaticPlanShort = "outlook.automaticPlanShort";
+    public const string OutlookAutomaticPlanMet = "outlook.automaticPlanMet";
 
     // ------------------------------------------------------------- formula
     public const string FormulaNumerator = "formula.numerator";

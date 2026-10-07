@@ -110,13 +110,24 @@ public sealed record DashboardHealth(
 /// Los mínimos del cuadrante de candidatos viajan con la matriz: la pantalla lo
 /// resalta con la regla vigente en vez de copiarla.
 /// </remarks>
+/// <remarks>
+/// <c>WithoutPlan</c> son las que quedan fuera por no tener roadmap de MAPS ni plan automatico;
+/// el resto de <c>OutsideMatrix</c>, las que salen del portafolio: por su roadmap, o marcadas
+/// Eliminate sin roadmap.
+/// <c>AutomaticPlans</c> son las que estan en la matriz con un plan automatico hasta
+/// <c>AutomaticTarget</c> (null si los planes automaticos estan apagados). Si la matriz queda
+/// vacia, la pantalla dice por que.
+/// </remarks>
 public sealed record DashboardPrioritization(
     IReadOnlyList<DashboardMatrixPoint> Points,
     IReadOnlyList<DashboardMatrixPoint> Top,
     int Candidates,
     int OutsideMatrix,
     int MinCriticality,
-    int MinOpportunity);
+    int MinOpportunity,
+    int WithoutPlan,
+    int AutomaticPlans,
+    decimal? AutomaticTarget);
 
 /// <summary>
 /// Una aplicación en la matriz.
@@ -135,7 +146,8 @@ public sealed record DashboardMatrixPoint(
     decimal Uplift,
     int Weeks,
     string? RoadmapName,
-    bool Candidate);
+    bool Candidate,
+    decimal? AutomaticTarget);
 
 /// <summary>¿Dónde reducir complejidad? Seis dimensiones y cuatro oportunidades.</summary>
 public sealed record DashboardComplexity(

@@ -149,6 +149,25 @@ public sealed class RoadmapComposer(SystemApiClient system)
     {
         if (plan.Roadmap is null)
         {
+            // Sin roadmap de MAPS, el plan automatico hacia el objetivo del catalogo.
+            if (plan.AutomaticTarget is { } target && plan.ProjectedScore is { } automatic)
+            {
+                var levers = plan.Projection?.Applied.Count ?? 0;
+
+                if (levers == 0)
+                {
+                    return Notice.Of(NoticeCodes.OutlookAutomaticPlanMet, ("target", target), ("baseline", plan.BaselineScore));
+                }
+
+                return Notice.Of(
+                    automatic >= target ? NoticeCodes.OutlookAutomaticPlan : NoticeCodes.OutlookAutomaticPlanShort,
+                    ("target", target),
+                    ("baseline", plan.BaselineScore),
+                    ("projected", automatic),
+                    ("delta", plan.ProjectedDelta),
+                    ("levers", levers));
+            }
+
             return Notice.Of(NoticeCodes.OutlookNoRoadmap);
         }
 

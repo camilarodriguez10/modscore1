@@ -283,17 +283,29 @@ public sealed class DashboardAnalyzerTests
 
     // ------------------------------------------------------ 2 · prioridad
 
-    /// <summary>Lo que sale del portafolio o no tiene plan no se puede priorizar para modernizar.</summary>
+    /// <summary>
+    /// Lo que sale del portafolio no se puede priorizar para modernizar. Lo que no tiene roadmap
+    /// de MAPS entra con un plan automatico hasta 90 (pedido del 2026-10-07).
+    /// </summary>
     [Fact]
-    public void ApplicationsLeavingThePortfolioOrWithoutAPlanStayOutOfTheMatrix()
+    public void ApplicationsLeavingThePortfolioStayOutAndThoseWithoutRoadmapUseAnAutomaticPlan()
     {
         var dashboard = Analyze();
-        var inMatrix = dashboard.Prioritization.Points.Select(p => p.EaiCode).ToHashSet(StringComparer.Ordinal);
+        var prioritization = dashboard.Prioritization;
+        var inMatrix = prioritization.Points.Select(p => p.EaiCode).ToHashSet(StringComparer.Ordinal);
 
         Assert.DoesNotContain("4001", inMatrix);
         Assert.DoesNotContain("4002", inMatrix);
-        Assert.DoesNotContain("5001", inMatrix);
-        Assert.Equal(dashboard.Applications.Count - inMatrix.Count, dashboard.Prioritization.OutsideMatrix);
+        Assert.Equal(dashboard.Applications.Count - inMatrix.Count, prioritization.OutsideMatrix);
+
+        var automatic = Assert.Single(prioritization.Points, p => p.EaiCode == "5001");
+        Assert.Equal(90m, automatic.AutomaticTarget);
+        Assert.Null(automatic.RoadmapName);
+
+        Assert.Equal(0, prioritization.WithoutPlan);
+        Assert.Equal(prioritization.Points.Count(p => p.AutomaticTarget is not null), prioritization.AutomaticPlans);
+        Assert.Equal(90m, prioritization.AutomaticTarget);
+        Assert.All(prioritization.Points.Where(p => p.RoadmapName is not null), p => Assert.Null(p.AutomaticTarget));
     }
 
     [Fact]

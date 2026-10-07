@@ -1169,6 +1169,12 @@ export interface DashboardPrioritization {
   /** Minimos del cuadrante de candidatos, con la regla vigente. */
   minCriticality: number;
   minOpportunity: number;
+  /** Fuera por no tener roadmap de MAPS ni plan automatico. */
+  withoutPlan: number;
+  /** En la matriz con un plan automatico hasta automaticTarget. */
+  automaticPlans: number;
+  /** Objetivo de los planes automaticos; null si estan apagados. */
+  automaticTarget: number | null;
 }
 
 /** Criticidad y oportunidad van de 0 (baja) a 3 (muy alta). */
@@ -1183,6 +1189,8 @@ export interface DashboardMatrixPoint {
   weeks: number;
   roadmapName: string | null;
   candidate: boolean;
+  /** Objetivo del plan automatico, si la oportunidad sale de uno en lugar de un roadmap de MAPS. */
+  automaticTarget: number | null;
 }
 
 export interface DashboardComplexity {

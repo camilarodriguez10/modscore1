@@ -143,6 +143,12 @@ const MESSAGES: Record<string, (a: Args) => string> = {
     `${a.roadmap} does not move any of the score's metrics. The roadmap's value lies elsewhere.`,
   'outlook.projected': (a) =>
     `Executing ${a.roadmap} takes the score from ${score(a.baseline)} to ${score(a.projected)}, ${signed(a.delta)} points, in about ${num(a.weeks)} ${plural(a.weeks, 'week')}.`,
+  'outlook.automaticPlan': (a) =>
+    `No MAPS roadmap: an automatic plan with ${num(a.levers)} ${plural(a.levers, 'lever')} takes the score from ${score(a.baseline)} to ${score(a.projected)}, ${signed(a.delta)} points, reaching the target of ${score(a.target)}.`,
+  'outlook.automaticPlanShort': (a) =>
+    `No MAPS roadmap: the automatic target of ${score(a.target)} cannot be reached. With the ${num(a.levers)} ${plural(a.levers, 'lever')} that add points, the score goes from ${score(a.baseline)} to ${score(a.projected)}, ${signed(a.delta)} points.`,
+  'outlook.automaticPlanMet': (a) =>
+    `No MAPS roadmap, and the score of ${score(a.baseline)} already reaches the automatic target of ${score(a.target)}: there is nothing to plan.`,
 
   // ---------------------------------------------------------------- formula
   'formula.numerator': (a) => `Numerator: sum of the weighted scores with data = ${a.numerator}`,

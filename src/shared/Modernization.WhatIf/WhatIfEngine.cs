@@ -118,6 +118,52 @@ public sealed class WhatIfEngine
     }
 
     /// <summary>
+    /// Un plan hacia un score objetivo, para muchas aplicaciones a la vez: las palancas de
+    /// mayor efecto individual, una tras otra, hasta que el motor confirma el objetivo. Si no
+    /// se alcanza, quedan todas las que suman. Ya en el objetivo, ninguna.
+    /// </summary>
+    /// <remarks>
+    /// Es <see cref="ReachTarget"/> sin la poda: unas cinco veces mas barato, a cambio de que a
+    /// veces sobre una palanca. Sirve para el plan automatico de todo un portafolio; la busqueda
+    /// del laboratorio, que mira una aplicacion, sigue siendo <see cref="ReachTarget"/>.
+    /// </remarks>
+    public ScenarioResult PlanToTarget(ApplicationSnapshot snapshot, decimal targetScore)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        if (targetScore is < 20m or > 100m)
+        {
+            throw new WhatIfException(
+                "invalid-target",
+                "The target score must be between 20 and 100.");
+        }
+
+        var catalog = EvaluateAllLevers(snapshot);
+
+        if (catalog.Baseline.Score >= targetScore)
+        {
+            return Evaluate(snapshot, []);
+        }
+
+        var chosen = new List<LeverSelection>();
+        var projected = snapshot;
+
+        foreach (var effect in catalog.Levers.Where(e => e.Delta > 0).OrderByDescending(e => e.Delta))
+        {
+            var lever = _levers.Require(effect.Key);
+            chosen.Add(new LeverSelection(effect.Key, effect.Parameter));
+            projected = lever.Apply(projected, effect.Parameter);
+
+            if (_engine.Calculate(projected).Score >= targetScore)
+            {
+                break;
+            }
+        }
+
+        return Evaluate(snapshot, chosen);
+    }
+
+    /// <summary>
     /// Busca el conjunto mas pequeno de palancas que alcanza un score objetivo.
     /// </summary>
     /// <remarks>

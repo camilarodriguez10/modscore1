@@ -309,13 +309,14 @@ export function dashboardExplanation(question: number, definitions: AnalyticsDoc
         area: 'prioritization',
         considered: [
           'Critical application indicator, user count and L1 capability count from the EAI master.',
-          'The application’s own roadmap (MAPS) projected with the what-if engine.',
+          'The application’s own roadmap (MAPS) projected with the what-if engine; without one, an automatic plan towards the target of the roadmap catalog (90).',
           'The Risk Score (question 4) for the size and color of each bubble.',
         ],
         rules: [
           `Business criticality: very high = critical and broad; high = critical; medium = broad; low = the rest. Broad = at least ${d.users} users (roadmap catalog) or at least ${d.plain('criticality.broadCapabilities')} capabilities.`,
           `Modernization opportunity = points the application’s own roadmap adds to its score: low below ${d.plain('opportunity.mediumFrom')}, medium from ${d.plain('opportunity.mediumFrom')}, high from ${d.plain('opportunity.highFrom')}, very high from ${d.plain('opportunity.veryHighFrom')}.`,
-          'Applications without a plan, or whose roadmap takes them out of the portfolio, stay out of the matrix.',
+          'An application without a MAPS roadmap uses an automatic plan: the levers with the largest effect, one after another, until the score reaches the target (90), or every lever that adds points if it cannot. Applications marked Eliminate get none.',
+          'Applications whose roadmap takes them out of the portfolio, or without any plan, stay out of the matrix.',
           `Candidates: criticality at least ${d.text('candidates.minCriticality')} and opportunity at least ${d.text('candidates.minOpportunity')}, the shaded quadrant.`,
           `Top ${d.plain('candidates.topCount')}: ordered by criticality plus opportunity, then by Risk Score, then by points gained.`,
         ],

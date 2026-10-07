@@ -38,6 +38,15 @@ public sealed record ApplicationRoadmapPlan
     public decimal ProjectedDelta => Projected?.Delta ?? 0m;
 
     public bool LeavesPortfolio => RoadmapDefinition?.RemovesFromPortfolio ?? false;
+
+    /// <summary>
+    /// El objetivo del plan automatico, cuando la aplicacion no tiene roadmap de MAPS y el
+    /// plan lo armo el sistema; null en un plan de MAPS. La proyeccion son las palancas que
+    /// llegan al objetivo, o todas las que suman si no alcanza.
+    /// </summary>
+    public decimal? AutomaticTarget { get; init; }
+
+    public bool IsAutomatic => AutomaticTarget is not null;
 }
 
 /// <summary>Hito con sus fechas ya calculadas desde el inicio del plan.</summary>

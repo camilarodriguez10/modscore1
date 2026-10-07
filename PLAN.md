@@ -1050,6 +1050,7 @@ decisión y Governance Adoption, fuera.
 | Pregunta 2 | Matriz criticidad × oportunidad, tamaño = riesgo. «Rules & Matrix to be defined globally» |
 | Pregunta 3 | Seis dimensiones: *Legacy Platforms* = Currency Score < X; *Tech Debt* = deudas técnicas abiertas; el resto TBD |
 | Pregunta 4 | El mismo mapa de calor de la pregunta 1, midiendo riesgo |
+| Plan automático del 2026-10-07 | Sin roadmap de MAPS (el export real no trae la columna), la oportunidad de la pregunta 2 sale de un plan automático con las palancas que llevan la aplicación a **90**; las marcadas Eliminate no reciben plan (`automaticPlanTarget` en el catálogo de roadmaps, ADR 0033) |
 | OSS y Raw Tech del 2026-10-07 | Entran con su valor bruto por su peso, como el reporte v1.3 (37 × 10 % = 3,70), en lugar de las bandas del BRD (ADR 0032). La 14381 pasa de 79,67 a 80,70; con las bandas del BRD sigue dando 79,67 |
 | Regla de DR del 2026-10-07 | DR solo puntúa en aplicaciones críticas: con el Critical Application Indicator en «N» queda sin dato, como en el reporte v1.3 (`criticalOnly`, ADR 0031) |
 | Ajuste del 2026-10-06 | Filas de los mapas 1 y 4 por **CIO**; la capacidad primaria pasa a ser columna junto a Region, Country y Target Disposition. **Totales** por fila, columna y portafolio, y totales en las demás secciones donde aplican |

@@ -146,7 +146,8 @@
   "parameters": {
     "healthyScore": 85,
     "significantUserBase": 500,
-    "_comment": "healthyScore uses the floor of the Solid band shown by the interface, so the alert speaks the same language as the rest of the application."
+    "automaticPlanTarget": 90,
+    "_comment": "healthyScore uses the floor of the Solid band shown by the interface, so the alert speaks the same language as the rest of the application. automaticPlanTarget: an application without a MAPS roadmap (and not marked Eliminate) gets an automatic plan with the levers that take it to this score; null turns automatic plans off."
   },
 
   "coherenceRules": [

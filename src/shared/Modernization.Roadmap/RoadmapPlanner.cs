@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Modernization.Domain;
 using Modernization.Scoring.Engine;
 using Modernization.WhatIf;
@@ -18,6 +19,11 @@ namespace Modernization.Roadmap;
 /// </remarks>
 public sealed class RoadmapPlanner(RoadmapCatalog catalog, WhatIfEngine whatIf, ScoringEngine engine)
 {
+    // El plan automatico cuesta varios calculos por aplicacion. Un planificador vive con unas
+    // reglas, y una aplicacion es la misma instancia mientras su carga siga en memoria: se
+    // calcula una vez por aplicacion y reglas, y se libera con la carga.
+    private readonly ConditionalWeakTable<ApplicationSnapshot, ScenarioResult> _automatic = [];
+
     public ApplicationRoadmapPlan Build(ApplicationSnapshot snapshot, DateOnly startDate)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
@@ -27,6 +33,13 @@ public sealed class RoadmapPlanner(RoadmapCatalog catalog, WhatIfEngine whatIf, 
 
         if (snapshot.Roadmap is not { } roadmapType)
         {
+            // Sin roadmap de MAPS, un plan automatico hasta el objetivo del catalogo. No para lo
+            // que se va a eliminar: proyectar una mejora ahi justificaria invertir en algo que
+            // se apaga.
+            var target = snapshot.Disposition == ApplicationDisposition.Eliminate
+                ? null
+                : catalog.Parameters.AutomaticPlanTarget;
+
             return new ApplicationRoadmapPlan
             {
                 EaiCode = snapshot.EaiCode,
@@ -36,10 +49,11 @@ public sealed class RoadmapPlanner(RoadmapCatalog catalog, WhatIfEngine whatIf, 
                 Roadmap = null,
                 RoadmapDefinition = null,
                 Baseline = baseline,
-                Projected = null,
+                Projected = target is { } goal ? _automatic.GetValue(snapshot, s => whatIf.PlanToTarget(s, goal)) : null,
                 Milestones = [],
                 Alerts = alerts,
                 StartDate = startDate,
+                AutomaticTarget = target,
             };
         }
 

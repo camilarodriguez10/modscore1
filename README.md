@@ -58,11 +58,15 @@ cada una abierta mientras se usa la aplicación.
   el código, sin Node ni Vite (ver [Sin Vite ni Node](#sin-vite-ni-node-el-sitio-ya-compilado)).
 - **La System arranca con carga de archivos** (`--DataSource:Provider=File`): la pantalla
   **Data** acepta CSV, y lo que subas y las reglas que publiques quedan en
-  `C:\modscore1\data\local`. Git ignora esa carpeta porque puede tener datos reales. La
+  la carpeta `data\local` del repositorio. Git ignora esa carpeta porque puede tener datos reales. La
   primera vez está vacía: ver [La primera carga](#la-primera-carga). Sin esos dos argumentos,
   la System inventa 250 aplicaciones en memoria y **Data no acepta cargas**.
 
-Los ejemplos suponen el repositorio en `C:\modscore1`; cambia esa ruta si está en otro lado.
+Cada bloque empieza entrando a la carpeta del repositorio con `cd /d "C:\modscore1"` (en
+PowerShell, `Set-Location "C:\modscore1"`): si está en otra, cambia solo esa línea y deja
+las comillas, que admiten espacios y paréntesis. El resto usa `%CD%` (en PowerShell, `$PWD`),
+la carpeta en la que estás. Pega cada bloque con sus líneas separadas: en una sola línea con
+`&&`, `cmd` reemplaza `%CD%` antes del `cd`.
 Las líneas de `dotnet` son idénticas en cmd y en PowerShell; solo cambia cómo se entra a la
 carpeta (`cd /d` en cmd, `Set-Location` en PowerShell).
 
@@ -71,7 +75,7 @@ carpeta (`cd /d` en cmd, `Set-Location` en PowerShell).
 **Una sola vez — compilar e instalar las dependencias del sitio:**
 
 ```bat
-cd /d C:\modscore1
+cd /d "C:\modscore1"
 dotnet build src\channel\Modernization.ChannelApi
 npm --prefix src\web ci --ignore-scripts
 dir src\web\node_modules\.bin\vite.cmd
@@ -86,8 +90,8 @@ instalar, cuando cambia `src\web\package-lock.json`.
 **Ventana 1 — capa System:**
 
 ```bat
-cd /d C:\modscore1
-dotnet run --no-build --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\local
+cd /d "C:\modscore1"
+dotnet run --no-build --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory="%CD%\data\local"
 ```
 
 Tiene que aparecer `Hosting environment: Development`. Antes de seguir, en otra ventana:
@@ -96,14 +100,14 @@ Tiene que aparecer `Hosting environment: Development`. Antes de seguir, en otra 
 **Ventana 2 — capa Channel:**
 
 ```bat
-cd /d C:\modscore1
+cd /d "C:\modscore1"
 dotnet run --no-build --project src\channel\Modernization.ChannelApi -- --environment Development --urls http://localhost:5100
 ```
 
 **Ventana 3 — la SPA:**
 
 ```bat
-cd /d C:\modscore1
+cd /d "C:\modscore1"
 npm --prefix src\web run dev
 ```
 
@@ -114,7 +118,7 @@ Abrir el sitio: `start http://localhost:5173/`.
 **Una sola vez — compilar e instalar las dependencias del sitio:**
 
 ```powershell
-Set-Location C:\modscore1
+Set-Location "C:\modscore1"
 dotnet build src\channel\Modernization.ChannelApi
 npm.cmd --prefix src\web ci --ignore-scripts
 Test-Path src\web\node_modules\.bin\vite.cmd
@@ -125,8 +129,8 @@ El último comando tiene que responder `True`.
 **Ventana 1 — capa System:**
 
 ```powershell
-Set-Location C:\modscore1
-dotnet run --no-build --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\local
+Set-Location "C:\modscore1"
+dotnet run --no-build --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory="$PWD\data\local"
 ```
 
 Comprobarla desde otra ventana: `Invoke-RestMethod http://localhost:5101/health`.
@@ -134,14 +138,14 @@ Comprobarla desde otra ventana: `Invoke-RestMethod http://localhost:5101/health`
 **Ventana 2 — capa Channel:**
 
 ```powershell
-Set-Location C:\modscore1
+Set-Location "C:\modscore1"
 dotnet run --no-build --project src\channel\Modernization.ChannelApi -- --environment Development --urls http://localhost:5100
 ```
 
 **Ventana 3 — la SPA:**
 
 ```powershell
-Set-Location C:\modscore1
+Set-Location "C:\modscore1"
 npm.cmd --prefix src\web run dev
 ```
 
@@ -185,31 +189,31 @@ Channel la sirve con `--webroot` y no hay ventana 3. Es el camino C de la
 [guía](docs/guia-localhost.md#camino-c--sin-vite-ni-node-windows-cmd-o-powershell).
 
 1. Con el código al día (`git pull` o un ZIP nuevo de `main`), comprobar que está el sitio:
-   `dir C:\modscore1\sitio-compilado\index.html` (en PowerShell,
-   `Test-Path C:\modscore1\sitio-compilado\index.html` responde `True`).
+   desde la carpeta del repositorio, `dir sitio-compilado\index.html` (en PowerShell,
+   `Test-Path sitio-compilado\index.html` responde `True`).
 2. Compilar las dos capas, una sola vez. La línea es la misma en cmd y en PowerShell; tiene que
    terminar con `0 Errores`:
 
    ```bat
-   cd /d C:\modscore1
+   cd /d "C:\modscore1"
    dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false
    ```
 
-3. Dos ventanas, en este orden. La línea de `dotnet` es la misma en cmd y en PowerShell; en
-   PowerShell se entra a la carpeta con `Set-Location C:\modscore1`.
+3. Dos ventanas, en este orden, cada bloque con sus dos líneas. En PowerShell se entra a la
+   carpeta con `Set-Location "C:\modscore1"` y se usa `$PWD` en lugar de `%CD%`.
 
    **Ventana 1 — capa System:**
 
    ```bat
-   cd /d C:\modscore1
-   dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\local
+   cd /d "C:\modscore1"
+   dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory="%CD%\data\local"
    ```
 
    **Ventana 2 — capa Channel, que sirve el sitio:**
 
    ```bat
-   cd /d C:\modscore1
-   dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore1\sitio-compilado
+   cd /d "C:\modscore1"
+   dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot "%CD%\sitio-compilado"
    ```
 
 4. Abrir <http://localhost:5100/> (no el 5173) y **Sign in**.
@@ -228,7 +232,7 @@ La carpeta `data\local` empieza vacía, así que cada pantalla avisa que no hay 
 **Data**. Es lo esperado. Para cargar:
 
 1. En <http://localhost:5173/>, **Sign in**, y la pestaña **Data**.
-2. En **Upload files**, arrastrar los ocho CSV de `C:\modscore1\data\dummy` (datos de
+2. En **Upload files**, arrastrar los ocho CSV de `data\dummy` (datos de
    ejemplo, 250 aplicaciones) o los propios. No hace falta renombrarlos: cada archivo se
    reconoce por su encabezado. `eai_master.csv` es obligatorio.
 3. **Upload and recalculate**, o antes **Review column mapping** para decidir qué columna de
@@ -305,14 +309,14 @@ evolución.
 En cmd:
 
 ```bat
-cd /d C:\modscore1
+cd /d "C:\modscore1"
 xcopy /E /I /Y data\timeline data\local
 ```
 
 En PowerShell:
 
 ```powershell
-Set-Location C:\modscore1
+Set-Location "C:\modscore1"
 New-Item -ItemType Directory -Force data\local | Out-Null
 Copy-Item -Recurse -Force data\timeline\* data\local
 ```
@@ -327,7 +331,7 @@ Se agregan o quitan argumentos al final de la línea de la ventana que correspon
 
 | Variante | Qué cambia |
 |---|---|
-| **Con el sitio compilado** | Una vez, `npm --prefix src\web run build` (en PowerShell, `npm.cmd`), que deja el sitio en `src\web\dist`. Después se omite la ventana 3 y en la ventana 2 se agrega `--webroot C:\modscore1\src\web\dist`. El sitio queda en <http://localhost:5100/>. La carpeta `dist` se puede compilar en otro equipo y copiar, o descargar ya compilada sin Node ([Sin Vite ni Node](#sin-vite-ni-node-el-sitio-ya-compilado)) |
+| **Con el sitio compilado** | Una vez, `npm --prefix src\web run build` (en PowerShell, `npm.cmd`), que deja el sitio en `src\web\dist`. Después se omite la ventana 3 y en la ventana 2 se agrega `--webroot "%CD%\src\web\dist"`. El sitio queda en <http://localhost:5100/>. La carpeta `dist` se puede compilar en otro equipo y copiar, o descargar ya compilada sin Node ([Sin Vite ni Node](#sin-vite-ni-node-el-sitio-ya-compilado)) |
 | **El equipo no deja ejecutar `.exe` sin firmar** | `-p:UseAppHost=false` al final del `dotnet build` y, en cada `dotnet run`, **antes** del `--`. Así quien ejecuta es `dotnet.exe`. Es el camino B de la [guía](docs/guia-localhost.md) |
 | **Datos generados, sin cargas** | En la ventana 1, quitar `--DataSource:Provider=File --DataSource:Directory=...`: 250 aplicaciones inventadas en memoria, listas al instante, que se pierden al detener. Data no acepta cargas. Es lo que usan las pruebas e2e |
 | **Otra carpeta de datos** | Cambiar la ruta de `--DataSource:Directory`. **Siempre absoluta**: `dotnet run --project` arranca en la carpeta del proyecto, y una ruta relativa terminaría dentro de `src\system\...`. Nunca una carpeta versionada como `data\history`: lo subido quedaría para el próximo commit |
@@ -336,7 +340,7 @@ Se agregan o quitan argumentos al final de la línea de la ventana que correspon
 Ejemplo de la ventana 2 con el sitio compilado y sin ejecutables propios (caminos B y C de la guía):
 
 ```bat
-dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore1\src\web\dist
+dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot "%CD%\src\web\dist"
 ```
 
 - **Desde la app de Claude:** `.claude/launch.json` tiene las tres piezas —`system`,
@@ -676,7 +680,7 @@ Con la capa System y la herramienta compiladas antes en Release.
 ## Correr sobre archivos en vez de datos generados
 
 Es como arrancan los comandos de [Levantar el stack](#levantar-el-stack): la ventana 1 lleva
-`--DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\local`.
+`--DataSource:Provider=File --DataSource:Directory="%CD%\data\local"` (en PowerShell, `$PWD`).
 
 Las rutas van absolutas: `dotnet run --project` arranca con la carpeta del proyecto
 como raíz, y una ruta relativa como `.\data\local` termina dentro de

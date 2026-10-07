@@ -77,8 +77,24 @@ git clone https://github.com/camilarodriguez10/modscore1.git
 ```
 
 O, sin git, en la página del repositorio: **Code → Download ZIP**, y descomprímelo donde
-quieras (la carpeta se llama `modscore1-main`). Sin acceso, pide una copia de la carpeta del
-proyecto. Entra en ella:
+quieras. Sin acceso, pide una copia de la carpeta del proyecto.
+
+> **El ZIP deja una carpeta dentro de otra.** Al descomprimir, Windows crea
+> `modscore1-main\modscore1-main` (o `modscore1-main (2)\modscore1-main` si descargaste más
+> de una vez): **la del proyecto es la de adentro**, la que tiene `ModernizationScore.slnx` y
+> `src`.
+
+Entra en la carpeta del proyecto. En `cmd`, con la ruta **entre comillas** (así funciona
+aunque tenga espacios o paréntesis) y `/d` por si está en otra unidad:
+
+```bat
+cd /d "C:\Users\<tu usuario>\Downloads\modscore1-main\modscore1-main"
+dir ModernizationScore.slnx
+```
+
+El `dir` tiene que encontrar el archivo; si dice «No se encuentra el archivo», estás en la
+carpeta de afuera. En PowerShell, `Set-Location "<ruta>"` y `Test-Path ModernizationScore.slnx`.
+Con `git clone`, la carpeta es `modscore1`:
 
 ```bash
 cd modscore1
@@ -129,10 +145,16 @@ los comandos de tu sistema, y **en este orden**.
 > hace falta ningún `set`, que en PowerShell no funciona (ver
 > [Problemas frecuentes](#problemas-frecuentes)).
 
-**Terminal 1 — capa System.** En Windows, en cmd o en PowerShell:
+**Terminal 1 — capa System.** En `cmd`:
 
 ```bat
-dotnet run --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\local
+dotnet run --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory="%CD%\data\local"
+```
+
+En PowerShell:
+
+```powershell
+dotnet run --project src\system\Modernization.SystemApi -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory="$PWD\data\local"
 ```
 
 En macOS o Linux:
@@ -144,9 +166,10 @@ dotnet run --project src/system/Modernization.SystemApi -- --environment Develop
 Espera a ver `Now listening on: http://localhost:5101` y `Hosting environment: Development`.
 
 Los dos últimos argumentos encienden la **carga de archivos**: lo que subas en la pantalla
-Data queda en esa carpeta y sobrevive al reinicio. En Windows, si el proyecto no está en
-`C:\modscore1`, cambia la ruta por `<carpeta del proyecto>\data\local`; tiene que ser
-**absoluta** (ver [Cargar archivos](#cargar-archivos)).
+Data queda en la carpeta `data\local` del proyecto y sobrevive al reinicio. `%CD%` (en
+PowerShell, `$PWD`) es la carpeta en la que estás: por eso la línea se lanza **desde la carpeta
+del proyecto**, y las comillas permiten que la ruta tenga espacios (ver
+[Cargar archivos](#cargar-archivos)).
 
 **Terminal 2 — capa Channel.** En Windows, en cmd o en PowerShell:
 
@@ -218,7 +241,7 @@ dotnet test ModernizationScore.slnx
 npm --prefix src/web test
 ```
 
-Deben terminar en verde: 937 pruebas .NET y 74 de la interfaz.
+Deben terminar en verde: 958 pruebas .NET y 78 de la interfaz.
 
 ---
 
@@ -251,9 +274,19 @@ firmado y suele estar en el catálogo de software de la empresa.
 
 ### Paso 2 · consigue el código
 
-Igual que en el [paso 2 del camino A](#paso-2--consigue-el-código): `git clone`, o una copia
-de la carpeta del proyecto. En esta guía se asume que quedó en `C:\modscore1`; si la pusiste
-en otro lado, cambia esa ruta en todos los comandos.
+Igual que en el [paso 2 del camino A](#paso-2--consigue-el-código): `git clone`, el ZIP de
+GitHub o una copia de la carpeta del proyecto.
+
+**Cómo se usan los comandos de aquí en adelante.** Cada bloque empieza con
+`cd /d "C:\modscore1"`. Si el proyecto está en otra carpeta —por ejemplo la del ZIP,
+`C:\Users\<tu usuario>\Downloads\modscore1-main (8)\modscore1-main`—, cambia **solo esa
+línea** y deja las comillas. El resto de cada bloque usa `%CD%`, la carpeta en la que estás,
+y funciona aunque la ruta tenga espacios o paréntesis. Cada ventana nueva de `cmd` arranca en
+otra carpeta: por eso cada bloque repite el `cd /d`.
+
+> **Pega cada bloque tal cual, con sus líneas separadas.** `cmd` reemplaza `%CD%` al leer la
+> línea, antes de ejecutarla: si juntas el `cd /d` y el `dotnet run` en una sola línea con
+> `&&`, `%CD%` queda con la carpeta anterior y los datos van a otro lado.
 
 ### Paso 3 · compila el sitio una sola vez
 
@@ -264,7 +297,7 @@ de npm.
 En `cmd`:
 
 ```bat
-cd /d C:\modscore1
+cd /d "C:\modscore1"
 npm --prefix src\web ci --ignore-scripts
 npm --prefix src\web run build
 dir src\web\dist\index.html
@@ -273,24 +306,25 @@ dir src\web\dist\index.html
 En PowerShell:
 
 ```powershell
-Set-Location C:\modscore1
+Set-Location "C:\modscore1"
 npm.cmd --prefix src\web ci --ignore-scripts
 npm.cmd --prefix src\web run build
 Test-Path src\web\dist\index.html
 ```
 
 El último comando tiene que encontrar `index.html` (en PowerShell, responder `True`). Si lo
-compilaste en otro equipo, copia la carpeta `dist` completa a `C:\modscore1\src\web\dist`
-en este. La compilación ejecuta un `esbuild.exe` que viene con las dependencias: si la misma
-política que bloquea los `.exe` lo bloquea, compílalo en otro equipo o **descárgalo ya
-compilado**, sin Node, como en el [paso 2 del camino C](#paso-2--descarga-el-sitio-ya-compilado).
+compilaste en otro equipo, copia la carpeta `dist` completa a `src\web\dist` del proyecto en
+este. La compilación ejecuta un `esbuild.exe` que viene con las dependencias: si la misma
+política que bloquea los `.exe` lo bloquea, **no hace falta compilarlo**: el sitio ya viene
+compilado en la carpeta `sitio-compilado`, y el [camino C](#camino-c--sin-vite-ni-node-windows-cmd-o-powershell)
+lo usa sin Node.
 
 ### Paso 4 · compila las dos capas una sola vez
 
-En **una** ventana (en PowerShell, la primera línea es `Set-Location C:\modscore1`):
+En **una** ventana (en PowerShell, la primera línea es `Set-Location "C:\modscore1"`):
 
 ```bat
-cd /d C:\modscore1
+cd /d "C:\modscore1"
 dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false
 ```
 
@@ -304,26 +338,38 @@ sobre los mismos archivos y se pisen.
 
 ### Paso 5 · levanta las dos capas, sin volver a compilar
 
-Dos ventanas, **en este orden**. Copia cada bloque completo. La línea de `dotnet` es la misma
-en cmd y en PowerShell; en PowerShell, la primera línea es `Set-Location C:\modscore1` en vez
-de `cd /d C:\modscore1`.
+Dos ventanas, **en este orden**. Copia cada bloque completo, con su línea `cd /d`.
 
-**Ventana 1 — capa System:**
+**Ventana 1 — capa System.** En `cmd`:
 
 ```bat
-cd /d C:\modscore1
-dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\local
+cd /d "C:\modscore1"
+dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory="%CD%\data\local"
+```
+
+En PowerShell:
+
+```powershell
+Set-Location "C:\modscore1"
+dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory="$PWD\data\local"
 ```
 
 Tiene que aparecer `Now listening on: http://localhost:5101`. **Compruébalo antes de seguir**:
 abre <http://localhost:5101/health> en el navegador; tiene que decir `{"status":"healthy"}`.
 Si no, no abras la ventana 2 todavía: ve a [Si la System no levanta](#si-la-system-no-levanta).
 
-**Ventana 2 — capa Channel, que además sirve el sitio:**
+**Ventana 2 — capa Channel, que además sirve el sitio.** En `cmd`:
 
 ```bat
-cd /d C:\modscore1
-dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore1\src\web\dist
+cd /d "C:\modscore1"
+dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot "%CD%\src\web\dist"
+```
+
+En PowerShell:
+
+```powershell
+Set-Location "C:\modscore1"
+dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot "$PWD\src\web\dist"
 ```
 
 Tiene que aparecer `Now listening on: http://localhost:5100`.
@@ -340,7 +386,8 @@ Qué hace cada parte que no estaba en el camino A:
 | `--no-build` | Arranca lo que compilaste en el paso 4, sin volver a compilar |
 | `--` | Lo que va antes es para `dotnet`; lo que va después, para la aplicación |
 | `--webroot` | Le dice a la capa Channel dónde están los archivos del sitio, para servirlos ella misma en el puerto 5100. Por eso no hace falta Node ni una tercera ventana |
-| `--DataSource:...` | Igual que en el camino A: carga de archivos, guardada en `C:\modscore1\data\local` |
+| `--DataSource:...` | Igual que en el camino A: carga de archivos, guardada en la carpeta `data\local` del proyecto |
+| `"%CD%\..."` | `%CD%` es la carpeta en la que estás (en PowerShell, `$PWD`). Con las comillas, la ruta puede tener espacios o paréntesis, como la del ZIP |
 
 ### Si la System no levanta
 
@@ -352,7 +399,7 @@ Mira **las últimas líneas de la ventana 1**. Casi siempre dicen cuál de estos
 | `An error occurred trying to start process '...\Modernization.SystemApi.exe'` seguido de `no puede encontrar el archivo` o `acceso denegado` | Al `dotnet run` le falta `-p:UseAppHost=false`, y busca un `.exe` que no existe o que la empresa bloquea | Copia de nuevo el bloque de la ventana 1 tal cual: el `-p:UseAppHost=false` va en la línea del `dotnet run`, antes del `--` |
 | `Failed to bind to address http://localhost:5101` o `address already in use` | Otro programa, o una System anterior que quedó abierta, ocupa el puerto | `netstat -ano \| findstr :5101` da el número de proceso al final de la línea; `taskkill /PID <número> /F` lo cierra |
 | `The process cannot access the file ... because it is being used by another process` | Una System o Channel anterior sigue corriendo y tiene tomados los archivos | Cierra todas las ventanas de `cmd`, abre una nueva y repite desde el paso 4 |
-| `MSB1009` o `Couldn't find a project to run` | La carpeta del `cd /d` no es la del proyecto | `dir C:\modscore1\src\system` tiene que listar `Modernization.SystemApi`; corrige la ruta |
+| `MSB1009` o `Couldn't find a project to run` | La carpeta del `cd /d` no es la del proyecto (con el ZIP, suele ser la de afuera) | `dir ModernizationScore.slnx` tiene que encontrar el archivo; si no, corrige la ruta del `cd /d`, con comillas |
 | `NETSDK1045` o `does not support targeting .NET 10.0` | El SDK instalado es anterior al 10 | `dotnet --list-sdks`, y pedir a soporte el .NET SDK 10 |
 | `NU1301` o `Unable to load the service index` | El proxy de la empresa no deja descargar los paquetes de nuget.org | Pedir a soporte acceso a `api.nuget.org`, o la configuración del proxy para NuGet |
 | `error CA…` o `error IDE…` al compilar | Un SDK más nuevo que el del proyecto trae reglas de análisis nuevas, y el proyecto trata las advertencias como errores | Para correrlo en local: agrega `-p:TreatWarningsAsErrors=false` al `dotnet build` del paso 4 **y avísanos**, porque hay que ajustar el código |
@@ -393,35 +440,40 @@ Lo que no se puede: ver al vuelo un cambio en `src\web`. Para tocar la interfaz,
 
 Son los pasos [1](#paso-1--comprueba-que-dotnet-sí-corre) y
 [2](#paso-2--consigue-el-código-1) del camino B: `dotnet --list-sdks` tiene que listar una
-versión `10.`, y el código queda en `C:\modscore1`. Sirve igual el ZIP de GitHub
-(**Code → Download ZIP**) que un `git clone`.
+versión `10.`. Sirve igual el ZIP de GitHub (**Code → Download ZIP**) que un `git clone`; con
+el ZIP, la carpeta del proyecto es la de adentro. Como en el camino B, en cada bloque cambia
+solo la ruta del `cd /d "..."`.
 
 ### Paso 2 · comprueba que el sitio vino con el código
 
 En `cmd`:
 
 ```bat
-dir C:\modscore1\sitio-compilado\index.html
+cd /d "C:\modscore1"
+dir ModernizationScore.slnx sitio-compilado\index.html
 ```
 
 En PowerShell:
 
 ```powershell
-Test-Path C:\modscore1\sitio-compilado\index.html
+Set-Location "C:\modscore1"
+Test-Path ModernizationScore.slnx, sitio-compilado\index.html
 ```
 
-Tiene que encontrar `index.html` (en PowerShell, responder `True`). Si no existe la carpeta,
-el código es anterior al 2026-10-05: descarga de nuevo el ZIP de `main`.
+Tiene que encontrar los dos archivos (en PowerShell, responder `True` dos veces). Si no
+encuentra `ModernizationScore.slnx`, no estás en la carpeta del proyecto: corrige la ruta del
+`cd /d`. Si falta solo `sitio-compilado`, el código es anterior al 2026-10-05: descarga de
+nuevo el ZIP de `main`.
 
 ### Paso 3 · compila y levanta las dos capas
 
-Igual que en el camino B. En PowerShell, la primera línea de cada bloque es
-`Set-Location C:\modscore1` en vez de `cd /d C:\modscore1`.
+Igual que en el camino B, con el sitio de `sitio-compilado`. En PowerShell, la primera línea
+de cada bloque es `Set-Location "C:\modscore1"`, y `$PWD` reemplaza a `%CD%`.
 
 **Una sola vez, compilar** (tiene que terminar con `0 Errores` o `0 Error(s)`):
 
 ```bat
-cd /d C:\modscore1
+cd /d "C:\modscore1"
 dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false
 ```
 
@@ -429,16 +481,20 @@ dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false
 `{"status":"healthy"}`:
 
 ```bat
-cd /d C:\modscore1
-dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory=C:\modscore1\data\local
+cd /d "C:\modscore1"
+dotnet run --no-build --project src\system\Modernization.SystemApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5101 --DataSource:Provider=File --DataSource:Directory="%CD%\data\local"
 ```
 
 **Ventana 2 — capa Channel, que sirve el sitio compilado:**
 
 ```bat
-cd /d C:\modscore1
-dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot C:\modscore1\sitio-compilado
+cd /d "C:\modscore1"
+dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot "%CD%\sitio-compilado"
 ```
+
+Un ZIP nuevo trae `data\local` vacía. Para seguir con lo que ya cargaste, en la ventana 1 pon
+la ruta de la `data\local` de la copia anterior, entre comillas, en lugar de
+`"%CD%\data\local"`.
 
 Qué hace cada parte está en el [paso 5 del camino B](#paso-5--levanta-las-dos-capas-sin-volver-a-compilar);
 si una capa no arranca, [Si la System no levanta](#si-la-system-no-levanta).
@@ -467,14 +523,16 @@ La aplicación tiene dos modos de datos, y solo uno acepta cargas:
 Si Data dice *The active adapter is 'Dummy', which serves generated data*, estás en el
 segundo modo: detén la capa System y arráncala con la línea completa.
 
-**Dónde queda lo cargado:** en `C:\modscore1\data\local`, que git ignora para que ningún
-dato real llegue al repositorio (las reglas publicadas quedan en `.rules\`, dentro de la
-misma carpeta).
+**Dónde queda lo cargado:** en la carpeta `data\local` del proyecto, que git ignora para que
+ningún dato real llegue al repositorio (las reglas publicadas quedan en `.rules\`, dentro de
+la misma carpeta).
 
 > **La ruta tiene que ser absoluta.** `dotnet run --project` arranca con la carpeta del
 > proyecto como raíz, así que una ruta relativa apunta a un directorio dentro de `src\`: el
-> portafolio aparece vacío, sin ningún error que lo explique. Tampoco uses `data\history`,
-> que está versionada: lo que subas ahí quedaría para el próximo commit.
+> portafolio aparece vacío, sin ningún error que lo explique. `"%CD%\data\local"` (en
+> PowerShell, `"$PWD\data\local"`) es absoluta porque `%CD%` se reemplaza por la carpeta en
+> la que estás antes de ejecutar la línea. Tampoco uses `data\history`, que está versionada:
+> lo que subas ahí quedaría para el próximo commit.
 
 **La primera carga.** Con la carpeta vacía, las pantallas dirán que no hay datos y te
 llevarán a **Data**. Es lo esperado, no un error. Luego:
@@ -545,14 +603,14 @@ System** (si ya estaba corriendo, detenla con Ctrl + C y vuelve a arrancarla).
 En `cmd`:
 
 ```bat
-cd /d C:\modscore1
+cd /d "C:\modscore1"
 xcopy /E /I /Y data\timeline data\local
 ```
 
 En PowerShell:
 
 ```powershell
-Set-Location C:\modscore1
+Set-Location "C:\modscore1"
 New-Item -ItemType Directory -Force data\local | Out-Null
 Copy-Item -Recurse -Force data\timeline\* data\local
 ```
@@ -566,11 +624,18 @@ de cada aplicación muestra su propia evolución.
 ## Probar con un usuario limitado
 
 Por defecto entras como administrador de todo. Para ver la aplicación como la vería alguien
-que solo puede consultar un LOB, agrega dos argumentos al final de la línea de la **capa
-Channel** (la misma línea en cmd y en PowerShell):
+que solo puede consultar un LOB, agrega estos dos argumentos **al final de la línea de la capa
+Channel de tu camino**, sin quitar nada de lo que ya tiene:
+
+```text
+--Authentication:Development:Roles:0=portfolio.read --Authentication:Development:Scopes:0=lob:Individual
+```
+
+Por ejemplo, la ventana 2 del camino C en `cmd` queda así:
 
 ```bat
-dotnet run --no-build --project src\channel\Modernization.ChannelApi -- --environment Development --urls http://localhost:5100 --Authentication:Development:Roles:0=portfolio.read --Authentication:Development:Scopes:0=lob:Individual
+cd /d "C:\modscore1"
+dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHost=false -- --environment Development --urls http://localhost:5100 --webroot "%CD%\sitio-compilado" --Authentication:Development:Roles:0=portfolio.read --Authentication:Development:Scopes:0=lob:Individual
 ```
 
 Ese usuario no verá la pantalla **Rules** ni podrá publicar cargas, y todas las cifras
@@ -589,7 +654,8 @@ permite ver.
 | `Unhandled exception ... 'AllowedHosts' debe listar los hosts del servicio (entorno 'Production')`, a veces con `DeploymentGuards.cs:line 32` y `Program.cs:line 214` | La capa arrancó como producción: no recibió el entorno de desarrollo. Lo más común es haber pegado un bloque de `cmd` con `set "..."` en **PowerShell** (la Terminal de Windows 11 abre PowerShell): ahí `set` crea una variable de PowerShell que el programa no ve, sin dar error | Usa los comandos con argumentos: al final de la línea, `--environment Development --urls http://localhost:5101` (después de `--` si es un `dotnet run`). Funcionan igual en cmd y en PowerShell. No hace falta tocar `AllowedHosts` |
 | `warn: ... Failed to determine the https port for redirect` | Solo un aviso: en local no hay HTTPS al que redirigir | Nada: la capa está funcionando. Si el sitio falla, la causa es otra; revisa primero que la System responda en <http://localhost:5101/health> |
 | `Now listening on: http://localhost:5000` | Faltó el argumento `--urls` | Detén con Ctrl + C y vuelve a arrancar con `--urls http://localhost:5101` (o `5100` en la Channel) al final de la línea |
-| Caminos B y C: `http://localhost:5100` responde 404 o una página vacía | `--webroot` no apunta a una carpeta con `index.html` | Camino B: `dir C:\modscore1\src\web\dist\index.html` tiene que encontrar el archivo; si no, repite el paso 3 y reinicia la ventana 2. Camino C: `dir C:\modscore1\sitio-compilado\index.html`, y que `--webroot` diga esa misma ruta |
+| Caminos B y C: `http://localhost:5100` responde 404 o una página vacía | `--webroot` no apunta a una carpeta con `index.html` | Desde la carpeta del proyecto: en el camino B, `dir src\web\dist\index.html` tiene que encontrar el archivo (si no, repite el paso 3 y reinicia la ventana 2); en el camino C, `dir sitio-compilado\index.html`. Y que la ventana 2 haya hecho su `cd /d` antes del `dotnet run` |
+| `"C:\Users\..." no se reconoce como un comando`, `El sistema no puede encontrar la ruta especificada`, o la System arranca pero Data no acepta cargas | La ruta tiene espacios o paréntesis y quedó sin comillas, o se cambió `%CD%` por una ruta sin comillas | Ruta entre comillas en el `cd /d "..."`, y deja `"%CD%\data\local"` y `"%CD%\sitio-compilado"` tal cual, con sus comillas |
 | `Failed to bind to address ... address already in use` | Otro programa ocupa 5100, 5101 o 5173 | Cierra lo que use el puerto (ver fila siguiente), o cambia el número en `--urls` |
 | Necesitas saber **quién** ocupa un puerto | — | Windows: `netstat -ano \| findstr :5100` y luego `tasklist \| findstr <PID>`. macOS/Linux: `lsof -i :5100` |
 | El sitio carga pero todo sale vacío o con error | La capa Channel está arriba, la System no | Mira la terminal 1: tiene que decir `Now listening on: http://localhost:5101` |
@@ -607,7 +673,7 @@ permite ver.
 | La ventana de Vite nunca dice `ready`, o `src\web\node_modules\.bin\esbuild.cmd --version` se queda colgado o dice «acceso denegado» | La política de la empresa bloquea el `esbuild.exe` que Vite ejecuta por dentro, o el antivirus revisa uno a uno los archivos de `node_modules` | Sigue el **camino C**: el sitio llega compilado y no se ejecuta nada de Node. Si quieres el camino A, pide a soporte una exclusión para la carpeta del proyecto |
 | Camino C: no existe la carpeta `sitio-compilado` | El código es anterior al 2026-10-05, cuando el sitio compilado empezó a viajar con él | Descarga de nuevo el ZIP de `main` (o `git pull`) |
 | `dotnet test` falla con «el archivo está siendo usado por otro proceso» | La aplicación está corriendo | Detén todas las ventanas antes de compilar o probar |
-| Todo iba bien y dejó de arrancar tras mover la carpeta | Ruta dentro de OneDrive o demasiado larga | Muévela a algo como `C:\modscore` |
+| Todo iba bien y dejó de arrancar tras mover la carpeta | Ruta dentro de OneDrive o demasiado larga | Muévela a algo como `C:\modscore1` y repite el `dotnet build` |
 | En Data, el EAI Master queda con `0` filas y todas rechazadas, y la carga se descarta | Desde el 2026-10-02 solo pasa si a todas les falta el EAI; un valor ilegible en otro campo ya no rechaza la fila | Lee **Why rows were rejected**; si el EAI viene en otra columna, elígela con **Review column mapping** |
 
 ---
@@ -616,8 +682,8 @@ permite ver.
 
 1. Detén la aplicación: Ctrl + C en cada ventana.
 2. Borra la carpeta donde clonaste el repositorio.
-3. Lo que hayas cargado se va con esa carpeta, en `C:\modscore1\data\local` (si usaste otra
-   ruta, bórrala aparte).
+3. Lo que hayas cargado se va con esa carpeta, en su `data\local` (si usaste otra ruta,
+   bórrala aparte).
 
 La aplicación no instala servicios ni toca el registro de Windows. Lo único instalado son el
 .NET SDK y, en los caminos A y B, Node, que se desinstalan como cualquier programa.

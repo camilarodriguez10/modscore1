@@ -529,3 +529,60 @@ public sealed class VeracodeExportTests
         }
     }
 }
+
+/// <summary>
+/// El export de Product Strategy (V_CMT_MODERNIZATION_PROD_STRAT_COUNTS) cambió sus cabeceras
+/// el 2026-10-07: EAI_APP_ID, DCMSN_SFTWR_CNT, INVST_SFTWR_CNT, MGRT_SFTWR_CNT y TLRN_SFTWR_CNT
+/// en lugar de EAI_CODE, Eliminate_Count, Invest_Count, Migrate_Count y Tolerate_Count, más una
+/// columna nueva, Record Create Timestamp, que el cálculo no usa.
+/// </summary>
+public sealed class ProductStrategyExportTests
+{
+    private static readonly string[] Header =
+        ["EAI_APP_ID", "DCMSN_SFTWR_CNT", "INVST_SFTWR_CNT", "MGRT_SFTWR_CNT", "TLRN_SFTWR_CNT", "Record Create Timestamp"];
+
+    private static SourceSchema ProductStrategy => SourceSchemaCatalog.Default.Require("product_strategy.csv");
+
+    [Fact]
+    public void TheRenamedExportIsRecognizedByItsHeader()
+    {
+        var match = new SourceFileMatcher().Match(Header, "20261005_V_CMT_MODERNIZATION_PROD_STRAT_COUNTS.csv", null);
+
+        Assert.Equal("product_strategy.csv", match.Schema?.FileName);
+    }
+
+    [Fact]
+    public void EveryFieldIsLoadedByItsNewNameAndTheTimestampIsLeftOut()
+    {
+        var resolution = ColumnMapping.Resolve(ProductStrategy, Header);
+
+        Assert.True(resolution.IsValid);
+
+        var byColumn = resolution.Columns.ToDictionary(c => c.Column.Name, c => c.Header);
+        Assert.Equal("EAI_APP_ID", byColumn["EAI_CODE"]);
+        Assert.Equal("DCMSN_SFTWR_CNT", byColumn["Eliminate_Count"]);
+        Assert.Equal("INVST_SFTWR_CNT", byColumn["Invest_Count"]);
+        Assert.Equal("MGRT_SFTWR_CNT", byColumn["Migrate_Count"]);
+        Assert.Equal("TLRN_SFTWR_CNT", byColumn["Tolerate_Count"]);
+        Assert.Equal(["Record Create Timestamp"], resolution.UnusedHeaders);
+    }
+
+    [Fact]
+    public void ARowOfTheExportBecomesItsProductCounts()
+    {
+        using var reader = new StringReader(string.Join(',', Header) + "\n14381,1,4,0,2,2026-10-05 08:15:00\n");
+
+        var outcome = new CsvSourceReader(ProductStrategy).Read(reader);
+
+        Assert.Empty(outcome.Rejections);
+        Assert.Empty(outcome.IgnoredValues);
+
+        var record = FileRecordMappers.ToProductStrategy(Assert.Single(outcome.Rows));
+        Assert.NotNull(record);
+        Assert.Equal("14381", record.EaiCode);
+        Assert.Equal(1, record.EliminateCount);
+        Assert.Equal(4, record.InvestCount);
+        Assert.Equal(0, record.MigrateCount);
+        Assert.Equal(2, record.TolerateCount);
+    }
+}

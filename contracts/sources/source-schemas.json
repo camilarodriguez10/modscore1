@@ -59,11 +59,11 @@
       "keyColumn": "EAI_CODE",
       "description": "Product count by strategy, exported from MTS.",
       "columns": [
-        { "name": "EAI_CODE", "type": "code", "required": true, "aliases": ["EAI_Code", "EAI Code", "EAI"] },
-        { "name": "Eliminate_Count", "type": "int", "required": false, "aliases": ["Suma de Eliminate_Count", "Eliminate Count"] },
-        { "name": "Invest_Count", "type": "int", "required": false, "aliases": ["Suma de Invest_Count", "Invest Count"] },
-        { "name": "Migrate_Count", "type": "int", "required": false, "aliases": ["Suma de Migrate_Count", "Migrate Count"] },
-        { "name": "Tolerate_Count", "type": "int", "required": false, "aliases": ["Suma de Tolerate_Count", "Tolerate Count"] }
+        { "name": "EAI_CODE", "type": "code", "required": true, "aliases": ["EAI_Code", "EAI Code", "EAI", "EAI_APP_ID"] },
+        { "name": "Eliminate_Count", "type": "int", "required": false, "aliases": ["Suma de Eliminate_Count", "Eliminate Count", "DCMSN_SFTWR_CNT"] },
+        { "name": "Invest_Count", "type": "int", "required": false, "aliases": ["Suma de Invest_Count", "Invest Count", "INVST_SFTWR_CNT"] },
+        { "name": "Migrate_Count", "type": "int", "required": false, "aliases": ["Suma de Migrate_Count", "Migrate Count", "MGRT_SFTWR_CNT"] },
+        { "name": "Tolerate_Count", "type": "int", "required": false, "aliases": ["Suma de Tolerate_Count", "Tolerate Count", "TLRN_SFTWR_CNT"] }
       ]
     },
     {

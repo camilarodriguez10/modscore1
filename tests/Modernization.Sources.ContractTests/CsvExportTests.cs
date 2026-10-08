@@ -54,7 +54,7 @@ public sealed class CsvExportTests : IDisposable
     [Theory]
     [InlineData("architectural_value_by_eai.csv", "EAI_CODE,Modern_Count,Heritage_Count,Obsolete_Count,Not_Approved_for_Use_Count")]
     [InlineData("product_strategy.csv", "EAI_CODE,Eliminate_Count,Invest_Count,Migrate_Count,Tolerate_Count")]
-    [InlineData("tech_debt.csv", "APP_ID,COMBINED_DENIAL_SCORE,COMBINED_ACCEPTED_SCORE,COMBINED_APP_SCORE,LAST_UPDATED_DATE")]
+    [InlineData("tech_debt.csv", "APP_ID,COMBINED_APP_SCORE")]
     [InlineData("oss_score_by_eai.csv", "EAI Code,OSS Score,OPEN_SRC_SFTWR_HLTH_SCOR_UPDT_TS")]
     [InlineData("monitoreo.csv", "EAI,Agent,APM,Monitoring,Synthetics")]
     public void UsesTheRealColumnNames(string fileName, string expectedHeader)

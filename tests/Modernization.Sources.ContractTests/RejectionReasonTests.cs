@@ -589,8 +589,8 @@ public sealed class ProductStrategyExportTests
 
 /// <summary>
 /// La deuda técnica llega desde el 2026-10-07 de una fuente nueva, con los nombres de puntaje
-/// recortados: COMBINED_DENIAL_SCOR, COMBINED_ACCEPTED_SCOR y COMBINED_APP_SCOR. APP_ID y
-/// LAST_UPDATED_DATE no cambian, y la fecha viene como 16/04/2026.
+/// recortados: COMBINED_DENIAL_SCOR, COMBINED_ACCEPTED_SCOR y COMBINED_APP_SCOR. Desde el
+/// 2026-10-08 solo se carga COMBINED_APP_SCOR(E); el resto del export queda fuera.
 /// </summary>
 public sealed class TechDebtExportTests : IDisposable
 {
@@ -608,7 +608,7 @@ public sealed class TechDebtExportTests : IDisposable
     public void Dispose() => Directory.Delete(_root, recursive: true);
 
     [Fact]
-    public void TheNewExportIsRecognizedAndEveryFieldIsLoaded()
+    public void OnlyTheApplicationScoreIsLoadedFromTheNewExport()
     {
         Assert.Equal("tech_debt.csv", new SourceFileMatcher().Match(Header, "tech_debt_new_source.csv", null).Schema?.FileName);
 
@@ -616,10 +616,32 @@ public sealed class TechDebtExportTests : IDisposable
         var byColumn = resolution.Columns.ToDictionary(c => c.Column.Name, c => c.Header);
 
         Assert.True(resolution.IsValid);
-        Assert.Equal("COMBINED_DENIAL_SCOR", byColumn["COMBINED_DENIAL_SCORE"]);
-        Assert.Equal("COMBINED_ACCEPTED_SCOR", byColumn["COMBINED_ACCEPTED_SCORE"]);
+        Assert.Equal(["APP_ID", "COMBINED_APP_SCORE"], byColumn.Keys);
         Assert.Equal("COMBINED_APP_SCOR", byColumn["COMBINED_APP_SCORE"]);
-        Assert.Empty(resolution.UnusedHeaders);
+        Assert.Equal(["COMBINED_DENIAL_SCOR", "COMBINED_ACCEPTED_SCOR", "LAST_UPDATED_DATE"], resolution.UnusedHeaders);
+    }
+
+    [Fact]
+    public void AnExportWithJustTheKeyAndTheScoreIsEnough()
+    {
+        string[] header = ["APP_ID", "COMBINED_APP_SCORE"];
+
+        Assert.Equal("tech_debt.csv", new SourceFileMatcher().Match(header, "deuda.csv", null).Schema?.FileName);
+
+        var outcome = new CsvSourceReader(TechDebt).Read(new StringReader("APP_ID,COMBINED_APP_SCORE\n1081,1.5\n"));
+        Assert.Equal(1.5m, FileRecordMappers.ToTechDebt(Assert.Single(outcome.Rows))?.CombinedAppScore);
+    }
+
+    /// <summary>Sin el puntaje, el archivo no tiene nada que cargar: se dice qué columna falta.</summary>
+    [Fact]
+    public void AnExportWithoutTheScoreSaysWhichColumnIsMissing()
+    {
+        var reader = new StringReader("APP_ID,COMBINED_DENIAL_SCOR,COMBINED_ACCEPTED_SCOR\n1081,2,1\n");
+
+        var ex = Assert.Throws<SourceSchemaException>(() => new CsvSourceReader(TechDebt).Read(reader));
+
+        Assert.Equal(NoticeCodes.CsvMissingColumns, ex.Notice?.Code);
+        Assert.Equal("COMBINED_APP_SCORE", ex.Notice?.Args["missing"]);
     }
 
     [Fact]
@@ -651,9 +673,6 @@ public sealed class TechDebtExportTests : IDisposable
         var record = FileRecordMappers.ToTechDebt(Assert.Single(outcome.Rows));
         Assert.NotNull(record);
         Assert.Equal("1081", record.AppId);
-        Assert.Equal(2m, record.CombinedDenialScore);
-        Assert.Equal(1m, record.CombinedAcceptedScore);
         Assert.Equal(1.5m, record.CombinedAppScore);
-        Assert.Equal(new DateTimeOffset(2026, 4, 16, 0, 0, 0, TimeSpan.Zero), record.LastUpdatedDate);
     }
 }

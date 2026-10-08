@@ -70,13 +70,10 @@
       "source": "Tech Debt",
       "fileName": "tech_debt.csv",
       "keyColumn": "APP_ID",
-      "description": "Technical debt by APP_ID, not by EAI; exported from the view V_TECH_DEBT_APP_SCORE. The assembler resolves the mapping.",
+      "description": "Technical debt by APP_ID, not by EAI; the assembler resolves the mapping. Only COMBINED_APP_SCORE is loaded: any other column of the export is left out.",
       "columns": [
         { "name": "APP_ID", "type": "code", "required": true, "aliases": ["App_Id", "Application ID"] },
-        { "name": "COMBINED_DENIAL_SCORE", "type": "decimal", "required": false, "aliases": ["COMBINED_DENIAL_SCOR"] },
-        { "name": "COMBINED_ACCEPTED_SCORE", "type": "decimal", "required": false, "aliases": ["COMBINED_ACCEPTED_SCOR"] },
-        { "name": "COMBINED_APP_SCORE", "type": "decimal", "required": false, "aliases": ["COMBINED_APP_SCOR"] },
-        { "name": "LAST_UPDATED_DATE", "type": "datetime", "required": false }
+        { "name": "COMBINED_APP_SCORE", "type": "decimal", "required": true, "aliases": ["COMBINED_APP_SCOR"] }
       ]
     },
     {

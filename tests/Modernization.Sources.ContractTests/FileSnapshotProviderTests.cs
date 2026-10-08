@@ -235,9 +235,7 @@ public sealed class FileSnapshotProviderTests : SnapshotProviderContract, IDispo
 
         var row = Assert.Single(new CsvSourceReader(schema).Read(reader).Rows);
 
-        Assert.Equal(2.5m, row.Decimal("COMBINED_DENIAL_SCORE"));
         Assert.Equal(1.75m, row.Decimal("COMBINED_APP_SCORE"));
-        Assert.Equal(2026, row.Date("LAST_UPDATED_DATE")!.Value.Year);
     }
 
     [Theory]

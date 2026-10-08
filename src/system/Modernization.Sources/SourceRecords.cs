@@ -99,10 +99,13 @@ public sealed record ProductStrategyRecord
 public sealed record TechDebtRecord
 {
     public required string AppId { get; init; }
-    public decimal? CombinedDenialScore { get; init; }
-    public decimal? CombinedAcceptedScore { get; init; }
+
+    /// <summary>
+    /// El puntaje de deuda técnica de la aplicación: lo único que se carga de la fuente
+    /// (decisión del 2026-10-08). Los puntajes de denegación y aceptación y la fecha de
+    /// actualización del export se dejan fuera.
+    /// </summary>
     public decimal? CombinedAppScore { get; init; }
-    public DateTimeOffset? LastUpdatedDate { get; init; }
 }
 
 /// <summary>

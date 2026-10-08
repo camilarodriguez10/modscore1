@@ -545,19 +545,8 @@ namespace Modernization.Sources.Database.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("TEXT");
 
-                    b.Property<decimal?>("CombinedAcceptedScore")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("TEXT");
-
                     b.Property<decimal?>("CombinedAppScore")
                         .HasPrecision(18, 4)
-                        .HasColumnType("TEXT");
-
-                    b.Property<decimal?>("CombinedDenialScore")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTimeOffset?>("LastUpdatedDate")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("VersionId")

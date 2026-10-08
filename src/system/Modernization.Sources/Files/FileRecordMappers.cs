@@ -87,10 +87,7 @@ internal static class FileRecordMappers
             : new TechDebtRecord
             {
                 AppId = appId,
-                CombinedDenialScore = row.Decimal("COMBINED_DENIAL_SCORE"),
-                CombinedAcceptedScore = row.Decimal("COMBINED_ACCEPTED_SCORE"),
                 CombinedAppScore = row.Decimal("COMBINED_APP_SCORE"),
-                LastUpdatedDate = row.Date("LAST_UPDATED_DATE"),
             };
     }
 

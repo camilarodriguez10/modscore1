@@ -102,12 +102,11 @@ public static class CsvSourceExporter
 
     private static string TechDebtCsv(DummyPortfolio p)
     {
-        var csv = new CsvBuilder(
-            "APP_ID", "COMBINED_DENIAL_SCORE", "COMBINED_ACCEPTED_SCORE", "COMBINED_APP_SCORE", "LAST_UPDATED_DATE");
+        var csv = new CsvBuilder("APP_ID", "COMBINED_APP_SCORE");
 
         foreach (var r in p.TechDebt)
         {
-            csv.Row(r.AppId, Num(r.CombinedDenialScore), Num(r.CombinedAcceptedScore), Num(r.CombinedAppScore), Date(r.LastUpdatedDate));
+            csv.Row(r.AppId, Num(r.CombinedAppScore));
         }
 
         return csv.Build();

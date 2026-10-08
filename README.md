@@ -386,7 +386,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-1 053 pruebas .NET: 349 del motor, 345 de contratos y 359 de API. Las dos que importan más
+1 055 pruebas .NET: 349 del motor, 347 de contratos y 359 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **Captura del reporte v1.3 del 2026-10-07 = 66,12:** métrica por métrica, con OSS y Raw Tech

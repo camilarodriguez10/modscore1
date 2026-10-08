@@ -63,7 +63,7 @@ public static class DummyTimeline
             Eai = [.. current.Eai.Select(e => RewindEai(e, plans[e.EaiCode], quarters))],
             ArchitecturalValue = [.. current.ArchitecturalValue.Select(a => RewindArchitecture(a, PlanOf(a.EaiCode), quarters))],
             ProductStrategy = [.. current.ProductStrategy.Select(p => RewindStrategy(p, PlanOf(p.EaiCode), quarters))],
-            TechDebt = [.. current.TechDebt.Select(t => RewindTechDebt(t, byAppId.GetValueOrDefault(t.AppId), quarters, at))],
+            TechDebt = [.. current.TechDebt.Select(t => RewindTechDebt(t, byAppId.GetValueOrDefault(t.AppId), quarters))],
             ScaFlaws = [.. current.ScaFlaws.Select(f => RewindFlaw(f, at)).OfType<ScaFlawRecord>()],
             OssScore = [.. current.OssScore.Select(o => RewindOss(o, PlanOf(o.EaiCode), quarters, at))],
             Monitoring = [.. current.Monitoring.Select(m => RewindMonitoring(m, PlanOf(m.EaiCode), quarters))],
@@ -222,7 +222,7 @@ public static class DummyTimeline
         };
     }
 
-    private static TechDebtRecord RewindTechDebt(TechDebtRecord record, Plan? plan, int quarters, DateTimeOffset at)
+    private static TechDebtRecord RewindTechDebt(TechDebtRecord record, Plan? plan, int quarters)
     {
         var step = plan?.Trajectory switch
         {
@@ -231,19 +231,13 @@ public static class DummyTimeline
             _ => 0m,
         };
 
-        var denial = Clamp(record.CombinedDenialScore, step);
-        var accepted = Clamp(record.CombinedAcceptedScore, step);
-
+        // Solo el puntaje viaja con la carga (2026-10-08): retrocede él, dentro de 0 a 5.
         return record with
         {
-            CombinedDenialScore = denial,
-            CombinedAcceptedScore = accepted,
-            CombinedAppScore = denial is { } d && accepted is { } a ? Quantize((d + a) / 2m) : record.CombinedAppScore,
-            LastUpdatedDate = record.LastUpdatedDate is { } updated && updated > at ? at.AddDays(-7) : record.LastUpdatedDate,
+            CombinedAppScore = record.CombinedAppScore is { } score
+                ? Quantize(Math.Clamp(score + step, 0m, 5m))
+                : null,
         };
-
-        static decimal? Clamp(decimal? value, decimal step)
-            => value is { } v ? Quantize(Math.Clamp(v + step, 0m, 5m)) : null;
     }
 
     /// <summary>Un flaw encontrado después no existía; uno resuelto después seguía abierto.</summary>

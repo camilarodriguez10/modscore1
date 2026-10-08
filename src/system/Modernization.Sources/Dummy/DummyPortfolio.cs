@@ -234,15 +234,16 @@ public sealed class DummyPortfolio
             // Tech debt — 18% sin fila, que es el caso mas frecuente en el dashboard.
             if (random.Next(100) >= 18)
             {
+                // El puntaje combina denegación y aceptación, como en el origen. Los sorteos se
+                // conservan aunque solo se guarde el puntaje: cambiar la secuencia cambiaría
+                // todo el portafolio de ejemplo.
                 var denial = Quantize(random.Next(0, 21) / 4m);
                 var accepted = Quantize(random.Next(0, 11) / 4m);
+                _ = random.Next(1, 200);
                 techDebt.Add(new TechDebtRecord
                 {
                     AppId = appId,
-                    CombinedDenialScore = denial,
-                    CombinedAcceptedScore = accepted,
                     CombinedAppScore = Quantize((denial + accepted) / 2m),
-                    LastUpdatedDate = captured.AddDays(-random.Next(1, 200)),
                 });
             }
 

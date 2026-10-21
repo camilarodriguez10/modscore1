@@ -41,13 +41,19 @@ public sealed class RoadmapPlanner(RoadmapCatalog catalog, WhatIfEngine whatIf, 
     /// El future plan detallado de una aplicación: cada paso del plan hacia el objetivo con su
     /// métrica, su valor de hoy y el objetivo, los puntos que suma, quién lo hace y las acciones
     /// concretas. Null si la aplicación no tiene plan (se va a eliminar, o los planes
-    /// automáticos están apagados).
+    /// automáticos están apagados y no se pidió un objetivo).
     /// </summary>
-    public ActionPlan? ActionPlan(ApplicationSnapshot snapshot)
+    /// <param name="snapshot">La aplicación.</param>
+    /// <param name="target">
+    /// Un objetivo elegido en el What-If Lab, de 20 a 100. Null es el del catálogo, ya calculado
+    /// al cargar; otro se calcula a pedido con la misma búsqueda, así que da el mismo plan que el
+    /// laboratorio a ese objetivo.
+    /// </param>
+    public ActionPlan? ActionPlan(ApplicationSnapshot snapshot, decimal? target = null)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
 
-        return Cached(snapshot) is { } cached ? ActionPlanBuilder.Build(snapshot, cached.Target, whatIf, engine) : null;
+        return PlanFor(snapshot, target) is { } plan ? ActionPlanBuilder.Build(snapshot, plan.Target, whatIf, engine) : null;
     }
 
     /// <summary>
@@ -80,6 +86,26 @@ public sealed class RoadmapPlanner(RoadmapCatalog catalog, WhatIfEngine whatIf, 
         return prepared;
     }
 
+    /// <summary>
+    /// El plan hacia el objetivo pedido: el del catálogo sale de la caché; otro se busca a pedido,
+    /// porque cada persona puede elegir el suyo y guardarlos todos no tiene sentido.
+    /// </summary>
+    private TargetPlanCache? PlanFor(ApplicationSnapshot snapshot, decimal? target)
+    {
+        if (target is not { } goal || goal == catalog.Parameters.AutomaticPlanTarget)
+        {
+            return Cached(snapshot);
+        }
+
+        if (snapshot.Disposition == ApplicationDisposition.Eliminate)
+        {
+            return null;
+        }
+
+        var result = whatIf.ReachTarget(snapshot, goal);
+        return new TargetPlanCache(result, result.Result ?? whatIf.Evaluate(snapshot, []));
+    }
+
     private TargetPlanCache? Cached(ApplicationSnapshot snapshot)
     {
         if (snapshot.Disposition == ApplicationDisposition.Eliminate
@@ -95,13 +121,18 @@ public sealed class RoadmapPlanner(RoadmapCatalog catalog, WhatIfEngine whatIf, 
         });
     }
 
-    public ApplicationRoadmapPlan Build(ApplicationSnapshot snapshot, DateOnly startDate)
+    /// <summary>
+    /// El plan futuro. Con <paramref name="target"/>, el plan hacia ese objetivo reemplaza al del
+    /// catálogo: es la proyección de una aplicación sin roadmap de MAPS y el plan que se muestra
+    /// aparte de una que lo tiene.
+    /// </summary>
+    public ApplicationRoadmapPlan Build(ApplicationSnapshot snapshot, DateOnly startDate, decimal? target = null)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
 
         var baseline = engine.Calculate(snapshot);
         var alerts = CheckCoherence(snapshot, baseline);
-        var targetPlan = Cached(snapshot);
+        var targetPlan = PlanFor(snapshot, target);
 
         if (snapshot.Roadmap is not { } roadmapType)
         {

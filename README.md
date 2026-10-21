@@ -386,7 +386,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-1 126 pruebas .NET: 340 del motor, 414 de contratos y 372 de API. Las dos que importan más
+1 136 pruebas .NET: 346 del motor, 414 de contratos y 376 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **Captura del reporte v1.3 del 2026-10-07 = 66,12:** métrica por métrica, con OSS y Raw Tech
@@ -400,8 +400,8 @@ reproducen los casos documentados:
 TypeScript difieren.
 
 ```bash
-npm --prefix src/web test          # 102 pruebas unitarias (Vitest)
-npm --prefix src/web run test:e2e  # 61 escenarios: 36 de flujo y 25 de accesibilidad (axe)
+npm --prefix src/web test          # 105 pruebas unitarias (Vitest)
+npm --prefix src/web run test:e2e  # 62 escenarios: 37 de flujo y 25 de accesibilidad (axe)
 ```
 
 Las de punta a punta usan el Microsoft Edge instalado (no descargan navegadores) y levantan
@@ -525,6 +525,13 @@ pasos en orden. Cada paso dice:
 Es exactamente el plan que da el **What-If Lab** con objetivo 90, y *Open in What-If* lo carga
 allí con las mismas palancas y cantidades
 ([ADR 0036](docs/adr/0036-future-plan-detallado-y-mismo-plan-que-el-what-if.md)).
+
+El objetivo viaja entre las dos pantallas. Si en el What-If Lab se elige otro, por ejemplo 80,
+el enlace *Future plan* y el botón *See the detailed plan in Future plan* abren el plan hacia
+80 (`/applications/{eai}/roadmap?target=80`), que es el mismo que da *Find the minimum plan*.
+En el Future plan el objetivo se cambia con *Target score* → *Recalculate the plan*, y *Back to
+the catalog target* vuelve a 90. Una aplicación con roadmap de MAPS conserva la proyección de su
+roadmap; el objetivo elegido cambia el plan de acción.
 
 ## Cómo se calcula cada panel del dashboard
 

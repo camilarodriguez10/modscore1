@@ -11,12 +11,17 @@ namespace Modernization.ChannelApi.Composition;
 /// </summary>
 public sealed class RoadmapComposer(SystemApiClient system)
 {
+    /// <summary>
+    /// El plan futuro de una aplicación. Con <paramref name="target"/> —el objetivo elegido en el
+    /// What-If Lab— el plan de acción y la proyección sin roadmap van hacia ese objetivo.
+    /// </summary>
     public async Task<RoadmapPlanView?> ComposePlanAsync(
         string eaiCode,
+        decimal? target = null,
         CancellationToken cancellationToken = default)
     {
         var applicationTask = system.GetApplicationAsync(eaiCode, cancellationToken);
-        var planTask = system.GetRoadmapPlanAsync(eaiCode, cancellationToken);
+        var planTask = system.GetRoadmapPlanAsync(eaiCode, target, cancellationToken);
 
         await Task.WhenAll(applicationTask, planTask).ConfigureAwait(false);
 

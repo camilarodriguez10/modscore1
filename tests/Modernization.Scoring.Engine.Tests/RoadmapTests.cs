@@ -269,6 +269,60 @@ public sealed class RoadmapTests
         }
     }
 
+    /// <summary>
+    /// Pedido del 2026-10-21: con el objetivo elegido en el What-If Lab —80, por ejemplo— el
+    /// future plan va hacia ese objetivo y es exactamente el plan del laboratorio a 80.
+    /// </summary>
+    [Theory]
+    [InlineData("14381", null, 80)]
+    [InlineData("14381", RoadmapType.Refactor, 80)]
+    [InlineData("10969", null, 85.5)]
+    [InlineData("report", null, 95)]
+    public void AChosenTargetGivesTheWhatIfPlanToThatTarget(string fixture, RoadmapType? roadmap, double chosen)
+    {
+        var target = (decimal)chosen;
+        var snapshot = (fixture switch
+        {
+            "14381" => GoldenFixtures.Eai14381(),
+            "10969" => GoldenFixtures.Eai10969(),
+            _ => GoldenFixtures.ReportCapture20261007(),
+        }) with { Disposition = ApplicationDisposition.Invest, Roadmap = roadmap };
+
+        var engine = new ScoringEngine(RulesetCatalog.Default);
+        var labResult = new WhatIfEngine(engine).ReachTarget(snapshot, target);
+        var plan = _planner.Build(snapshot, Start, target);
+        var actions = _planner.ActionPlan(snapshot, target);
+
+        Assert.NotNull(actions);
+        Assert.Equal(target, actions.Target);
+        Assert.Equal(labResult.IsReachable, actions.IsReachable);
+        Assert.Equal(labResult.Result?.Applied.Select(a => (a.Key, a.Parameter)) ?? [], actions.Steps.Select(s => (s.LeverKey, s.Parameter)));
+        Assert.Equal(target, plan.TargetPlan?.Target);
+
+        if (roadmap is null)
+        {
+            Assert.Equal(target, plan.AutomaticTarget);
+            Assert.Equal(labResult.Result?.Projected.Score ?? labResult.Baseline.Score, plan.Projected?.Projected.Score);
+        }
+    }
+
+    [Fact]
+    public void TheCatalogTargetAskedExplicitly_UsesThePlanPreparedOnUpload()
+    {
+        var snapshot = GoldenFixtures.Eai14381() with { Disposition = ApplicationDisposition.Invest, Roadmap = null };
+
+        Assert.Same(_planner.TargetPlan(snapshot), _planner.Build(snapshot, Start, 90m).TargetPlan);
+    }
+
+    [Fact]
+    public void AnApplicationToEliminateHasNoPlanWhateverTheTarget()
+    {
+        var snapshot = GoldenFixtures.Eai14381() with { Disposition = ApplicationDisposition.Eliminate, Roadmap = null };
+
+        Assert.Null(_planner.ActionPlan(snapshot, 80m));
+        Assert.Null(_planner.Build(snapshot, Start, 80m).TargetPlan);
+    }
+
     [Fact]
     public void PlansCanBePreparedForAWholePortfolioAhead()
     {

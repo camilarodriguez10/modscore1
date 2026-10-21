@@ -16,6 +16,24 @@ const MAX_PARAMETER = 100_000;
 
 const LEVER_KEY = /^[a-zA-Z]+(\.[a-zA-Z]+)*$/;
 
+/**
+ * El parámetro `target` de un enlace entre el What-If Lab y el future plan. Llega en la URL:
+ * solo vale un número de 20 a 100 con hasta dos decimales; cualquier otra cosa es null y la
+ * pantalla usa el objetivo del catálogo.
+ */
+export function parseTargetQuery(value: string | null): number | null {
+  if (!value || !/^\d{1,3}(\.\d{1,2})?$/.test(value)) return null;
+
+  const target = Number(value);
+  return target >= 20 && target <= 100 ? target : null;
+}
+
+/** El future plan de una aplicación; con un objetivo, el plan hacia ese objetivo. */
+export function futurePlanPath(eaiCode: string, target?: number | null): string {
+  const path = `/applications/${encodeURIComponent(eaiCode)}/roadmap`;
+  return target === null || target === undefined ? path : `${path}?target=${target}`;
+}
+
 /** El parámetro `plan` del what-if: `sca.remediateCritical,archValue.modernize:37`. */
 export function planToQuery(steps: readonly Pick<ActionStepView, 'leverKey' | 'parameter'>[]): string {
   return steps.map((step) => (step.parameter ? `${step.leverKey}:${step.parameter}` : step.leverKey)).join(',');

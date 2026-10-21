@@ -27,7 +27,7 @@ public static class RoadmapEndpoints
             .WithTags("Roadmap");
 
         group.MapGet("/applications/{eaiCode}/roadmap", GetPlan)
-            .WithSummary("Plan futuro de una aplicacion: hitos, proyeccion y alertas de coherencia.");
+            .WithSummary("Plan futuro de una aplicacion: hitos, proyeccion y alertas de coherencia. Con target, el plan hacia ese objetivo.");
 
         group.MapGet("/roadmap/portfolio", GetPortfolio)
             .WithSummary("El plan del portafolio filtrado, agrupado por la dimension que se pida.");
@@ -41,7 +41,8 @@ public static class RoadmapEndpoints
         PortfolioService portfolio,
         PortfolioScope scope,
         CancellationToken cancellationToken,
-        DateOnly? startDate = null)
+        DateOnly? startDate = null,
+        decimal? target = null)
     {
         if (!InputValidation.IsValidEaiCode(eaiCode))
         {
@@ -52,6 +53,18 @@ public static class RoadmapEndpoints
                 "An EAI code is a sequence of up to 10 digits.");
         }
 
+        // El objetivo del What-If Lab, en la escala del modelo. Fuera de ella no es un objetivo
+        // difícil: es una entrada inválida, como en el laboratorio.
+        if (target is < 20m or > 100m)
+        {
+            return ApiProblem.Create(
+                StatusCodes.Status400BadRequest,
+                "invalid-target",
+                "Invalid target",
+                "The target score must be between 20 and 100.");
+        }
+
+        var goal = target is { } value ? Math.Round(value, 2, MidpointRounding.AwayFromZero) : (decimal?)null;
         var snapshot = await portfolio.FindAsync(eaiCode, scope, cancellationToken).ConfigureAwait(false);
 
         if (snapshot is null)
@@ -66,7 +79,9 @@ public static class RoadmapEndpoints
         var rules = await portfolio.GetRulesAsync(cancellationToken).ConfigureAwait(false);
         var start = startDate ?? DateOnly.FromDateTime(snapshot.CapturedAt.UtcDateTime);
 
-        return Results.Ok(RoadmapPlanResponse.From(rules.Planner.Build(snapshot, start), rules.Planner.ActionPlan(snapshot)));
+        return Results.Ok(RoadmapPlanResponse.From(
+            rules.Planner.Build(snapshot, start, goal),
+            rules.Planner.ActionPlan(snapshot, goal)));
     }
 
     /// <summary>

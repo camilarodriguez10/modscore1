@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ActionPlanView, ActionStepView } from './api/types';
-import { ownerLabel, parsePlanQuery, planSummary, planToQuery } from './plan';
+import { futurePlanPath, ownerLabel, parsePlanQuery, parseTargetQuery, planSummary, planToQuery } from './plan';
 
 const step: ActionStepView = {
   order: 1,
@@ -31,6 +31,25 @@ const plan = (overrides: Partial<ActionPlanView> = {}): ActionPlanView => ({
   ceilingScore: 97.5,
   steps: [],
   ...overrides,
+});
+
+describe('target between the What-If Lab and the future plan', () => {
+  it('accepts a score from 20 to 100 with up to two decimals', () => {
+    expect(parseTargetQuery('80')).toBe(80);
+    expect(parseTargetQuery('85.5')).toBe(85.5);
+    expect(parseTargetQuery('100')).toBe(100);
+  });
+
+  it('ignores anything else, so the catalog target applies', () => {
+    for (const value of [null, '', '10', '101', '80.123', '-80', '8e1', 'abc', '80;drop']) {
+      expect(parseTargetQuery(value)).toBeNull();
+    }
+  });
+
+  it('links the future plan with the target, or without it for the catalog target', () => {
+    expect(futurePlanPath('14381', 80)).toBe('/applications/14381/roadmap?target=80');
+    expect(futurePlanPath('14381', null)).toBe('/applications/14381/roadmap');
+  });
 });
 
 describe('future plan', () => {

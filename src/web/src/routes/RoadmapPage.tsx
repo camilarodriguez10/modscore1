@@ -1,9 +1,10 @@
-import { Link, useParams } from 'react-router';
+import { useState, type FormEvent } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router';
 import { useRoadmapPlan } from '../api/hooks';
 import type { ActionPlanView, AlertSeverity, AlertView, MilestoneView } from '../api/types';
 import { BandChip, Card, QueryError, Field, Label, Spinner, fmt, pillarColor, pillarName } from '../components/primitives';
 import { countOf, formatNotice } from '../i18n/notices';
-import { ownerLabel, planSummary, planToQuery } from '../plan';
+import { ownerLabel, parseTargetQuery, planSummary, planToQuery } from '../plan';
 
 /**
  * Pantalla 05 — plan futuro. Es el requisito 6 del encargo: que le va a pasar a
@@ -15,11 +16,21 @@ import { ownerLabel, planSummary, planToQuery } from '../plan';
  *
  * Desde el 2026-10-21 cada aplicación trae además su plan de acción hacia el objetivo del
  * catálogo (90), calculado al cargar los datos y paso por paso: es exactamente el plan que
- * da el What-If Lab a ese objetivo, y se abre allí con un clic.
+ * da el What-If Lab a ese objetivo, y se abre allí con un clic. Con `?target=` —el objetivo
+ * elegido en el laboratorio— el plan va hacia ese objetivo, y se puede cambiar aquí mismo.
  */
 export function RoadmapPage() {
   const { eaiCode = '' } = useParams();
-  const { data, isPending, error } = useRoadmapPlan(eaiCode);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const target = parseTargetQuery(searchParams.get('target'));
+  const { data, isPending, error } = useRoadmapPlan(eaiCode, target);
+
+  const chooseTarget = (next: number | null) => {
+    const updated = new URLSearchParams(searchParams);
+    if (next === null) updated.delete('target');
+    else updated.set('target', String(next));
+    setSearchParams(updated);
+  };
 
   if (isPending) return <Spinner label="Building the future plan…" />;
 
@@ -46,7 +57,7 @@ export function RoadmapPage() {
             View overview
           </Link>
           <Link
-            to={`/applications/${application.eaiCode}/what-if`}
+            to={`/applications/${application.eaiCode}/what-if${target === null ? '' : `?target=${target}`}`}
             className="rounded-sm border border-rule px-3 py-1.5 text-[13px] text-ink-2 hover:bg-surface-2"
           >
             What-If
@@ -136,7 +147,15 @@ export function RoadmapPage() {
         </div>
       </Card>
 
-      {data.actionPlan && <ActionPlanCard plan={data.actionPlan} eaiCode={application.eaiCode} />}
+      {data.actionPlan && (
+        <ActionPlanCard
+          key={data.actionPlan.target}
+          plan={data.actionPlan}
+          eaiCode={application.eaiCode}
+          chosen={target !== null}
+          onTarget={chooseTarget}
+        />
+      )}
 
       {/* Que palancas del score entrega este roadmap, y por que esas. */}
       {data.deliveredBy.length > 0 && (
@@ -219,13 +238,35 @@ export function RoadmapPage() {
  * valor y hasta cuál, quién lo hace, cuántos puntos suma después de los anteriores y las
  * acciones concretas con la evidencia de la aplicación.
  */
-function ActionPlanCard({ plan, eaiCode }: { plan: ActionPlanView; eaiCode: string }) {
+function ActionPlanCard({
+  plan,
+  eaiCode,
+  chosen,
+  onTarget,
+}: {
+  plan: ActionPlanView;
+  eaiCode: string;
+  /** True si el objetivo lo eligió alguien (en el What-If Lab o aquí), no el catálogo. */
+  chosen: boolean;
+  onTarget: (target: number | null) => void;
+}) {
   const whatIf = `/applications/${encodeURIComponent(eaiCode)}/what-if?plan=${encodeURIComponent(planToQuery(plan.steps))}&target=${plan.target}`;
+  const [draft, setDraft] = useState(String(plan.target));
+  const parsed = parseTargetQuery(draft);
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (parsed !== null) onTarget(parsed);
+  };
 
   return (
     <Card
-      title={`Action plan to reach ${fmt(plan.target, 0)}`}
-      subtitle="Calculated when the data was loaded, with the rules in force."
+      title={`Action plan to reach ${fmt(plan.target, Number.isInteger(plan.target) ? 0 : 2)}`}
+      subtitle={
+        chosen
+          ? 'Calculated for the target you chose, with the rules in force: the same plan the What-If Lab finds for it.'
+          : 'Calculated when the data was loaded, towards the target of the roadmap catalog, with the rules in force.'
+      }
       right={
         plan.steps.length > 0 ? (
           <Link
@@ -238,6 +279,43 @@ function ActionPlanCard({ plan, eaiCode }: { plan: ActionPlanView; eaiCode: stri
       }
     >
       <div className="flex flex-col gap-3 px-4 py-4">
+        <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1">
+            <Label>Target score</Label>
+            <input
+              type="number"
+              min={20}
+              max={100}
+              step={1}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              aria-invalid={parsed === null}
+              className="tnum w-24 rounded-sm border border-rule bg-surface px-2 py-1.5 font-mono text-[13px] text-ink"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={parsed === null || parsed === plan.target}
+            className="rounded-sm bg-accent px-3 py-1.5 text-[12.5px] font-medium text-on-accent hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Recalculate the plan
+          </button>
+          {chosen && (
+            <button
+              type="button"
+              onClick={() => onTarget(null)}
+              className="text-[12.5px] text-ink-2 underline-offset-2 hover:underline"
+            >
+              Back to the catalog target
+            </button>
+          )}
+          {parsed === null && (
+            <span className="text-[12px]" style={{ color: 'var(--app-critical-text)' }}>
+              Enter a score from 20 to 100.
+            </span>
+          )}
+        </form>
+
         <p className="max-w-[80ch] text-[13.5px] text-ink">{planSummary(plan)}</p>
 
         {plan.steps.length > 0 && (

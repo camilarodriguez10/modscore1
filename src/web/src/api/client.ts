@@ -251,8 +251,11 @@ export const api = {
       body: JSON.stringify({ files }),
     }),
 
-  roadmap: (eaiCode: string) =>
-    request<RoadmapPlanView>(`/api/applications/${encodeURIComponent(eaiCode)}/roadmap`),
+  /** El plan futuro; con un objetivo del What-If Lab, el plan hacia ese objetivo. */
+  roadmap: (eaiCode: string, target?: number | null) =>
+    request<RoadmapPlanView>(
+      `/api/applications/${encodeURIComponent(eaiCode)}/roadmap${target === null || target === undefined ? '' : `?target=${target}`}`,
+    ),
 
   portfolioRoadmap: (filters: PortfolioFilters = {}, groupBy?: string) => {
     const params = buildFilterQuery(filters);

@@ -134,10 +134,10 @@ export function useMappingReview() {
   });
 }
 
-export function useRoadmapPlan(eaiCode: string) {
+export function useRoadmapPlan(eaiCode: string, target: number | null = null) {
   return useQuery({
-    queryKey: ['roadmap', eaiCode],
-    queryFn: () => api.roadmap(eaiCode),
+    queryKey: ['roadmap', eaiCode, target],
+    queryFn: () => api.roadmap(eaiCode, target),
     enabled: eaiCode.length > 0,
   });
 }

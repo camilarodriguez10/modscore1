@@ -152,11 +152,15 @@ public sealed class SystemApiClient(HttpClient http, IHttpClientFactory clients)
                 cancellationToken).ConfigureAwait(false)
             ?? throw new SystemApiException("The System layer returned no mapping review.");
 
+    /// <summary>El plan futuro; con <paramref name="target"/>, el plan hacia ese objetivo del What-If Lab.</summary>
     public Task<RoadmapPlanResponse?> GetRoadmapPlanAsync(
         string eaiCode,
+        decimal? target = null,
         CancellationToken cancellationToken = default)
         => GetOrNullAsync<RoadmapPlanResponse>(
-            $"/system/applications/{Uri.EscapeDataString(eaiCode)}/roadmap",
+            target is { } value
+                ? FormattableString.Invariant($"/system/applications/{Uri.EscapeDataString(eaiCode)}/roadmap?target={value}")
+                : $"/system/applications/{Uri.EscapeDataString(eaiCode)}/roadmap",
             cancellationToken);
 
     /// <summary>

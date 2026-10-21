@@ -34,4 +34,36 @@ test.describe('future plan', () => {
     await page.getByRole('button', { name: 'Load this plan into the levers' }).click();
     await expect(projection).toContainText(planScore);
   });
+
+  test('a target chosen in the What-If Lab carries over to the future plan and back', async ({ page }) => {
+    // 89: por debajo del objetivo del catálogo, y la 14381 de ejemplo necesita un plan para llegar.
+    await signIn(page, '/applications/14381/what-if?target=89');
+
+    await page.getByRole('button', { name: 'Find the minimum plan' }).click();
+    const steps = page.getByRole('button', { name: 'Load this plan into the levers' });
+    await expect(steps).toBeVisible();
+    const labSteps = await page.locator('ol li').count();
+
+    await page.getByRole('link', { name: 'See the detailed plan in Future plan' }).click();
+    await expect(page).toHaveURL(/\/roadmap\?target=89$/);
+    await expect(page.getByRole('heading', { name: /Action plan to reach 89/ })).toBeVisible();
+    await expect(page.getByText(/Calculated for the target you chose/)).toBeVisible();
+
+    const planSteps = page.getByRole('list', { name: 'Steps of the action plan' }).getByRole('listitem').filter({ has: page.locator('ul') });
+    await expect(planSteps).toHaveCount(labSteps);
+
+    // Cambiar el objetivo aquí recalcula, y volver al catálogo deja 90.
+    await page.getByLabel('Target score').fill('95');
+    await page.getByRole('button', { name: 'Recalculate the plan' }).click();
+    await expect(page).toHaveURL(/\/roadmap\?target=95$/);
+    await expect(page.getByRole('heading', { name: /Action plan to reach 95/ })).toBeVisible();
+
+    await page.getByRole('link', { name: 'Open in What-If' }).click();
+    await expect(page).toHaveURL(/target=95/);
+    await expect(page.getByText('95', { exact: true })).toBeVisible();
+
+    await page.goBack();
+    await page.getByRole('button', { name: 'Back to the catalog target' }).click();
+    await expect(page.getByRole('heading', { name: /Action plan to reach 90/ })).toBeVisible();
+  });
 });

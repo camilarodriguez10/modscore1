@@ -81,3 +81,16 @@ objetivo que su propio plan no alcanzaba. El plan, además, solo decía qué pal
   cantidades. Con el portafolio en memoria se hace una vez por aplicación y reglas.
 - **Datos de ejemplo.** Los nombres de vulnerabilidad del portafolio dummy pasaron al inglés,
   como los exporta Veracode, y `data/dummy` y `data/timeline` se regeneraron.
+
+## Actualización del 2026-10-21: el objetivo elegido viaja al future plan
+
+Probando el sitio se vio que, con el What-If a 80, el future plan seguía mostrando el plan a
+90. La coincidencia valía solo para el objetivo del catálogo. Ahora el objetivo viaja en la URL
+(`?target=`), en las dos direcciones:
+
+- El future plan hacia otro objetivo se calcula a pedido con la misma búsqueda (`ReachTarget`).
+  Por eso coincide con *Find the minimum plan* a ese objetivo.
+- El objetivo del catálogo sigue saliendo del plan preparado al cargar.
+- Una aplicación marcada *Eliminate* no tiene plan con ningún objetivo.
+- Una con roadmap de MAPS conserva la proyección de su roadmap; el objetivo cambia su plan de
+  acción.

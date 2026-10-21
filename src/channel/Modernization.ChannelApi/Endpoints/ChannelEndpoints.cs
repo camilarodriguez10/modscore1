@@ -74,7 +74,7 @@ public static class ChannelEndpoints
             .WithSummary("Conjunto minimo de palancas para alcanzar un score objetivo.");
 
         api.MapGet("/applications/{eaiCode}/roadmap", GetRoadmapPlan)
-            .WithSummary("Pantalla 05 — plan futuro: hitos, proyeccion y alertas de coherencia.");
+            .WithSummary("Pantalla 05 — plan futuro: hitos, proyeccion y alertas de coherencia. Con target, el plan hacia el objetivo del What-If.");
 
         api.MapGet("/roadmap", GetPortfolioRoadmap)
             .RequireFeature(f => f.PortfolioRoadmap)
@@ -556,14 +556,35 @@ public static class ChannelEndpoints
     private static async Task<IResult> GetRoadmapPlan(
         string eaiCode,
         RoadmapComposer composer,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? target = null)
     {
         if (!InputValidation.IsValidEaiCode(eaiCode))
         {
             return InvalidEaiCode();
         }
 
-        var view = await composer.ComposePlanAsync(eaiCode, cancellationToken).ConfigureAwait(false);
+        // El objetivo llega del What-If Lab por la URL: un número de 20 a 100, como en el
+        // laboratorio. Se lee como texto para que cualquier otra cosa sea un 400 explicado.
+        decimal? goal = null;
+
+        if (!string.IsNullOrEmpty(target))
+        {
+            if (target.Length > 6
+                || !decimal.TryParse(target, System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var value)
+                || value is < 20m or > 100m)
+            {
+                return ApiProblem.Create(
+                    StatusCodes.Status400BadRequest,
+                    "invalid-target",
+                    "Invalid target",
+                    "The target score must be a number between 20 and 100.");
+            }
+
+            goal = Math.Round(value, 2, MidpointRounding.AwayFromZero);
+        }
+
+        var view = await composer.ComposePlanAsync(eaiCode, goal, cancellationToken).ConfigureAwait(false);
 
         return view is null ? NotFound() : Results.Ok(view);
     }

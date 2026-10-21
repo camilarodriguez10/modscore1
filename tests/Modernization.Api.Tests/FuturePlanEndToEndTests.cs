@@ -113,6 +113,56 @@ public sealed class FuturePlanEndToEndTests(LayeredApiFixture fixture) : IClassF
         }
     }
 
+    /// <summary>
+    /// Lo que se vio probando el sitio el 2026-10-21: con el What-If a 80, el future plan tiene que
+    /// ir a 80, no quedarse en 90. Con <c>?target=80</c> es el plan del laboratorio a 80.
+    /// </summary>
+    [Fact]
+    public async Task AChosenTargetGivesTheFuturePlanTheLabFindsForIt()
+    {
+        var client = await MutatingClientAsync();
+        var compared = 0;
+
+        foreach (var eai in await SomeApplicationsAsync(client))
+        {
+            var view = await client.GetFromJsonAsync<RoadmapPlanView>(new Uri($"/api/applications/{eai}/roadmap?target=80", UriKind.Relative), Json);
+
+            if (view!.ActionPlan is not { } plan)
+            {
+                Assert.Equal("Eliminate", view.Disposition);
+                continue;
+            }
+
+            Assert.Equal(80m, plan.Target);
+
+            using var response = await client.PostAsJsonAsync(
+                new Uri($"/api/applications/{eai}/whatif/target", UriKind.Relative), new { targetScore = 80 }, Json);
+            response.EnsureSuccessStatusCode();
+            var target = await response.Content.ReadFromJsonAsync<TargetView>(Json);
+
+            Assert.Equal(plan.IsAlreadyMet, target!.IsAlreadyMet);
+            Assert.Equal(
+                plan.Steps.Select(s => (s.LeverKey, s.Parameter)),
+                target.Scenario?.Applied.Select(a => (a.Key, a.Parameter)) ?? []);
+            compared++;
+        }
+
+        Assert.True(compared > 0, "Ninguna aplicación de la muestra tenía plan.");
+    }
+
+    [Theory]
+    [InlineData("10")]
+    [InlineData("101")]
+    [InlineData("abc")]
+    public async Task ATargetOutsideTheScaleIsRefused(string target)
+    {
+        var client = await MutatingClientAsync();
+
+        using var response = await client.GetAsync(new Uri($"/api/applications/14381/roadmap?target={target}", UriKind.Relative));
+
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     /// <summary>El laboratorio parte del objetivo de los planes automáticos.</summary>
     [Fact]
     public async Task TheLabStartsFromTheAutomaticTarget()

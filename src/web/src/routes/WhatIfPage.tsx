@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { useScenario, useTarget, useWhatIfLab } from '../api/hooks';
 import type { LeverSelection, LeverView, ScenarioView } from '../api/types';
-import { parsePlanQuery } from '../plan';
+import { futurePlanPath, parsePlanQuery } from '../plan';
 import {
   Card,
   QueryError,
@@ -62,6 +62,8 @@ export function WhatIfPage() {
 
   const { application } = data;
   const targetScore = chosenTarget ?? data.automaticTarget ?? 90;
+  // El future plan con el objetivo de aquí: el mismo plan que «Find the minimum plan».
+  const futurePlan = futurePlanPath(application.eaiCode, targetScore === data.automaticTarget ? null : targetScore);
   const withParameter = (key: string): LeverSelection =>
     parameters[key] ? { key, parameter: parameters[key] } : { key };
 
@@ -125,7 +127,7 @@ export function WhatIfPage() {
             How it was calculated
           </Link>
           <Link
-            to={`/applications/${application.eaiCode}/roadmap`}
+            to={futurePlan}
             className="rounded-sm border border-rule px-3 py-1.5 text-[13px] text-ink-2 hover:bg-surface-2"
           >
             Future plan
@@ -290,13 +292,24 @@ export function WhatIfPage() {
                           </li>
                         ))}
                       </ol>
-                      <button
-                        type="button"
-                        onClick={() => adoptPlan(target.data!.scenario!)}
-                        className="self-start rounded-sm border border-rule px-3 py-1.5 text-[12.5px] text-ink-2 hover:bg-surface-2"
-                      >
-                        Load this plan into the levers
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => adoptPlan(target.data!.scenario!)}
+                          className="rounded-sm border border-rule px-3 py-1.5 text-[12.5px] text-ink-2 hover:bg-surface-2"
+                        >
+                          Load this plan into the levers
+                        </button>
+                        <Link
+                          to={futurePlanPath(
+                            application.eaiCode,
+                            target.data.target === data.automaticTarget ? null : target.data.target,
+                          )}
+                          className="rounded-sm border border-accent px-3 py-1.5 text-[12.5px] font-medium text-accent hover:bg-accent-wash"
+                        >
+                          See the detailed plan in Future plan
+                        </Link>
+                      </div>
                     </>
                   )}
                 </div>

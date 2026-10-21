@@ -8,9 +8,10 @@ import { AXIS_KEYS, kpiSub, kpiTitle, levelLabel, scaleLabel, sourceName } from 
 import { BandChip, Card, QueryError, Spinner, fmt } from '../components/primitives';
 import { LevelChip, TrendLine, levelText } from '../components/dashboard/charts';
 import { DefinitionsContext, ExplanationBlock } from '../components/Explanation';
-import { dashboardExplanation } from '../i18n/analytics';
+import { dashboardExplanation } from '../i18n/dashboardExplain';
 import {
   ComplexityPanel,
+  DashboardViewContext,
   HealthPanel,
   ObsolescencePanel,
   PrioritizationPanel,
@@ -50,6 +51,7 @@ export function DashboardPage() {
 
   return (
     <DefinitionsContext.Provider value={data.definitions}>
+    <DashboardViewContext.Provider value={data}>
     <div className="flex flex-col gap-4">
       <Header view={data} />
 
@@ -64,7 +66,7 @@ export function DashboardPage() {
           <Indicators kpis={dashboard.kpis} trend={data.trend} onSelect={setSelection} />
           <div className="rounded-md border border-rule bg-surface [&>details]:border-t-0">
             <ExplanationBlock
-              explanation={dashboardExplanation(0, data.definitions)}
+              explanation={dashboardExplanation(0, data.definitions, data)}
               definitions={data.definitions}
               title="How the indicators are calculated"
             />
@@ -92,6 +94,7 @@ export function DashboardPage() {
         />
       )}
     </div>
+    </DashboardViewContext.Provider>
     </DefinitionsContext.Provider>
   );
 }

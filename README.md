@@ -400,7 +400,7 @@ reproducen los casos documentados:
 TypeScript difieren.
 
 ```bash
-npm --prefix src/web test          # 97 pruebas unitarias (Vitest)
+npm --prefix src/web test          # 102 pruebas unitarias (Vitest)
 npm --prefix src/web run test:e2e  # 61 escenarios: 36 de flujo y 25 de accesibilidad (axe)
 ```
 
@@ -525,6 +525,21 @@ pasos en orden. Cada paso dice:
 Es exactamente el plan que da el **What-If Lab** con objetivo 90, y *Open in What-If* lo carga
 allí con las mismas palancas y cantidades
 ([ADR 0036](docs/adr/0036-future-plan-detallado-y-mismo-plan-que-el-what-if.md)).
+
+## Cómo se calcula cada panel del dashboard
+
+Cada panel del dashboard, y el bloque de indicadores, tiene un *How this is calculated*
+plegado. Muestra:
+
+- qué responde el panel;
+- los pasos, con los umbrales vigentes;
+- las fórmulas;
+- de qué sistema, reporte o archivo y de qué columna sale cada dato;
+- el mismo cálculo hecho con los datos que se ven en pantalla.
+
+La pantalla **Definitions** repite lo mismo por pregunta. Las fórmulas reproducen las de
+la capa System (`DashboardAnalyzer`), y los textos están en
+`src/web/src/i18n/dashboardExplain.ts`.
 
 ## Fuentes leídas desde bases de datos
 

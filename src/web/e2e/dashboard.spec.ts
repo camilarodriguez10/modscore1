@@ -155,6 +155,12 @@ test.describe('dashboard', () => {
     await expect(risk.getByText(/moderate from 40, high from 60, critical from 80/)).toBeVisible();
     await expect(risk.getByText('Provisional', { exact: true })).toBeVisible();
 
+    // Las fórmulas, de qué reporte y columna sale cada dato, y el cálculo con lo que se ve.
+    await expect(risk.getByText('Risk Score = (100 − Pillar) ÷ 80 × 100', { exact: false })).toBeVisible();
+    await expect(risk.getByRole('cell', { name: /Kenna_Score/ })).toBeVisible();
+    await expect(risk.getByText('With the current data')).toBeVisible();
+    await expect(risk.getByText(/of the risk mass, index/)).toBeVisible();
+
     await page.getByText('How the indicators are calculated').click();
     await expect(page.getByText(/Currency Score below 60/).first()).toBeVisible();
 

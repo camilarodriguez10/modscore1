@@ -191,11 +191,33 @@ export function unitOf(kind: string): string {
 
 // ------------------------------------------------------------- explicaciones
 
-/** Lo que responde una explicacion: que datos entran, como se calcula y que falta. */
+/** Una fórmula: su nombre, la expresión y qué es cada término. */
+export interface Formula {
+  name: string;
+  expression: string;
+  where?: readonly string[];
+}
+
+/** De dónde sale un dato: el sistema y el reporte o archivo, y sus columnas. */
+export interface SourceRef {
+  data: string;
+  origin: string;
+  fields: string;
+}
+
+/**
+ * Lo que responde una explicacion: que datos entran, como se calcula y que falta. Las del
+ * dashboard agregan un resumen, las fórmulas, las fuentes con sus columnas y el cálculo
+ * con los datos en pantalla (dashboardExplain.ts).
+ */
 export interface Explanation {
   area: string | null;
+  summary?: string;
   considered: readonly string[];
   rules: readonly string[];
+  formulas?: readonly Formula[];
+  sources?: readonly SourceRef[];
+  current?: readonly string[];
   missing: readonly string[];
 }
 
@@ -218,140 +240,6 @@ export function reader(definitions: AnalyticsDocument) {
 
 const SCORE_MODEL =
   'The Modernization Score v1.3 of each application: 18 metrics in three pillars (Modernization Risk Vectors, Architecture & Maturity, Stability), normalized to 20–100 with only the metrics that have data.';
-
-/** La explicacion de un panel del dashboard, por numero de pregunta (0 es el encabezado). */
-export function dashboardExplanation(question: number, definitions: AnalyticsDocument): Explanation {
-  const d = reader(definitions);
-
-  switch (question) {
-    case 0:
-      return {
-        area: null,
-        considered: [
-          SCORE_MODEL,
-          'Currency Score: the score CMT delivers, Raw_Tech_Score from the Currency Model Detail Report (0–100, computed per component from its end-of-life date). A 0 is no data.',
-          'The filters and your portfolio scope: every indicator counts only the applications you can see and have selected.',
-        ],
-        rules: [
-          'Portfolio Health Score: the simple average Modernization Score of the filtered applications, with its band.',
-          'Applications at risk: applications in the At risk (50–70) or Critical (20–50) bands.',
-          `Modernization candidates: criticality at least ${d.text('candidates.minCriticality')} and opportunity at least ${d.text('candidates.minOpportunity')} (question 2).`,
-          `Currency exposure: applications with a Currency Score below ${d.plain('currency.legacyBelow')}, out of those with a Currency Score from CMT.`,
-          'Resilience exposure: applications with high or critical resilience gaps, out of those with recovery or operational data (question 6).',
-          'Each sparkline repeats the indicator for every upload, with the same filters.',
-        ],
-        missing: [
-          'End-of-support and end-of-life dates for every inventoried component (TLM) would add an EOS/EOL indicator. The Code screen shows them for what the repositories declare.',
-        ],
-      };
-    case 1:
-      return {
-        area: null,
-        considered: [
-          SCORE_MODEL,
-          'CIO for the rows, and region, country or primary capability for the columns, from the EAI master; target disposition from MAPS.',
-        ],
-        rules: [
-          'Each cell is the average Modernization Score of its applications; its color is the score band: Solid 85–100, Acceptable 70–85, At risk 50–70, Critical 20–50.',
-          'The Total row and column average every application of that column or CIO, not the cells; the corner is the whole portfolio.',
-          'Requiring intervention: applications in the At risk or Critical bands.',
-          'Data coverage: the share of the model’s weight that had data. A high score with low coverage says little.',
-          'The trend is the average score of every upload, with the same filters and scope.',
-        ],
-        missing: [],
-      };
-    case 2:
-      return {
-        area: 'prioritization',
-        considered: [
-          'Critical application indicator, user count and L1 capability count from the EAI master.',
-          'The application’s own roadmap (MAPS) projected with the what-if engine; without one, an automatic plan towards the target of the roadmap catalog (90).',
-          'The Risk Score (question 4) for the size and color of each bubble.',
-        ],
-        rules: [
-          `Business criticality: very high = critical and broad; high = critical; medium = broad; low = the rest. Broad = at least ${d.users} users (roadmap catalog) or at least ${d.plain('criticality.broadCapabilities')} capabilities.`,
-          `Modernization opportunity = points the application’s own roadmap adds to its score: low below ${d.plain('opportunity.mediumFrom')}, medium from ${d.plain('opportunity.mediumFrom')}, high from ${d.plain('opportunity.highFrom')}, very high from ${d.plain('opportunity.veryHighFrom')}.`,
-          'An application without a MAPS roadmap uses an automatic plan: the levers with the largest effect, one after another, until the score reaches the target (90), or every lever that adds points if it cannot. Applications marked Eliminate get none.',
-          'Applications whose roadmap takes them out of the portfolio, or without any plan, stay out of the matrix.',
-          `Candidates: criticality at least ${d.text('candidates.minCriticality')} and opportunity at least ${d.text('candidates.minOpportunity')}, the shaded quadrant.`,
-          `Top ${d.plain('candidates.topCount')}: ordered by criticality plus opportunity, then by Risk Score, then by points gained.`,
-        ],
-        missing: [
-          'Effort or cost per application (DQ-02): today the weeks come from the roadmap, the same for every application on it.',
-        ],
-      };
-    case 3:
-      return {
-        area: 'complexity',
-        considered: [
-          'Currency Score from CMT, primary capability, country and coding language from the EAI master.',
-          'The mapped Tech Debt Score and the target disposition.',
-        ],
-        rules: [
-          `Legacy platforms: Currency Score below ${d.plain('currency.legacyBelow')}.`,
-          `Duplicate technologies: the same primary capability in the same country at least ${d.plain('complexity.duplicateThreshold')} times.`,
-          `Technical debt: mapped Tech Debt Score at or below ${d.plain('complexity.techDebtMappedAtMost')}.`,
-          `Technology proliferation: one capability written in at least ${d.plain('complexity.languageThreshold')} coding languages.`,
-          'Each tile’s share is its part of all measured complexity; one application can fall in several dimensions.',
-          'Opportunities: rationalize = applications in duplicate clusters; standardize = distinct coding languages; consolidate = capability-and-country clusters; retire = applications marked Eliminate that are still active.',
-        ],
-        missing: [
-          'Shared dependencies and other complexity have no source yet (DQ-04).',
-          'Open technical debts per application would replace the Tech Debt Score proxy.',
-        ],
-      };
-    case 4:
-      return {
-        area: 'risk',
-        considered: [
-          'The Modernization Risk Vectors pillar: Kenna, DR in scope, critical and high SCA flaws, MFA and the open-source score.',
-          'CIO for the rows of the heatmap and the chosen axis for its columns.',
-        ],
-        rules: [
-          'Risk Score = the risk pillar inverted to 0–100, higher is worse: (100 − pillar) ÷ 80 × 100.',
-          `Levels: low below ${d.plain('risk.moderateFrom')}, moderate from ${d.plain('risk.moderateFrom')}, high from ${d.plain('risk.highFrom')}, critical from ${d.plain('risk.criticalFrom')}.`,
-          'Each cell is the average Risk Score of its applications. The Total row and column average every application of that column or CIO, not the cells.',
-          `The ${d.plain('risk.hotspotCount')} riskiest applications are the highest Risk Scores.`,
-          `Risk Concentration Index = the share of all risk carried by the riskiest ${number(d.raw('concentration.topShare') * 100, 0)} % of cells. An even spread gives about ${d.plain('concentration.topShare')}. Moderate from ${d.plain('concentration.moderateFrom')}, high from ${d.plain('concentration.highFrom')}, critical from ${d.plain('concentration.criticalFrom')}.`,
-        ],
-        missing: [],
-      };
-    case 5:
-      return {
-        area: 'obsolescence',
-        considered: [
-          'The points each application loses on every weighted metric of the score model.',
-          'Currency Score from CMT for the average shown next to the gauge.',
-        ],
-        rules: [
-          'Lost points per metric = weight × (100 − mapped score) ÷ 100, added across the filtered portfolio.',
-          'Concepts: lifecycle (Product Strategy), components (Architectural Value), technology currency (RAW Tech Score, the Currency Score), open source (OSS score) — these four are currency concepts; technical debt; vulnerabilities (SCA flaws); host risk (Kenna); controls (MFA, DR, APIs, monitoring, operational).',
-          'The headline is the share of lost points explained by currency concepts.',
-          'A metric without data loses no points: that is missing data, not obsolescence.',
-        ],
-        missing: ['End-of-support and end-of-life exposure wait for TLM (DQ-05).'],
-      };
-    case 6:
-      return {
-        area: 'resilience',
-        considered: [
-          'DR in scope and the declared RTO range from the EAI master.',
-          'The operational score and the monitoring capabilities (Agent, APM, Monitoring, Synthetics).',
-          'The critical application indicator.',
-        ],
-        rules: [
-          `Recovery: outside the DR scope is high (critical if the application is critical). Inside it, the lower bound of the RTO range decides: high from ${d.text('resilience.recoveryHighFromHours')}, moderate from ${d.text('resilience.recoveryModerateFromHours')}, low below; no declared RTO is moderate.`,
-          `Operational vulnerabilities: operational score below ${d.plain('resilience.operationalCriticalBelow')} is critical, below ${d.plain('resilience.operationalHighBelow')} high, below ${d.plain('resilience.operationalModerateBelow')} moderate. No monitoring capability is high (critical if the application is critical). The worse of the two counts.`,
-          'The application’s level is the worst of its measured dimensions; exposure means high or critical.',
-        ],
-        missing: [
-          'Availability history (DQ-06), critical dependencies and single points of failure (DQ-04) have no source yet.',
-        ],
-      };
-    default:
-      return { area: null, considered: [], rules: [], missing: [] };
-  }
-}
 
 // ------------------------------------------------------------- pantalla Code
 

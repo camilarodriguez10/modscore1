@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import type { AnalyticsDocument } from '../api/types';
+import type { AnalyticsDocument, DashboardView } from '../api/types';
 import {
   AREA_KEYS,
   areaName,
   constraintText,
-  dashboardExplanation,
   formatParameter,
   parameterLabel,
 } from './analytics';
+import { dashboardExplanation } from './dashboardExplain';
 import { formatNotice } from './notices';
 
 const definitions = (legacyBelow = 60): AnalyticsDocument => ({
@@ -84,5 +84,65 @@ describe('definition notices', () => {
     expect(
       formatNotice({ code: 'change.analyticsStatus', args: { area: 'currency', from: 'provisional', to: 'agreed' } }),
     ).toBe('Currency Score: provisional → agreed');
+  });
+});
+
+describe('detailed explanations', () => {
+  it('give every dashboard panel a summary, formulas and the sources with their columns', () => {
+    for (const question of [0, 1, 2, 3, 4, 5, 6]) {
+      const explanation = dashboardExplanation(question, definitions());
+
+      expect(explanation.summary, `question ${question}`).toBeTruthy();
+      expect(explanation.formulas?.length ?? 0, `question ${question}`).toBeGreaterThan(0);
+      expect(explanation.sources?.length ?? 0, `question ${question}`).toBeGreaterThan(0);
+    }
+  });
+
+  it('write the formulas with the thresholds in force', () => {
+    const indicators = dashboardExplanation(0, definitions(75)).formulas?.map((f) => f.expression).join(' ') ?? '';
+    expect(indicators).toContain('count(Raw_Tech_Score < 75)');
+    expect(indicators).toContain('Criticality ≥ 2');
+
+    const risk = dashboardExplanation(4, definitions()).formulas?.map((f) => f.expression).join(' ') ?? '';
+    expect(risk).toContain('(100 − Pillar) ÷ 80 × 100');
+    expect(risk).toContain('k = ceil(cells × 0.2)');
+  });
+
+  it('name the report and the column each figure comes from', () => {
+    const fields = (question: number) =>
+      dashboardExplanation(question, definitions())
+        .sources?.map((s) => `${s.origin} ${s.fields}`)
+        .join(' ') ?? '';
+
+    expect(fields(4)).toContain('Kenna_Score');
+    expect(fields(4)).toContain('veracode_sca_open_flaws.csv');
+    expect(fields(5)).toContain('Not_Approved_for_Use_Count');
+    expect(fields(6)).toContain('Recovery_Time_Objective_Range');
+  });
+
+  it('work the numbers out with the data on screen', () => {
+    const view = {
+      dashboard: {
+        kpis: [{ key: 'atRisk', value: 30, count: 75, base: 250, share: 30, level: null }],
+        matrix: { axis: 'country', rows: [], columns: [], cells: Array.from({ length: 12 }, () => ({})) },
+        applications: [{ riskScore: 50 }, { riskScore: null }],
+        risk: {
+          averageRisk: 50,
+          concentrationIndex: 0.42,
+          concentrationLevel: 'high',
+          hotspots: [{ eaiCode: '14381', applicationName: 'Reference Application', riskScore: 90 }],
+        },
+      },
+    } as unknown as DashboardView;
+
+    expect(dashboardExplanation(0, definitions(), view).current).toContain('Applications at risk: 75 of 250 applications = 30 %.');
+
+    const risk = dashboardExplanation(4, definitions(), view).current?.join(' ') ?? '';
+    expect(risk).toContain('the riskiest 3 of 12 cells carry 42 % of the risk mass, index 0.42 (high)');
+    expect(risk).toContain('Reference Application (14381), Risk Score 90');
+  });
+
+  it('show nothing computed without the data', () => {
+    expect(dashboardExplanation(4, definitions()).current).toEqual([]);
   });
 });

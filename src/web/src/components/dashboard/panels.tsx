@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import type {
   DashboardApplication,
@@ -26,8 +26,14 @@ import {
 } from '../../i18n/dashboard';
 import { bandColor, fmt } from '../primitives';
 import { ExplanationBlock, useDefinitions } from '../Explanation';
-import { dashboardExplanation } from '../../i18n/analytics';
+import { dashboardExplanation } from '../../i18n/dashboardExplain';
 import { Donut, Gauge, Heatmap, LevelBar, LevelChip, TrendLine, levelMark, levelText } from './charts';
+
+/**
+ * La vista del dashboard para las explicaciones: cada panel muestra su calculo con los datos
+ * que se ven, sin pasarla de mano en mano.
+ */
+export const DashboardViewContext = createContext<DashboardView | null>(null);
 
 /** Lo que se abre en el detalle: un titulo y que filas entran. */
 export interface Selection {
@@ -72,6 +78,7 @@ export function QuestionPanel({
   children: ReactNode;
 }) {
   const definitions = useDefinitions();
+  const view = useContext(DashboardViewContext);
 
   return (
     <section
@@ -97,7 +104,10 @@ export function QuestionPanel({
       </header>
       <div className="flex flex-1 flex-col gap-4 px-4 py-4">{children}</div>
       {definitions && (
-        <ExplanationBlock explanation={dashboardExplanation(number, definitions)} definitions={definitions} />
+        <ExplanationBlock
+          explanation={dashboardExplanation(number, definitions, view ?? undefined)}
+          definitions={definitions}
+        />
       )}
     </section>
   );

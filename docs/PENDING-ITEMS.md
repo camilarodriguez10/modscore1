@@ -59,6 +59,13 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 - **Column mapping before uploading** (2026-09-28, ADR 0027): *Review column mapping* reads only the header row of each file in the browser and shows, for every field of the database, which column of the file will load it (same name, known alias, as in the last upload, or not in the file), its type and the metrics that use it. The person confirms or picks another column; the System validates it, stores the file with canonical column names and **records the mapping with the upload** (manifest in the file adapter, a `ColumnMaps` column in the database adapter), so the next review proposes it. *Data → Mapping* shows the same per source without choosing files.
 - **Why rows were rejected** (2026-09-28): the upload result groups rejected rows by problem —column, expected type, the first value, how many rows and the first row numbers— counting every bad column of a row, with a hint when the value gives the cause away (`N/A` placeholders, decimals in whole-number columns, dot thousands separators, shifted columns). Before, the screen only showed how many rows were left out. Also fixed: a number with both separators (`1.234,5`) was read as 1.2345 without warning; the last separator is now the decimal one.
 - **Reading tolerates real exports** (2026-10-02, ADR 0028), after the organization shared its EAI master header, exported from Power BI ("Suma de Kenna_Score", both "MFA" and "Does this Application Utilize MFA?", a Year/Quarter/Month/Day hierarchy, no APP_ID). An unreadable value in an **optional** field now leaves that field without data and keeps the row, reported as *Values loaded as empty*; before, it rejected the whole row, which in the EAI master is the whole application. No-value markers (`N/A`, `-`, `(En blanco)`…) read as empty; numbers in any regional format (an integer accepts zero decimals: "650,00" is 650, before it silently became 65000); `VERDADERO`/`FALSO`; identifiers normalized ("14,381" → "14381"); the exact field name wins over an alias and summary prefixes ("Suma de", "Sum of", "Promedio de"…) are recognized; a repeated EAI keeps the last row and reports the others; without APP_ID in the master, tech debt is linked by the EAI code, because the organization confirmed that its APP_ID is the same code as the EAI.
+- **Dashboard explanations with formulas and sources** (2026-10-21): every dashboard panel's *How this is calculated*, and the indicators', now shows:
+  - what the panel answers and its steps with the thresholds in force;
+  - the formulas;
+  - a table of sources (system, report or file, and the exact columns);
+  - the same calculation worked out with the data on screen.
+
+  The Definitions screen shows the same.
 - **Security and code-quality audit** (2026-10-21, [security/audit-2026-10.md](security/audit-2026-10.md)): the whole repository was reviewed with dependency scans, the analyzers, pattern searches and a manual review. Result: 10 findings, none High or Critical open. Fixed:
   - vite 7.3.6, a vulnerable development dependency, now 7.3.7;
   - the session key ring is encrypted with a certificate, required outside Development when the keys are persisted;
@@ -77,7 +84,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 - **Fixed on 2026-09-18:** the Insights risk index counted Kenna **below 50** as weak vulnerability management. Kenna runs from 0 to 1000 and higher is worse, so it counted the best applications. It now counts Kenna ≥ 670 (the BRD's Critical/High band), and the threshold is a parameter.
 - **Tests**:
   - 1,126 .NET tests: 340 engine, 414 contracts, 372 API.
-  - 97 SPA unit tests.
+  - 102 SPA unit tests.
   - 61 end-to-end scenarios: 36 flows and 25 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
   - Zero vulnerable packages, and `npm audit` is clean.
 
@@ -1386,7 +1393,7 @@ Numbers are for comparing changes on the same machine, not for sizing production
 | Engine (golden cases, mapping table, what-if, roadmap, rules editor, comparison, dashboard, insights, end-of-life catalog, code analyzer) | 340 | `dotnet test tests/Modernization.Scoring.Engine.Tests` |
 | Source contracts (Dummy, File, Database; rules stores; sample repositories; dummy timeline; column mapping; rejection reasons; regional values, Power BI and Veracode exports; memory per row; Excel workbooks and several files per source; renamed Product Strategy export; new Tech Debt source; database connectors) | 414 | `dotnet test tests/Modernization.Sources.ContractTests` |
 | API end-to-end through both layers and security | 372 | `dotnet test tests/Modernization.Api.Tests` |
-| SPA unit (Vitest) | 97 | `npm --prefix src/web test` |
+| SPA unit (Vitest) | 102 | `npm --prefix src/web test` |
 | SPA end-to-end (Playwright, Edge locally, Chromium in CI) | 36 | `npm --prefix src/web run test:e2e` |
 | SPA accessibility (axe, the daily screens, the Code detail and the column mapping, in light and dark) | 25 | Same command; `e2e/accessibility.spec.ts` |
 | SPA end-to-end against an already running site | Same | With the site running (for example the Channel serving `src/web/dist`), from `src/web`: `MODSCORE_E2E_BASE_URL=http://localhost:5100 npx playwright test` |

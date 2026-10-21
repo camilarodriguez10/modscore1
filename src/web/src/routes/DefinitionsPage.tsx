@@ -2,17 +2,17 @@ import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router';
 import { useCode, useDashboard, useSession } from '../api/hooks';
 import type { AnalyticsDocument, CodeView, DashboardView } from '../api/types';
-import { AreaStatus } from '../components/Explanation';
+import { AreaStatus, FormulaList, SourceTable } from '../components/Explanation';
 import { Label, QueryError, Spinner, fmt } from '../components/primitives';
 import {
   areaName,
   codeExplanation,
-  dashboardExplanation,
   formatParameter,
   parameterHelp,
   parameterLabel,
   type Explanation,
 } from '../i18n/analytics';
+import { dashboardExplanation } from '../i18n/dashboardExplain';
 import { countOf } from '../i18n/notices';
 
 /**
@@ -108,7 +108,7 @@ const SECTIONS: readonly Section[] = [
     id: 'currency',
     title: 'Indicators and Currency Score',
     area: 'currency',
-    explain: (d) => ({ ...dashboardExplanation(0, d), area: 'currency' }),
+    explain: (d, view) => ({ ...dashboardExplanation(0, d, view), area: 'currency' }),
     coverage: (view) => {
       const currency = view.dashboard.kpis.find((k) => k.key === 'currency');
       const withData = currency?.base ?? 0;
@@ -119,7 +119,7 @@ const SECTIONS: readonly Section[] = [
     id: 'health',
     title: '1 · How healthy is the portfolio?',
     area: null,
-    explain: (d) => dashboardExplanation(1, d),
+    explain: (d, view) => dashboardExplanation(1, d, view),
     coverage: (view) =>
       `On average, ${fmt(view.dashboard.health.dataCoverage, 0)} % of the model’s weight had data, over ${countOf(total(view), 'application')}.`,
   },
@@ -127,7 +127,7 @@ const SECTIONS: readonly Section[] = [
     id: 'prioritization',
     title: '2 · Which applications should be modernized first?',
     area: 'prioritization',
-    explain: (d) => dashboardExplanation(2, d),
+    explain: (d, view) => dashboardExplanation(2, d, view),
     coverage: (view) => {
       const inMatrix = view.dashboard.prioritization.points.length;
       return `${countOf(inMatrix, 'application')} of ${total(view)} (${share(inMatrix, total(view))} %) have a roadmap that raises their score and enter the matrix.`;
@@ -137,7 +137,7 @@ const SECTIONS: readonly Section[] = [
     id: 'complexity',
     title: '3 · Where should we reduce complexity?',
     area: 'complexity',
-    explain: (d) => dashboardExplanation(3, d),
+    explain: (d, view) => dashboardExplanation(3, d, view),
     coverage: (view) => {
       const measured = view.dashboard.complexity.dimensions.filter((dimension) => dimension.status !== 'needs-data');
       return `${measured.length} of ${view.dashboard.complexity.dimensions.length} dimensions are measured with today’s sources.`;
@@ -147,7 +147,7 @@ const SECTIONS: readonly Section[] = [
     id: 'risk',
     title: '4 · Where is technology risk concentrated?',
     area: 'risk',
-    explain: (d) => dashboardExplanation(4, d),
+    explain: (d, view) => dashboardExplanation(4, d, view),
     coverage: (view) => {
       const withRisk = view.dashboard.applications.filter((a) => a.riskScore !== null).length;
       return `${countOf(withRisk, 'application')} of ${total(view)} (${share(withRisk, total(view))} %) have a Risk Score.`;
@@ -157,7 +157,7 @@ const SECTIONS: readonly Section[] = [
     id: 'obsolescence',
     title: '5 · What is driving obsolescence?',
     area: 'obsolescence',
-    explain: (d) => dashboardExplanation(5, d),
+    explain: (d, view) => dashboardExplanation(5, d, view),
     coverage: (view) => {
       const withCurrency = view.dashboard.obsolescence.withCurrency;
       return `${countOf(withCurrency, 'application')} of ${total(view)} (${share(withCurrency, total(view))} %) have a Currency Score; lost points use every metric with data.`;
@@ -167,7 +167,7 @@ const SECTIONS: readonly Section[] = [
     id: 'resilience',
     title: '6 · Where are the resilience gaps?',
     area: 'resilience',
-    explain: (d) => dashboardExplanation(6, d),
+    explain: (d, view) => dashboardExplanation(6, d, view),
     coverage: (view) => {
       const withData = view.dashboard.resilience.withData;
       return `${countOf(withData, 'application')} of ${total(view)} (${share(withData, total(view))} %) have recovery or operational data.`;
@@ -232,9 +232,13 @@ function Definition({
       </header>
 
       <div className="grid gap-5 px-4 py-4 text-[12.5px] leading-relaxed lg:grid-cols-[3fr_2fr]">
-        <div className="flex flex-col gap-4">
-          <List title="Definition and formula" items={explanation.rules} />
+        <div className="flex min-w-0 flex-col gap-4">
+          {explanation.summary && <p className="text-[13px]">{explanation.summary}</p>}
+          <List title="Definition" items={explanation.rules} />
+          <FormulaList formulas={explanation.formulas ?? []} />
+          <SourceTable sources={explanation.sources ?? []} />
           <List title="Data considered" items={explanation.considered} />
+          <List title="With the current data" items={explanation.current ?? []} />
           {explanation.missing.length > 0 && <List title="Not measured yet" items={explanation.missing} muted />}
         </div>
 

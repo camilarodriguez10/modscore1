@@ -105,6 +105,20 @@ public static class ChannelEndpoints
             .DisableAntiforgery()
             .WithSummary("Sube archivos, recalcula y publica una carga nueva.");
 
+        // Leer las fuentes de sus bases es publicar una carga: el mismo rol, el mismo alcance
+        // y el mismo limite de frecuencia (ADR 0037).
+        api.MapPost("/ingestion/pull", PostPull)
+            .RequireAuthorization(ChannelPermissions.UploadPolicy)
+            .RequireRateLimiting(ChannelLimits.UploadPolicy)
+            .WithSummary("Lee las fuentes de sus bases de datos y publica una carga nueva.");
+
+        // Probar las conexiones no publica nada, pero describe la configuracion del despliegue
+        // y abre conexiones a bases de la organizacion: lo hace quien puede publicar.
+        api.MapPost("/ingestion/connectors/test", PostConnectorsTest)
+            .RequireAuthorization(ChannelPermissions.UploadPolicy)
+            .RequireRateLimiting(ChannelLimits.UploadPolicy)
+            .WithSummary("Abre cada conexion a las bases de las fuentes y ejecuta la consulta minima.");
+
         // De donde sale cada campo de la base. Describe cargas completas, como el linaje.
         api.MapGet("/ingestion/mapping", GetMapping)
             .RequireAuthorization(ChannelPermissions.FullPortfolioPolicy)
@@ -465,6 +479,26 @@ public static class ChannelEndpoints
         return Results.Ok(view);
     }
 
+    private static async Task<IResult> PostPull(
+        PullRequestBody? body,
+        IngestionComposer composer,
+        CancellationToken cancellationToken)
+    {
+        if (!UploadLabel.TryNormalize(body?.Label, out var label, out var labelError))
+        {
+            return ApiProblem.Create(
+                StatusCodes.Status400BadRequest,
+                "invalid-label",
+                "Invalid label",
+                labelError ?? "The label is not valid.");
+        }
+
+        return Results.Ok(await composer.PullAsync(label, cancellationToken).ConfigureAwait(false));
+    }
+
+    private static async Task<IResult> PostConnectorsTest(IngestionComposer composer, CancellationToken cancellationToken)
+        => Results.Ok(await composer.TestConnectorsAsync(cancellationToken).ConfigureAwait(false));
+
     private static async Task<IResult> GetMapping(IngestionComposer composer, CancellationToken cancellationToken)
         => Results.Ok(await composer.ComposeMappingAsync(cancellationToken).ConfigureAwait(false));
 
@@ -797,6 +831,9 @@ public static class ChannelEndpoints
         "Upload too large",
         $"The upload exceeds the maximum of {ChannelLimits.Megabytes(ChannelLimits.UploadMaxTotalBytes)} MB.");
 }
+
+/// <summary>Pedido de lectura de las bases: solo la etiqueta de la carga, opcional.</summary>
+public sealed record PullRequestBody(string? Label);
 
 /// <summary>
 /// Revisión del mapping antes de cargar: el encabezado de cada archivo, nunca sus filas.

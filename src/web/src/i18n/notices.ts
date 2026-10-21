@@ -248,6 +248,41 @@ const MESSAGES: Record<string, (a: Args) => string> = {
   'upload.rejectedUnidentified': (a) =>
     `The upload was rejected: ${num(a.count)} ${plural(a.count, 'file')} could not be identified by ${a.count === '1' ? 'its' : 'their'} header. Assign the source below and upload again.`,
 
+  // ------------------------------------------------- database sources (ADR 0037)
+  'connector.disabled': () =>
+    'Reading sources from databases is not available: it needs database connections configured in the deployment and a data adapter that accepts uploads.',
+  'connector.disabledPermission': (a) =>
+    `Reading sources from databases publishes an upload: it requires the '${a.role}' role and scope over the whole portfolio.`,
+  'connector.busy': () => 'The databases are being read right now. Try again when that pull finishes.',
+  'connector.providerUnknown': (a) =>
+    `The connection ${a.connection} names the engine '${a.provider}', which is not supported. Use SqlServer, PostgreSql, Oracle or Odbc.`,
+  'connector.tlsRequired': (a) =>
+    `The connection ${a.connection} (${a.provider}) does not use verified TLS, so it was not opened. The deployment guide explains the setting for each engine.`,
+  'connector.secretMissing': (a) =>
+    `The secret of the connection ${a.connection} is missing or cannot be read. Check the secret mounted from the vault.`,
+  'connector.connectionStringInvalid': (a) =>
+    `The connection string of ${a.connection} is not valid for its engine.`,
+  'connector.authenticationInteractive': (a) =>
+    `The connection ${a.connection} uses a sign-in that needs a person. Use a SQL login, Windows integrated security, or a managed identity or service principal.`,
+  'connector.queryInvalid': (a) =>
+    `The query of ${a.source} is not a single read-only SELECT on a view or table, so it was not run.`,
+  'connector.connectFailed': (a) =>
+    `Could not connect with ${a.connection}. The server log of the System layer has the database's own message.`,
+  'connector.queryFailed': (a) =>
+    `The query of ${a.source} failed on ${a.connection}. The server log of the System layer has the database's own message.`,
+  'connector.timeout': (a) =>
+    a.source
+      ? `Reading ${a.source} from ${a.connection} took longer than allowed.`
+      : `Connecting with ${a.connection} took longer than allowed.`,
+  'connector.tooLarge': (a) =>
+    `${a.source} exceeds the limits of an upload (${num(a.rows)} rows or ${a.megabytes} MB). Filter it in the view or the query.`,
+  'connector.columnUnnamed': (a) =>
+    `Column ${a.position} of ${a.source} has no name. Give every column a name with AS.`,
+  'connector.columnUnsupported': (a) =>
+    `The column ${a.column} of ${a.source} has a type a source cannot hold (${a.type}). Convert it to text or a number in the query.`,
+  'connector.pullFailed': (a) =>
+    `${num(a.count)} of ${num(a.total)} ${plural(a.total, 'source')} could not be read, so nothing was published. Nothing in the current portfolio changed.`,
+
   'file.tooLarge': (a) => `It weighs ${a.size} MB and the per-file maximum is ${a.max} MB.`,
   'file.identical': (a) =>
     `It is identical to ${a.other}: the same file was selected twice, and loading both would count its rows twice. Remove one of them.`,

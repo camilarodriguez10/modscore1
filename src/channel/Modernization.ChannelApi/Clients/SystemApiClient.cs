@@ -114,6 +114,26 @@ public sealed class SystemApiClient(HttpClient http, IHttpClientFactory clients)
             ?? throw new SystemApiException("The System layer returned no upload result.");
     }
 
+    /// <summary>Las fuentes que se leen de bases de datos (ADR 0037), sin cadenas ni secretos.</summary>
+    public Task<ConnectorStatusResponse> GetConnectorsAsync(CancellationToken cancellationToken = default)
+        => GetRequiredAsync<ConnectorStatusResponse>("/system/ingestion/connectors", cancellationToken);
+
+    /// <summary>
+    /// Prueba las conexiones. Va por el cliente de la carga: sin reintentos y con el tiempo que
+    /// necesita abrir varias conexiones.
+    /// </summary>
+    public async Task<IReadOnlyList<ConnectionTestResponse>> TestConnectorsAsync(CancellationToken cancellationToken = default)
+        => await PostWithoutRetriesAsync<object, IReadOnlyList<ConnectionTestResponse>>("/system/ingestion/connectors/test", new { }, cancellationToken)
+            .ConfigureAwait(false);
+
+    /// <summary>
+    /// Lee las bases y publica. Sin reintentos —un segundo intento publicaría dos versiones— y
+    /// con el tiempo de una carga.
+    /// </summary>
+    public async Task<PullResponse> PullAsync(PullRequest request, CancellationToken cancellationToken = default)
+        => await PostWithoutRetriesAsync<PullRequest, PullResponse>("/system/ingestion/pull", request, cancellationToken)
+            .ConfigureAwait(false);
+
     /// <summary>De dónde sale cada campo de la base, con la columna de la carga vigente.</summary>
     public async Task<MappingCatalogResponse> GetMappingAsync(CancellationToken cancellationToken = default)
         => await GetOrNullAsync<MappingCatalogResponse>("/system/ingestion/mapping", cancellationToken).ConfigureAwait(false)
@@ -336,6 +356,22 @@ public sealed class SystemApiClient(HttpClient http, IHttpClientFactory clients)
     /// Un 400 de la capa System es un escenario invalido, no un fallo del servicio:
     /// se propaga con su detalle para que el usuario sepa que corregir.
     /// </summary>
+    private async Task<TResponse> PostWithoutRetriesAsync<TRequest, TResponse>(
+        string url,
+        TRequest body,
+        CancellationToken cancellationToken)
+        where TResponse : class
+    {
+        using var client = clients.CreateClient(UploadClientName);
+        using var response = await client.PostAsJsonAsync(new Uri(url, UriKind.Relative), body, Json, cancellationToken).ConfigureAwait(false);
+
+        ThrowForKnownFailures(response);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<TResponse>(Json, cancellationToken).ConfigureAwait(false)
+            ?? throw new SystemApiException($"The System layer returned an empty body for {url}.");
+    }
+
     private async Task<TResponse?> PostAsync<TRequest, TResponse>(
         string url,
         TRequest body,

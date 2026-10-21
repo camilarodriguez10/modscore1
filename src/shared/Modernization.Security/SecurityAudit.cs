@@ -111,6 +111,40 @@ public static partial class SecurityAudit
         }
     }
 
+    /// <summary>Una lectura de las bases publicó una carga (ADR 0037).</summary>
+    public static void SourcesPulled(ILogger logger, string? user, string? versionId, int sourceCount, int applicationCount)
+    {
+        ArgumentNullException.ThrowIfNull(logger);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            var cleanUser = Clean(user);
+            var cleanVersionId = Clean(versionId);
+            LogSourcesPulled(logger, cleanUser, cleanVersionId, sourceCount, applicationCount);
+        }
+    }
+
+    /// <summary>Una lectura de las bases no publicó nada.</summary>
+    public static void SourcesPullRejected(ILogger logger, string? user, int errorCount)
+    {
+        ArgumentNullException.ThrowIfNull(logger);
+        if (logger.IsEnabled(LogLevel.Warning))
+        {
+            var cleanUser = Clean(user);
+            LogSourcesPullRejected(logger, cleanUser, errorCount);
+        }
+    }
+
+    /// <summary>Alguien probó las conexiones a las bases de las fuentes.</summary>
+    public static void ConnectionsTested(ILogger logger, string? user, int connectionCount, int failedCount)
+    {
+        ArgumentNullException.ThrowIfNull(logger);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            var cleanUser = Clean(user);
+            LogConnectionsTested(logger, cleanUser, connectionCount, failedCount);
+        }
+    }
+
     public static void ScopeDenied(ILogger logger, string? user, string? path)
     {
         ArgumentNullException.ThrowIfNull(logger);
@@ -306,6 +340,18 @@ public static partial class SecurityAudit
     [LoggerMessage(EventId = 4212, Level = LogLevel.Warning,
         Message = "Publicacion de reglas rechazada. usuario={User} motivo={Reason}")]
     private static partial void LogRulesRejected(ILogger logger, string user, string reason);
+
+    [LoggerMessage(EventId = 4215, Level = LogLevel.Information,
+        Message = "Fuentes leidas de bases y publicadas. usuario={User} version={VersionId} fuentes={SourceCount} aplicaciones={ApplicationCount}")]
+    private static partial void LogSourcesPulled(ILogger logger, string user, string versionId, int sourceCount, int applicationCount);
+
+    [LoggerMessage(EventId = 4216, Level = LogLevel.Warning,
+        Message = "Lectura de bases rechazada. usuario={User} errores={ErrorCount}")]
+    private static partial void LogSourcesPullRejected(ILogger logger, string user, int errorCount);
+
+    [LoggerMessage(EventId = 4217, Level = LogLevel.Information,
+        Message = "Conexiones a bases probadas. usuario={User} conexiones={ConnectionCount} fallidas={FailedCount}")]
+    private static partial void LogConnectionsTested(ILogger logger, string user, int connectionCount, int failedCount);
 
     [LoggerMessage(EventId = 4214, Level = LogLevel.Warning,
         Message = "Entrada rechazada por validacion. usuario={User} ruta={Path} codigo={StatusCode}")]

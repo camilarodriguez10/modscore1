@@ -282,7 +282,7 @@ public static class XlsxSourceConverter
             : date.ToString("yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture);
     }
 
-    private static bool LooksLikeThousands(string text)
+    internal static bool LooksLikeThousands(string text)
     {
         var digits = text.StartsWith('-') ? text.AsSpan(1) : text.AsSpan();
         var dot = digits.IndexOf('.');

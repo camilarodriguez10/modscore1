@@ -1,6 +1,13 @@
 import { useRef, useState } from 'react';
-import { useMappingReview, useRulesTimeline, useUpload } from '../api/hooks';
-import type { ExpectedFileView, IngestionView, UploadFileView, UploadRejectionView, UploadResultView } from '../api/types';
+import { useMappingReview, usePull, useRulesTimeline, useTestConnections, useUpload } from '../api/hooks';
+import type {
+  ConnectorsView,
+  ExpectedFileView,
+  IngestionView,
+  UploadFileView,
+  UploadRejectionView,
+  UploadResultView,
+} from '../api/types';
 import { Card, Label, fmt } from '../components/primitives';
 import { ScoreTrend } from '../components/ScoreTrend';
 import { countOf, formatNotice, rejectionHint, rejectionReasonText, sampleRowsText } from '../i18n/notices';
@@ -371,6 +378,8 @@ export function IngestionPanel({
         />
       )}
 
+      {data.connectors && <DatabaseSources connectors={data.connectors} />}
+
       <Card
         title="Expected files"
         subtitle="Each file is recognized by the columns in its header, so its name can be anything."
@@ -560,6 +569,171 @@ function LeaveOutFiles({
 }
 
 /** El veredicto de la carga, archivo por archivo. */
+/**
+ * Fuentes leídas directamente de bases de datos (ADR 0037). Las conexiones y las consultas
+ * son configuración del despliegue: aquí se ve de dónde sale cada fuente, se prueban las
+ * conexiones y se publica una carga leída de las bases, por la misma validación que los
+ * archivos.
+ */
+function DatabaseSources({ connectors }: { connectors: ConnectorsView }) {
+  const pull = usePull();
+  const test = useTestConnections();
+  const [label, setLabel] = useState('');
+  const busy = pull.isPending || test.isPending;
+
+  const engineOf = (connection: string) =>
+    connectors.connections.find((candidate) => candidate.name === connection)?.provider ?? '—';
+
+  const schedule = connectors.pullIntervalMinutes
+    ? ` They are also read on their own every ${countOf(connectors.pullIntervalMinutes, 'minute')}.`
+    : '';
+
+  return (
+    <>
+      <Card
+        title="Database sources"
+        subtitle={`These sources are read straight from the organization's databases instead of files.${schedule} A pull publishes a complete upload through the same validation as files; if one source cannot be read, nothing is published.`}
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[620px] text-[13px]">
+            <thead>
+              <tr className="border-b border-rule bg-surface-2">
+                <Th>Source</Th>
+                <Th>Connection</Th>
+                <Th>Engine</Th>
+                <Th>Read from</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {connectors.sources.map((source) => (
+                <tr key={source.fileName} className="border-b border-rule last:border-0">
+                  <td className="px-4 py-2.5 text-ink">{source.source}</td>
+                  <td className="px-4 py-2.5 font-mono text-[12px] text-ink-2">{source.connection}</td>
+                  <td className="px-4 py-2.5 font-mono text-[12px] text-ink-2">{engineOf(source.connection)}</td>
+                  <td className="px-4 py-2.5 text-ink-2">{source.kind === 'table' ? 'View or table' : 'Query'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex flex-col gap-4 border-t border-rule px-4 py-5">
+          {!connectors.pullEnabled ? (
+            <p className="text-[13px] text-ink-2">{formatNotice(connectors.disabledReason)}</p>
+          ) : (
+            <>
+              <label className="flex max-w-[420px] flex-col gap-1.5">
+                <Label>Upload label</Label>
+                <input
+                  type="text"
+                  value={label}
+                  maxLength={60}
+                  placeholder="Database pull 0809"
+                  onChange={(event) => setLabel(event.target.value)}
+                  className="rounded-sm border border-rule bg-surface px-3 py-2 text-[13px] text-ink"
+                />
+              </label>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => test.mutate()}
+                  disabled={busy}
+                  className="rounded-sm border border-accent px-4 py-2 text-[13.5px] font-medium text-accent hover:bg-accent-wash disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {test.isPending ? 'Testing connections…' : 'Test connections'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    pull.mutate(label, {
+                      onSuccess: (result) => {
+                        if (result.upload.accepted) setLabel('');
+                      },
+                    })
+                  }
+                  disabled={busy}
+                  className="rounded-sm bg-accent px-4 py-2 text-[13.5px] font-medium text-on-accent hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {pull.isPending ? 'Reading databases and recalculating…' : 'Pull from databases and recalculate'}
+                </button>
+              </div>
+            </>
+          )}
+
+          {test.data && (
+            <ul className="flex flex-col gap-1.5" aria-label="Connection test results">
+              {test.data.map((check) => (
+                <li key={check.name} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[12.5px]">
+                  <span className="font-mono text-ink">{check.name}</span>
+                  <span className="font-mono text-[11.5px] text-ink-3">{check.provider}</span>
+                  {check.ok ? (
+                    <span style={{ color: 'var(--app-good-text)' }}>
+                      connected in {fmt(check.elapsedMilliseconds / 1000, 1)} s
+                    </span>
+                  ) : (
+                    <span style={{ color: 'var(--app-critical-text)' }}>{formatNotice(check.error)}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {(pull.error || test.error) && (
+            <p className="text-[13px]" style={{ color: 'var(--app-critical-text)' }}>
+              {(pull.error ?? test.error) instanceof ApiError
+                ? (pull.error ?? test.error)?.message
+                : 'The databases could not be reached from the System layer.'}
+            </p>
+          )}
+        </div>
+      </Card>
+
+      {pull.data && pull.data.sources.length > 0 && (
+        <Card title="Per-source detail">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] text-[13px]">
+              <thead>
+                <tr className="border-b border-rule bg-surface-2">
+                  <Th>Source</Th>
+                  <Th>Connection</Th>
+                  <Th align="right">Rows read</Th>
+                  <Th align="right">Time</Th>
+                  <Th>Result</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {pull.data.sources.map((source) => (
+                  <tr key={source.fileName} className="border-b border-rule last:border-0">
+                    <td className="px-4 py-2.5 text-ink">{source.source}</td>
+                    <td className="px-4 py-2.5 font-mono text-[12px] text-ink-2">{source.connection}</td>
+                    <td className="tnum px-4 py-2.5 text-right font-mono text-ink">
+                      {source.rows.toLocaleString('en-US')}
+                    </td>
+                    <td className="tnum px-4 py-2.5 text-right font-mono text-ink-3">
+                      {fmt(source.elapsedMilliseconds / 1000, 1)} s
+                    </td>
+                    <td className="px-4 py-2.5 text-[12.5px]">
+                      {source.error ? (
+                        <span style={{ color: 'var(--app-critical-text)' }}>{formatNotice(source.error)}</span>
+                      ) : (
+                        <span style={{ color: 'var(--app-good-text)' }}>read</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {pull.data && <UploadResult result={pull.data.upload} />}
+    </>
+  );
+}
+
 function UploadResult({ result }: { result: UploadResultView }) {
   const parts = partLabels(result.files);
   const color = result.accepted ? 'var(--app-good-text)' : 'var(--app-critical-text)';

@@ -59,6 +59,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 - **Column mapping before uploading** (2026-09-28, ADR 0027): *Review column mapping* reads only the header row of each file in the browser and shows, for every field of the database, which column of the file will load it (same name, known alias, as in the last upload, or not in the file), its type and the metrics that use it. The person confirms or picks another column; the System validates it, stores the file with canonical column names and **records the mapping with the upload** (manifest in the file adapter, a `ColumnMaps` column in the database adapter), so the next review proposes it. *Data → Mapping* shows the same per source without choosing files.
 - **Why rows were rejected** (2026-09-28): the upload result groups rejected rows by problem —column, expected type, the first value, how many rows and the first row numbers— counting every bad column of a row, with a hint when the value gives the cause away (`N/A` placeholders, decimals in whole-number columns, dot thousands separators, shifted columns). Before, the screen only showed how many rows were left out. Also fixed: a number with both separators (`1.234,5`) was read as 1.2345 without warning; the last separator is now the decimal one.
 - **Reading tolerates real exports** (2026-10-02, ADR 0028), after the organization shared its EAI master header, exported from Power BI ("Suma de Kenna_Score", both "MFA" and "Does this Application Utilize MFA?", a Year/Quarter/Month/Day hierarchy, no APP_ID). An unreadable value in an **optional** field now leaves that field without data and keeps the row, reported as *Values loaded as empty*; before, it rejected the whole row, which in the EAI master is the whole application. No-value markers (`N/A`, `-`, `(En blanco)`…) read as empty; numbers in any regional format (an integer accepts zero decimals: "650,00" is 650, before it silently became 65000); `VERDADERO`/`FALSO`; identifiers normalized ("14,381" → "14381"); the exact field name wins over an alias and summary prefixes ("Suma de", "Sum of", "Promedio de"…) are recognized; a repeated EAI keeps the last row and reports the others; without APP_ID in the master, tech debt is linked by the EAI code, because the organization confirmed that its APP_ID is the same code as the EAI.
+- **Sources read from databases** (2026-10-21, ADR 0037): the System layer can read the eight sources straight from SQL Server, PostgreSQL, Oracle or any ODBC driver instead of files. It is off by default and is configured only in the deployment (the `Connectors` section; secrets in mounted files). Verified TLS is enforced by the application on every engine; each statement runs read-only in a transaction that is always rolled back; the query is checked for shape. *Pull from databases* on the *Data* screen publishes a complete upload through the same validation as files, and nothing is published if one source fails. Connection methods: SQL login, Windows/Kerberos and Microsoft Entra (managed identity, workload identity, service principal, default) for SQL Server; password, client certificate and Kerberos for PostgreSQL; password over TCPS and wallet for Oracle; any ODBC driver. Guide: [database-connections.md](database-connections.md). What the organization must provide is PA-10.
 - **Detailed future plan, the same as the what-if** (2026-10-21, ADR 0036): when data is loaded, every application not marked *Eliminate* gets its plan to 90, step by step: the metric each step moves (from and to), the points it adds in order, who carries it out, and concrete actions with the application's evidence (open SCA findings with library, CVE and CVSS; products to modernize or reclassify by category; missing monitoring capabilities; declared RTO/RPO). The future plan and the What-If Lab now use one search, so asking the lab for 90 returns exactly the future plan, and *Open in What-If* loads it with the same quantities.
 - **Navigation of 2026-10-21** (ADR 0035): the **Insights** screen was retired because it answered the same questions as the dashboard (its endpoints, analyzer, notices and 13 definition parameters are gone; rules versions saved before still load). **Code** and **Roadmap** are turned off by default and are turned on from the Channel layer configuration (`Features__Code=true`, `Features__PortfolioRoadmap=true`) without rebuilding the site; while off, they are not offered, their routes go to the dashboard and their endpoints answer 404.
 - **Tech Debt from a new source** (2026-10-07): the score column arrives truncated (`COMBINED_APP_SCOR`) and is recognized as an alias. Since 2026-10-08 only `APP_ID` and `COMBINED_APP_SCORE` are loaded; the denial and accepted scores and the update date are left out, also in the database. The ruleset provenance still names `V_TECH_DEBT_APP_SCORE` until the new source is named.
@@ -67,9 +68,9 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 - **Automatic plans to 90** (2026-10-07, ADR 0033): applications without a MAPS roadmap get a plan with the levers that take them to 90, so question 2 of the dashboard is filled with exports that lack the `Roadmap` column. Applications marked *Eliminate* get none.
 - **Fixed on 2026-09-18:** the Insights risk index counted Kenna **below 50** as weak vulnerability management. Kenna runs from 0 to 1000 and higher is worse, so it counted the best applications. It now counts Kenna ≥ 670 (the BRD's Critical/High band), and the threshold is a parameter.
 - **Tests**:
-  - 1,044 .NET tests: 340 engine, 347 contracts, 357 API.
+  - 1,117 .NET tests: 340 engine, 411 contracts, 366 API.
   - 97 SPA unit tests.
-  - 59 end-to-end scenarios: 34 flows and 25 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
+  - 61 end-to-end scenarios: 36 flows and 25 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
   - Zero vulnerable packages, and `npm audit` is clean.
 
 ### What needs the team
@@ -77,7 +78,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 | Group | Items | Blocking production? |
 |---|---|---|
 | Scoring rules (business) | SR-01 … SR-15 | SR-01, SR-03, SR-07 must be confirmed before scores are published to the organization (P0/P1). [scoring-decisions.md](scoring-decisions.md) is the same content written for the conversation with the business owner |
-| Platform and architecture | PA-01 … PA-09 | PA-01 (target and database engine) and PA-02 (authentication through APIM) are P0 |
+| Platform and architecture | PA-01 … PA-10 | PA-01 (target and database engine) and PA-02 (authentication through APIM) are P0 |
 | Security | SEC-01 … SEC-24 | SEC-19 and SEC-20 are P0 (SEC-21 was decided on 2026-09-15); ASVS partials are P1; H-16/H-17/H-20/H-21 deferred to the last phase by decision |
 | Technical debt | TD-01 … TD-15 | None blocks. TD-05 done and TD-04 automated on 2026-09-15; TD-06, TD-08 and TD-09 closed on 2026-09-16 |
 | Product follow-ups | PF-01 … PF-08 | No |
@@ -136,6 +137,7 @@ it is what the platform does today unless the row says otherwise.
 | PA-07 | Secrets manager integration verified | Platform / security | P1 | Platform | Open |
 | PA-08 | Observability and SIEM rules | Platform / security | P1 | Operations + security | Open |
 | PA-09 | Notifications to responsible parties when rules are published | Platform / product | P2 | Product + platform | Decision needed |
+| PA-10 | Database connections for the sources: accounts, views, network and secrets | Platform / data owners | P1 | Platform + source owners | Ready to configure |
 | SEC-01 … SEC-14 | ASVS L2 partial requirements | Security | P1 | Security + platform | SEC-06, SEC-07, SEC-12 done; SEC-14 accepted with compensating controls; the rest need a test environment |
 | SEC-15 | ASVS 3.3.4 — see and close own sessions (H-20) | Security | P3 | Development | Deferred (by decision) |
 | SEC-16 | ASVS 7.3.3 — tamper-proof logs (H-17) | Security | P2 | Operations | Deferred (by decision) |
@@ -557,6 +559,25 @@ The score formula is `Score = 20 + (Numerator ÷ Denominator) × 80`, computed o
 - **Options:** Microsoft Graph (email/Teams) from System on event 4211; an event bus consumed by a notification service; SIEM/automation platform.
 - **Acceptance criteria:** the chosen recipients receive a notification within N minutes of a publication, with a link to the comparison, respecting scope.
 - **Effort:** M. **Risk if not done:** people learn about rule changes only when they open the platform.
+
+### PA-10 — Database connections for the sources
+
+- **Priority:** P1 · **Owner:** platform + the owners of each source · **Status:** Ready to configure
+- **Context:** since 2026-10-21 (ADR 0037) the System layer can read the sources from their databases instead of files. The application side is done and tested; it is off until the deployment configures it. Guide: [database-connections.md](database-connections.md).
+- **What the organization must provide, per source database:**
+  - The engine, server and port, and which sources it holds.
+  - A read-only account with `SELECT` on one view per source, returning the contract's columns or their aliases.
+  - The authentication method. Preferred: workload or managed identity for Azure SQL, and a client certificate or Kerberos elsewhere.
+  - The secret in the vault, mapped in the `SecretProviderClass` `system-api-secrets`.
+  - A NetworkPolicy egress rule for that address and port.
+  - The CA certificate when the server's is not publicly trusted.
+- **Questions:** Which sources will come from databases, and which keep arriving as files? A pull is a complete upload, so mixing the two in one version is not available yet. Should pulls be scheduled (`PullInterval`), and on which replica?
+- **Security considerations:**
+  - Never grant more than `SELECT` on the views.
+  - Never set `TrustServerCertificate=True`: the application refuses it anyway.
+  - ODBC requires confirming that the driver validates the certificate.
+- **Acceptance criteria:** *Test connections* succeeds for every connection in the target environment, and *Pull from databases* publishes a version that matches the last file upload.
+- **Effort:** S per source on the application side, plus the owners' work on accounts and views. **Risk if not done:** uploads stay manual.
 
 ---
 
@@ -1355,10 +1376,10 @@ Numbers are for comparing changes on the same machine, not for sizing production
 | Suite | Count | Command |
 |---|---|---|
 | Engine (golden cases, mapping table, what-if, roadmap, rules editor, comparison, dashboard, insights, end-of-life catalog, code analyzer) | 340 | `dotnet test tests/Modernization.Scoring.Engine.Tests` |
-| Source contracts (Dummy, File, Database; rules stores; sample repositories; dummy timeline; column mapping; rejection reasons; regional values, Power BI and Veracode exports; memory per row; Excel workbooks and several files per source; renamed Product Strategy export; new Tech Debt source) | 347 | `dotnet test tests/Modernization.Sources.ContractTests` |
-| API end-to-end through both layers and security | 357 | `dotnet test tests/Modernization.Api.Tests` |
+| Source contracts (Dummy, File, Database; rules stores; sample repositories; dummy timeline; column mapping; rejection reasons; regional values, Power BI and Veracode exports; memory per row; Excel workbooks and several files per source; renamed Product Strategy export; new Tech Debt source; database connectors) | 411 | `dotnet test tests/Modernization.Sources.ContractTests` |
+| API end-to-end through both layers and security | 366 | `dotnet test tests/Modernization.Api.Tests` |
 | SPA unit (Vitest) | 97 | `npm --prefix src/web test` |
-| SPA end-to-end (Playwright, Edge locally, Chromium in CI) | 34 | `npm --prefix src/web run test:e2e` |
+| SPA end-to-end (Playwright, Edge locally, Chromium in CI) | 36 | `npm --prefix src/web run test:e2e` |
 | SPA accessibility (axe, the daily screens, the Code detail and the column mapping, in light and dark) | 25 | Same command; `e2e/accessibility.spec.ts` |
 | SPA end-to-end against an already running site | Same | With the site running (for example the Channel serving `src/web/dist`), from `src/web`: `MODSCORE_E2E_BASE_URL=http://localhost:5100 npx playwright test` |
 | SPA lint (ESLint, required by CI) | 0 errors | `npm --prefix src/web run lint` |

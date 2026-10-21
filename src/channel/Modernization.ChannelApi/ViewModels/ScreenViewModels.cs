@@ -454,7 +454,42 @@ public sealed record IngestionView(
     IReadOnlyList<VersionView> Versions,
     IReadOnlyList<HistoryPointView> PortfolioHistory,
     long MaxFileBytes,
-    long MaxTotalBytes);
+    long MaxTotalBytes,
+
+    // Las fuentes que se leen de bases (ADR 0037). Null si la sección está apagada o si
+    // quien mira no puede publicar: describe la configuración del despliegue.
+    ConnectorsView? Connectors);
+
+/// <summary>
+/// Las fuentes que se leen directamente de bases de datos, sin archivos (ADR 0037). Nunca
+/// trae cadenas de conexión, servidores ni consultas.
+/// </summary>
+public sealed record ConnectorsView(
+    bool PullEnabled,
+    Notice? DisabledReason,
+    int? PullIntervalMinutes,
+    IReadOnlyList<ConnectorConnectionView> Connections,
+    IReadOnlyList<ConnectorSourceView> Sources);
+
+public sealed record ConnectorConnectionView(string Name, string Provider);
+
+/// <summary>Una fuente leída de una base: de qué conexión, y si es una vista (<c>table</c>) o una consulta.</summary>
+public sealed record ConnectorSourceView(string Source, string FileName, string Connection, string Kind);
+
+/// <summary>El resultado de probar una conexión.</summary>
+public sealed record ConnectionTestView(string Name, string Provider, bool Ok, Notice? Error, long ElapsedMilliseconds);
+
+/// <summary>Una lectura de las bases: la carga, igual que la de archivos, y el detalle por fuente.</summary>
+public sealed record PullResultView(UploadResultView Upload, IReadOnlyList<SourcePullView> Sources);
+
+public sealed record SourcePullView(
+    string Source,
+    string FileName,
+    string Connection,
+    int Rows,
+    long Bytes,
+    long ElapsedMilliseconds,
+    Notice? Error);
 
 public sealed record ExpectedFileView(
     string Source,

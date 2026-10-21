@@ -1,6 +1,8 @@
 import type {
   CodeApplicationView,
   CodeView,
+  ConnectionTestView,
+  PullResultView,
   ExplainView,
   LeverSelection,
   DashboardView,
@@ -222,6 +224,21 @@ export const api = {
 
     return request<UploadResultView>('/api/ingestion/upload', { method: 'POST', body });
   },
+
+  /**
+   * Lee las fuentes de sus bases de datos y publica una carga (ADR 0037). Las conexiones y
+   * las consultas son configuración del despliegue: aquí solo viaja la etiqueta.
+   */
+  pullFromDatabases: (label: string) =>
+    request<PullResultView>('/api/ingestion/pull', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label: label.trim() || null }),
+    }),
+
+  /** Abre cada conexión a las bases de las fuentes y ejecuta la consulta mínima, sin leer datos. */
+  testConnections: () =>
+    request<readonly ConnectionTestView[]>('/api/ingestion/connectors/test', { method: 'POST' }),
 
   /**
    * Revisión del mapping antes de cargar. Viaja la primera línea de cada archivo —los

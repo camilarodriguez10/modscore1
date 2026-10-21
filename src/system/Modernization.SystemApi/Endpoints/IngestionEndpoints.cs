@@ -54,6 +54,78 @@ public static class IngestionEndpoints
 
         group.MapGet("/ingestion/mapping", GetMapping)
             .WithSummary("De dónde sale cada campo de la base: nombres aceptados y columna de la carga vigente.");
+
+        group.MapGet("/ingestion/connectors", GetConnectors)
+            .WithSummary("Fuentes que se leen de bases de datos, sin cadenas ni secretos. Exige alcance completo.");
+
+        group.MapPost("/ingestion/connectors/test", PostConnectorsTest)
+            .WithSummary("Abre cada conexión y ejecuta la consulta mínima, sin leer datos. Exige alcance completo.");
+
+        group.MapPost("/ingestion/pull", PostPull)
+            .WithSummary("Lee las fuentes de sus bases y publica una carga por el mismo camino que los archivos. Exige alcance completo.");
+    }
+
+    /// <summary>Qué fuentes se leen de bases. Describe la configuración: exige alcance completo.</summary>
+    private static IResult GetConnectors(
+        HttpContext context,
+        PortfolioScope scope,
+        ConnectorPullService connectors,
+        ILoggerFactory loggers)
+        => RequireFullScope(context, scope, loggers, "The database connectors describe whole uploads and require scope over the whole portfolio.")
+            ?? Results.Ok(connectors.Describe());
+
+    private static async Task<IResult> PostConnectorsTest(
+        HttpContext context,
+        PortfolioScope scope,
+        ConnectorPullService connectors,
+        ILoggerFactory loggers,
+        CancellationToken cancellationToken)
+    {
+        if (RequireFullScope(context, scope, loggers, "Testing the database connections requires scope over the whole portfolio, like publishing an upload.") is { } denied)
+        {
+            return denied;
+        }
+
+        var checks = await connectors.TestAsync(ForwardedUser.Read(context), cancellationToken).ConfigureAwait(false);
+
+        return Results.Ok(checks);
+    }
+
+    /// <summary>
+    /// Lee las bases y publica. Es una carga: mismo alcance, misma auditoría y el mismo
+    /// recálculo del portafolio después de publicar.
+    /// </summary>
+    private static async Task<IResult> PostPull(
+        PullRequest? request,
+        HttpContext context,
+        PortfolioScope scope,
+        ConnectorPullService connectors,
+        ILoggerFactory loggers,
+        CancellationToken cancellationToken)
+    {
+        if (RequireFullScope(context, scope, loggers, "Publishing an upload requires scope over the whole portfolio.") is { } denied)
+        {
+            return denied;
+        }
+
+        var result = await connectors
+            .PullAsync(ForwardedUser.Read(context), request?.Label, cancellationToken)
+            .ConfigureAwait(false);
+
+        return Results.Ok(PullResponse.From(result));
+    }
+
+    private static IResult? RequireFullScope(HttpContext context, PortfolioScope scope, ILoggerFactory loggers, string detail)
+    {
+        if (scope.IsFull)
+        {
+            return null;
+        }
+
+        var audit = SecurityAudit.CreateLogger(loggers);
+        SecurityAudit.ScopeDenied(audit, ForwardedUser.Read(context), SecurityAudit.Clean(context.Request.Path.Value));
+
+        return ApiProblem.Create(StatusCodes.Status403Forbidden, "insufficient-scope", "Insufficient scope", detail);
     }
 
     /// <summary>

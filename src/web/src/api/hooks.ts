@@ -99,6 +99,25 @@ export function useUpload() {
   });
 }
 
+/** Lee las fuentes de sus bases y publica; una versión aceptada cambia todo el portafolio. */
+export function usePull() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (label: string) => api.pullFromDatabases(label),
+    onSuccess: (result) => {
+      if (result.upload.accepted) {
+        queryClient.invalidateQueries();
+      }
+    },
+  });
+}
+
+/** Prueba las conexiones a las bases de las fuentes. No cambia nada. */
+export function useTestConnections() {
+  return useMutation({ mutationFn: () => api.testConnections() });
+}
+
 /** La pestaña Mapping. Una carga nueva la cambia: el cache se invalida al publicar. */
 export function useMappingCatalog(enabled = true) {
   return useQuery({

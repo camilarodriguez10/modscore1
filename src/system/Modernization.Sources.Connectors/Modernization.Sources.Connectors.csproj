@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Modernization.Sources.Connectors</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Los conectores viven en su propio proyecto: los drivers de base de datos no entran al
+         motor, al lector de archivos ni al generador dummy (ADR 0037). -->
+    <ProjectReference Include="..\Modernization.Sources\Modernization.Sources.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="Microsoft.Data.SqlClient.Extensions.Azure" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Oracle.ManagedDataAccess.Core" />
+    <PackageReference Include="System.Data.Odbc" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modernization.Sources.ContractTests" />
+  </ItemGroup>
+
+</Project>

@@ -20,5 +20,6 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Modernization.Sources.ContractTests" />
     <InternalsVisibleTo Include="Modernization.Sources.Database" />
+    <InternalsVisibleTo Include="Modernization.Sources.Connectors" />
   </ItemGroup>
 </Project>

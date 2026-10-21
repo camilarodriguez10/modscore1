@@ -88,6 +88,10 @@ spec:
 ---
 # system-api recibe trafico solo de channel-api, y no emite nada salvo DNS y mesh.
 #
+# Las fuentes leidas de bases de datos (ADR 0037) necesitan lo mismo: una regla de
+# egress por servidor, con su direccion y su puerto. La guia, en ingles, esta en
+# docs/database-connections.md.
+#
 # Con el adaptador de base de datos (Fase 09) hay que abrir exactamente su destino,
 # y solo ese. El motor concreto es RFC-07; cuando se confirme, esta politica se
 # agrega con su CIDR y su puerto reales:

@@ -42,7 +42,7 @@ está, qué se decidió, qué falta y qué se aprendió en el camino.
 | Dashboard ejecutivo | D1, D2 y D3 entregadas el 2026-09-18 (PLAN §8.10, [ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md), [ADR 0025](docs/adr/0025-las-definiciones-viajan-con-las-reglas.md)). La página de inicio (`/`): *Portfolio Health & Risk Intelligence*, con cinco indicadores, seis paneles y un detalle común; el inventario está en `/portfolio`. Currency Score = `Raw_Tech_Score` de CMT. Las 37 definiciones de las seis preguntas viajan con las reglas y se editan en *Rules → Portfolio analytics*; cada panel explica su cálculo y *Definitions* es el diccionario. Cinco filtros nuevos en todas las pantallas. Falta D4 (fuentes nuevas) |
 | Navegación | Desde el 2026-10-21 (ADR 0035): Dashboard, Portfolio, Data, Definitions y Rules. **Code y Roadmap apagadas** con `Features:Code` y `Features:PortfolioRoadmap` en la capa Channel (`ChannelFeatures`): la sesión trae `features`, la SPA arma la navegación con eso (`src/web/src/navigation.ts`), las rutas vuelven al dashboard y los endpoints responden 404. Las pruebas las encienden en `TwoLayerHost` y en `playwright.config.ts` |
 | Pantalla Code | C1 entregada el 2026-09-26 (PLAN §8.11, [ADR 0026](docs/adr/0026-el-analisis-de-codigo-llega-de-github-enterprise.md)). `/code`: componentes de cada repositorio contra su fin de vida (endoflife.date, foto versionada con 22 productos y 273 ciclos), bibliotecas con hallazgos, discrepancias con el Currency Score de CMT e índice de riesgo de código con detalle por aplicación. 15 parámetros nuevos (área `code`) editables desde el portal. **Repositorios de demostración** hasta integrar GitHub Enterprise (C2, GH-01 a GH-09) |
-| Pruebas | **1 044 .NET** (340 motor · 347 contratos · 357 API) · **97 unitarias** de la SPA · **59 de punta a punta** con Playwright (34 de flujo y 25 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-10-21 |
+| Pruebas | **1 117 .NET** (340 motor · 411 contratos · 366 API) · **97 unitarias** de la SPA · **61 de punta a punta** con Playwright (36 de flujo y 25 de accesibilidad con axe, en claro y oscuro) · ESLint sin errores. Todo en verde el 2026-10-21 |
 | Dependencias | Cero paquetes vulnerables (`dotnet list package --vulnerable`), `npm audit` limpio |
 | CI | GitHub Actions en verde desde la corrida #5 (`55cf36f`, 2026-09-15), que pasó los 7 jobs: backend, SPA, gitleaks, OSV, CodeQL C# y JS/TS, e imágenes con Trivy v0.74.0 y Checkov. CodeQL sin hallazgos altos. Tras acelerarlo, la corrida #6 (`148c6ce`) tardó 7 min 3 s en lugar de 9 min 54 s; CodeQL C# sigue marcando el total (6 min 58 s). Antes hubo que corregir el lint, CodeQL en repositorio privado (`upload: never`, `actions: read`), la versión de Trivy y el UID de los pods. Para acortarlo: gitleaks y OSV están en `seguridad.yml` y corren en cada push; `ci.yml` se salta los cambios que solo tocan documentación; CodeQL C# compila solo `src/` sin los analizadores de Roslyn; hay caché de NuGet, y el job de imágenes no espera a los demás |
 | ASVS L2 | 106 cumple · 11 parciales · 3 pendientes · 10 IdP o N/A. Los parciales dependen de un entorno real |
@@ -265,6 +265,36 @@ quedó en el ruleset y en el contrato. **El Operational Score se sigue leyendo d
 EAI/CMT, columna `Operational_Score`** (decisión del 2026-10-07; en origen sale de
 `MV_APP_MDRNZTN_DTL`). Una versión de reglas publicada antes no trae `criticalOnly`: hay que
 restaurar la de fábrica y publicarla.
+
+**Fuentes leídas desde bases de datos (2026-10-21, [ADR 0037](docs/adr/0037-fuentes-leidas-desde-bases-de-datos.md)).**
+
+- **Proyecto `src/system/Modernization.Sources.Connectors`**, que solo referencia la capa System:
+  - `ConnectorOptions`: la sección `Connectors`, apagada por defecto.
+  - `SecureConnectionFactory`: TLS verificado por motor y secretos desde archivos.
+  - `SourceQueries`: una sola sentencia `SELECT`/`WITH`, o un `Table` que es solo un
+    identificador.
+  - `ConnectorConfiguration`: valida la sección al arrancar.
+  - `CsvExtract`: CSV invariante con los topes de una carga.
+  - `DatabaseSourcePuller`: transacción de solo lectura que siempre se deshace; un
+    directorio temporal privado; publica por el mismo `ISnapshotPublisher` que los archivos
+    y no publica nada si una fuente falla.
+- **Capa System:**
+  - `ConnectorPullService` invalida, calienta y audita (eventos 4215, 4216 y 4217).
+  - `ConnectorSchedule` es la lectura periódica (`PullInterval`).
+  - Endpoints `GET /system/ingestion/connectors`, `POST /system/ingestion/connectors/test`
+    y `POST /system/ingestion/pull`, los tres con alcance completo.
+- **Capa Channel:**
+  - `POST /api/ingestion/pull` y `POST /api/ingestion/connectors/test`, con la política y el
+    límite de la carga.
+  - `IngestionView.Connectors`, que es null si está apagado o si quien mira no puede
+    publicar.
+- **SPA:** la tarjeta *Database sources* en Data y los avisos `connector.*`.
+- **Paquetes:**
+  - Microsoft.Data.SqlClient 7.1.1 (con Extensions.Azure), Npgsql 10.0.3,
+    Oracle.ManagedDataAccess.Core 23.26.301 y System.Data.Odbc 10.0.12;
+  - fijados `System.Security.Cryptography.Pkcs` 10.0.13 (la 9.0.18 es vulnerable) e
+    IdentityModel 8.22.0.
+- **Guía en inglés:** `docs/database-connections.md`.
 
 **Future plan detallado y el mismo plan que el what-if (2026-10-21, [ADR 0036](docs/adr/0036-future-plan-detallado-y-mismo-plan-que-el-what-if.md)).**
 Una sola búsqueda para el plan automático y el what-if: `WhatIfEngine.ReachTarget` (greedy

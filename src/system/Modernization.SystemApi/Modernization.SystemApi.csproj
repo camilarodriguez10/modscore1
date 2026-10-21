@@ -14,6 +14,7 @@
     <ProjectReference Include="..\..\shared\Modernization.Rules\Modernization.Rules.csproj" />
     <ProjectReference Include="..\..\shared\Modernization.Security\Modernization.Security.csproj" />
     <ProjectReference Include="..\Modernization.Sources\Modernization.Sources.csproj" />
+    <ProjectReference Include="..\Modernization.Sources.Connectors\Modernization.Sources.Connectors.csproj" />
     <ProjectReference Include="..\Modernization.Sources.Database\Modernization.Sources.Database.csproj" PrivateAssets="all" />
   </ItemGroup>
 </Project>

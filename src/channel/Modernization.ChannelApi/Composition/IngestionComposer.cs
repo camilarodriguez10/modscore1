@@ -20,17 +20,25 @@ public sealed class IngestionComposer(SystemApiClient system, ChannelPermissions
 {
     public async Task<IngestionView> ComposeAsync(ClaimsPrincipal user, CancellationToken cancellationToken = default)
     {
+        // Los conectores describen la configuración del despliegue: solo los ve quien puede
+        // publicar, que es quien puede usarlos. La capa System exige además alcance completo.
+        var canUpload = permissions.CanUpload(user);
+
         var capabilitiesTask = system.GetIngestionCapabilitiesAsync(cancellationToken);
         var expectedTask = system.GetExpectedFilesAsync(cancellationToken);
         var versionsTask = system.GetVersionsAsync(cancellationToken);
         var historyTask = system.GetPortfolioHistoryAsync(cancellationToken);
+        var connectorsTask = canUpload
+            ? system.GetConnectorsAsync(cancellationToken)
+            : Task.FromResult<ConnectorStatusResponse>(null!);
 
-        await Task.WhenAll(capabilitiesTask, expectedTask, versionsTask, historyTask).ConfigureAwait(false);
+        await Task.WhenAll(capabilitiesTask, expectedTask, versionsTask, historyTask, connectorsTask).ConfigureAwait(false);
 
         var capabilities = await capabilitiesTask.ConfigureAwait(false);
         var expected = await expectedTask.ConfigureAwait(false);
         var versions = await versionsTask.ConfigureAwait(false);
         var history = await historyTask.ConfigureAwait(false);
+        var connectors = await connectorsTask.ConfigureAwait(false);
 
         // El adaptador lo declara la capa System. Deducirlo de la primera version
         // deshabilitaba la carga justo cuando no hay ninguna: el sistema quedaba
@@ -40,7 +48,6 @@ public sealed class IngestionComposer(SystemApiClient system, ChannelPermissions
         // La pantalla no ofrece lo que el servidor va a negar: sin permiso, el
         // formulario no aparece y el motivo lo explica. La politica del endpoint
         // sigue siendo la que decide.
-        var canUpload = permissions.CanUpload(user);
         var uploadEnabled = capabilities.UploadEnabled && canUpload;
 
         Notice? disabledReason = null;
@@ -68,7 +75,56 @@ public sealed class IngestionComposer(SystemApiClient system, ChannelPermissions
             [.. versions.Select(ToVersion)],
             WithDeltas(history),
             ChannelLimits.UploadMaxFileBytes,
-            ChannelLimits.UploadMaxTotalBytes);
+            ChannelLimits.UploadMaxTotalBytes,
+            ToConnectors(connectors));
+    }
+
+    /// <summary>Prueba las conexiones a las bases de las fuentes, sin leer datos.</summary>
+    public async Task<IReadOnlyList<ConnectionTestView>> TestConnectorsAsync(CancellationToken cancellationToken = default)
+    {
+        var checks = await system.TestConnectorsAsync(cancellationToken).ConfigureAwait(false);
+
+        return [.. checks.Select(c => new ConnectionTestView(c.Name, c.Provider, c.Ok, c.Error, c.ElapsedMilliseconds))];
+    }
+
+    /// <summary>
+    /// Lee las fuentes de sus bases y publica. El veredicto es el de una carga, con el detalle
+    /// de cada fuente leída.
+    /// </summary>
+    public async Task<PullResultView> PullAsync(string? label, CancellationToken cancellationToken = default)
+    {
+        var result = await system.PullAsync(new PullRequest(label), cancellationToken).ConfigureAwait(false);
+        var upload = ToResult(result.Upload);
+
+        // Si una fuente no se pudo leer, no se publicó nada: el resumen lo dice así en lugar
+        // de hablar de archivos que nadie subió, y no se repite en la lista de errores.
+        if (!result.Upload.Accepted && result.Upload.Errors.FirstOrDefault(e => e.Code.StartsWith("connector.", StringComparison.Ordinal)) is { } connectorError)
+        {
+            upload = upload with
+            {
+                Summary = connectorError,
+                Errors = [.. upload.Errors.Where(e => !ReferenceEquals(e, connectorError))],
+            };
+        }
+
+        return new PullResultView(
+            upload,
+            [.. result.Sources.Select(s => new SourcePullView(s.Source, s.FileName, s.Connection, s.Rows, s.Bytes, s.ElapsedMilliseconds, s.Error))]);
+    }
+
+    private static ConnectorsView? ToConnectors(ConnectorStatusResponse? connectors)
+    {
+        if (connectors is not { Enabled: true })
+        {
+            return null;
+        }
+
+        return new ConnectorsView(
+            connectors.PullAvailable,
+            connectors.PullAvailable ? null : Notice.Of(NoticeCodes.ConnectorDisabled),
+            connectors.PullIntervalMinutes,
+            [.. connectors.Connections.Select(c => new ConnectorConnectionView(c.Name, c.Provider))],
+            [.. connectors.Sources.Select(s => new ConnectorSourceView(s.Source, s.FileName, s.Connection, s.Kind))]);
     }
 
     public async Task<IReadOnlyList<HistoryPointView>> ComposeHistoryAsync(

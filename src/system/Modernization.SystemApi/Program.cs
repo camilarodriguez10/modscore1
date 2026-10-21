@@ -4,6 +4,7 @@ using Modernization.Domain.Rules;
 using Modernization.Domain.Sources;
 using Modernization.Insights;
 using Modernization.Security;
+using Modernization.Sources.Connectors;
 using Modernization.Sources.Dummy;
 using Modernization.Sources.Database;
 using Modernization.Sources.Files;
@@ -227,6 +228,46 @@ builder.Services.AddSingleton(sp => new IngestionService(
     sp.GetService<ISnapshotPublisher>(),
     sp.GetRequiredService<SourceSchemaCatalog>(),
     sp.GetRequiredService<TimeProvider>()));
+
+// ---------------------------------------------------------------- conectores
+//
+// Fuentes leídas directamente de las bases de la organización, sin archivos (ADR 0037).
+// Apagado por defecto. Una configuración que no puede funcionar detiene el arranque con
+// todos sus problemas; la guía está en docs/database-connections.md.
+
+var connectorOptions = builder.Configuration.GetSection(ConnectorOptions.SectionName).Get<ConnectorOptions>()
+    ?? new ConnectorOptions();
+var connectorProblems = ConnectorConfiguration.Validate(connectorOptions, SourceSchemaCatalog.Default).ToList();
+
+if (connectorOptions.Enabled && provider == "Dummy")
+{
+    connectorProblems.Add("Connectors need a data adapter that accepts uploads: set DataSource:Provider to File or Database.");
+}
+
+if (connectorProblems.Count > 0)
+{
+    throw new InvalidOperationException(
+        "La seccion 'Connectors' no sirve:" + Environment.NewLine
+        + string.Join(Environment.NewLine, connectorProblems.Select(p => " - " + p)));
+}
+
+builder.Services.AddSingleton(connectorOptions);
+builder.Services.AddSingleton<IConnectorConnectionFactory>(_ => new SecureConnectionFactory(
+    builder.Environment.IsDevelopment(),
+    connectorOptions.ConnectTimeoutSeconds));
+builder.Services.AddSingleton<DatabaseSourcePuller>();
+builder.Services.AddSingleton(sp => new ConnectorPullService(
+    sp.GetRequiredService<DatabaseSourcePuller>(),
+    sp.GetService<ISnapshotPublisher>(),
+    sp.GetRequiredService<PortfolioService>(),
+    sp.GetRequiredService<PortfolioWarmup>(),
+    sp.GetRequiredService<TimeProvider>(),
+    sp.GetRequiredService<ILoggerFactory>()));
+
+if (connectorOptions.Enabled && connectorOptions.PullInterval is not null)
+{
+    builder.Services.AddHostedService<ConnectorSchedule>();
+}
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {

@@ -355,6 +355,52 @@ public sealed record MappingFieldResponse(
 /// </summary>
 public sealed record IngestionCapabilitiesResponse(string Provider, bool UploadEnabled);
 
+/// <summary>
+/// Las fuentes que se leen directamente de bases de datos (ADR 0037). Nunca lleva cadenas de
+/// conexión, servidores ni consultas: eso queda en la configuración del despliegue.
+/// </summary>
+/// <param name="Enabled">True si la sección <c>Connectors</c> está encendida y tiene fuentes.</param>
+/// <param name="PullAvailable">True si además el adaptador activo admite cargas.</param>
+/// <param name="PullIntervalMinutes">Cada cuántos minutos se leen solas; null si solo a pedido.</param>
+/// <param name="Connections">Las conexiones que usa alguna fuente.</param>
+/// <param name="Sources">Las fuentes que se leen, en el orden del catálogo.</param>
+public sealed record ConnectorStatusResponse(
+    bool Enabled,
+    bool PullAvailable,
+    int? PullIntervalMinutes,
+    IReadOnlyList<ConnectorConnectionResponse> Connections,
+    IReadOnlyList<ConnectorSourceResponse> Sources);
+
+/// <summary>Una conexión configurada: su nombre y su motor.</summary>
+public sealed record ConnectorConnectionResponse(string Name, string Provider);
+
+/// <summary>Una fuente que se lee de una base: de qué conexión, y si es vista o consulta.</summary>
+public sealed record ConnectorSourceResponse(string Source, string FileName, string Connection, string Kind);
+
+/// <summary>El resultado de probar una conexión: abre, ejecuta la consulta mínima y deshace.</summary>
+public sealed record ConnectionTestResponse(string Name, string Provider, bool Ok, Notice? Error, long ElapsedMilliseconds);
+
+/// <summary>Pedido de lectura de las bases: solo la etiqueta de la carga, opcional.</summary>
+public sealed record PullRequest(string? Label);
+
+/// <summary>Una lectura de las bases: la carga publicada (o rechazada) y el detalle por fuente.</summary>
+public sealed record PullResponse(UploadResponse Upload, IReadOnlyList<SourcePullResponse> Sources)
+{
+    public static PullResponse From(Sources.Connectors.PullResult result) => new(
+        UploadResponse.From(result.Outcome),
+        [.. result.Sources.Select(s => new SourcePullResponse(s.Source, s.FileName, s.Connection, s.Rows, s.Bytes, s.ElapsedMilliseconds, s.Error))]);
+}
+
+/// <summary>Lo que dejó la lectura de una fuente.</summary>
+public sealed record SourcePullResponse(
+    string Source,
+    string FileName,
+    string Connection,
+    int Rows,
+    long Bytes,
+    long ElapsedMilliseconds,
+    Notice? Error);
+
 /// <summary>Un archivo que la carga espera, con sus columnas obligatorias.</summary>
 public sealed record ExpectedFileResponse(
     string Source,

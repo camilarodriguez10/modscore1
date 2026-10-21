@@ -386,7 +386,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-1 044 pruebas .NET: 340 del motor, 347 de contratos y 357 de API. Las dos que importan más
+1 117 pruebas .NET: 340 del motor, 411 de contratos y 366 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **Captura del reporte v1.3 del 2026-10-07 = 66,12:** métrica por métrica, con OSS y Raw Tech
@@ -401,7 +401,7 @@ TypeScript difieren.
 
 ```bash
 npm --prefix src/web test          # 97 pruebas unitarias (Vitest)
-npm --prefix src/web run test:e2e  # 59 escenarios: 34 de flujo y 25 de accesibilidad (axe)
+npm --prefix src/web run test:e2e  # 61 escenarios: 36 de flujo y 25 de accesibilidad (axe)
 ```
 
 Las de punta a punta usan el Microsoft Edge instalado (no descargan navegadores) y levantan
@@ -522,6 +522,28 @@ pasos en orden. Cada paso dice:
 Es exactamente el plan que da el **What-If Lab** con objetivo 90, y *Open in What-If* lo carga
 allí con las mismas palancas y cantidades
 ([ADR 0036](docs/adr/0036-future-plan-detallado-y-mismo-plan-que-el-what-if.md)).
+
+## Fuentes leídas desde bases de datos
+
+Además de subir archivos, la capa System puede leer las ocho fuentes directamente de SQL
+Server, PostgreSQL, Oracle o cualquier driver ODBC
+([ADR 0037](docs/adr/0037-fuentes-leidas-desde-bases-de-datos.md)). Viene apagado. Se
+configura solo en el despliegue: la sección `Connectors` de la capa System, con los
+secretos en archivos montados desde el gestor de secretos. Al encenderlo, la pantalla
+**Data** muestra *Database sources*, con dos botones:
+
+- *Test connections* abre cada conexión sin leer datos;
+- *Pull from databases* publica una carga por la misma validación que los archivos.
+
+Reglas que impone la aplicación:
+
+- TLS verificado en todas las conexiones;
+- transacción de solo lectura que siempre se deshace;
+- consulta validada por forma;
+- si una fuente falla, no se publica nada.
+
+Dónde se configura, las formas de conexión de cada motor y la solución de problemas están
+en la guía en inglés [docs/database-connections.md](docs/database-connections.md).
 
 ## Pantallas retiradas y apagadas
 

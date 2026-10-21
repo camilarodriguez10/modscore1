@@ -520,6 +520,52 @@ export interface IngestionView {
   portfolioHistory: readonly HistoryPointView[];
   maxFileBytes: number;
   maxTotalBytes: number;
+  /** Las fuentes que se leen de bases (ADR 0037); null si está apagado o si no se puede publicar. */
+  connectors: ConnectorsView | null;
+}
+
+/** Las fuentes que se leen directamente de bases de datos, sin cadenas ni secretos. */
+export interface ConnectorsView {
+  pullEnabled: boolean;
+  disabledReason: Notice | null;
+  pullIntervalMinutes: number | null;
+  connections: readonly ConnectorConnectionView[];
+  sources: readonly ConnectorSourceView[];
+}
+
+export interface ConnectorConnectionView {
+  name: string;
+  provider: string;
+}
+
+export interface ConnectorSourceView {
+  source: string;
+  fileName: string;
+  connection: string;
+  kind: string;
+}
+
+export interface ConnectionTestView {
+  name: string;
+  provider: string;
+  ok: boolean;
+  error: Notice | null;
+  elapsedMilliseconds: number;
+}
+
+export interface PullResultView {
+  upload: UploadResultView;
+  sources: readonly SourcePullView[];
+}
+
+export interface SourcePullView {
+  source: string;
+  fileName: string;
+  connection: string;
+  rows: number;
+  bytes: number;
+  elapsedMilliseconds: number;
+  error: Notice | null;
 }
 
 export interface ExpectedFileView {

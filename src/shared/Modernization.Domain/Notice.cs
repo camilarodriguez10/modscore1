@@ -170,6 +170,24 @@ public static class NoticeCodes
     public const string UploadRejected = "upload.rejected";
     public const string UploadRejectedUnidentified = "upload.rejectedUnidentified";
 
+    // ------------------------------- fuentes leídas de bases de datos (ADR 0037)
+    public const string ConnectorDisabled = "connector.disabled";
+    public const string ConnectorDisabledPermission = "connector.disabledPermission";
+    public const string ConnectorBusy = "connector.busy";
+    public const string ConnectorProviderUnknown = "connector.providerUnknown";
+    public const string ConnectorTlsRequired = "connector.tlsRequired";
+    public const string ConnectorSecretMissing = "connector.secretMissing";
+    public const string ConnectorConnectionStringInvalid = "connector.connectionStringInvalid";
+    public const string ConnectorAuthenticationInteractive = "connector.authenticationInteractive";
+    public const string ConnectorQueryInvalid = "connector.queryInvalid";
+    public const string ConnectorConnectFailed = "connector.connectFailed";
+    public const string ConnectorQueryFailed = "connector.queryFailed";
+    public const string ConnectorTimeout = "connector.timeout";
+    public const string ConnectorTooLarge = "connector.tooLarge";
+    public const string ConnectorColumnUnnamed = "connector.columnUnnamed";
+    public const string ConnectorColumnUnsupported = "connector.columnUnsupported";
+    public const string ConnectorPullFailed = "connector.pullFailed";
+
     public const string FileTooLarge = "file.tooLarge";
     public const string FileIdentical = "file.identical";
     public const string FileNoName = "file.noName";

@@ -19,6 +19,12 @@ public sealed class WhatIfEngine
     /// <summary>Tope de palancas por escenario. Evita peticiones abusivas.</summary>
     public const int MaxLeversPerScenario = 20;
 
+    /// <summary>
+    /// Tope de productos que un plan mueve con una palanca de cantidad. Los conteos reales
+    /// pasan de cien (el caso del reporte tiene 520 por modernizar); esto solo acota la búsqueda.
+    /// </summary>
+    public const int MaxPlannedProducts = 100_000;
+
     private readonly ScoringEngine _engine;
     private readonly LeverCatalog _levers;
 
@@ -118,59 +124,22 @@ public sealed class WhatIfEngine
     }
 
     /// <summary>
-    /// Un plan hacia un score objetivo, para muchas aplicaciones a la vez: las palancas de
-    /// mayor efecto individual, una tras otra, hasta que el motor confirma el objetivo. Si no
-    /// se alcanza, quedan todas las que suman. Ya en el objetivo, ninguna.
+    /// El plan hacia un score objetivo. Es el mismo para el laboratorio y para el plan
+    /// automático de cada aplicación (2026-10-21): pedir 90 en el what-if da exactamente el
+    /// <i>future plan</i>.
     /// </summary>
     /// <remarks>
-    /// Es <see cref="ReachTarget"/> sin la poda: unas cinco veces mas barato, a cambio de que a
-    /// veces sobre una palanca. Sirve para el plan automatico de todo un portafolio; la busqueda
-    /// del laboratorio, que mira una aplicacion, sigue siendo <see cref="ReachTarget"/>.
-    /// </remarks>
-    public ScenarioResult PlanToTarget(ApplicationSnapshot snapshot, decimal targetScore)
-    {
-        ArgumentNullException.ThrowIfNull(snapshot);
-
-        if (targetScore is < 20m or > 100m)
-        {
-            throw new WhatIfException(
-                "invalid-target",
-                "The target score must be between 20 and 100.");
-        }
-
-        var catalog = EvaluateAllLevers(snapshot);
-
-        if (catalog.Baseline.Score >= targetScore)
-        {
-            return Evaluate(snapshot, []);
-        }
-
-        var chosen = new List<LeverSelection>();
-        var projected = snapshot;
-
-        foreach (var effect in catalog.Levers.Where(e => e.Delta > 0).OrderByDescending(e => e.Delta))
-        {
-            var lever = _levers.Require(effect.Key);
-            chosen.Add(new LeverSelection(effect.Key, effect.Parameter));
-            projected = lever.Apply(projected, effect.Parameter);
-
-            if (_engine.Calculate(projected).Score >= targetScore)
-            {
-                break;
-            }
-        }
-
-        return Evaluate(snapshot, chosen);
-    }
-
-    /// <summary>
-    /// Busca el conjunto mas pequeno de palancas que alcanza un score objetivo.
-    /// </summary>
-    /// <remarks>
-    /// Greedy sobre la ganancia individual, verificando el resultado real en cada
-    /// paso — el greedy elige el orden, el motor decide si basta. Despues poda las
-    /// palancas que resultaron redundantes: al recalcular en conjunto, una palanca
-    /// puede dejar de hacer falta.
+    /// <list type="number">
+    /// <item>Cada palanca que suma, sola y a su máximo —las de cantidad, con todos los
+    /// productos que pueden mover—, de mayor a menor ganancia.</item>
+    /// <item>Greedy verificado con el motor: se agregan en ese orden hasta alcanzar el
+    /// objetivo. El greedy elige el orden; el motor decide si basta.</item>
+    /// <item>Poda: al recalcular en conjunto una palanca puede dejar de hacer falta, y se
+    /// quita.</item>
+    /// <item>Las de cantidad bajan a la mínima que sostiene el objetivo.</item>
+    /// </list>
+    /// Si ni con todas se alcanza, el plan son todas las que suman, a su máximo: el mejor
+    /// resultado posible, y el mismo en las dos pantallas.
     /// </remarks>
     public TargetResult ReachTarget(ApplicationSnapshot snapshot, decimal targetScore)
     {
@@ -200,33 +169,32 @@ public sealed class WhatIfEngine
             };
         }
 
-        if (ceiling.Score < targetScore)
+        var candidates = Candidates(snapshot, baseline);
+        var chosen = new List<LeverSelection>();
+        var reached = false;
+
+        foreach (var candidate in candidates)
         {
+            chosen.Add(candidate);
+
+            if (Reaches(snapshot, chosen, targetScore))
+            {
+                reached = true;
+                break;
+            }
+        }
+
+        if (!reached)
+        {
+            // Ni con todas: el mejor plan posible son todas las que suman, a su máximo.
             return new TargetResult
             {
                 Target = targetScore,
                 Baseline = baseline,
                 Ceiling = ceiling,
                 IsReachable = false,
-                Result = null,
+                Result = Evaluate(snapshot, candidates),
             };
-        }
-
-        var candidates = EvaluateAllLevers(snapshot).Levers
-            .Where(e => e.Delta > 0)
-            .Select(e => new LeverSelection(e.Key, e.Parameter))
-            .ToList();
-
-        var chosen = new List<LeverSelection>();
-
-        foreach (var candidate in candidates)
-        {
-            chosen.Add(candidate);
-
-            if (Evaluate(snapshot, chosen).Projected.Score >= targetScore)
-            {
-                break;
-            }
         }
 
         // Poda: quitar cada palanca y quedarse sin ella si el objetivo se mantiene.
@@ -234,10 +202,40 @@ public sealed class WhatIfEngine
         {
             var without = chosen.Where((_, index) => index != i).ToList();
 
-            if (without.Count > 0 && Evaluate(snapshot, without).Projected.Score >= targetScore)
+            if (without.Count > 0 && Reaches(snapshot, without, targetScore))
             {
                 chosen = without;
             }
+        }
+
+        // Las de cantidad, a la mínima que sostiene el objetivo: «modernizar 2 productos» es
+        // una acción; «todos los que se pueda» no siempre hace falta.
+        for (var i = 0; i < chosen.Count; i++)
+        {
+            if (chosen[i].Parameter is not { } most || most <= 1)
+            {
+                continue;
+            }
+
+            var (low, high) = (1, most);
+
+            while (low < high)
+            {
+                var middle = (low + high) / 2;
+                var trial = chosen.ToList();
+                trial[i] = chosen[i] with { Parameter = middle };
+
+                if (Reaches(snapshot, trial, targetScore))
+                {
+                    high = middle;
+                }
+                else
+                {
+                    low = middle + 1;
+                }
+            }
+
+            chosen[i] = chosen[i] with { Parameter = low };
         }
 
         return new TargetResult
@@ -248,6 +246,51 @@ public sealed class WhatIfEngine
             IsReachable = true,
             Result = Evaluate(snapshot, chosen),
         };
+    }
+
+    /// <summary>
+    /// Las palancas que suman solas, a su máximo, de mayor a menor ganancia; a igual
+    /// ganancia, por clave, para que el plan sea siempre el mismo.
+    /// </summary>
+    private List<LeverSelection> Candidates(ApplicationSnapshot snapshot, ScoreBreakdown baseline)
+    {
+        var scored = new List<(LeverSelection Selection, decimal Delta)>();
+
+        foreach (var lever in _levers.Levers)
+        {
+            if (lever.IsAlreadyAchieved(snapshot))
+            {
+                continue;
+            }
+
+            int? parameter = lever.IsParameterized
+                ? Math.Clamp(lever.Capacity?.Invoke(snapshot) ?? lever.DefaultParameter ?? 1, 1, MaxPlannedProducts)
+                : null;
+
+            var delta = _engine.Calculate(lever.Apply(snapshot, parameter)).Score - baseline.Score;
+
+            if (delta > 0m)
+            {
+                scored.Add((new LeverSelection(lever.Key, parameter), delta));
+            }
+        }
+
+        return [.. scored
+            .OrderByDescending(c => c.Delta)
+            .ThenBy(c => c.Selection.Key, StringComparer.Ordinal)
+            .Select(c => c.Selection)];
+    }
+
+    private bool Reaches(ApplicationSnapshot snapshot, IReadOnlyList<LeverSelection> selections, decimal targetScore)
+    {
+        var projected = snapshot;
+
+        foreach (var selection in selections)
+        {
+            projected = _levers.Require(selection.Key).Apply(projected, selection.Parameter);
+        }
+
+        return _engine.Calculate(projected).Score >= targetScore;
     }
 
     // -----------------------------------------------------------------------

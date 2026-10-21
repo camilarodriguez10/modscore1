@@ -47,6 +47,13 @@ public sealed record ApplicationRoadmapPlan
     public decimal? AutomaticTarget { get; init; }
 
     public bool IsAutomatic => AutomaticTarget is not null;
+
+    /// <summary>
+    /// El plan hacia el objetivo del catálogo (90), tenga o no roadmap de MAPS: el mismo que da
+    /// el what-if a ese objetivo. Null si la aplicación se va a eliminar o si los planes
+    /// automáticos están apagados.
+    /// </summary>
+    public TargetResult? TargetPlan { get; init; }
 }
 
 /// <summary>Hito con sus fechas ya calculadas desde el inicio del plan.</summary>

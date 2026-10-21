@@ -99,7 +99,10 @@ public sealed record TargetResult
     /// <summary>False cuando ni aplicando todas las palancas se alcanza el objetivo.</summary>
     public required bool IsReachable { get; init; }
 
-    /// <summary>Null si el objetivo ya estaba alcanzado o si es inalcanzable.</summary>
+    /// <summary>
+    /// El plan: las palancas que alcanzan el objetivo, o —si es inalcanzable— todas las que
+    /// suman, que es lo más cerca que se puede llegar. Null si el objetivo ya estaba alcanzado.
+    /// </summary>
     public required ScenarioResult? Result { get; init; }
 
     public bool IsAlreadyMet => Baseline.Score >= Target;

@@ -224,13 +224,65 @@ public sealed class RoadmapTests
     {
         var engine = new ScoringEngine(RulesetCatalog.Default);
         var whatIf = new WhatIfEngine(engine);
-        var snapshot = GoldenFixtures.Eai14381() with { Disposition = ApplicationDisposition.Invest, Roadmap = null };
+        // Con los compuestos ya calculados, 100 no se alcanza.
+        var snapshot = GoldenFixtures.Eai10969() with { Disposition = ApplicationDisposition.Invest, Roadmap = null };
 
-        var plan = whatIf.PlanToTarget(snapshot, 100m);
+        var plan = whatIf.ReachTarget(snapshot, 100m);
         var positive = whatIf.EvaluateAllLevers(snapshot).Levers.Where(e => e.Delta > 0).Select(e => e.Key).Order();
 
-        Assert.True(plan.Projected.Score < 100m);
-        Assert.Equal(positive, plan.Applied.Select(a => a.Key).Order());
+        Assert.False(plan.IsReachable);
+        Assert.True(plan.Result!.Projected.Score < 100m);
+        Assert.Equal(positive, plan.Result.Applied.Select(a => a.Key).Order());
+    }
+
+    /// <summary>
+    /// El pedido del 2026-10-21: el future plan de una aplicación es exactamente lo que da el
+    /// what-if al mismo objetivo —las mismas palancas, en el mismo orden, con las mismas
+    /// cantidades y el mismo score—, tenga o no roadmap de MAPS.
+    /// </summary>
+    [Theory]
+    [InlineData("14381", null)]
+    [InlineData("14381", RoadmapType.Refactor)]
+    [InlineData("10969", null)]
+    [InlineData("report", null)]
+    public void TheFuturePlanIsExactlyTheWhatIfPlanToTheSameTarget(string fixture, RoadmapType? roadmap)
+    {
+        var snapshot = (fixture switch
+        {
+            "14381" => GoldenFixtures.Eai14381(),
+            "10969" => GoldenFixtures.Eai10969(),
+            _ => GoldenFixtures.ReportCapture20261007(),
+        }) with { Disposition = ApplicationDisposition.Invest, Roadmap = roadmap };
+
+        var engine = new ScoringEngine(RulesetCatalog.Default);
+        var labResult = new WhatIfEngine(engine).ReachTarget(snapshot, 90m);
+        var plan = _planner.Build(snapshot, Start);
+
+        Assert.NotNull(plan.TargetPlan);
+        Assert.Equal(labResult.IsReachable, plan.TargetPlan.IsReachable);
+        Assert.Equal(labResult.Result?.Applied, plan.TargetPlan.Result?.Applied);
+        Assert.Equal(labResult.Result?.Projected.Score, plan.TargetPlan.Result?.Projected.Score);
+
+        if (roadmap is null)
+        {
+            Assert.Equal(labResult.Result?.Projected.Score ?? labResult.Baseline.Score, plan.Projected?.Projected.Score);
+        }
+    }
+
+    [Fact]
+    public void PlansCanBePreparedForAWholePortfolioAhead()
+    {
+        var applications = new[]
+        {
+            GoldenFixtures.Eai14381() with { Disposition = ApplicationDisposition.Invest, Roadmap = null },
+            GoldenFixtures.Eai10969() with { Disposition = ApplicationDisposition.Eliminate, Roadmap = null },
+        };
+
+        var prepared = _planner.Prepare(applications);
+
+        Assert.Equal(1, prepared);
+        Assert.Same(_planner.TargetPlan(applications[0]), _planner.Build(applications[0], Start).TargetPlan);
+        Assert.Null(_planner.TargetPlan(applications[1]));
     }
 
     [Fact]

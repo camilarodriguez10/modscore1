@@ -228,7 +228,8 @@ public sealed record WhatIfLabView(
     IReadOnlyList<LeverView> QuickWins,
     IReadOnlyList<LeverView> Actionable,
     IReadOnlyList<LeverView> AlreadyAchieved,
-    IReadOnlyList<LeverView> NotActionable);
+    IReadOnlyList<LeverView> NotActionable,
+    decimal? AutomaticTarget);
 
 public sealed record LeverView(
     string Key,
@@ -300,7 +301,45 @@ public sealed record RoadmapPlanView(
     DateOnly StartDate,
     DateOnly? CompletionDate,
     int TotalWeeks,
-    Notice Outlook);
+    Notice Outlook,
+    ActionPlanView? ActionPlan);
+
+/// <summary>
+/// El future plan paso por paso hacia el objetivo del catálogo (90): el mismo plan que da el
+/// what-if a ese objetivo. Null si la aplicación se va a eliminar o si los planes automáticos
+/// están apagados.
+/// </summary>
+public sealed record ActionPlanView(
+    decimal Target,
+    bool IsReachable,
+    bool IsAlreadyMet,
+    decimal BaselineScore,
+    decimal ProjectedScore,
+    string ProjectedBand,
+    decimal CeilingScore,
+    IReadOnlyList<ActionStepView> Steps);
+
+/// <summary>
+/// Un paso del plan: qué métrica mueve, desde qué valor hasta cuál, quién lo hace, cuántos
+/// puntos suma después de los anteriores y las acciones concretas con su evidencia.
+/// </summary>
+public sealed record ActionStepView(
+    int Order,
+    string LeverKey,
+    string LeverName,
+    string PillarKey,
+    string MetricKey,
+    string MetricName,
+    string Owner,
+    int? Parameter,
+    Notice From,
+    Notice To,
+    decimal? MappedFrom,
+    decimal? MappedTo,
+    decimal WeightAdded,
+    decimal Points,
+    decimal ScoreAfter,
+    IReadOnlyList<Notice> Actions);
 
 public sealed record MilestoneView(
     int Order,

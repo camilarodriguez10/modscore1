@@ -244,9 +244,69 @@ public sealed class WhatIfTests
         // 100 − 10 − 10 + 7,572 + 8,837 = 96,409 sobre 100 => 97,13
         Assert.Equal(97.13m, catalog.Ceiling.Score);
 
+        // Inalcanzable: el plan son todas las palancas que suman, lo más cerca que se llega.
         var result = _whatIf.ReachTarget(GoldenFixtures.Eai10969(), 100m);
         Assert.False(result.IsReachable);
-        Assert.Null(result.Result);
+        Assert.NotNull(result.Result);
+        Assert.True(result.Result.Projected.Score > result.Baseline.Score);
+        Assert.True(result.Result.Projected.Score <= result.Ceiling.Score);
+        Assert.DoesNotContain(result.Result.Applied, a => a.Key is "archValue.modernize" or "productStrategy.invest");
+    }
+
+    /// <summary>
+    /// Una palanca de cantidad entra al plan con la cantidad mínima que sostiene el objetivo:
+    /// con un producto menos, el plan ya no alcanza (2026-10-21).
+    /// </summary>
+    [Fact]
+    public void AProductLeverMovesTheFewestProductsThatReachTheTarget()
+    {
+        // La captura del reporte —415 productos heritage y 105 no aprobados por modernizar—
+        // con todo lo demás ya en su mejor nivel: solo los productos mueven el score.
+        var snapshot = GoldenFixtures.ReportCapture20261007() with
+        {
+            KennaScore = 0,
+            ScaFlaws = new ScaFlawCounts { Critical = 0, High = 0, Medium = 0, Low = 0 },
+            UtilizesMfa = true,
+            OpenSourceScore = 100m,
+            RawTechScore = 100m,
+            TechDebtScore = 0m,
+            OperationalScore = 100m,
+            Monitoring = new MonitoringCapabilities { ElasticAgent = true },
+            ProductStrategy = new ProductStrategy { ProvidedValue = 100m },
+        };
+        var baseline = _engine.Calculate(snapshot).Score;
+        var allProducts = _whatIf.Evaluate(snapshot, [new LeverSelection("archValue.modernize", 520)]).Projected.Score;
+        var target = Math.Round((baseline + allProducts) / 2m, 2);
+
+        var result = _whatIf.ReachTarget(snapshot, target);
+
+        Assert.True(result.IsReachable);
+        Assert.NotNull(result.Result);
+
+        var applied = result.Result.Applied.Select(a => new LeverSelection(a.Key, a.Parameter)).ToList();
+        var products = Assert.Single(applied, a => a.Key == "archValue.modernize");
+        Assert.InRange(products.Parameter!.Value, 2, 519);
+
+        var oneLess = applied.Select(a => a.Key == products.Key ? a with { Parameter = a.Parameter - 1 } : a).ToList();
+        Assert.True(_whatIf.Evaluate(snapshot, oneLess).Projected.Score < target);
+        Assert.True(_whatIf.Evaluate(snapshot, applied).Projected.Score >= target);
+    }
+
+    /// <summary>
+    /// El plan es determinista: la misma aplicación y el mismo objetivo dan siempre las mismas
+    /// palancas, en el mismo orden y con las mismas cantidades. Es lo que permite que el
+    /// future plan y el what-if coincidan.
+    /// </summary>
+    [Fact]
+    public void TheSameTargetAlwaysGivesTheSamePlan()
+    {
+        var snapshot = GoldenFixtures.ReportCapture20261007();
+
+        var first = _whatIf.ReachTarget(snapshot, 90m).Result!;
+        var second = new WhatIfEngine(new ScoringEngine(RulesetCatalog.Default)).ReachTarget(snapshot, 90m).Result!;
+
+        Assert.Equal(first.Applied, second.Applied);
+        Assert.Equal(first.Projected.Score, second.Projected.Score);
     }
 
     [Theory]

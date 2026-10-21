@@ -116,18 +116,19 @@ public sealed class DummyPortfolio
 
     private static readonly string[] ApiTypes = ["APIM", "APIM", "APIC", "SOAP", "DataPower/SOAP Libraries"];
 
+    // En ingles, como los exporta Veracode: llegan tal cual al future plan (2026-10-21).
     private static readonly (string Library, string Vendor, string Cve, decimal Cvss, string Name)[] Vulnerabilities =
     [
-        ("jackson-databind", "FasterXML", "CVE-2018-7489", 9.8m, "Deserializacion insegura"),
-        ("log4j-core", "Apache", "CVE-2021-44228", 10.0m, "Ejecucion remota de codigo via JNDI"),
-        ("spring-web", "VMware", "CVE-2024-22243", 7.5m, "Redireccion abierta"),
-        ("tomcat-embed-core", "Apache", "CVE-2025-24813", 9.8m, "Deserializacion en sesion persistente"),
-        ("commons-io", "Apache", "CVE-2024-47554", 7.5m, "Denegacion de servicio por consumo de CPU"),
-        ("struts2-core", "Apache", "CVE-2023-50164", 9.8m, "Path traversal en carga de archivos"),
-        ("junit4", "JUnit", "CVE-2020-15250", 5.5m, "Exposicion de informacion en directorio temporal"),
-        ("snakeyaml", "SnakeYAML", "CVE-2022-1471", 8.3m, "Deserializacion insegura de YAML"),
-        ("netty-codec-http", "Netty", "CVE-2025-24970", 7.5m, "Denegacion de servicio en handshake TLS"),
-        ("okhttp", "Square", "CVE-2023-3635", 7.5m, "Desbordamiento en GzipSource"),
+        ("jackson-databind", "FasterXML", "CVE-2018-7489", 9.8m, "Insecure deserialization"),
+        ("log4j-core", "Apache", "CVE-2021-44228", 10.0m, "Remote code execution via JNDI lookup"),
+        ("spring-web", "VMware", "CVE-2024-22243", 7.5m, "Open redirect"),
+        ("tomcat-embed-core", "Apache", "CVE-2025-24813", 9.8m, "Deserialization of persistent sessions"),
+        ("commons-io", "Apache", "CVE-2024-47554", 7.5m, "Denial of service through CPU exhaustion"),
+        ("struts2-core", "Apache", "CVE-2023-50164", 9.8m, "Path traversal in file upload"),
+        ("junit4", "JUnit", "CVE-2020-15250", 5.5m, "Information exposure in the temporary directory"),
+        ("snakeyaml", "SnakeYAML", "CVE-2022-1471", 8.3m, "Unsafe YAML deserialization"),
+        ("netty-codec-http", "Netty", "CVE-2025-24970", 7.5m, "Denial of service in the TLS handshake"),
+        ("okhttp", "Square", "CVE-2023-3635", 7.5m, "Buffer overflow in GzipSource"),
     ];
 
     private static readonly string[] Severities = ["1-Critical", "2-High", "3-Medium", "4-Low"];

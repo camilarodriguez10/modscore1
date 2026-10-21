@@ -84,6 +84,13 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
     {
         await GetAllScoresAsync(PortfolioScope.Full, cancellationToken).ConfigureAwait(false);
         await GetPortfolioHistoryAsync(PortfolioScope.Full, cancellationToken).ConfigureAwait(false);
+
+        // El future plan de cada aplicación se calcula al cargar los datos, no cuando alguien
+        // lo abre (2026-10-21). Queda guardado por aplicación y reglas: la pasada siguiente
+        // cuesta una búsqueda en el cache por aplicación.
+        var model = await rules.GetCurrentAsync(cancellationToken).ConfigureAwait(false);
+        var snapshot = await GetSnapshotAsync(PortfolioScope.Full, cancellationToken).ConfigureAwait(false);
+        model.Planner.Prepare(snapshot.Applications, cancellationToken);
     }
 
     /// <summary>Versiones disponibles, de la mas reciente a la mas antigua.</summary>

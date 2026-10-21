@@ -66,7 +66,7 @@ public static class RoadmapEndpoints
         var rules = await portfolio.GetRulesAsync(cancellationToken).ConfigureAwait(false);
         var start = startDate ?? DateOnly.FromDateTime(snapshot.CapturedAt.UtcDateTime);
 
-        return Results.Ok(RoadmapPlanResponse.From(rules.Planner.Build(snapshot, start)));
+        return Results.Ok(RoadmapPlanResponse.From(rules.Planner.Build(snapshot, start), rules.Planner.ActionPlan(snapshot)));
     }
 
     /// <summary>

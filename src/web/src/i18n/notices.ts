@@ -120,7 +120,9 @@ const MESSAGES: Record<string, (a: Args) => string> = {
     `The combined result differs from the sum of the parts by ${score(a.effect)} points.`,
   'target.alreadyMet': (a) => `The application already exceeds the target: its score is ${score(a.score)}.`,
   'target.unreachable': (a) =>
-    `A target of ${score(a.target)} is above this application's reachable ceiling, which is ${score(a.ceiling)} even with every lever applied.`,
+    a.projected
+      ? `A target of ${score(a.target)} cannot be reached. The ${num(a.count)} ${plural(a.count, 'lever')} that add points take the score from ${score(a.baseline)} to ${score(a.projected)}, as close as it gets; the ceiling with every lever at its maximum is ${score(a.ceiling)}.`
+      : `A target of ${score(a.target)} is above this application's reachable ceiling, which is ${score(a.ceiling)} even with every lever applied.`,
   'target.reachable': (a) =>
     `With ${num(a.count)} ${plural(a.count, 'lever')} the score goes from ${score(a.baseline)} to ${score(a.projected)}.`,
 
@@ -147,6 +149,64 @@ const MESSAGES: Record<string, (a: Args) => string> = {
     `No MAPS roadmap: an automatic plan with ${num(a.levers)} ${plural(a.levers, 'lever')} takes the score from ${score(a.baseline)} to ${score(a.projected)}, ${signed(a.delta)} points, reaching the target of ${score(a.target)}.`,
   'outlook.automaticPlanShort': (a) =>
     `No MAPS roadmap: the automatic target of ${score(a.target)} cannot be reached. With the ${num(a.levers)} ${plural(a.levers, 'lever')} that add points, the score goes from ${score(a.baseline)} to ${score(a.projected)}, ${signed(a.delta)} points.`,
+  // ------------------------------------------------------ future plan, paso a paso
+  'plan.mfa': (a) =>
+    a.users
+      ? `Integrate the sign-in of its ${num(a.users)} ${plural(a.users, 'user')} with the corporate multi-factor provider.`
+      : 'Integrate the sign-in with the corporate multi-factor provider.',
+  'plan.dr': (a) =>
+    a.rto || a.rpo
+      ? `Bring the application into the disaster recovery plan and test a recovery within its declared objectives: RTO ${a.rto ?? 'not declared'}, RPO ${a.rpo ?? 'not declared'}.`
+      : 'Bring the application into the disaster recovery plan, declare its RTO and RPO, and test a recovery.',
+  'plan.sca.remediate': (a) =>
+    `Close the ${num(a.count)} open ${a.severity}-severity SCA ${plural(a.count, 'finding')}: upgrade or replace the affected libraries and scan again.`,
+  'plan.sca.finding': (a) =>
+    `${a.library ?? 'Unnamed library'}${a.vendor ? ` (${a.vendor})` : ''}: ${a.cve ?? a.vulnerability ?? 'vulnerability without a CVE'}` +
+    (a.cvss ? `, CVSS ${a.cvss}` : '') +
+    (a.age ? `, open for ${num(a.age)} ${plural(a.age, 'day')}` : '') +
+    '.',
+  'plan.sca.more': (a) =>
+    `And ${num(a.more)} more ${a.severity}-severity ${plural(a.more, 'finding')} in the Veracode report.`,
+  'plan.kenna': (a) =>
+    `Remediate the host vulnerabilities reported by Qualys until the Kenna score goes from ${num(a.from)} to ${num(a.to)} or less.`,
+  'plan.oss': (a) =>
+    `Replace or upgrade the lowest-rated open source components until the Open-Source Score goes from ${score(a.from)} to ${score(a.to)}.`,
+  'plan.rawTech': (a) =>
+    `Upgrade the components near or past their end of life until the CMT Raw Tech Score goes from ${score(a.from)} to ${score(a.to)}.`,
+  'plan.rawTech.components': (a) =>
+    `CMT counts ${num(a.obsolete)} obsolete and ${num(a.notApproved)} not-approved components in this application: start with those.`,
+  'plan.api': (a) =>
+    a.current
+      ? `Expose the services as native REST APIs managed by APIM (today: ${a.current}).`
+      : 'Expose the services as native REST APIs managed by APIM (today there is no API exposure on record).',
+  'plan.techDebt': (a) =>
+    `Close the technical debt items recorded in the inventory: the combined debt score goes from ${score(a.from)} to 0.`,
+  'plan.archValue': (a) =>
+    `Replace ${num(a.count)} ${plural(a.count, 'product')} with modern, approved equivalents: ${countsText([
+      [a.obsolete, 'obsolete'],
+      [a.notApproved, 'not approved for use'],
+      [a.heritage, 'heritage'],
+    ])}.`,
+  'plan.productStrategy': (a) =>
+    `Reclassify ${num(a.count)} ${plural(a.count, 'product')} to Invest: ${countsText([
+      [a.eliminate, 'from Eliminate'],
+      [a.migrate, 'from Migrate'],
+      [a.tolerate, 'from Tolerate'],
+    ])}.`,
+  'plan.monitoring': (a) => {
+    const others = (a.missing ?? '')
+      .split(',')
+      .filter((capability) => capability && capability !== 'elastic')
+      .map((capability) => MONITORING[capability] ?? capability);
+
+    return others.length > 0
+      ? `Deploy the Elastic agent. The application also has no ${listText(others)}.`
+      : 'Deploy the Elastic agent.';
+  },
+  'plan.operational': (a) =>
+    `Reduce the incidents and problems reported in ServiceNow until the operational score goes from ${score(a.from)} to ${score(a.to)}.`,
+  'plan.generic': (a) => `${a.action ?? ''}.`,
+
   'outlook.automaticPlanMet': (a) =>
     `No MAPS roadmap, and the score of ${score(a.baseline)} already reaches the automatic target of ${score(a.target)}: there is nothing to plan.`,
 
@@ -336,6 +396,24 @@ export function formatNotice(notice: Notice | null | undefined): string {
 
   return args.file && !FILE_IN_SENTENCE.has(notice.code) ? `${args.file}: ${text}` : text;
 }
+
+/** "2 obsolete, 1 heritage": las cantidades que no son cero, con su nombre. */
+function countsText(parts: readonly (readonly [string | undefined, string])[]): string {
+  const present = parts.filter(([count]) => Number(count) > 0).map(([count, label]) => `${num(count)} ${label}`);
+  return present.length > 0 ? present.join(', ') : 'none listed';
+}
+
+/** "APM, synthetic monitoring and general monitoring". */
+function listText(items: readonly string[]): string {
+  if (items.length <= 1) return items[0] ?? '';
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+const MONITORING: Record<string, string> = {
+  apm: 'APM',
+  synthetic: 'synthetic monitoring',
+  general: 'general monitoring',
+};
 
 // ------------------------------------------------------ upload rejections
 

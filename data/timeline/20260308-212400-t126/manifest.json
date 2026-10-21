@@ -13,5 +13,7 @@
     "monitoreo.csv",
     "apim_onboarded_eais.csv"
   ],
-  "uploadedBy": "sample-timeline"
+  "uploadedBy": "sample-timeline",
+  "columnMaps": [],
+  "parts": []
 }

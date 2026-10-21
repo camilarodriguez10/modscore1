@@ -129,6 +129,24 @@ public static class NoticeCodes
     public const string OutlookAutomaticPlanShort = "outlook.automaticPlanShort";
     public const string OutlookAutomaticPlanMet = "outlook.automaticPlanMet";
 
+    // Acciones del future plan, paso por paso (2026-10-21). La interfaz redacta la frase.
+    public const string PlanMfa = "plan.mfa";
+    public const string PlanDisasterRecovery = "plan.dr";
+    public const string PlanScaRemediate = "plan.sca.remediate";
+    public const string PlanScaFinding = "plan.sca.finding";
+    public const string PlanScaMore = "plan.sca.more";
+    public const string PlanKenna = "plan.kenna";
+    public const string PlanOss = "plan.oss";
+    public const string PlanRawTech = "plan.rawTech";
+    public const string PlanRawTechComponents = "plan.rawTech.components";
+    public const string PlanApi = "plan.api";
+    public const string PlanTechDebt = "plan.techDebt";
+    public const string PlanArchValue = "plan.archValue";
+    public const string PlanProductStrategy = "plan.productStrategy";
+    public const string PlanMonitoring = "plan.monitoring";
+    public const string PlanOperational = "plan.operational";
+    public const string PlanGeneric = "plan.generic";
+
     // ------------------------------------------------------------- formula
     public const string FormulaNumerator = "formula.numerator";
     public const string FormulaDenominator = "formula.denominator";

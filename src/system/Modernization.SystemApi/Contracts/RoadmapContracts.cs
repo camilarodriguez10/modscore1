@@ -24,9 +24,10 @@ public sealed record RoadmapPlanResponse(
     DateOnly StartDate,
     DateOnly? CompletionDate,
     int TotalWeeks,
-    decimal? AutomaticTarget = null)
+    decimal? AutomaticTarget = null,
+    ActionPlanResponse? ActionPlan = null)
 {
-    public static RoadmapPlanResponse From(ApplicationRoadmapPlan p) => new(
+    public static RoadmapPlanResponse From(ApplicationRoadmapPlan p, ActionPlan? actionPlan = null) => new(
         p.EaiCode,
         p.ApplicationName,
         p.Disposition?.ToString(),
@@ -51,8 +52,67 @@ public sealed record RoadmapPlanResponse(
         p.StartDate,
         p.CompletionDate,
         p.TotalWeeks,
-        p.AutomaticTarget);
+        p.AutomaticTarget,
+        actionPlan is null ? null : ActionPlanResponse.From(actionPlan));
 }
+
+/// <summary>
+/// El future plan paso por paso hacia el objetivo del catálogo: el mismo que da el what-if a
+/// ese objetivo (2026-10-21).
+/// </summary>
+public sealed record ActionPlanResponse(
+    decimal Target,
+    bool IsReachable,
+    bool IsAlreadyMet,
+    decimal BaselineScore,
+    decimal ProjectedScore,
+    decimal CeilingScore,
+    IReadOnlyList<ActionStepResponse> Steps)
+{
+    public static ActionPlanResponse From(ActionPlan plan) => new(
+        plan.Target,
+        plan.IsReachable,
+        plan.IsAlreadyMet,
+        plan.Baseline.EffectiveScore,
+        plan.Projected.EffectiveScore,
+        plan.Ceiling.EffectiveScore,
+        [.. plan.Steps.Select(s => new ActionStepResponse(
+            s.Order,
+            s.LeverKey,
+            s.LeverName,
+            s.PillarKey,
+            s.MetricKey,
+            s.MetricName,
+            s.Owner,
+            s.Parameter,
+            s.From,
+            s.To,
+            s.MappedFrom,
+            s.MappedTo,
+            s.WeightAdded,
+            s.Points,
+            s.ScoreAfter,
+            s.Actions))]);
+}
+
+/// <summary>Un paso del future plan.</summary>
+public sealed record ActionStepResponse(
+    int Order,
+    string LeverKey,
+    string LeverName,
+    string PillarKey,
+    string MetricKey,
+    string MetricName,
+    string Owner,
+    int? Parameter,
+    Notice From,
+    Notice To,
+    decimal? MappedFrom,
+    decimal? MappedTo,
+    decimal WeightAdded,
+    decimal Points,
+    decimal ScoreAfter,
+    IReadOnlyList<Notice> Actions);
 
 public sealed record MilestoneResponse(
     int Order,

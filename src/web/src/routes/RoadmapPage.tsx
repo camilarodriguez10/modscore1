@@ -1,8 +1,9 @@
 import { Link, useParams } from 'react-router';
 import { useRoadmapPlan } from '../api/hooks';
-import type { AlertSeverity, AlertView, MilestoneView } from '../api/types';
-import { BandChip, Card, QueryError, Field, Label, Spinner, fmt, pillarColor } from '../components/primitives';
+import type { ActionPlanView, AlertSeverity, AlertView, MilestoneView } from '../api/types';
+import { BandChip, Card, QueryError, Field, Label, Spinner, fmt, pillarColor, pillarName } from '../components/primitives';
 import { countOf, formatNotice } from '../i18n/notices';
+import { ownerLabel, planSummary, planToQuery } from '../plan';
 
 /**
  * Pantalla 05 — plan futuro. Es el requisito 6 del encargo: que le va a pasar a
@@ -11,6 +12,10 @@ import { countOf, formatNotice } from '../i18n/notices';
  *
  * El score proyectado no es un numero escrito a mano: sale del motor de what-if
  * aplicando las palancas que ese roadmap entrega.
+ *
+ * Desde el 2026-10-21 cada aplicación trae además su plan de acción hacia el objetivo del
+ * catálogo (90), calculado al cargar los datos y paso por paso: es exactamente el plan que
+ * da el What-If Lab a ese objetivo, y se abre allí con un clic.
  */
 export function RoadmapPage() {
   const { eaiCode = '' } = useParams();
@@ -131,6 +136,8 @@ export function RoadmapPage() {
         </div>
       </Card>
 
+      {data.actionPlan && <ActionPlanCard plan={data.actionPlan} eaiCode={application.eaiCode} />}
+
       {/* Que palancas del score entrega este roadmap, y por que esas. */}
       {data.deliveredBy.length > 0 && (
         <Card title="What this roadmap improves" subtitle={data.leverRationale ?? undefined}>
@@ -204,6 +211,99 @@ export function RoadmapPage() {
         </div>
       </Card>
     </div>
+  );
+}
+
+/**
+ * El plan de acción hacia el objetivo, paso por paso: qué métrica mueve cada paso, desde qué
+ * valor y hasta cuál, quién lo hace, cuántos puntos suma después de los anteriores y las
+ * acciones concretas con la evidencia de la aplicación.
+ */
+function ActionPlanCard({ plan, eaiCode }: { plan: ActionPlanView; eaiCode: string }) {
+  const whatIf = `/applications/${encodeURIComponent(eaiCode)}/what-if?plan=${encodeURIComponent(planToQuery(plan.steps))}&target=${plan.target}`;
+
+  return (
+    <Card
+      title={`Action plan to reach ${fmt(plan.target, 0)}`}
+      subtitle="Calculated when the data was loaded, with the rules in force."
+      right={
+        plan.steps.length > 0 ? (
+          <Link
+            to={whatIf}
+            className="rounded-sm border border-accent px-3 py-1.5 text-[12.5px] font-medium text-accent hover:bg-accent-wash"
+          >
+            Open in What-If
+          </Link>
+        ) : undefined
+      }
+    >
+      <div className="flex flex-col gap-3 px-4 py-4">
+        <p className="max-w-[80ch] text-[13.5px] text-ink">{planSummary(plan)}</p>
+
+        {plan.steps.length > 0 && (
+          <div className="grid gap-4 sm:grid-cols-[auto_auto_1fr] sm:items-end">
+            <div>
+              <Label>Score today</Label>
+              <p className="tnum mt-1 text-[26px] leading-none font-semibold text-ink-3">{fmt(plan.baselineScore)}</p>
+            </div>
+            <div>
+              <Label>After the plan</Label>
+              <p className="tnum mt-1 flex items-baseline gap-2 text-[26px] leading-none font-semibold text-ink">
+                {fmt(plan.projectedScore)}
+                <span className="tnum text-[13px] font-semibold" style={{ color: 'var(--app-good-text)' }}>
+                  +{fmt(plan.projectedScore - plan.baselineScore)}
+                </span>
+              </p>
+            </div>
+            <div className="sm:justify-self-end">
+              <BandChip band={plan.projectedBand} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {plan.steps.length > 0 && (
+        <ol className="divide-y divide-rule border-t border-rule" aria-label="Steps of the action plan">
+          {plan.steps.map((step) => (
+            <li key={step.leverKey} className="flex flex-col gap-2 px-4 py-3.5">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                <span className="flex items-baseline gap-2">
+                  <span className="tnum font-mono text-[12px] text-ink-3">{step.order}.</span>
+                  <span
+                    aria-hidden="true"
+                    className="size-2 shrink-0 self-center rounded-[2px]"
+                    style={{ background: pillarColor(step.pillarKey) }}
+                  />
+                  <span className="text-[14px] font-semibold text-ink">
+                    {step.leverName}
+                    {step.parameter ? ` × ${step.parameter.toLocaleString('en-US')}` : ''}
+                  </span>
+                </span>
+                <span className="tnum font-mono text-[12px] text-ink-2">
+                  <span style={{ color: 'var(--app-good-text)' }}>+{fmt(step.points)}</span> → {fmt(step.scoreAfter)}
+                </span>
+              </div>
+
+              <p className="text-[12.5px] text-ink-2">
+                <span className="font-medium text-ink">{step.metricName}</span>: {formatNotice(step.from)} →{' '}
+                {formatNotice(step.to)}
+                {step.weightAdded > 0 && ` · adds ${fmt(step.weightAdded, 0)} of weight to the calculation`}
+                <span className="text-ink-3">
+                  {' '}
+                  · {pillarName(step.pillarKey)} · {ownerLabel(step.owner)}
+                </span>
+              </p>
+
+              <ul className="flex list-disc flex-col gap-1 pl-5 text-[12.5px] text-ink-2">
+                {step.actions.map((action, index) => (
+                  <li key={`${action.code}-${index}`}>{formatNotice(action)}</li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ol>
+      )}
+    </Card>
   );
 }
 

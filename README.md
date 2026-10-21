@@ -386,7 +386,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-1 033 pruebas .NET: 333 del motor, 347 de contratos y 353 de API. Las dos que importan más
+1 044 pruebas .NET: 340 del motor, 347 de contratos y 357 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **Captura del reporte v1.3 del 2026-10-07 = 66,12:** métrica por métrica, con OSS y Raw Tech
@@ -400,8 +400,8 @@ reproducen los casos documentados:
 TypeScript difieren.
 
 ```bash
-npm --prefix src/web test          # 93 pruebas unitarias (Vitest)
-npm --prefix src/web run test:e2e  # 58 escenarios: 33 de flujo y 25 de accesibilidad (axe)
+npm --prefix src/web test          # 97 pruebas unitarias (Vitest)
+npm --prefix src/web run test:e2e  # 59 escenarios: 34 de flujo y 25 de accesibilidad (axe)
 ```
 
 Las de punta a punta usan el Microsoft Edge instalado (no descargan navegadores) y levantan
@@ -506,6 +506,22 @@ El porqué está en [ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definici
 y [ADR 0025](docs/adr/0025-las-definiciones-viajan-con-las-reglas.md); las decisiones
 abiertas, en [PLAN.md §8.10](PLAN.md) y en PENDING-ITEMS como DD-01 a DD-08. El mismo
 análisis está en `GET /api/dashboard`.
+
+## El future plan de cada aplicación
+
+Al cargar los datos, cada aplicación (salvo las marcadas *Eliminate*) recibe su plan hacia
+90: en **Future plan** (`/applications/{eai}/roadmap`), *Action plan to reach 90* lista los
+pasos en orden. Cada paso dice:
+
+- la métrica que mueve, desde qué valor y hasta cuál;
+- cuántos puntos suma y el score que deja;
+- quién lo ejecuta;
+- las acciones concretas con la evidencia de la aplicación: los CVE y librerías de SCA, los
+  productos a modernizar o reclasificar, las capacidades de monitoreo que faltan, etc.
+
+Es exactamente el plan que da el **What-If Lab** con objetivo 90, y *Open in What-If* lo carga
+allí con las mismas palancas y cantidades
+([ADR 0036](docs/adr/0036-future-plan-detallado-y-mismo-plan-que-el-what-if.md)).
 
 ## Pantallas retiradas y apagadas
 

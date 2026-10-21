@@ -47,7 +47,12 @@ public static class WhatIfEndpoints
             eaiCode,
             portfolio,
             scope,
-            (snapshot, rules) => Results.Ok(LeverCatalogResponse.From(rules.WhatIf.EvaluateAllLevers(snapshot))),
+            // El objetivo de los planes automáticos viaja con el catálogo: el laboratorio parte de
+            // él, así que «Find the minimum plan» da el future plan sin mover nada.
+            (snapshot, rules) => Results.Ok(LeverCatalogResponse.From(rules.WhatIf.EvaluateAllLevers(snapshot)) with
+            {
+                AutomaticTarget = rules.Roadmap.Parameters.AutomaticPlanTarget,
+            }),
             cancellationToken).ConfigureAwait(false);
 
     private static async Task<IResult> PostScenario(

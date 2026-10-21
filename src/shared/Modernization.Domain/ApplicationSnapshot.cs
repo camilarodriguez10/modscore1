@@ -67,6 +67,13 @@ public sealed record ApplicationSnapshot
     /// <summary>Flaws SCA abiertos por severidad. Fuente: Veracode SCA scan.</summary>
     public ScaFlawCounts? ScaFlaws { get; init; }
 
+    /// <summary>
+    /// Los hallazgos SCA abiertos más graves —hasta <see cref="ScaFinding.MaxPerSeverity"/>
+    /// críticos y otros tantos altos, por CVSS—, para decir en el future plan qué librerías
+    /// actualizar. No intervienen en el score: el score usa los conteos.
+    /// </summary>
+    public IReadOnlyList<ScaFinding> OpenScaFindings { get; init; } = [];
+
     /// <summary>Indica si la aplicacion utiliza MFA. Fuente: EAI.</summary>
     public bool? UtilizesMfa { get; init; }
 
@@ -127,6 +134,25 @@ public sealed record ApplicationSnapshot
 /// dato se excluye del numerador y del denominador (BRD, "ALL Sections").
 /// Un conteo de 0 significa "None" y puntua 100 — no es ausencia de dato.
 /// </summary>
+/// <summary>Un hallazgo SCA abierto: la librería, la vulnerabilidad y su gravedad.</summary>
+public sealed record ScaFinding
+{
+    /// <summary>Cuántos hallazgos por severidad se guardan con la aplicación.</summary>
+    public const int MaxPerSeverity = 10;
+
+    /// <summary>"Critical" o "High".</summary>
+    public required string Severity { get; init; }
+
+    public string? CveId { get; init; }
+    public string? VulnerabilityName { get; init; }
+    public string? LibraryName { get; init; }
+    public string? LibraryVendor { get; init; }
+    public decimal? Cvssv3Score { get; init; }
+
+    /// <summary>Días desde que se encontró, según la fuente.</summary>
+    public int? AgeDays { get; init; }
+}
+
 public sealed record ScaFlawCounts
 {
     public int? Critical { get; init; }

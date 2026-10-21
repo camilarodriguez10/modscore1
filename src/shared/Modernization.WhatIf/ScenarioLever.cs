@@ -44,6 +44,13 @@ public sealed record ScenarioLever
     public int? DefaultParameter { get; init; }
 
     /// <summary>
+    /// Cuántos productos puede mover como máximo en una aplicación, para las palancas que lo
+    /// admiten: los que todavía no están en su mejor categoría. La búsqueda de un plan parte
+    /// de ese máximo y baja a la cantidad mínima que sostiene el objetivo.
+    /// </summary>
+    public Func<ApplicationSnapshot, int>? Capacity { get; init; }
+
+    /// <summary>
     /// Por que la palanca no se puede mover en esta aplicacion, mas alla de que ya
     /// este lograda. Null cuando si es accionable.
     /// </summary>
@@ -227,6 +234,9 @@ public sealed class LeverCatalog
             PillarKey = "architecture",
             DefaultParameter = 1,
             Apply = static (s, count) => ModernizeProducts(s, count ?? 1),
+            Capacity = static s => (s.ArchitecturalValue?.ObsoleteCount ?? 0)
+                + (s.ArchitecturalValue?.NotApprovedForUseCount ?? 0)
+                + (s.ArchitecturalValue?.HeritageCount ?? 0),
             IsAlreadyAchieved = static s =>
                 s.ArchitecturalValue is null
                 || s.ArchitecturalValue.ProvidedValue is not null
@@ -247,6 +257,9 @@ public sealed class LeverCatalog
             PillarKey = "architecture",
             DefaultParameter = 1,
             Apply = static (s, count) => ReclassifyToInvest(s, count ?? 1),
+            Capacity = static s => (s.ProductStrategy?.EliminateCount ?? 0)
+                + (s.ProductStrategy?.MigrateCount ?? 0)
+                + (s.ProductStrategy?.TolerateCount ?? 0),
             IsAlreadyAchieved = static s =>
                 s.ProductStrategy is null
                 || s.ProductStrategy.ProvidedValue is not null

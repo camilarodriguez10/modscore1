@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useParams, useSearchParams } from 'react-router';
 import { useScenario, useTarget, useWhatIfLab } from '../api/hooks';
-import type { LeverView, ScenarioView } from '../api/types';
+import type { LeverSelection, LeverView, ScenarioView } from '../api/types';
+import { parsePlanQuery } from '../plan';
 import {
   Card,
   QueryError,
@@ -20,15 +21,38 @@ import { formatNotice } from '../i18n/notices';
  * Cada palanca es una accion que un equipo puede ejecutar de verdad, y su
  * ganancia la calcula el mismo motor que produce el score real: no hay una
  * segunda formula que pueda desviarse de la primera.
+ *
+ * Desde el 2026-10-21 el objetivo parte del de los planes automáticos (90), y un enlace con
+ * `?plan=` —el botón *Open in What-If* del future plan— carga exactamente sus palancas y
+ * cantidades: el escenario da el mismo score que el plan.
  */
 export function WhatIfPage() {
   const { eaiCode = '' } = useParams();
   const { data, isPending, error } = useWhatIfLab(eaiCode);
 
+  const [searchParams] = useSearchParams();
   const [selected, setSelected] = useState<readonly string[]>([]);
+  // La cantidad de las palancas de productos que llegaron con un plan; el resto usa la suya.
+  const [parameters, setParameters] = useState<Readonly<Record<string, number>>>({});
   const scenario = useScenario(eaiCode);
   const target = useTarget(eaiCode);
-  const [targetScore, setTargetScore] = useState(90);
+  const [chosenTarget, setChosenTarget] = useState<number | null>(null);
+  const loadedPlan = useRef(false);
+
+  // Un plan que llega en el enlace se carga una sola vez, tal cual.
+  useEffect(() => {
+    if (loadedPlan.current) return;
+    loadedPlan.current = true;
+
+    const plan = parsePlanQuery(searchParams.get('plan'));
+    const requested = Number(searchParams.get('target'));
+    if (Number.isInteger(requested) && requested >= 20 && requested <= 100) setChosenTarget(requested);
+    if (plan.length === 0) return;
+
+    setSelected(plan.map((lever) => lever.key));
+    setParameters(Object.fromEntries(plan.filter((lever) => lever.parameter).map((lever) => [lever.key, lever.parameter!])));
+    scenario.mutate(plan);
+  }, [searchParams, scenario]);
 
   if (isPending) return <Spinner label="Evaluating the levers…" />;
 
@@ -37,6 +61,9 @@ export function WhatIfPage() {
   }
 
   const { application } = data;
+  const targetScore = chosenTarget ?? data.automaticTarget ?? 90;
+  const withParameter = (key: string): LeverSelection =>
+    parameters[key] ? { key, parameter: parameters[key] } : { key };
 
   const toggle = (key: string) => {
     const next = selected.includes(key)
@@ -49,21 +76,24 @@ export function WhatIfPage() {
     if (next.length === 0) {
       scenario.reset();
     } else {
-      scenario.mutate(next.map((k) => ({ key: k })));
+      scenario.mutate(next.map(withParameter));
     }
   };
 
   const applyTargetPlan = () => {
     setSelected([]);
+    setParameters({});
     scenario.reset();
     target.mutate(targetScore);
   };
 
+  // Se cargan las palancas del plan con sus cantidades: el escenario da el mismo score.
   const adoptPlan = (plan: ScenarioView) => {
-    const keys = plan.applied.map((a) => a.key);
-    setSelected(keys);
+    const levers = plan.applied.map((a) => (a.parameter ? { key: a.key, parameter: a.parameter } : { key: a.key }));
+    setSelected(levers.map((lever) => lever.key));
+    setParameters(Object.fromEntries(levers.filter((lever) => lever.parameter).map((lever) => [lever.key, lever.parameter!])));
     target.reset();
-    scenario.mutate(keys.map((k) => ({ key: k })));
+    scenario.mutate(levers);
   };
 
   const active = scenario.data ?? target.data?.scenario ?? null;
@@ -225,7 +255,7 @@ export function WhatIfPage() {
                     max={100}
                     step={1}
                     value={targetScore}
-                    onChange={(event) => setTargetScore(Number(event.target.value))}
+                    onChange={(event) => setChosenTarget(Number(event.target.value))}
                     className="flex-1 accent-[var(--app-accent)]"
                   />
                   <span className="tnum w-10 text-right font-mono text-[15px] font-semibold text-ink">
@@ -253,7 +283,10 @@ export function WhatIfPage() {
                         {target.data.scenario.applied.map((step, index) => (
                           <li key={step.key} className="flex gap-2.5 text-[13px]">
                             <span className="tnum font-mono text-ink-3">{index + 1}.</span>
-                            <span className="text-ink">{step.name}</span>
+                            <span className="text-ink">
+                              {step.name}
+                              {step.parameter ? ` × ${step.parameter.toLocaleString('en-US')}` : ''}
+                            </span>
                           </li>
                         ))}
                       </ol>

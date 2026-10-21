@@ -19,10 +19,81 @@ namespace Modernization.Roadmap;
 /// </remarks>
 public sealed class RoadmapPlanner(RoadmapCatalog catalog, WhatIfEngine whatIf, ScoringEngine engine)
 {
-    // El plan automatico cuesta varios calculos por aplicacion. Un planificador vive con unas
-    // reglas, y una aplicacion es la misma instancia mientras su carga siga en memoria: se
+    // El plan hacia el objetivo cuesta varios calculos por aplicacion. Un planificador vive con
+    // unas reglas, y una aplicacion es la misma instancia mientras su carga siga en memoria: se
     // calcula una vez por aplicacion y reglas, y se libera con la carga.
-    private readonly ConditionalWeakTable<ApplicationSnapshot, ScenarioResult> _automatic = [];
+    private readonly ConditionalWeakTable<ApplicationSnapshot, TargetPlanCache> _targets = [];
+
+    /// <summary>
+    /// El plan de una aplicación hacia el objetivo del catálogo (<c>automaticPlanTarget</c>, 90):
+    /// la misma búsqueda que el what-if a ese objetivo, así que los dos dan el mismo plan
+    /// (2026-10-21). Null si la aplicación se va a eliminar —proyectar una mejora ahí
+    /// justificaría invertir en algo que se apaga— o si los planes automáticos están apagados.
+    /// </summary>
+    public TargetResult? TargetPlan(ApplicationSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        return Cached(snapshot)?.Target;
+    }
+
+    /// <summary>
+    /// El future plan detallado de una aplicación: cada paso del plan hacia el objetivo con su
+    /// métrica, su valor de hoy y el objetivo, los puntos que suma, quién lo hace y las acciones
+    /// concretas. Null si la aplicación no tiene plan (se va a eliminar, o los planes
+    /// automáticos están apagados).
+    /// </summary>
+    public ActionPlan? ActionPlan(ApplicationSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(snapshot);
+
+        return Cached(snapshot) is { } cached ? ActionPlanBuilder.Build(snapshot, cached.Target, whatIf, engine) : null;
+    }
+
+    /// <summary>
+    /// Calcula de antemano el plan de cada aplicación: se llama al publicar una carga, para
+    /// que el plan ya esté cuando alguien lo abre.
+    /// </summary>
+    public int Prepare(IEnumerable<ApplicationSnapshot> applications, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(applications);
+
+        var prepared = 0;
+
+        foreach (var application in applications)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
+            {
+                if (Cached(application) is not null)
+                {
+                    prepared++;
+                }
+            }
+            catch (RulesetException)
+            {
+                // Una aplicación que el motor no puede puntuar no tiene plan; su detalle dice por qué.
+            }
+        }
+
+        return prepared;
+    }
+
+    private TargetPlanCache? Cached(ApplicationSnapshot snapshot)
+    {
+        if (snapshot.Disposition == ApplicationDisposition.Eliminate
+            || catalog.Parameters.AutomaticPlanTarget is not { } goal)
+        {
+            return null;
+        }
+
+        return _targets.GetValue(snapshot, s =>
+        {
+            var target = whatIf.ReachTarget(s, goal);
+            return new TargetPlanCache(target, target.Result ?? whatIf.Evaluate(s, []));
+        });
+    }
 
     public ApplicationRoadmapPlan Build(ApplicationSnapshot snapshot, DateOnly startDate)
     {
@@ -30,16 +101,11 @@ public sealed class RoadmapPlanner(RoadmapCatalog catalog, WhatIfEngine whatIf, 
 
         var baseline = engine.Calculate(snapshot);
         var alerts = CheckCoherence(snapshot, baseline);
+        var targetPlan = Cached(snapshot);
 
         if (snapshot.Roadmap is not { } roadmapType)
         {
-            // Sin roadmap de MAPS, un plan automatico hasta el objetivo del catalogo. No para lo
-            // que se va a eliminar: proyectar una mejora ahi justificaria invertir en algo que
-            // se apaga.
-            var target = snapshot.Disposition == ApplicationDisposition.Eliminate
-                ? null
-                : catalog.Parameters.AutomaticPlanTarget;
-
+            // Sin roadmap de MAPS, el plan hacia el objetivo del catalogo es el plan.
             return new ApplicationRoadmapPlan
             {
                 EaiCode = snapshot.EaiCode,
@@ -49,11 +115,12 @@ public sealed class RoadmapPlanner(RoadmapCatalog catalog, WhatIfEngine whatIf, 
                 Roadmap = null,
                 RoadmapDefinition = null,
                 Baseline = baseline,
-                Projected = target is { } goal ? _automatic.GetValue(snapshot, s => whatIf.PlanToTarget(s, goal)) : null,
+                Projected = targetPlan?.Projection,
                 Milestones = [],
                 Alerts = alerts,
                 StartDate = startDate,
-                AutomaticTarget = target,
+                AutomaticTarget = targetPlan?.Target.Target,
+                TargetPlan = targetPlan?.Target,
             };
         }
 
@@ -73,8 +140,12 @@ public sealed class RoadmapPlanner(RoadmapCatalog catalog, WhatIfEngine whatIf, 
             Milestones = Schedule(definition, startDate),
             Alerts = alerts,
             StartDate = startDate,
+            TargetPlan = targetPlan?.Target,
         };
     }
+
+    /// <summary>El plan hacia el objetivo y su proyección (sin palancas si ya lo alcanza).</summary>
+    private sealed record TargetPlanCache(TargetResult Target, ScenarioResult Projection);
 
     /// <summary>
     /// Score al terminar el roadmap. Null para Retire y Consolidate: esas

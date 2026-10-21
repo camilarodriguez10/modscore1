@@ -45,7 +45,8 @@ public sealed record LeverCatalogResponse(
     ScoreResponse Baseline,
     IReadOnlyList<LeverEffectResponse> Levers,
     decimal CeilingScore,
-    decimal Headroom)
+    decimal Headroom,
+    decimal? AutomaticTarget = null)
 {
     public static LeverCatalogResponse From(LeverCatalogResult r) => new(
         ScoreResponse.From(r.Baseline),

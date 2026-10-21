@@ -42,7 +42,8 @@ public sealed class WhatIfComposer(SystemApiClient system)
             [.. actionable.Take(QuickWinCount).Select(ToLever)],
             [.. actionable.Select(ToLever)],
             [.. catalog.Levers.Where(l => l.IsAlreadyAchieved && l.NotActionableReason is null).Select(ToLever)],
-            [.. catalog.Levers.Where(l => l.NotActionableReason is not null).Select(ToLever)]);
+            [.. catalog.Levers.Where(l => l.NotActionableReason is not null).Select(ToLever)],
+            catalog.AutomaticTarget);
     }
 
     public async Task<ScenarioView?> ComposeScenarioAsync(
@@ -136,7 +137,14 @@ public sealed class WhatIfComposer(SystemApiClient system)
 
         if (!r.IsReachable)
         {
-            return Notice.Of(NoticeCodes.TargetUnreachable, ("target", r.Target), ("ceiling", r.CeilingScore));
+            // Ni con todas: el plan son todas las palancas que suman, lo más cerca que se llega.
+            return Notice.Of(
+                NoticeCodes.TargetUnreachable,
+                ("target", r.Target),
+                ("ceiling", r.CeilingScore),
+                ("count", r.Result?.Applied.Count ?? 0),
+                ("baseline", r.BaselineScore),
+                ("projected", r.Result?.Projected.EffectiveScore));
         }
 
         return Notice.Of(

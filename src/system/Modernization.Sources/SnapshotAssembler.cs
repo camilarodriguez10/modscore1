@@ -41,6 +41,7 @@ public static class SnapshotAssembler
         var apim = ByEai(input.ApimOnboarding.Records, r => r.EaiCode);
         var techDebtByAppId = ByEai(input.TechDebt.Records, r => r.AppId);
         var scaByEai = GroupOpenFlawsByEai(input.ScaFlaws.Records);
+        var findingsByEai = WorstOpenFindingsByEai(input.ScaFlaws.Records);
 
         var applications = new List<ApplicationSnapshot>(input.Eai.Records.Count);
         var matched = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -56,7 +57,7 @@ public static class SnapshotAssembler
                 ? td
                 : null;
 
-            applications.Add(Build(
+            var application = Build(
                 eai,
                 input.Provider,
                 input.CapturedAt,
@@ -66,7 +67,11 @@ public static class SnapshotAssembler
                 Lookup(scaByEai, eai.EaiCode, matched, SourceNames.ScaFlaws),
                 Lookup(oss, eai.EaiCode, matched, SourceNames.OssScore),
                 Lookup(monitoring, eai.EaiCode, matched, SourceNames.Monitoring),
-                Lookup(apim, eai.EaiCode, matched, SourceNames.ApimOnboarding)));
+                Lookup(apim, eai.EaiCode, matched, SourceNames.ApimOnboarding));
+
+            applications.Add(findingsByEai.TryGetValue(eai.EaiCode, out var findings)
+                ? application with { OpenScaFindings = findings }
+                : application);
 
             Count(eai, matched, SourceNames.EaiMaster);
         }
@@ -199,6 +204,52 @@ public static class SnapshotAssembler
                 Medium = CountSeverity(open, "Medium"),
                 Low = CountSeverity(open, "Low"),
             };
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Los hallazgos abiertos críticos y altos de cada aplicación, los más graves primero (por
+    /// CVSS, después los más viejos), hasta <see cref="ScaFinding.MaxPerSeverity"/> por
+    /// severidad. Una librería con varias vulnerabilidades aparece una vez por cada una.
+    /// </summary>
+    private static Dictionary<string, IReadOnlyList<ScaFinding>> WorstOpenFindingsByEai(IReadOnlyList<ScaFlawRecord> records)
+    {
+        var result = new Dictionary<string, IReadOnlyList<ScaFinding>>(StringComparer.Ordinal);
+
+        foreach (var group in records.GroupBy(r => r.EaiCode, StringComparer.Ordinal))
+        {
+            var open = group
+                .Where(r => string.Equals(r.FindingStatus, "Open", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            var findings = new List<ScaFinding>();
+
+            foreach (var severity in (string[])["Critical", "High"])
+            {
+                findings.AddRange(open
+                    .Where(r => r.SeverityDescription.Contains(severity, StringComparison.OrdinalIgnoreCase))
+                    .OrderByDescending(r => r.Cvssv3Score ?? -1m)
+                    .ThenByDescending(r => r.FindingAge ?? -1)
+                    .ThenBy(r => r.FlawIndexNumber)
+                    .Take(ScaFinding.MaxPerSeverity)
+                    .Select(r => new ScaFinding
+                    {
+                        Severity = severity,
+                        CveId = r.CveId,
+                        VulnerabilityName = r.VulnerabilityName,
+                        LibraryName = r.LibraryName,
+                        LibraryVendor = r.LibraryVendor,
+                        Cvssv3Score = r.Cvssv3Score,
+                        AgeDays = r.FindingAge,
+                    }));
+            }
+
+            if (findings.Count > 0)
+            {
+                result[group.Key] = findings;
+            }
         }
 
         return result;

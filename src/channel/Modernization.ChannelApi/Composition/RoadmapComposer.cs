@@ -49,7 +49,34 @@ public sealed class RoadmapComposer(SystemApiClient system)
             plan.StartDate,
             plan.CompletionDate,
             plan.TotalWeeks,
-            Outlook(plan));
+            Outlook(plan),
+            plan.ActionPlan is { } actions
+                ? new ActionPlanView(
+                    actions.Target,
+                    actions.IsReachable,
+                    actions.IsAlreadyMet,
+                    actions.BaselineScore,
+                    actions.ProjectedScore,
+                    ScreenComposer.BandOfScore(actions.ProjectedScore),
+                    actions.CeilingScore,
+                    [.. actions.Steps.Select(s => new ActionStepView(
+                        s.Order,
+                        s.LeverKey,
+                        s.LeverName,
+                        s.PillarKey,
+                        s.MetricKey,
+                        s.MetricName,
+                        s.Owner,
+                        s.Parameter,
+                        s.From,
+                        s.To,
+                        s.MappedFrom,
+                        s.MappedTo,
+                        s.WeightAdded,
+                        s.Points,
+                        s.ScoreAfter,
+                        s.Actions))])
+                : null);
     }
 
     /// <summary>

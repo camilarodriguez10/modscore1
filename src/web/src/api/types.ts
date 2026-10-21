@@ -286,6 +286,8 @@ export interface WhatIfLabView {
   actionable: readonly LeverView[];
   alreadyAchieved: readonly LeverView[];
   notActionable: readonly LeverView[];
+  /** El objetivo de los planes automáticos (90): el laboratorio parte de él. */
+  automaticTarget: number | null;
 }
 
 export interface LeverView {
@@ -365,6 +367,43 @@ export interface RoadmapPlanView {
   completionDate: string | null;
   totalWeeks: number;
   outlook: Notice;
+  /** El future plan paso por paso hacia el objetivo; el mismo que da el what-if a ese objetivo. */
+  actionPlan: ActionPlanView | null;
+}
+
+/**
+ * El future plan hacia el objetivo del catálogo (90). Si es inalcanzable, son todas las
+ * palancas que suman: lo más cerca que se llega.
+ */
+export interface ActionPlanView {
+  target: number;
+  isReachable: boolean;
+  isAlreadyMet: boolean;
+  baselineScore: number;
+  projectedScore: number;
+  projectedBand: string;
+  ceilingScore: number;
+  steps: readonly ActionStepView[];
+}
+
+/** Un paso: la métrica que mueve, desde y hasta dónde, quién lo hace, cuánto suma y qué hacer. */
+export interface ActionStepView {
+  order: number;
+  leverKey: string;
+  leverName: string;
+  pillarKey: string;
+  metricKey: string;
+  metricName: string;
+  owner: string;
+  parameter: number | null;
+  from: Notice;
+  to: Notice;
+  mappedFrom: number | null;
+  mappedTo: number | null;
+  weightAdded: number;
+  points: number;
+  scoreAfter: number;
+  actions: readonly Notice[];
 }
 
 export interface MilestoneView {

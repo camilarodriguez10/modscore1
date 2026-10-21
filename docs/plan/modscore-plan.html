@@ -1,4 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+
 <title>Modernization Score Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -308,7 +309,7 @@ pre em{color:var(--ink-3);font-style:normal}
     <div class="mast-meta">
       <span>Base documental · <b>34 capturas: BRD + dashboard Power BI v1.3 + archivos fuente</b></span>
       <span>Ruleset · <b>v1.3</b></span>
-      <span>Fases 00–13 entregadas · 14 y 15 en curso · dashboard ejecutivo · pantalla Code · mapping de columnas · <b>937 pruebas .NET, 74 unitarias y 56 e2e en verde</b></span>
+      <span>Fases 00–13 entregadas · 14 y 15 en curso · dashboard ejecutivo · future plan detallado · fuentes desde bases de datos · auditoría de octubre · <b>1 126 pruebas .NET, 97 unitarias y 61 e2e en verde</b></span>
       <span>Duración estimada · <b>16 semanas</b></span>
     </div>
   </div>
@@ -531,6 +532,8 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
       <p>EF Core 10 en modo solo lectura, con Dapper para las consultas calientes. Mismos DTOs, misma suite de contract tests.</p>
     </div>
   </div>
+
+  <div class="note"><strong>21 de octubre · fuentes leídas desde sus bases.</strong> Además de los archivos, la capa System puede leer las ocho fuentes directamente de SQL Server, PostgreSQL, Oracle o cualquier driver ODBC, con TLS verificado y una transacción de solo lectura que siempre se deshace. Lo leído entra por el mismo publicador que un archivo, así que valen las mismas validaciones (ADR 0037).</div>
 
   <h4>Los cinco puntos que hacen que la migración no duela</h4>
   <ul class="prose">
@@ -948,6 +951,24 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
   <div class="prose"><p>Cada requisito aplicable con su estado y su evidencia: <strong>106 cumple</strong> tras la Fase 14; 11 parciales, verificables solo en un despliegue real —llaves protegidas, mTLS, gestor de secretos, TLS del ingress, MFA del IdP, SIEM, firma de imágenes—; 3 pendientes, de severidad baja o de infraestructura; y 10 a cargo del IdP o sin funcionalidad a la que aplicar.</p></div>
 
   <div class="note"><strong>Lo que no se ejecutó en local, y por qué.</strong> DAST con OWASP ZAP, Trivy y la construcción de las imágenes requieren descargar imágenes de contenedor. Están en el pipeline de CI.</div>
+
+  <h3>Auditoría del 21 de octubre</h3>
+  <div class="ship">
+    <div class="h">Ninguna Alta ni Crítica abierta</div>
+    <p>La auditoría revisó el repositorio completo, incluidos los conectores a bases de datos. Usó escaneo de dependencias .NET y npm, los analizadores con todas las reglas de seguridad, búsqueda de patrones de riesgo y revisión manual. Encontró <strong>10 hallazgos</strong>: cinco cerrados, dos pendientes y tres aceptados. Cada corrección tiene una prueba que la reproduce. El informe, en inglés, está en <code>docs/security/audit-2026-10.md</code>.</p>
+  </div>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:34%">Hallazgo</th><th style="width:12%">Severidad</th><th>Corrección</th></tr></thead>
+      <tbody>
+        <tr><td><strong>vite 7.3.6 vulnerable</strong></td><td>Alta</td><td>7.3.7. Solo afectaba al servidor de desarrollo, no al sitio publicado</td></tr>
+        <tr><td><strong>Llaves de sesión en claro en su volumen</strong></td><td>Media</td><td>Cifradas con un certificado del gestor de secretos. Fuera de Development, persistirlas sin él detiene el arranque (ASVS 1.6.2)</td></tr>
+        <tr><td><strong>Contraseña de un conector en configuración en claro</strong></td><td>Media</td><td>Fuera de Development solo se acepta desde un archivo de secretos; si no, el proceso no arranca</td></tr>
+        <tr><td>PostgreSQL con <code>VerifyCA</code> · Oracle sin verificar el nombre</td><td>Baja</td><td>Solo <code>VerifyFull</code>, y Oracle no puede apagar <code>SSL_SERVER_DN_MATCH</code></td></tr>
+        <tr><td>Imágenes base por etiqueta</td><td>Baja</td><td>Pendiente: fijarlas por digest junto con H-17, en la última fase</td></tr>
+      </tbody>
+    </table>
+  </div>
 </section>
 
 <hr class="div">
@@ -981,6 +1002,18 @@ ProdStrat = (100·Invest + 60·Tolerate + 20·Eliminate + 20·Migrate)
         <tr><td class="mono">—</td><td>Dashboard ejecutivo · D4</td><td><div class="dur"><i style="width:32px"></i><span>2 sem</span></div></td><td>Fuentes nuevas —TLM, resiliencia, deudas técnicas, application class, dependencias—: cada una convierte un bloque «sin dato» en una medición</td></tr>
         <tr class="shipped"><td class="mono">—</td><td>Pantalla Code · C1</td><td><span class="done">ENTREGADA</span></td><td><strong>Obsolescencia y riesgo según los componentes de cada repositorio</strong> · proyección a uno, dos y tres años si nada cambia, plan de mejora y evolución por carga · fin de vida de endoflife.date (22 productos, 273 ciclos) · 15 parámetros editables desde el portal · discrepancias con el Currency Score · repositorios de demostración que solo arrancan en Development (ADR 0026)</td></tr>
         <tr><td class="mono">—</td><td>Pantalla Code · C2 · GitHub Enterprise</td><td><div class="dur"><i style="width:48px"></i><span>3 sem</span></div></td><td>Recolector aparte con una GitHub App de solo lectura, mapeo repositorio → EAI y publicación del inventario a la capa System: la pantalla muestra una organización piloto real, sin credenciales de GitHub en la System ni en la Channel</td></tr>
+        <tr class="shipped"><td class="mono">—</td><td>Cargas reales de octubre</td><td><span class="done">ENTREGADA</span></td><td><strong>Los exports reales cargan tal como llegan</strong>:
+          <ul>
+            <li>Excel y varios archivos por fuente (APIM por región);</li>
+            <li>cargas de 128 MB;</li>
+            <li>sitio compilado versionado para equipos sin Node;</li>
+            <li>DR solo en críticas;</li>
+            <li>OSS y Raw Tech con valor bruto;</li>
+            <li>plan automático a 90 para quien no tiene roadmap (ADR 0029–0034).</li>
+          </ul></td></tr>
+        <tr class="shipped"><td class="mono">—</td><td>Navegación y future plan</td><td><span class="done">ENTREGADA</span></td><td><strong>El future plan a 90 se calcula al cargar y es el mismo que da el what-if</strong>, paso a paso, con quién lo ejecuta y la evidencia de la aplicación. Se retiró Insights; Code y Roadmap se apagan desde la configuración (ADR 0035–0036)</td></tr>
+        <tr class="shipped"><td class="mono">—</td><td>Fuentes desde bases de datos</td><td><span class="done">ENTREGADA</span></td><td><strong>Las fuentes se leen de SQL Server, PostgreSQL, Oracle u ODBC sin archivos.</strong> La aplicación impone TLS verificado, secretos en archivos montados y solo lectura, y la lectura publica por la misma validación que una carga. Guía en inglés (ADR 0037)</td></tr>
+        <tr class="shipped"><td class="mono">—</td><td>Auditoría de octubre</td><td><span class="done">ENTREGADA</span></td><td><strong>10 hallazgos, ninguna Alta ni Crítica abierta</strong>. Dependencias .NET y npm sin vulnerabilidades, llaves de sesión cifradas y contraseñas solo desde archivos de secretos</td></tr>
         <tr><td class="mono">16</td><td>Escala y operación</td><td><div class="dur"><i style="width:48px"></i><span>3 sem</span></div></td><td>Destino y motor de base, Redis, dos réplicas por capa, respaldos, SIEM y notificaciones de reglas</td></tr>
         <tr><td class="mono">17</td><td>Hallazgos de infraestructura</td><td><div class="dur"><i style="width:32px"></i><span>2 sem</span></div></td><td>Al final, por decisión: identidad de carga de trabajo (H-16), firma de imágenes y logs inmutables (H-17), sesiones activas (H-20) y antivirus en cargas (H-21)</td></tr>
       </tbody>
@@ -1448,6 +1481,44 @@ endoflife.date · registros de paquetes ─────────►       │
     Con el encabezado real del EAI Master —«Suma de Kenna_Score», «MFA» junto al nombre completo, Year/Quarter/Month/Day y sin APP_ID— la lectura pasó a tolerar los exports reales: <strong>un valor ilegible en un campo opcional queda sin dato y la aplicación entra</strong>, informado como <em>Values loaded as empty</em>; <code>N/A</code> y <code>(En blanco)</code> son vacío; números en cualquier formato regional; el nombre exacto gana a un alias; un EAI repetido deja la última fila; y la deuda técnica se une por el EAI, que en la organización es el mismo código que el APP_ID. El export de ejemplo con ese formato carga 250 aplicaciones sin rechazos y la 14381 sigue en 79,67 (ADR 0028).
   </div>
 
+  <h3>21 de octubre — navegación, future plan, bases de datos y auditoría</h3>
+  <div class="ship">
+    <div class="h">Pedido el 21 de octubre · entregado en cuatro bloques</div>
+    <p>Se pidió:</p>
+    <ul>
+      <li>quitar la pantalla Insights, que respondía lo mismo que el dashboard;</li>
+      <li>ocultar Code y Roadmap;</li>
+      <li>generar al cargar un future plan con el máximo detalle, que coincida con el what-if a 90;</li>
+      <li>conectar las fuentes desde bases de datos de forma segura;</li>
+      <li>auditar la aplicación completa.</li>
+    </ul>
+  </div>
+  <div class="tw">
+    <table>
+      <thead><tr><th style="width:26%">Bloque</th><th>Cómo quedó</th></tr></thead>
+      <tbody>
+        <tr><td><strong>W1 · Navegación</strong></td><td>Insights se retiró con sus endpoints y parámetros; las versiones de reglas viejas se siguen leyendo. Code y Roadmap vienen apagadas y se encienden desde la configuración de la capa Channel sin recompilar el sitio. Mientras están apagadas no se ofrecen y sus endpoints responden 404 (ADR 0035)</td></tr>
+        <tr><td><strong>W2 · Future plan</strong></td><td>Una sola búsqueda para el plan automático y el laboratorio. Al cargar, cada aplicación recibe su plan a 90 paso a paso:
+          <ul>
+            <li>la métrica que mueve, desde y hasta qué valor;</li>
+            <li>los puntos que suma;</li>
+            <li>quién lo ejecuta;</li>
+            <li>las acciones con la evidencia de la aplicación: CVE de SCA, productos a modernizar, capacidades de monitoreo que faltan.</li>
+          </ul>
+          <em>Open in What-If</em> lo carga con las mismas cantidades (ADR 0036)</td></tr>
+        <tr><td><strong>W3 · Bases de datos</strong></td><td>SQL Server (usuario SQL, Kerberos, Microsoft Entra), PostgreSQL (contraseña, certificado de cliente, Kerberos), Oracle (TCPS, wallet) y ODBC. Cada lectura corre en una transacción de solo lectura que siempre se deshace. En Data, <em>Test connections</em> y <em>Pull from databases</em>; si una fuente falla, no se publica nada. Dónde se configura, en <code>docs/database-connections.md</code> (ADR 0037)</td></tr>
+        <tr><td><strong>W4 · Auditoría</strong></td><td>10 hallazgos, ninguna Alta ni Crítica abierta; el detalle está en la sección 07 y en <code>docs/security/audit-2026-10.md</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note"><strong>Verificado en vivo</strong> contra las dos capas y el sitio compilado:
+    <ul>
+      <li>con el driver real de PostgreSQL, una conexión sin TLS verificado se rechaza, una sin servidor lo informa y la lectura no publica nada;</li>
+      <li>quedan los eventos de auditoría 4217 y 4216;</li>
+      <li>fuera de Development, la capa System no arranca con una contraseña en una variable de entorno, y la Channel no arranca con llaves persistidas sin certificado.</li>
+    </ul>
+    Una lectura completa contra un servidor real se probó con SQLite a través de las dos capas: levantar PostgreSQL en local exigía descargar una imagen de contenedor.</div>
+
   <h3>Estructura del repositorio</h3>
   <pre>modernization-score/
 ├─ <b>Directory.Packages.props</b>        <em>versiones centralizadas</em>
@@ -1471,7 +1542,8 @@ endoflife.date · registros de paquetes ─────────►       │
 │  ├─ system/
 │  │  ├─ Modernization.SystemApi/        <em>host HTTP de la capa System</em>
 │  │  ├─ Modernization.Sources/{<b>Dummy</b>,<b>Files</b>,Export}/  <em>✓</em>
-│  │  └─ <b>Modernization.Sources.Database/</b>     <em>EF Core, migraciones ✓</em>
+│  │  ├─ <b>Modernization.Sources.Database/</b>     <em>EF Core, migraciones ✓</em>
+│  │  └─ <b>Modernization.Sources.Connectors/</b>   <em>lectura segura desde bases de las fuentes ✓</em>
 │  └─ web/                              <em>React 19 SPA</em>
 ├─ tests/
 │  ├─ <b>Scoring.Engine.Tests/</b>        <em>golden tests + tabla de casos ✓</em>

@@ -28,6 +28,27 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "src/web", "run", "dev"],
       "port": 5173
+    },
+    {
+      "name": "system-dummy",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run", "--no-build", "--project", "src/system/Modernization.SystemApi", "--no-launch-profile", "-p:UseAppHost=false",
+        "-e", "ASPNETCORE_ENVIRONMENT=Development",
+        "-e", "ASPNETCORE_URLS=http://localhost:5101"
+      ],
+      "port": 5101
+    },
+    {
+      "name": "sitio",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": [
+        "run", "--no-build", "--project", "src/channel/Modernization.ChannelApi", "--no-launch-profile", "-p:UseAppHost=false",
+        "-e", "ASPNETCORE_ENVIRONMENT=Development",
+        "-e", "ASPNETCORE_URLS=http://localhost:5100",
+        "-e", "ASPNETCORE_WEBROOT=../../../sitio-compilado"
+      ],
+      "port": 5100
     }
   ]
 }

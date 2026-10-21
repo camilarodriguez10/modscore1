@@ -77,18 +77,18 @@ public static class ChannelEndpoints
             .WithSummary("Pantalla 05 — plan futuro: hitos, proyeccion y alertas de coherencia.");
 
         api.MapGet("/roadmap", GetPortfolioRoadmap)
+            .RequireFeature(f => f.PortfolioRoadmap)
             .WithSummary("Pantalla 06 — el portafolio visto por disposition y roadmap.");
 
         api.MapGet("/dashboard", GetDashboard)
             .WithSummary("Dashboard ejecutivo — las seis preguntas en una vista, con los mismos filtros.");
 
-        api.MapGet("/insights", GetInsights)
-            .WithSummary("Pantalla 09 — las seis preguntas del portafolio, con los mismos filtros.");
-
         api.MapGet("/code", GetCode)
+            .RequireFeature(f => f.Code)
             .WithSummary("Pantalla Code — obsolescencia y riesgo segun los repositorios, con los mismos filtros.");
 
         api.MapGet("/code/applications/{eaiCode}", GetCodeApplication)
+            .RequireFeature(f => f.Code)
             .WithSummary("Repositorios, componentes y dependencias de una aplicacion.");
 
         api.MapGet("/ingestion", GetIngestion)
@@ -184,7 +184,10 @@ public static class ChannelEndpoints
         return Results.NoContent();
     }
 
-    private static IResult GetSession(HttpContext context, ChannelPermissions permissions)
+    private static IResult GetSession(
+        HttpContext context,
+        ChannelPermissions permissions,
+        Microsoft.Extensions.Options.IOptionsMonitor<ChannelFeatures> features)
     {
         var user = context.User;
         CsrfProtection.EnsureToken(context);
@@ -198,7 +201,8 @@ public static class ChannelEndpoints
                 permissions.CanRead(user),
                 permissions.HasFullPortfolio(user),
                 permissions.CanUpload(user),
-                permissions.CanAdministerRules(user))));
+                permissions.CanAdministerRules(user)),
+            new SessionFeaturesView(features.CurrentValue.Code, features.CurrentValue.PortfolioRoadmap)));
     }
 
     private static async Task<IResult> GetPortfolio(
@@ -531,33 +535,8 @@ public static class ChannelEndpoints
     }
 
     /// <summary>
-    /// Las seis preguntas. La capa Channel no calcula nada: entrega lo que la System
-    /// analizo, con el mismo filtro que la pantalla tiene puesto.
-    /// </summary>
-    private static async Task<IResult> GetInsights(
-        SystemApiClient system,
-        [AsParameters] FilterParameters filters,
-        CancellationToken cancellationToken,
-        int? duplicates = null,
-        int? top = null)
-    {
-        if (InvalidFilters(filters) is { } problem)
-        {
-            return problem;
-        }
-
-        var insights = await system.GetInsightsAsync(
-            filters.ToQuery(),
-            duplicates,
-            top,
-            cancellationToken).ConfigureAwait(false);
-
-        return Results.Ok(insights);
-    }
-
-    /// <summary>
-    /// El dashboard ejecutivo. Igual que las seis preguntas, la capa Channel no calcula
-    /// nada: valida los filtros, pregunta y entrega.
+    /// El dashboard ejecutivo. La capa Channel no calcula nada: valida los filtros,
+    /// pregunta y entrega.
     /// </summary>
     private static async Task<IResult> GetDashboard(
         SystemApiClient system,

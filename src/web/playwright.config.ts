@@ -63,6 +63,10 @@ export default defineConfig({
             env: {
               ASPNETCORE_ENVIRONMENT: 'Development',
               ASPNETCORE_URLS: 'http://localhost:5100',
+              // Code y Roadmap vienen apagadas desde el 2026-10-21; la suite las enciende para
+              // seguir probándolas, y una prueba aparte simula una sesión con las dos apagadas.
+              Features__Code: 'true',
+              Features__PortfolioRoadmap: 'true',
               ...generousLimits,
             },
           },

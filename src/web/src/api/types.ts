@@ -17,6 +17,14 @@ export interface SessionView {
   roles: readonly string[];
   isAuthenticated: boolean;
   permissions: SessionPermissionsView;
+  /** Pantallas encendidas en la capa Channel. Una sesión anterior al 2026-10-21 no lo trae. */
+  features: SessionFeaturesView;
+}
+
+/** Code y Roadmap se encienden en la capa Channel, sin recompilar el sitio. */
+export interface SessionFeaturesView {
+  code: boolean;
+  portfolioRoadmap: boolean;
 }
 
 /**
@@ -936,36 +944,9 @@ export interface RulesCompareView {
 }
 
 
-// ------------------------------------------------------------- 09 Insights
+// ------------------------------------------------------------ Dashboard
 
-/**
- * Las seis preguntas del portafolio, respondidas sobre el recorte filtrado.
- * Nada se calcula aqui: el analisis llega hecho desde la capa System.
- */
-export interface InsightsView {
-  rulesetVersion: string;
-  capturedAt: string;
-  health: PortfolioHealthView;
-  priorities: readonly ModernizationCandidateView[];
-  complexity: readonly ComplexityClusterView[];
-  risk: readonly RiskConcentrationView[];
-  obsolescence: readonly ObsolescenceDriverView[];
-  resilience: ResilienceGapsView;
-  options: InsightsOptionsView;
-  /** Pesos y umbrales vigentes: la pantalla explica sus calculos con ellos. */
-  definitions: AnalyticsDocument;
-}
-
-/** Que tan sano esta el portafolio. `dataCoverage` es el peso del modelo que tuvo dato. */
-export interface PortfolioHealthView {
-  applications: number;
-  averageScore: number;
-  medianScore: number;
-  dataCoverage: number;
-  criticalBelowHealthy: number;
-  bands: readonly BandShareView[];
-}
-
+/** Cuántas aplicaciones caen en un tramo de score, y qué parte del total son. */
 export interface BandShareView {
   code: string;
   name: string;
@@ -973,94 +954,6 @@ export interface BandShareView {
   share: number;
 }
 
-/**
- * Que modernizar primero. `impact` es el uplift ponderado por negocio y `weeks` el
- * esfuerzo que sostienen los hitos del roadmap; la lista se ordena por `valuePerWeek`.
- */
-export interface ModernizationCandidateView {
-  eaiCode: string;
-  applicationName: string;
-  lob: string | null;
-  country: string | null;
-  currentScore: number;
-  projectedScore: number | null;
-  uplift: number;
-  weeks: number;
-  businessWeight: number;
-  impact: number;
-  valuePerWeek: number;
-  roadmap: string | null;
-  roadmapName: string | null;
-  evidence: readonly Notice[];
-}
-
-/** Donde reducir complejidad. `kind` dice que clase de concentracion se encontro. */
-export interface ComplexityClusterView {
-  kind: string;
-  dimension: string;
-  applications: number;
-  users: number;
-  averageScore: number;
-  eaiCodes: readonly string[];
-  evidence: Notice;
-}
-
-/** Donde se concentra el riesgo tecnologico. `riskIndex` ordena dentro de este portafolio. */
-export interface RiskConcentrationView {
-  grouping: string;
-  dimension: string;
-  applications: number;
-  criticalFlaws: number;
-  highFlaws: number;
-  weakVulnerabilityManagement: number;
-  obsoleteComponents: number;
-  internetFacingCritical: number;
-  averageScore: number;
-  riskIndex: number;
-}
-
-/** Que causa la obsolescencia. `weightWithoutData` es ceguera, no obsolescencia. */
-export interface ObsolescenceDriverView {
-  metricKey: string;
-  name: string;
-  pillarKey: string;
-  lostPoints: number;
-  weightWithoutData: number;
-  applicationsAffected: number;
-  share: number;
-}
-
-/** Donde faltan defensas de continuidad. Los contadores miran solo aplicaciones criticas. */
-export interface ResilienceGapsView {
-  criticalWithoutDisasterRecovery: number;
-  criticalWithoutMonitoring: number;
-  withLowOperationalScore: number;
-  withoutRecoveryObjectives: number;
-  applications: readonly ResilienceGapApplicationView[];
-}
-
-export interface ResilienceGapApplicationView {
-  eaiCode: string;
-  applicationName: string;
-  lob: string | null;
-  country: string | null;
-  critical: boolean;
-  score: number;
-  recoveryTimeObjective: string | null;
-  recoveryPointObjective: string | null;
-  gaps: readonly Notice[];
-}
-
-/** Los umbrales con que se calculo, para que la pantalla los muestre y los deje ajustar. */
-export interface InsightsOptionsView {
-  healthyScore: number;
-  significantUserBase: number;
-  duplicateThreshold: number;
-  topCount: number;
-}
-
-
-// ------------------------------------------------------------ Dashboard
 
 /**
  * El dashboard ejecutivo del portafolio filtrado. Todo llega calculado: la pantalla

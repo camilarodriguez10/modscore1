@@ -17,12 +17,11 @@ public static class AnalyticsCatalog
     public const string RiskArea = "risk";
     public const string ObsolescenceArea = "obsolescence";
     public const string ResilienceArea = "resilience";
-    public const string InsightsArea = "insights";
     public const string CodeArea = "code";
 
     /// <summary>Las áreas, en el orden de las preguntas; la pantalla Code va al final.</summary>
     public static readonly IReadOnlyList<string> Areas =
-        [Currency, Prioritization, ComplexityArea, RiskArea, ObsolescenceArea, ResilienceArea, InsightsArea, CodeArea];
+        [Currency, Prioritization, ComplexityArea, RiskArea, ObsolescenceArea, ResilienceArea, CodeArea];
 
     public static readonly IReadOnlyList<AnalyticsParameter> Parameters =
     [
@@ -83,32 +82,6 @@ public static class AnalyticsCatalog
             (r, v) => r with { Resilience = r.Resilience with { OperationalHighBelow = v } }, min: 0.01m),
         Score(ResilienceArea, "resilience.operationalCriticalBelow", r => r.Resilience.OperationalCriticalBelow,
             (r, v) => r with { Resilience = r.Resilience with { OperationalCriticalBelow = v } }, min: 0.01m),
-
-        // Pantalla Insights
-        Weight("insights.businessWeight.critical", r => r.Insights.BusinessWeight.Critical,
-            (r, v) => r with { Insights = r.Insights with { BusinessWeight = r.Insights.BusinessWeight with { Critical = v } } }),
-        Weight("insights.businessWeight.significantUsers", r => r.Insights.BusinessWeight.SignificantUsers,
-            (r, v) => r with { Insights = r.Insights with { BusinessWeight = r.Insights.BusinessWeight with { SignificantUsers = v } } }),
-        Weight("insights.businessWeight.broadCapabilities", r => r.Insights.BusinessWeight.BroadCapabilities,
-            (r, v) => r with { Insights = r.Insights with { BusinessWeight = r.Insights.BusinessWeight with { BroadCapabilities = v } } }),
-        Whole(InsightsArea, "insights.businessWeight.capabilitiesFrom", r => r.Insights.BusinessWeight.CapabilitiesFrom,
-            (r, v) => r with { Insights = r.Insights with { BusinessWeight = r.Insights.BusinessWeight with { CapabilitiesFrom = v } } }, 1, 50),
-        Points(InsightsArea, "insights.riskIndex.criticalFlaw", r => r.Insights.RiskIndex.CriticalFlaw,
-            (r, v) => r with { Insights = r.Insights with { RiskIndex = r.Insights.RiskIndex with { CriticalFlaw = v } } }, min: 0m),
-        Points(InsightsArea, "insights.riskIndex.highFlaw", r => r.Insights.RiskIndex.HighFlaw,
-            (r, v) => r with { Insights = r.Insights with { RiskIndex = r.Insights.RiskIndex with { HighFlaw = v } } }, min: 0m),
-        Points(InsightsArea, "insights.riskIndex.weakKenna", r => r.Insights.RiskIndex.WeakKenna,
-            (r, v) => r with { Insights = r.Insights with { RiskIndex = r.Insights.RiskIndex with { WeakKenna = v } } }, min: 0m),
-        Whole(InsightsArea, "insights.riskIndex.weakKennaFrom", r => r.Insights.RiskIndex.WeakKennaFrom,
-            (r, v) => r with { Insights = r.Insights with { RiskIndex = r.Insights.RiskIndex with { WeakKennaFrom = v } } }, 1, 1000, AnalyticsKind.Kenna),
-        Points(InsightsArea, "insights.riskIndex.obsoleteComponent", r => r.Insights.RiskIndex.ObsoleteComponent,
-            (r, v) => r with { Insights = r.Insights with { RiskIndex = r.Insights.RiskIndex with { ObsoleteComponent = v } } }, min: 0m),
-        Points(InsightsArea, "insights.riskIndex.exposedCritical", r => r.Insights.RiskIndex.ExposedCritical,
-            (r, v) => r with { Insights = r.Insights with { RiskIndex = r.Insights.RiskIndex with { ExposedCritical = v } } }, min: 0m),
-        Score(InsightsArea, "insights.lowOperationalBelow", r => r.Insights.LowOperationalBelow,
-            (r, v) => r with { Insights = r.Insights with { LowOperationalBelow = v } }, min: 0.01m),
-        Whole(InsightsArea, "insights.duplicateDefault", r => r.Insights.DuplicateDefault,
-            (r, v) => r with { Insights = r.Insights with { DuplicateDefault = v } }, 2, 5),
 
         // Pantalla Code: componentes y bibliotecas de los repositorios
         Whole(CodeArea, "code.approachingMonths", r => r.Code.ApproachingMonths,
@@ -179,9 +152,6 @@ public static class AnalyticsCatalog
         string area, string key, Func<DashboardRules, decimal> get, Func<DashboardRules, decimal, DashboardRules> set, decimal min = 0.01m)
         => new(key, area, AnalyticsKind.Points, min, 100m, 2, get, set);
 
-    private static AnalyticsParameter Weight(
-        string key, Func<DashboardRules, decimal> get, Func<DashboardRules, decimal, DashboardRules> set)
-        => new(key, InsightsArea, AnalyticsKind.Weight, 0m, 10m, 2, get, set);
 
     private static AnalyticsParameter Whole(
         string area,
@@ -248,7 +218,7 @@ public sealed record AnalyticsConstraint(string Key, Func<DashboardRules, bool> 
 /// cada área con su estado y su dueño.
 /// </summary>
 /// <remarks>
-/// Lo ve el administrador para editar y lo reciben el dashboard e Insights para explicar
+/// Lo ve el administrador para editar y lo recibe el dashboard para explicar
 /// sus cálculos con los números que de verdad usaron. <c>SignificantUserBase</c> no se
 /// edita aquí —es un parámetro del roadmap, en la misma versión de reglas—, pero la
 /// criticidad y el peso de negocio dependen de él y la explicación lo nombra.

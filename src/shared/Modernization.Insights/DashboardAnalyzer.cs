@@ -9,7 +9,7 @@ namespace Modernization.Insights;
 /// datos de las fuentes y las definiciones de <see cref="DashboardRules"/>.
 /// </summary>
 /// <remarks>
-/// Es una función pura, como <see cref="InsightsAnalyzer"/>: mismo portafolio, mismas
+/// Es una función pura: mismo portafolio, mismas
 /// definiciones, mismo resultado. Cada nivel sale de un umbral que está en el
 /// contrato, no en el código, y lo que no tiene fuente se dice como tal en vez de
 /// aproximarse.

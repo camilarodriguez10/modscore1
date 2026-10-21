@@ -1,6 +1,6 @@
 {
   "version": "dashboard-v1",
-  "description": "Definitions behind the six portfolio questions: the executive dashboard (Portfolio Health & Risk Intelligence) and the Insights screen. These are the factory values; every number below travels with each rules version and is edited from the portal (ADR 0024, ADR 0025).",
+  "description": "Definitions behind the six portfolio questions: the executive dashboard (Portfolio Health & Risk Intelligence). These are the factory values; every number below travels with each rules version and is edited from the portal (ADR 0024, ADR 0025).",
 
   "currency": {
     "note": "Currency Score = the score CMT delivers: Raw_Tech_Score from the Currency Model Detail Report, 0-100, computed per component from its end-of-life date (decided 2026-09-18). A 0 is no data, as in the score model. Legacy platform = Currency Score below the threshold; 60 is where the BRD's lowest band (0-59) ends.",
@@ -70,13 +70,6 @@
     { "key": "controls", "currency": false, "metrics": [ "mfa", "dr.inScope", "api.native", "monitoring", "operational" ] }
   ],
 
-  "insights": {
-    "businessWeight": { "critical": 1, "significantUsers": 0.5, "broadCapabilities": 0.25, "capabilitiesFrom": 3 },
-    "riskIndex": { "criticalFlaw": 3, "highFlaw": 1, "weakKenna": 5, "weakKennaFrom": 670, "obsoleteComponent": 2, "exposedCritical": 10 },
-    "lowOperationalBelow": 60,
-    "duplicateDefault": 3
-  },
-
   "code": {
     "note": "Code screen (ADR 0026): evidence from the repositories each application owns in GitHub Enterprise. A component is approaching its end of life when its cycle ends within approachingMonths, per the endoflife.date snapshot in contracts/eol-catalog-v1.json. A library is outdated when it is outdatedMajorsBehind or more major versions behind the latest release; a repository is stale after staleMonths without commits, or when it is archived. The code risk index adds the points below for every finding, and its levels follow moderateFrom < highFrom < criticalFrom. It does not change the Modernization Score.",
     "approachingMonths": 12,
@@ -97,7 +90,6 @@
     "risk": { "status": "provisional", "owner": "Enterprise Architecture" },
     "obsolescence": { "status": "provisional", "owner": "Enterprise Architecture" },
     "resilience": { "status": "provisional", "owner": "Operations" },
-    "insights": { "status": "provisional", "owner": "Enterprise Architecture" },
     "code": { "status": "provisional", "owner": "Enterprise Architecture" }
   }
 }

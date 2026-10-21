@@ -12,7 +12,6 @@ const screens = [
   { name: 'portfolio', path: '/portfolio' },
   { name: 'definitions', path: '/definitions' },
   { name: 'calculation of the BRD example', path: '/applications/14381/calculation' },
-  { name: 'insights', path: '/insights' },
   { name: 'code', path: '/code' },
   { name: 'code detail of an application', path: '/code?app=14381' },
   { name: 'roadmap', path: '/roadmap' },

@@ -4,8 +4,8 @@ import type { AnalyticsDocument } from '../api/types';
 import { areaName, statusLabel, type Explanation } from '../i18n/analytics';
 
 /**
- * Las definiciones vigentes para quien las explique. El dashboard e Insights las
- * reciben con sus datos y las ponen aqui: cada panel arma su explicacion sin que haya
+ * Las definiciones vigentes para quien las explique. El dashboard las
+ * recibe con sus datos y las pone aqui: cada panel arma su explicacion sin que haya
  * que pasarlas de mano en mano.
  */
 export const DefinitionsContext = createContext<AnalyticsDocument | null>(null);

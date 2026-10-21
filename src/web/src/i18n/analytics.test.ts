@@ -6,7 +6,6 @@ import {
   constraintText,
   dashboardExplanation,
   formatParameter,
-  insightsExplanation,
   parameterLabel,
 } from './analytics';
 import { formatNotice } from './notices';
@@ -20,7 +19,6 @@ const definitions = (legacyBelow = 60): AnalyticsDocument => ({
     { key: 'concentration.topShare', area: 'risk', kind: 'share', value: 0.2, min: 0.01, max: 1, decimals: 2 },
     { key: 'candidates.minCriticality', area: 'prioritization', kind: 'level', value: 2, min: 0, max: 3, decimals: 0 },
     { key: 'resilience.recoveryHighFromHours', area: 'resilience', kind: 'hours', value: 48, min: 1, max: 720, decimals: 0 },
-    { key: 'insights.riskIndex.weakKennaFrom', area: 'insights', kind: 'kenna', value: 670, min: 1, max: 1000, decimals: 0 },
   ],
   areas: AREA_KEYS.map((key) => ({ key, status: 'provisional', owner: null })),
   significantUserBase: 1000,
@@ -63,13 +61,6 @@ describe('explanations', () => {
     expect(dashboardExplanation(2, definitions()).area).toBe('prioritization');
     expect(dashboardExplanation(6, definitions()).area).toBe('resilience');
     expect(dashboardExplanation(1, definitions()).area).toBeNull();
-  });
-
-  it('tell the Insights risk index that Kenna runs up to 1000 and higher is worse', () => {
-    const rules = insightsExplanation(4, definitions(), 70).rules.join(' ');
-
-    expect(rules).toContain('Kenna at least 670');
-    expect(rules).toContain('higher is worse');
   });
 
   it('name what is not measured yet', () => {

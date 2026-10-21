@@ -164,36 +164,6 @@ public sealed class SystemApiClient(HttpClient http, IHttpClientFactory clients)
     }
 
     /// <summary>
-    /// Las seis preguntas del portafolio, sobre el mismo recorte que el inventario.
-    /// </summary>
-    /// <remarks>
-    /// Los umbrales viajan como parametros: cuantas aplicaciones ya son una concentracion
-    /// y cuantos elementos trae cada lista. La capa System los acota.
-    /// </remarks>
-    public Task<InsightsResponse> GetInsightsAsync(
-        ApplicationQuery? query = null,
-        int? duplicates = null,
-        int? top = null,
-        CancellationToken cancellationToken = default)
-    {
-        var parts = new List<string>(query?.FilterParts() ?? []);
-
-        if (duplicates is { } threshold)
-        {
-            parts.Add($"duplicates={threshold}");
-        }
-
-        if (top is { } count)
-        {
-            parts.Add($"top={count}");
-        }
-
-        var url = parts.Count == 0 ? "/system/insights" : "/system/insights?" + string.Join('&', parts);
-
-        return GetRequiredAsync<InsightsResponse>(url, cancellationToken);
-    }
-
-    /// <summary>
     /// El dashboard ejecutivo sobre el mismo recorte que el inventario. El eje del mapa
     /// de calor viaja aparte: es una forma de mirar, no un filtro.
     /// </summary>

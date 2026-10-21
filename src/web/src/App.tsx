@@ -8,13 +8,14 @@ import { ExplainPage } from './routes/ExplainPage';
 import { WhatIfPage } from './routes/WhatIfPage';
 import { RoadmapPage } from './routes/RoadmapPage';
 import { PortfolioRoadmapPage } from './routes/PortfolioRoadmapPage';
-import { InsightsPage } from './routes/InsightsPage';
 import { CodePage } from './routes/CodePage';
 import { DashboardPage } from './routes/DashboardPage';
 import { DefinitionsPage } from './routes/DefinitionsPage';
 import { DataPage } from './routes/DataPage';
 import { Spinner } from './components/primitives';
 import { RulesChangedNotice } from './components/RulesChangedNotice';
+import type { SessionFeaturesView } from './api/types';
+import { FILTERED_ROUTES, NO_FEATURES, UNFILTERED_ROUTES, visibleTabs } from './navigation';
 
 // Las pantallas de administracion solo las abre quien administra reglas: se cargan bajo
 // demanda y no pesan en el bundle de quien solo consulta.
@@ -22,12 +23,6 @@ const RulesPage = lazy(() => import('./routes/RulesPage').then((module) => ({ de
 const RulesComparePage = lazy(() =>
   import('./routes/RulesComparePage').then((module) => ({ default: module.RulesComparePage })),
 );
-
-/** Las pantallas donde el filtro actua. En el resto se muestra, pero sin controles. */
-const FILTERED_ROUTES = new Set(['/', '/portfolio', '/insights', '/code', '/roadmap']);
-
-/** Pantallas sobre las reglas, no sobre un recorte del portafolio: el filtro no se muestra. */
-const UNFILTERED_ROUTES = ['/admin', '/definitions'];
 
 export function App() {
   return (
@@ -42,9 +37,11 @@ export function App() {
         <Route path="applications/:eaiCode/what-if" element={<WhatIfPage />} />
         <Route path="applications/:eaiCode/roadmap" element={<RoadmapPage />} />
         <Route path="dashboard" element={<LegacyDashboard />} />
-        <Route path="insights" element={<InsightsPage />} />
-        <Route path="code" element={<CodePage />} />
-        <Route path="roadmap" element={<PortfolioRoadmapPage />} />
+        {/* Insights se retiró el 2026-10-21: un enlace guardado lleva al dashboard, que
+            responde las mismas preguntas. */}
+        <Route path="insights" element={<LegacyDashboard />} />
+        <Route path="code" element={<FeatureRoute feature="code" element={<CodePage />} />} />
+        <Route path="roadmap" element={<FeatureRoute feature="portfolioRoadmap" element={<PortfolioRoadmapPage />} />} />
         <Route path="data" element={<DataPage />} />
         <Route
           path="admin/rules"
@@ -82,6 +79,14 @@ function LegacyDashboard() {
   const { search } = useLocation();
 
   return <Navigate to={`/${search}`} replace />;
+}
+
+/** Una pantalla que la capa Channel puede apagar: apagada, su ruta vuelve al dashboard. */
+function FeatureRoute({ feature, element }: { feature: keyof SessionFeaturesView; element: React.ReactElement }) {
+  const session = useSession();
+  const { search } = useLocation();
+
+  return (session.data?.features ?? NO_FEATURES)[feature] ? element : <Navigate to={`/${search}`} replace />;
 }
 
 function LegacyApplication({ suffix }: { suffix: string }) {
@@ -160,6 +165,7 @@ function Shell() {
     <Workspace
       name={session.data.name}
       canAdministerRules={session.data.permissions.canAdministerRules}
+      features={session.data.features ?? NO_FEATURES}
     />
   );
 }
@@ -170,7 +176,15 @@ function Shell() {
  * menu: eso solo se cumple si el control vive por encima de las pantallas y la URL
  * es la fuente de verdad.
  */
-function Workspace({ name, canAdministerRules }: { name: string; canAdministerRules: boolean }) {
+function Workspace({
+  name,
+  canAdministerRules,
+  features,
+}: {
+  name: string;
+  canAdministerRules: boolean;
+  features: SessionFeaturesView;
+}) {
   const { pathname } = useLocation();
   const { search } = useFilters();
 
@@ -187,34 +201,11 @@ function Workspace({ name, canAdministerRules }: { name: string; canAdministerRu
 
           {/* Cada enlace lleva el filtro consigo: cambiar de menu no lo pierde. */}
           <nav className="flex gap-1">
-            <Tab to="/" search={search}>
-              Dashboard
-            </Tab>
-            <Tab to="/portfolio" search={search}>
-              Portfolio
-            </Tab>
-            <Tab to="/insights" search={search}>
-              Insights
-            </Tab>
-            <Tab to="/code" search={search}>
-              Code
-            </Tab>
-            <Tab to="/roadmap" search={search}>
-              Roadmap
-            </Tab>
-            <Tab to="/data" search={search}>
-              Data
-            </Tab>
-            <Tab to="/definitions" search="">
-              Definitions
-            </Tab>
-            {/* Solo a quien administra reglas. El servidor lo exige igual: esto solo
-                evita ofrecer una pantalla que responderia 403. */}
-            {canAdministerRules && (
-              <Tab to="/admin/rules" search="">
-                Rules
+            {visibleTabs(features, canAdministerRules).map((tab) => (
+              <Tab key={tab.to} to={tab.to} search={tab.carriesFilter ? search : ''}>
+                {tab.label}
               </Tab>
-            )}
+            ))}
           </nav>
 
           <span className="ml-auto font-mono text-[11.5px] text-ink-3">{name}</span>

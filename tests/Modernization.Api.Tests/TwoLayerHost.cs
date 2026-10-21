@@ -65,6 +65,11 @@ public sealed class TwoLayerHost : IDisposable
                 builder.UseSetting("RateLimiting:RulesSimulationsPerMinute", "100000");
                 builder.UseSetting("RateLimiting:RulesPublishesPerWindow", "100000");
 
+                // Code y Roadmap vienen apagadas desde el 2026-10-21: las pruebas las encienden
+                // para seguir probándolas, y las que miran el valor por defecto las apagan.
+                builder.UseSetting("Features:Code", "true");
+                builder.UseSetting("Features:PortfolioRoadmap", "true");
+
                 foreach (var (key, value) in channelSettings ?? new Dictionary<string, string?>())
                 {
                     builder.UseSetting(key, value);

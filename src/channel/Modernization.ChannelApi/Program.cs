@@ -36,6 +36,9 @@ builder.WebHost.ConfigureKestrel(options =>
     options.Limits.MaxRequestBodySize = ChannelLimits.DefaultMaxRequestBodyBytes;
 });
 
+// Pantallas que se encienden o apagan sin recompilar el sitio (Code y Roadmap, apagadas).
+builder.Services.Configure<ChannelFeatures>(builder.Configuration.GetSection(ChannelFeatures.SectionName));
+
 // Detras del ingress, la IP y el esquema reales llegan en X-Forwarded-*. Solo se
 // aceptan de los proxies declarados: de cualquier otro origen, un cliente podria
 // inventarse la IP y esquivar el rate limiting.

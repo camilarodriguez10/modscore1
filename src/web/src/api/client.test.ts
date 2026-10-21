@@ -84,18 +84,6 @@ describe('api client', () => {
     expect(fetchMock.mock.calls[1]?.[0]).toBe('/api/applications/..%2F14381/overview');
   });
 
-  it('asks the six questions with the filter and thresholds on screen', async () => {
-    const fetchMock = respond(200, {});
-
-    await api.insights({ lob: 'Individual', criticalOnly: true }, { duplicates: 4, top: 25 });
-    await api.insights();
-
-    expect(fetchMock.mock.calls[0]?.[0]).toBe(
-      '/api/insights?lob=Individual&criticalOnly=true&duplicates=4&top=25',
-    );
-    expect(fetchMock.mock.calls[1]?.[0]).toBe('/api/insights');
-  });
-
   it('asks for the dashboard with the new filters and the heatmap axis', async () => {
     const fetchMock = respond(200, {});
 

@@ -1339,6 +1339,19 @@ portafolio, queda auditado con su impacto, y no requiere recompilar ni desplegar
 
 ---
 
+## 8quater. Plan de trabajo del 2026-10-21
+
+Pedido del 2026-10-21, en cuatro bloques que se entregan y se suben por separado.
+
+| Bloque | Qué | Cómo | Estado |
+|---|---|---|---|
+| **W1 — Navegación** | Quitar **Insights** (responde lo mismo que el dashboard). Ocultar **Code** y **Roadmap** | Insights se retira entero: pestaña, pantalla, endpoints de las dos capas, analizador y sus 13 parámetros en *Rules* (las versiones guardadas siguen cargando). Code y Roadmap se ocultan con interruptores de la capa Channel (`Features:Code`, `Features:PortfolioRoadmap`, apagados por defecto): la SPA no los ofrece, sus rutas vuelven al dashboard y sus endpoints responden 404. Se encienden sin recompilar el sitio ([ADR 0035](docs/adr/0035-navegacion-sin-insights-y-pantallas-apagables.md)) | **Entregado** el 2026-10-21 |
+| **W2 — Future plan** | Al cargar datos, cada aplicación tiene su *future plan* hacia 90, con el máximo detalle de acciones, y el what-if a 90 da exactamente el mismo plan | Un solo algoritmo para los dos (`WhatIfEngine.ReachTarget`: greedy verificado con el motor y poda); si 90 no se alcanza, los dos muestran el mismo mejor plan posible. Los planes se calculan al publicar la carga. Cada paso dice la métrica, su valor hoy y el objetivo, los puntos que suma en orden y las acciones concretas con la evidencia de la aplicación (hallazgos de SCA por severidad con sus librerías y CVE, capacidades de monitoreo que faltan, productos a reclasificar…). Botón *Open in What-If* que carga el mismo plan | Pendiente |
+| **W3 — Fuentes desde bases de datos** | Leer las fuentes directamente de las bases de la organización, sin archivos, con conexiones seguras y varias formas de conexión | Conectores de solo lectura para SQL Server (usuario SQL, Windows integrado, Microsoft Entra ID), PostgreSQL (contraseña, certificado de cliente), Oracle (usuario, wallet) y ODBC (cualquier driver). Consulta o vista por fuente, definida en configuración y nunca desde la pantalla; TLS obligatorio y verificado; secretos desde variables de entorno o archivos montados (Kubernetes / Key Vault), nunca en el repositorio; tiempos y filas acotados. *Pull from databases* en Data publica una versión por el mismo camino de validación que una carga. Guía en inglés: `docs/database-connections.md` | Pendiente |
+| **W4 — Auditoría** | Auditoría exhaustiva: malas prácticas y vulnerabilidades | Paquetes vulnerables (.NET y npm), analizadores, revisión manual de autenticación, CSRF, cabeceras, CSP, cookies, cargas, deserialización, expresiones regulares, registros, errores, secretos, contenedores y CI. Se corrige lo encontrado y queda el informe en `docs/security/audit-2026-10.md` (en inglés) | Pendiente |
+
+---
+
 ## 8ter. Plan desde la Fase 14
 
 Ordenado según las prioridades del 2026-09-14:

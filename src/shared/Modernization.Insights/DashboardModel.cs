@@ -103,6 +103,9 @@ public sealed record DashboardHealth(
     int RequiringIntervention,
     decimal InterventionShare);
 
+/// <summary>Cuántas aplicaciones caen en un tramo de score, y qué parte del total son.</summary>
+public sealed record BandShare(string Code, string Name, int Applications, decimal Share);
+
 /// <summary>
 /// ¿Qué modernizar primero? La matriz criticidad × oportunidad y su top 10.
 /// </summary>

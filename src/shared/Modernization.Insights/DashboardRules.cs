@@ -3,8 +3,9 @@ using System.Text.Json;
 namespace Modernization.Insights;
 
 /// <summary>
-/// Las definiciones con que se responden las seis preguntas del portafolio —el
-/// dashboard ejecutivo y la pantalla Insights—, como datos versionados.
+/// Las definiciones con que el dashboard ejecutivo responde las seis preguntas del
+/// portafolio, como datos versionados. La pantalla Insights, que respondía lo mismo, se
+/// retiró el 2026-10-21: una versión guardada antes trae su sección, y se ignora al leerla.
 /// </summary>
 /// <remarks>
 /// Los valores de fábrica viven en <c>contracts/dashboard-v1.json</c>. Desde el
@@ -40,8 +41,6 @@ public sealed record DashboardRules
     public required ResilienceRules Resilience { get; init; }
     public required IReadOnlyList<ObsolescenceGroup> Obsolescence { get; init; }
 
-    /// <summary>Los parámetros de la pantalla Insights.</summary>
-    public InsightsRules Insights { get; init; } = new();
 
     /// <summary>
     /// Los parámetros de la pantalla Code: obsolescencia y riesgo según lo que declaran los
@@ -296,53 +295,6 @@ public sealed record ObsolescenceGroup
     public required string Key { get; init; }
     public bool Currency { get; init; }
     public required IReadOnlyList<string> Metrics { get; init; }
-}
-
-/// <summary>
-/// Los parámetros de la pantalla Insights (ADR 0023): el peso de negocio de la lista de
-/// prioridades, el índice de riesgo por grupo y el corte del score operacional.
-/// </summary>
-public sealed record InsightsRules
-{
-    public BusinessWeightRules BusinessWeight { get; init; } = new();
-    public RiskIndexRules RiskIndex { get; init; } = new();
-
-    /// <summary>Score operacional por debajo de esto cuenta como hueco de resiliencia.</summary>
-    public decimal LowOperationalBelow { get; init; } = 60m;
-
-    /// <summary>
-    /// A partir de cuántas aplicaciones una coincidencia es concentración, cuando la URL
-    /// no lo dice. La pantalla ofrece de 2 a 5.
-    /// </summary>
-    public int DuplicateDefault { get; init; } = 3;
-}
-
-/// <summary>Peso de negocio: 1 más lo que suma cada atributo que la aplicación cumple.</summary>
-public sealed record BusinessWeightRules
-{
-    public decimal Critical { get; init; } = 1m;
-    public decimal SignificantUsers { get; init; } = 0.5m;
-    public decimal BroadCapabilities { get; init; } = 0.25m;
-
-    /// <summary>Capacidades a partir de las cuales suma <see cref="BroadCapabilities"/>.</summary>
-    public int CapabilitiesFrom { get; init; } = 3;
-}
-
-/// <summary>Índice de riesgo por grupo: cada conteo por su peso.</summary>
-public sealed record RiskIndexRules
-{
-    public decimal CriticalFlaw { get; init; } = 3m;
-    public decimal HighFlaw { get; init; } = 1m;
-    public decimal WeakKenna { get; init; } = 5m;
-
-    /// <summary>
-    /// Kenna a partir de esto cuenta como gestión de vulnerabilidades débil. Kenna va de 0
-    /// a 1000 y más alto es peor: 670 es donde empieza la banda Critical/High del BRD.
-    /// </summary>
-    public int WeakKennaFrom { get; init; } = 670;
-
-    public decimal ObsoleteComponent { get; init; } = 2m;
-    public decimal ExposedCritical { get; init; } = 10m;
 }
 
 /// <summary>

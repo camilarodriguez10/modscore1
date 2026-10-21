@@ -17,7 +17,6 @@ export const AREA_KEYS = [
   'risk',
   'obsolescence',
   'resilience',
-  'insights',
   'code',
 ] as const;
 
@@ -28,7 +27,6 @@ const AREAS: Record<string, { name: string; question: string }> = {
   risk: { name: 'Risk concentration', question: 'Where is technology risk concentrated?' },
   obsolescence: { name: 'Obsolescence', question: 'What is driving obsolescence?' },
   resilience: { name: 'Resilience', question: 'Where are the resilience gaps?' },
-  insights: { name: 'Insights screen', question: 'The six questions answered group by group' },
   code: { name: 'Code', question: 'Which components are past or near their end of life, and where is the code risk?' },
 };
 
@@ -100,48 +98,6 @@ const PARAMETERS: Record<string, ParameterText> = {
   'resilience.operationalModerateBelow': { label: 'Operational: moderate below', help: 'Operational score, 0–100.' },
   'resilience.operationalHighBelow': { label: 'Operational: high below', help: 'Operational score, 0–100.' },
   'resilience.operationalCriticalBelow': { label: 'Operational: critical below', help: 'Operational score, 0–100.' },
-  'insights.businessWeight.critical': {
-    label: 'Business weight: critical application',
-    help: 'Added to the base weight of 1 when the application is critical.',
-  },
-  'insights.businessWeight.significantUsers': {
-    label: 'Business weight: significant user base',
-    help: 'Added when the application serves at least the significant user base.',
-  },
-  'insights.businessWeight.broadCapabilities': {
-    label: 'Business weight: broad capabilities',
-    help: 'Added when the application covers at least the capabilities below.',
-  },
-  'insights.businessWeight.capabilitiesFrom': {
-    label: 'Business weight: broad from (capabilities)',
-    help: 'Capabilities from which the broad-capabilities weight applies.',
-  },
-  'insights.riskIndex.criticalFlaw': { label: 'Risk index: per critical flaw', help: 'Open critical SCA flaws.' },
-  'insights.riskIndex.highFlaw': { label: 'Risk index: per high flaw', help: 'Open high SCA flaws.' },
-  'insights.riskIndex.weakKenna': {
-    label: 'Risk index: per weak Kenna',
-    help: 'Applications whose Kenna score reaches the threshold below.',
-  },
-  'insights.riskIndex.weakKennaFrom': {
-    label: 'Weak Kenna from',
-    help: 'Kenna runs from 0 to 1000 and higher is worse. The BRD’s Critical/High band starts at 670.',
-  },
-  'insights.riskIndex.obsoleteComponent': {
-    label: 'Risk index: per obsolete component',
-    help: 'Obsolete and not-approved components reported by CMT.',
-  },
-  'insights.riskIndex.exposedCritical': {
-    label: 'Risk index: per exposed critical application',
-    help: 'Critical applications facing the internet.',
-  },
-  'insights.lowOperationalBelow': {
-    label: 'Resilience gap: operational score below',
-    help: 'An application under this operational score counts as a resilience gap.',
-  },
-  'insights.duplicateDefault': {
-    label: 'Default concentration threshold',
-    help: 'Applications from which a match is a concentration, when the link does not say. The screen offers 2 to 5.',
-  },
   'code.approachingMonths': {
     label: 'Ending soon within',
     help: 'A component whose end of life falls within this many months counts as ending soon.',
@@ -391,83 +347,6 @@ export function dashboardExplanation(question: number, definitions: AnalyticsDoc
         missing: [
           'Availability history (DQ-06), critical dependencies and single points of failure (DQ-04) have no source yet.',
         ],
-      };
-    default:
-      return { area: null, considered: [], rules: [], missing: [] };
-  }
-}
-
-/** La explicacion de una pregunta de la pantalla Insights (1 a 6). */
-export function insightsExplanation(question: number, definitions: AnalyticsDocument, healthyScore: number): Explanation {
-  const d = reader(definitions);
-
-  switch (question) {
-    case 1:
-      return {
-        area: null,
-        considered: [SCORE_MODEL],
-        rules: [
-          'Average and median of every score; the median shows when a tail moves the average.',
-          'Data coverage: the share of the model’s weight that had data.',
-          `Critical applications below the healthy score of ${number(healthyScore, 2)} (roadmap catalog).`,
-        ],
-        missing: [],
-      };
-    case 2:
-      return {
-        area: 'insights',
-        considered: [
-          'The application’s own roadmap, projected with the what-if engine, and the weeks of its milestones.',
-          'Critical indicator, user count and capability count from the EAI master.',
-        ],
-        rules: [
-          `Business weight = 1, plus ${d.plain('insights.businessWeight.critical')} if critical, plus ${d.plain('insights.businessWeight.significantUsers')} with at least ${d.users} users, plus ${d.plain('insights.businessWeight.broadCapabilities')} with at least ${d.plain('insights.businessWeight.capabilitiesFrom')} capabilities.`,
-          'Impact = points gained × business weight. The list is ordered by impact ÷ weeks.',
-        ],
-        missing: ['Effort per application (DQ-02) and business value (DQ-03).'],
-      };
-    case 3:
-      return {
-        area: 'insights',
-        considered: [
-          'Primary capability, country, coding language, disposition and status from the EAI master and MAPS.',
-        ],
-        rules: [
-          `A match is a concentration from the number chosen above (the default is ${d.plain('insights.duplicateDefault')}): the same capability in one country, the same capability in several countries, or one capability in several languages.`,
-          'Applications marked Eliminate that are still active are listed as retirement backlog.',
-        ],
-        missing: ['Application class as the business words it (DQ-01).'],
-      };
-    case 4:
-      return {
-        area: 'insights',
-        considered: ['Open SCA flaws, Kenna, CMT component counts, internet exposure and the critical indicator.'],
-        rules: [
-          `Risk index = critical flaws × ${d.plain('insights.riskIndex.criticalFlaw')} + high flaws × ${d.plain('insights.riskIndex.highFlaw')} + applications with Kenna at least ${d.plain('insights.riskIndex.weakKennaFrom')} × ${d.plain('insights.riskIndex.weakKenna')} + obsolete or not-approved components × ${d.plain('insights.riskIndex.obsoleteComponent')} + critical internet-facing applications × ${d.plain('insights.riskIndex.exposedCritical')}.`,
-          'Kenna runs from 0 to 1000 and higher is worse. The index ranks groups inside this portfolio; it does not compare with another one.',
-        ],
-        missing: [],
-      };
-    case 5:
-      return {
-        area: null,
-        considered: ['Every weighted metric of the score model.'],
-        rules: [
-          'Lost points = weight × (100 − mapped score) ÷ 100, added across the portfolio.',
-          'Weight with no data is listed apart: that is blindness, not obsolescence.',
-        ],
-        missing: ['End-of-support and end-of-life dates (DQ-05).'],
-      };
-    case 6:
-      return {
-        area: 'insights',
-        considered: ['DR scope, monitoring, operational score and declared RTO and RPO.'],
-        rules: [
-          'Critical applications outside the DR scope or without any monitoring capability.',
-          `Applications with an operational score below ${d.plain('insights.lowOperationalBelow')}.`,
-          'Applications with no RTO or RPO declared.',
-        ],
-        missing: ['Incident and availability history (DQ-06).'],
       };
     default:
       return { area: null, considered: [], rules: [], missing: [] };

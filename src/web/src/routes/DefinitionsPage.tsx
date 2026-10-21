@@ -9,7 +9,6 @@ import {
   codeExplanation,
   dashboardExplanation,
   formatParameter,
-  insightsExplanation,
   parameterHelp,
   parameterLabel,
   type Explanation,
@@ -26,9 +25,12 @@ import { countOf } from '../i18n/notices';
  */
 export function DefinitionsPage() {
   const { data, isPending, error } = useDashboard({});
-  // La cobertura de la pantalla Code sale de su propia vista: repositorios, no cargas.
-  const code = useCode({});
   const session = useSession();
+  // La pantalla Code puede estar apagada en la capa Channel: entonces sus definiciones no
+  // se muestran. Su cobertura sale de su propia vista: repositorios, no cargas.
+  const codeEnabled = session.data?.features?.code ?? false;
+  const code = useCode({}, codeEnabled);
+  const sections = SECTIONS.filter((section) => section.id !== 'code' || codeEnabled);
   const { hash } = useLocation();
 
   // El enlace "See every definition" de cada panel apunta a su seccion.
@@ -49,7 +51,7 @@ export function DefinitionsPage() {
         <Label>Definitions</Label>
         <h1 className="text-[22px] leading-tight font-semibold">How the six questions are answered</h1>
         <p className="max-w-[85ch] text-[13px] text-ink-2">
-          Every indicator and panel of the dashboard and the Insights screen, with the data it considers, how it is
+          Every indicator and panel of the dashboard, with the data it considers, how it is
           calculated with the values in force, who owns the definition and how much of the portfolio has the data.
           These definitions travel with rules <span className="font-mono text-[12px]">{data.rulesetVersion}</span>
           {canEdit ? (
@@ -68,7 +70,7 @@ export function DefinitionsPage() {
       </header>
 
       <nav aria-label="Definitions" className="flex flex-wrap gap-1.5">
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <a
             key={section.id}
             href={`#${section.id}`}
@@ -79,7 +81,7 @@ export function DefinitionsPage() {
         ))}
       </nav>
 
-      {SECTIONS.map((section) => (
+      {sections.map((section) => (
         <Definition key={section.id} section={section} view={data} code={code.data} definitions={definitions} />
       ))}
     </div>
@@ -170,21 +172,6 @@ const SECTIONS: readonly Section[] = [
       const withData = view.dashboard.resilience.withData;
       return `${countOf(withData, 'application')} of ${total(view)} (${share(withData, total(view))} %) have recovery or operational data.`;
     },
-  },
-  {
-    id: 'insights',
-    title: 'Insights screen',
-    area: 'insights',
-    explain: (d) => {
-      const parts = [2, 3, 4, 6].map((question) => insightsExplanation(question, d, 0));
-      return {
-        area: 'insights',
-        considered: parts.flatMap((part) => part.considered),
-        rules: parts.flatMap((part) => part.rules),
-        missing: parts.flatMap((part) => part.missing),
-      };
-    },
-    coverage: (view) => `Computed over the same ${countOf(total(view), 'application')}, group by group.`,
   },
   {
     id: 'code',

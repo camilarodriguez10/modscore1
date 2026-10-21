@@ -18,7 +18,6 @@ test.describe('definitions', () => {
       '1 · How healthy is the portfolio?',
       '2 · Which applications should be modernized first?',
       '6 · Where are the resilience gaps?',
-      'Insights screen',
     ]) {
       await expect(page.getByRole('heading', { name: title })).toBeVisible();
     }
@@ -59,7 +58,7 @@ test.describe('definitions', () => {
   });
 
   test('an open explanation has no serious accessibility violations', async ({ page }) => {
-    await signIn(page, '/insights');
+    await signIn(page, '/');
     await page.getByText('How this is calculated').first().click();
 
     const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();

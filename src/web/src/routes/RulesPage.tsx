@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { ApiError, STEP_UP_URL } from '../api/client';
-import { usePublishRules, useRules, useRulesVersion, useSimulateRules } from '../api/hooks';
+import { usePublishRules, useRules, useRulesVersion, useSession, useSimulateRules } from '../api/hooks';
 import type {
   Notice,
   RulesAdminView,
@@ -1321,7 +1321,7 @@ function TabButton({
 
 /**
  * Las definiciones con que se responden las seis preguntas: el umbral de cada nivel,
- * cuantas filas lista cada panel, los pesos de Insights, y el estado y el dueno de cada
+ * cuantas filas lista cada panel, y el estado y el dueno de cada
  * area. No mueven ningun score: la simulacion muestra como se mueven los indicadores
  * del dashboard. La lista sale del documento, asi que un parametro nuevo aparece aqui
  * sin tocar la pantalla.
@@ -1338,11 +1338,14 @@ function AnalyticsTab({
   update: Update;
 }) {
   const { analytics } = view.document;
+  // Con la pantalla Code apagada en la capa Channel, sus parámetros tampoco se ofrecen.
+  const codeEnabled = useSession().data?.features?.code ?? false;
+  const areas = AREA_KEYS.filter((area) => area !== 'code' || codeEnabled);
 
   return (
     <div className="flex flex-col gap-4">
       <p className="max-w-[90ch] text-[13px] text-ink-2">
-        The values the dashboard and the Insights screen use to answer the six questions. They change no score; the
+        The values the dashboard uses to answer the six questions. They change no score; the
         simulation shows how the dashboard indicators move. Mark an area as agreed when the business confirms it:
         the dashboard stops calling it provisional. The significant user base ({fmt(analytics.significantUserBase, 0)}{' '}
         users) is edited in the Roadmap tab.{' '}
@@ -1352,7 +1355,7 @@ function AnalyticsTab({
       </p>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        {AREA_KEYS.map((area) => {
+        {areas.map((area) => {
           const parameters = analytics.parameters.filter((p) => p.area === area);
           const current = analytics.areas.find((a) => a.key === area);
           const edit = editor.areas?.[area] ?? { status: current?.status ?? 'provisional', owner: current?.owner ?? '' };

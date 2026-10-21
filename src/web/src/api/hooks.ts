@@ -131,22 +131,6 @@ export function usePortfolioRoadmap(filters: PortfolioFilters = {}, groupBy = 'd
   });
 }
 
-/**
- * Las seis preguntas, sobre el mismo filtro que la pantalla tiene puesto. Se
- * mantiene lo anterior mientras llega lo nuevo: cambiar un filtro no vacia la
- * pantalla.
- */
-export function useInsights(
-  filters: PortfolioFilters = {},
-  options: { duplicates?: number; top?: number } = {},
-) {
-  return useQuery({
-    queryKey: ['insights', filters, options],
-    queryFn: () => api.insights(filters, options),
-    placeholderData: (previous) => previous,
-  });
-}
-
 /** El dashboard ejecutivo, con el filtro de la barra y el eje elegido. */
 export function useDashboard(filters: PortfolioFilters = {}, axis = 'country') {
   return useQuery({
@@ -157,11 +141,13 @@ export function useDashboard(filters: PortfolioFilters = {}, axis = 'country') {
 }
 
 /** La pantalla Code, con el filtro de la barra. */
-export function useCode(filters: PortfolioFilters = {}) {
+export function useCode(filters: PortfolioFilters = {}, enabled = true) {
   return useQuery({
     queryKey: ['code', filters],
     queryFn: () => api.code(filters),
     placeholderData: (previous) => previous,
+    // Con la pantalla Code apagada, su endpoint responde 404: no se pregunta.
+    enabled,
   });
 }
 

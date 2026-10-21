@@ -318,25 +318,6 @@ const MESSAGES: Record<string, (a: Args) => string> = {
   'change.analyticsOwner': (a) =>
     `${areaName(a.area ?? '')}: owner ${a.from ? `“${a.from}”` : 'none'} → ${a.to ? `“${a.to}”` : 'none'}`,
 
-  // -------------------------------------------------------------- insights
-  'insights.criticalApplication': () => 'Critical application',
-  'insights.largeUserBase': (a) => `${num(a.users)} ${plural(a.users, 'user')}`,
-  'insights.manyCapabilities': (a) =>
-    `Serves ${num(a.count)} business ${plural(a.count, 'capability', 'capabilities')}`,
-  'insights.upliftFromRoadmap': (a) =>
-    `Its roadmap adds ${score(a.uplift)} points over ${num(a.weeks)} ${plural(a.weeks, 'week')}`,
-  'insights.duplicateCapability': (a) =>
-    `${num(a.count)} applications cover “${a.capability}” in ${a.country}`,
-  'insights.capabilityAcrossCountries': (a) =>
-    `“${a.capability}” is solved by ${num(a.count)} applications across ${num(a.countries)} countries`,
-  'insights.decommissionBacklog': (a) =>
-    `${num(a.count)} ${plural(a.count, 'application')} marked Eliminate ${plural(a.count, 'is', 'are')} still active`,
-  'insights.languageSpread': (a) =>
-    `“${a.capability}” is written in ${num(a.count)} languages: ${a.languages}`,
-  'insights.gapDisasterRecovery': () => 'Out of the disaster recovery scope',
-  'insights.gapMonitoring': () => 'No monitoring reported',
-  'insights.gapOperational': (a) => `Operational score ${score(a.score)}`,
-  'insights.gapRecoveryObjectives': () => 'No RTO or RPO declared',
 };
 
 /** Codigos que llevan el archivo en la propia frase y no necesitan prefijo. */

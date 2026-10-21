@@ -386,7 +386,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-1 055 pruebas .NET: 349 del motor, 347 de contratos y 359 de API. Las dos que importan más
+1 033 pruebas .NET: 333 del motor, 347 de contratos y 353 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **Captura del reporte v1.3 del 2026-10-07 = 66,12:** métrica por métrica, con OSS y Raw Tech
@@ -400,8 +400,8 @@ reproducen los casos documentados:
 TypeScript difieren.
 
 ```bash
-npm --prefix src/web test          # 95 pruebas unitarias (Vitest)
-npm --prefix src/web run test:e2e  # 62 escenarios: 35 de flujo y 27 de accesibilidad (axe)
+npm --prefix src/web test          # 93 pruebas unitarias (Vitest)
+npm --prefix src/web run test:e2e  # 58 escenarios: 33 de flujo y 25 de accesibilidad (axe)
 ```
 
 Las de punta a punta usan el Microsoft Edge instalado (no descargan navegadores) y levantan
@@ -489,7 +489,7 @@ cada una en el sitio. La primera para los promedios: el sitio todavía no excluy
 canceladas ni dadas de baja (DD-09).
 
 **Cada panel explica su cálculo.** «How this is calculated», al pie de cada panel del
-dashboard y de cada pregunta de Insights, dice qué datos considera, cómo se calcula con los
+dashboard, dice qué datos considera, cómo se calcula con los
 valores vigentes y qué falta medir. La pestaña **Definitions** (`/definitions`) es el
 diccionario de indicadores: para cada pregunta, la definición y la fórmula, los datos, los
 valores en vigor, el dueño y el estado del área, la frecuencia y cuánto del portafolio
@@ -498,8 +498,8 @@ tiene el dato.
 **El Currency Score es el que entrega CMT:** el `Raw_Tech_Score` del Currency Model Detail
 Report, de 0 a 100. Una aplicación es *legacy* por debajo de 60 (editable).
 
-**Las definiciones se configuran desde el sitio.** Los 37 parámetros de las seis
-preguntas —umbrales, niveles, largo de las listas y los pesos de Insights— viajan con cada
+**Las definiciones se configuran desde el sitio.** Los 23 parámetros de las seis
+preguntas —umbrales, niveles y largo de las listas—, más los 16 de la pantalla Code, viajan con cada
 versión de reglas y se editan en **Rules → Portfolio analytics**, con estado (*provisional*
 o *agreed*) y dueño por área. Los valores de fábrica están en `contracts/dashboard-v1.json`.
 El porqué está en [ADR 0024](docs/adr/0024-el-dashboard-ejecutivo-usa-definiciones-provisionales.md)
@@ -507,46 +507,22 @@ y [ADR 0025](docs/adr/0025-las-definiciones-viajan-con-las-reglas.md); las decis
 abiertas, en [PLAN.md §8.10](PLAN.md) y en PENDING-ITEMS como DD-01 a DD-08. El mismo
 análisis está en `GET /api/dashboard`.
 
-## Las seis preguntas del portafolio
+## Pantallas retiradas y apagadas
 
-La pantalla **Insights** (`/insights`) responde en una sola vista las seis preguntas de
-gestión, sobre el mismo recorte que el filtro tiene puesto:
+Desde el 2026-10-21 ([ADR 0035](docs/adr/0035-navegacion-sin-insights-y-pantallas-apagables.md)):
 
-| Pregunta | Qué muestra |
-|---|---|
-| *How healthy is the portfolio?* | Promedio y mediana, reparto por tramo, cobertura de dato y cuántas críticas están bajo el umbral sano |
-| *Which applications should be modernized first?* | Impacto contra esfuerzo: lo que sube el score al ejecutar su roadmap, dividido por las semanas de sus hitos y ponderado por criticidad, usuarios y capacidades |
-| *Where should we reduce complexity?* | Misma capacidad repetida en un país, la misma capacidad resuelta distinto en varios países, aplicaciones marcadas `Eliminate` todavía activas, y una capacidad escrita en muchos lenguajes |
-| *Where is technology risk concentrated?* | Por LOB, país, CIO o capacidad: flaws críticos y altos, gestión de vulnerabilidades débil, componentes obsoletos y críticas expuestas a internet |
-| *What is driving obsolescence?* | Los puntos que pierde el portafolio en cada métrica, con el peso sin dato en columna aparte |
-| *Where are the resilience gaps?* | Críticas fuera del alcance de DR o sin monitoreo, score operacional bajo y aplicaciones sin RTO ni RPO |
-
-Cada número viene con su aritmética, y la evidencia de cada fila es una frase con sus
-datos, no una etiqueta. El método está en
-[ADR 0023](docs/adr/0023-las-seis-preguntas-se-responden-con-lo-que-ya-hay.md).
-
-Dos controles propios viajan en la URL junto a los filtros, así que una vista se comparte
-copiando el enlace:
-
-| Parámetro | Valores | Para qué |
-|---|---|---|
-| `duplicates` | 2 a 5 (por defecto 3) | A partir de cuántas aplicaciones una coincidencia ya es una concentración |
-| `riskBy` | `lob`, `country`, `cio`, `capability` | Por qué dimensión se agrupa el riesgo |
-
-Ejemplo: `/insights?country=Mexico&duplicates=2&riskBy=capability`.
-
-El mismo análisis está en `GET /api/insights`, que acepta además `top` (1 a 50) para el
-largo de cada lista. Con un alcance limitado, todo se calcula solo sobre lo que ese
-alcance deja ver.
-
-**Lo que hoy es indicativo:** el esfuerzo sale de las semanas del roadmap, que son por
-roadmap y no por aplicación, y el valor de negocio es un proxy de criticidad, usuarios y
-capacidades. Los datos que lo harían real están en
-[docs/PENDING-ITEMS.md](docs/PENDING-ITEMS.md) como DQ-01 a DQ-07.
+- **Insights se retiró:** respondía lo mismo que el dashboard. Un enlace guardado a
+  `/insights` abre el dashboard con su filtro.
+- **Code y Roadmap vienen apagadas.** Se encienden en la capa Channel, sin recompilar el
+  sitio, con `Features__Code=true` y `Features__PortfolioRoadmap=true` (o en la sección
+  `Features` de su `appsettings.json`). Apagadas, no aparecen en la navegación, su ruta
+  vuelve al dashboard y sus endpoints responden 404. El *future plan* de cada aplicación no
+  depende de esto.
 
 ## Código: obsolescencia y riesgo por componentes
 
-La pantalla **Code** (`/code`) mira lo que declaran los repositorios de cada aplicación en
+Apagada por defecto desde el 2026-10-21; se enciende con `Features__Code=true` en la capa
+Channel. La pantalla **Code** (`/code`) mira lo que declaran los repositorios de cada aplicación en
 GitHub Enterprise —runtimes, frameworks, servidores de aplicaciones, imágenes de sistema
 operativo, bases de datos y bibliotecas— y lo cruza con las fechas de fin de vida y las
 alertas de seguridad abiertas ([ADR 0026](docs/adr/0026-el-analisis-de-codigo-llega-de-github-enterprise.md)):
@@ -746,7 +722,7 @@ contracts/ruleset-v1.3.json     18 métricas: pesos, bandas y procedencia — re
 contracts/dashboard-v1.json     valores de fábrica de las definiciones de las seis preguntas
 data/dummy/                     los ocho CSV generados
 data/timeline/                  el mismo portafolio en cuatro cargas trimestrales
-src/shared/                     dominio, motor de scoring, what-if, roadmap, insights y dashboard, reglas, seguridad
+src/shared/                     dominio, motor de scoring, what-if, roadmap, dashboard y Code, reglas, seguridad
 src/system/                     capa System: reglas de negocio + fuentes
 src/channel/                    capa Channel: BFF, composición por pantalla y exportaciones
 src/web/                        SPA React 19 · pruebas unitarias en src/ · e2e/ con Playwright

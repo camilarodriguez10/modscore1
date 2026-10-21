@@ -9,7 +9,7 @@ namespace Modernization.Api.Tests;
 /// <summary>
 /// ADR 0025 de punta a punta: las definiciones de las seis preguntas se editan desde el
 /// portal con el mismo borrador de las reglas, se publican con ellas y el dashboard y la
-/// pantalla Insights las usan sin desplegar. Y explican sus calculos con esos valores.
+/// lo usa sin desplegar. Y explican sus calculos con esos valores.
 /// </summary>
 public sealed class AnalyticsAdministrationTests
 {
@@ -46,7 +46,7 @@ public sealed class AnalyticsAdministrationTests
 
     /// <summary>El criterio de aceptacion de D3: cambiar un umbral desde el portal mueve el dashboard sin desplegar.</summary>
     [Fact]
-    public async Task PublishingADefinitionMovesTheDashboardAndInsightsButNoScore()
+    public async Task PublishingADefinitionMovesTheDashboardButNoScore()
     {
         using var host = RulesHosts.Create();
         var client = await host.CreateMutatingClientAsync();
@@ -61,7 +61,6 @@ public sealed class AnalyticsAdministrationTests
                 {
                     ["currency.legacyBelow"] = 100m,
                     ["risk.hotspotCount"] = 2m,
-                    ["insights.duplicateDefault"] = 5m,
                 },
                 areas = new[] { new { key = "currency", status = "agreed", owner = "CMT data owner" } },
             },
@@ -97,10 +96,25 @@ public sealed class AnalyticsAdministrationTests
 
         // Ningun score se movio: una definicion no es una regla de score.
         Assert.Equal(before.Dashboard.Health.AverageScore, after.Dashboard.Health.AverageScore);
+        Assert.Equal(2m, ValueOf(after.Definitions, "risk.hotspotCount"));
+    }
 
-        var insights = await client.GetFromJsonAsync<InsightsResponse>(Api("/api/insights"), Json);
-        Assert.Equal(5, insights!.Options.DuplicateThreshold);
-        Assert.Equal(2m, ValueOf(insights.Definitions, "risk.hotspotCount"));
+    /// <summary>
+    /// La pantalla Insights se retiró el 2026-10-21: respondía lo mismo que el dashboard. Ni su
+    /// endpoint ni sus parámetros siguen expuestos.
+    /// </summary>
+    [Fact]
+    public async Task TheRetiredInsightsScreenIsNotExposed()
+    {
+        using var host = RulesHosts.Create();
+        var client = await host.CreateMutatingClientAsync();
+
+        using var response = await client.GetAsync(Api("/api/insights"));
+        var dashboard = await client.GetFromJsonAsync<DashboardResponse>(Api("/api/dashboard"), Json);
+
+        Assert.Equal(System.Net.HttpStatusCode.NotFound, response.StatusCode);
+        Assert.DoesNotContain(dashboard!.Definitions.Parameters, p => p.Key.StartsWith("insights.", StringComparison.Ordinal));
+        Assert.DoesNotContain(dashboard.Definitions.Areas, a => a.Key == "insights");
     }
 
     [Fact]

@@ -4,7 +4,6 @@ import type {
   ExplainView,
   LeverSelection,
   DashboardView,
-  InsightsView,
   LineageView,
   PortfolioFilters,
   PortfolioView,
@@ -254,18 +253,6 @@ export const api = {
     if (axis && axis !== 'country') params.set('axis', axis);
 
     return request<DashboardView>(`/api/dashboard${withQuery(params)}`);
-  },
-
-  /**
-   * Las seis preguntas del portafolio. Una sola llamada: la pantalla no compone
-   * seis respuestas ni calcula nada, solo pinta lo que llega.
-   */
-  insights: (filters: PortfolioFilters = {}, options: { duplicates?: number; top?: number } = {}) => {
-    const params = buildFilterQuery(filters);
-    if (options.duplicates) params.set('duplicates', String(options.duplicates));
-    if (options.top) params.set('top', String(options.top));
-
-    return request<InsightsView>(`/api/insights${withQuery(params)}`);
   },
 
   /** La pantalla Code sobre el mismo recorte que el resto (ADR 0026). */

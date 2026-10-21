@@ -15,13 +15,20 @@ public sealed record SessionView(
     string? Email,
     IReadOnlyList<string> Roles,
     bool IsAuthenticated,
-    SessionPermissionsView Permissions);
+    SessionPermissionsView Permissions,
+    SessionFeaturesView Features);
 
 /// <summary>
 /// Lo que la sesion permite, ya resuelto. La SPA lo usa para no ofrecer lo que el
 /// servidor va a negar; la autorizacion real sigue en el servidor.
 /// </summary>
 public sealed record SessionPermissionsView(bool CanRead, bool FullPortfolio, bool CanUpload, bool CanAdministerRules);
+
+/// <summary>
+/// Las pantallas encendidas en la capa Channel (<see cref="ChannelFeatures"/>). La SPA no ofrece
+/// las apagadas, y sus endpoints responden 404 igual.
+/// </summary>
+public sealed record SessionFeaturesView(bool Code, bool PortfolioRoadmap);
 
 // -------------------------------------------------------------- 01 Portfolio
 

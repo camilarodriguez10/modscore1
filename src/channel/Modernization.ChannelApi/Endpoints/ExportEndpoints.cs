@@ -32,6 +32,7 @@ public static class ExportEndpoints
             .WithSummary("El portafolio filtrado, en CSV.");
 
         api.MapGet("/roadmap/export.csv", GetRoadmap)
+            .RequireFeature(f => f.PortfolioRoadmap)
             .WithSummary("El plan del portafolio filtrado y agrupado, en CSV.");
 
         app.MapGet("/api/admin/rules/compare/export.csv", GetRulesComparison)

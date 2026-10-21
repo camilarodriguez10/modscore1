@@ -82,7 +82,7 @@ La Fase 13 no cambia los totales y agrega evidencia:
 | 1.4.1 | Control de acceso en un punto de confianza | Cumple | `PortfolioService`: única vía a los datos, alcance obligatorio ([ADR 0012](../adr/0012-el-alcance-se-aplica-sobre-los-datos.md)) |
 | 1.4.4 | Mecanismo único de control de acceso | Cumple | Políticas en `ChannelAuthorization` · alcance en `PortfolioScope` |
 | 1.5.3 | Validación de entrada en una capa de confianza | Cumple | Validación en ambas capas: EAI, claves de palanca, filtros, eje del mapa de calor del dashboard, etiqueta y borradores de reglas, incluidas las definiciones de las seis preguntas (cada valor contra su rango en el catálogo) (JSON estricto y acotado; la validación de la regla vive junto al motor) |
-| 1.6.2 | Llaves protegidas | Parcial | Data Protection con volumen propio; cifrado en reposo depende del almacenamiento |
+| 1.6.2 | Llaves protegidas | Parcial | Data Protection con volumen propio y, desde el 2026-10-21, cifrada con un certificado del gestor de secretos (obligatorio fuera de Development, AUD-02); falta el cifrado en reposo del volumen |
 | 1.7.1 | Formato de log común | Cumple | Categoría `Modernization.Audit` con EventId estables |
 | 1.8.1 | Datos sensibles identificados | Cumple | Modelo de amenazas, sección "Qué se protege" |
 | 1.9.2 | Comunicación cifrada entre componentes | Parcial | mTLS del mesh declarado en `namespace.yaml`; sin verificar en cluster |

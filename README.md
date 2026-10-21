@@ -386,7 +386,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-1 117 pruebas .NET: 340 del motor, 411 de contratos y 366 de API. Las dos que importan más
+1 126 pruebas .NET: 340 del motor, 414 de contratos y 372 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **Captura del reporte v1.3 del 2026-10-07 = 66,12:** métrica por métrica, con OSS y Raw Tech
@@ -424,7 +424,10 @@ errores, y el restore usa lock files (`packages.lock.json`).
 ## Seguridad
 
 El resultado del endurecimiento (Fase 08) está en [docs/security](docs/security):
-modelo de amenazas, matriz ASVS L2 y registro de hallazgos. Los procedimientos de
+modelo de amenazas, matriz ASVS L2 y registro de hallazgos. La auditoría del 2026-10-21,
+en inglés, está en [docs/security/audit-2026-10.md](docs/security/audit-2026-10.md).
+Fuera de Development, la capa Channel exige un certificado
+(`DataProtection:CertificateFile`) para cifrar sus llaves de sesión cuando las persiste. Los procedimientos de
 operación —rotación de secretos, carga defectuosa, recuperación ante desastres,
 incidente— están en [docs/runbooks](docs/runbooks).
 

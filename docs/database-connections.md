@@ -111,6 +111,8 @@ To keep the non-secret part visible in configuration, set `ConnectionString` wit
 
 A secret file must exist, must not be empty, and must be at most 16 KB. Error messages never include its path or content.
 
+Outside Development, a connection string that carries a password (`Password=` or `PWD=`) and does not come from the secrets directory stops the startup. That covers `appsettings*.json`, environment variables and the command line.
+
 ### Example: Kubernetes
 
 ```yaml
@@ -167,7 +169,7 @@ Sign-ins that need a person (`Active Directory Interactive`, `Active Directory D
 
 ### PostgreSQL
 
-TLS rule: `SSL Mode=VerifyFull` (recommended) or `VerifyCA`. Use `Root Certificate=` when the server's CA is not in the image's trust store.
+TLS rule: `SSL Mode=VerifyFull`. `VerifyCA` is refused because it does not check that the certificate belongs to the server you connect to. Use `Root Certificate=` when the server's CA is not in the image's trust store.
 
 | Method | Connection string | Secret |
 |---|---|---|
@@ -177,7 +179,7 @@ TLS rule: `SSL Mode=VerifyFull` (recommended) or `VerifyCA`. Use `Root Certifica
 
 ### Oracle
 
-TLS rule: the TCPS protocol, either in the descriptor (`(PROTOCOL=TCPS)`) or as `tcps://host:port/service`. A TNS alias cannot be checked, so paste the alias's descriptor from `tnsnames.ora` into `Data Source`.
+TLS rule: the TCPS protocol, either in the descriptor (`(PROTOCOL=TCPS)`) or as `tcps://host:port/service`, without turning off the server name check (`SSL_SERVER_DN_MATCH=no` is refused). A TNS alias cannot be checked, so paste the alias's descriptor from `tnsnames.ora` into `Data Source`.
 
 | Method | Connection string | Secret |
 |---|---|---|

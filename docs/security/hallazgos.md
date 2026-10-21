@@ -268,6 +268,26 @@ borrado sin `Secure` era ignorado por el navegador.
 
 ---
 
+## Auditoría del 2026-10-21
+
+El informe completo, en inglés, está en [audit-2026-10.md](audit-2026-10.md). Abarcó todo el
+repositorio, incluidos los conectores a bases de datos del ADR 0037.
+
+**Resultado:** 10 hallazgos y ninguna Alta ni Crítica abierta.
+
+| Id | Hallazgo | Severidad | Estado |
+|---|---|---|---|
+| AUD-01 | `vite` 7.3.6 vulnerable en la cadena de la SPA (servidor de desarrollo) | Alta | **Cerrado**: 7.3.7 |
+| AUD-02 | Llaves de sesión (Data Protection) en claro en su volumen | Media | **Cerrado**: cifradas con certificado; fuera de Development, sin certificado no arranca |
+| AUD-03 | La contraseña de un conector podía quedar en configuración en claro | Media | **Cerrado**: fuera de Development solo se acepta desde `Secrets:Directory` |
+| AUD-04 | PostgreSQL aceptaba `VerifyCA` | Baja | **Cerrado**: solo `VerifyFull` |
+| AUD-05 | Oracle podía apagar `SSL_SERVER_DN_MATCH` | Baja | **Cerrado** |
+| AUD-06 | Imágenes base por etiqueta, no por digest | Baja | Pendiente, con H-17 (última fase) |
+| AUD-07 | xUnit 2.x marcado como legado | Informativa | Aceptado: sin vulnerabilidad |
+| AUD-08 | Rangos `^` en `package.json` pese a `save-exact` | Informativa | Aceptado: manda el lock con `npm ci` |
+| AUD-09 | El bundle principal de la SPA pasa de 500 kB | Informativa | Pendiente: rendimiento |
+| AUD-10 | `Modernization.Insights` conserva el nombre sin la pantalla | Informativa | Aceptado |
+
 ## Revisión de las fases 09 a 13 (2026-09-14)
 
 Revisión de lo construido después de la Fase 08, hecha por quien lo construyó:

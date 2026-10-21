@@ -29,8 +29,8 @@ de producción de las versiones sigue pendiente (RFC-07) y no es parte de esta d
 3. **TLS verificado obligatorio, impuesto por la aplicación** (`SecureConnectionFactory`).
    - SQL Server: `Encrypt=Mandatory` o `Strict`, nunca `TrustServerCertificate=True`. Se
      rechazan los métodos que necesitan a una persona.
-   - PostgreSQL: `SSL Mode=VerifyFull` o `VerifyCA`.
-   - Oracle: TCPS en el descriptor o `tcps://`.
+   - PostgreSQL: `SSL Mode=VerifyFull`; `VerifyCA` no comprueba el nombre del servidor.
+   - Oracle: TCPS en el descriptor o `tcps://`, sin `SSL_SERVER_DN_MATCH=no`.
    - ODBC: quien configura declara `EncryptionEnforcedByDriver` después de comprobarlo.
 
    Solo en Development, `AllowInsecureInDevelopment` permite un contenedor local sin TLS.

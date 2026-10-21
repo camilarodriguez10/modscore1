@@ -62,6 +62,7 @@ public sealed class SecureConnectionFactoryTests
     [InlineData("Host=pg.test;Database=sca;Username=reader")]
     [InlineData("Host=pg.test;Database=sca;Username=reader;SSL Mode=Prefer")]
     [InlineData("Host=pg.test;Database=sca;Username=reader;SSL Mode=Require")]
+    [InlineData("Host=pg.test;Database=sca;Username=reader;SSL Mode=VerifyCA")]
     public void PostgreSqlWithoutCertificateVerification_IsRefused(string connectionString)
     {
         var error = Assert.Throws<ConnectorException>(() => Production.Create("sca", Options(ConnectorProviders.PostgreSql, connectionString)));
@@ -92,6 +93,8 @@ public sealed class SecureConnectionFactoryTests
     [Theory]
     [InlineData("User Id=reader;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=ora.test)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=CMT)))")]
     [InlineData("User Id=reader;Data Source=ora.test:1521/CMT")]
+    [InlineData("User Id=reader;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCPS)(HOST=ora.test)(PORT=2484))(CONNECT_DATA=(SERVICE_NAME=CMT))(SECURITY=(SSL_SERVER_DN_MATCH=no)))")]
+    [InlineData("User Id=reader;Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCPS)(HOST=ora.test)(PORT=2484))(CONNECT_DATA=(SERVICE_NAME=CMT))(SECURITY=(SSL_SERVER_DN_MATCH = FALSE)))")]
     public void OracleWithoutTcps_IsRefused(string connectionString)
     {
         var error = Assert.Throws<ConnectorException>(() => Production.Create("ora", Options(ConnectorProviders.Oracle, connectionString)));

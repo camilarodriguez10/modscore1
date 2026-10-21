@@ -78,12 +78,12 @@ builder.Services.AddChannelAuthorization(builder.Configuration);
 
 // Las llaves de Data Protection cifran la cookie y el ticket de sesion. Con mas de
 // una replica, o para sobrevivir a un reinicio, se persisten fuera del contenedor
-// (runbook de rotacion de secretos).
-var dataProtection = builder.Services.AddDataProtection().SetApplicationName("modernization-score-channel");
-if (builder.Configuration["DataProtection:KeysDirectory"] is { Length: > 0 } keysDirectory)
-{
-    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keysDirectory));
-}
+// (runbook de rotacion de secretos), cifradas con un certificado del gestor de secretos:
+// fuera de Development, persistirlas sin el detiene el arranque.
+KeyRingProtection.Configure(
+    builder.Services.AddDataProtection().SetApplicationName("modernization-score-channel"),
+    builder.Configuration,
+    builder.Environment);
 
 // ------------------------------------------------------------ rate limiting
 

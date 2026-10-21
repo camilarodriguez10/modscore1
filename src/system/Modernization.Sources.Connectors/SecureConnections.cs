@@ -63,8 +63,10 @@ public sealed class ConnectorException : Exception
 /// <list type="bullet">
 /// <item>SQL Server: <c>Encrypt=Mandatory</c> o <c>Strict</c> y <c>TrustServerCertificate=False</c>;
 /// sin métodos de autenticación que necesiten a una persona (interactivo, código de dispositivo).</item>
-/// <item>PostgreSQL: <c>SSL Mode=VerifyFull</c> o <c>VerifyCA</c>.</item>
-/// <item>Oracle: protocolo TCPS (TLS) en el descriptor o en la forma <c>tcps://</c>.</item>
+/// <item>PostgreSQL: <c>SSL Mode=VerifyFull</c>. <c>VerifyCA</c> no basta: no comprueba que el
+/// certificado sea del servidor al que se conecta.</item>
+/// <item>Oracle: protocolo TCPS (TLS) en el descriptor o en la forma <c>tcps://</c>, sin apagar
+/// la verificación del nombre (<c>SSL_SERVER_DN_MATCH</c>).</item>
 /// <item>ODBC: <see cref="ConnectionOptions.EncryptionEnforcedByDriver"/> declarado.</item>
 /// </list>
 /// </remarks>
@@ -72,6 +74,9 @@ public sealed class SecureConnectionFactory(bool isDevelopment, int connectTimeo
 {
     /// <summary>Tope del archivo de un secreto: una cadena de conexión no pesa más.</summary>
     private const int MaxSecretFileBytes = 16 * 1024;
+
+    /// <summary>Las formas de apagar la verificación del nombre en un descriptor de Oracle, sin espacios.</summary>
+    private static readonly string[] DnMatchDisabled = ["SSL_SERVER_DN_MATCH=NO", "SSL_SERVER_DN_MATCH=FALSE", "SSL_SERVER_DN_MATCH=OFF"];
 
     /// <summary>Nombre con el que la aplicación se presenta al servidor, para su auditoría.</summary>
     public const string ApplicationName = "ModernizationScore";
@@ -154,9 +159,9 @@ public sealed class SecureConnectionFactory(bool isDevelopment, int connectTimeo
     {
         var builder = Parse(name, () => new NpgsqlConnectionStringBuilder(connectionString));
 
-        if (!insecureAllowed && builder.SslMode is not (SslMode.VerifyFull or SslMode.VerifyCA))
+        if (!insecureAllowed && builder.SslMode is not SslMode.VerifyFull)
         {
-            throw TlsRequired(name, ConnectorProviders.PostgreSql, "SSL Mode=VerifyFull (or VerifyCA)");
+            throw TlsRequired(name, ConnectorProviders.PostgreSql, "SSL Mode=VerifyFull, which also checks the server name");
         }
 
         if (password is not null)
@@ -180,6 +185,14 @@ public sealed class SecureConnectionFactory(bool isDevelopment, int connectTimeo
             && !dataSource.StartsWith("tcps://", StringComparison.OrdinalIgnoreCase))
         {
             throw TlsRequired(name, ConnectorProviders.Oracle, "the TCPS protocol in the Data Source (PROTOCOL=TCPS or tcps://host:port/service)");
+        }
+
+        // Con TCPS pero sin comprobar el nombre del servidor, cualquier certificado de la misma
+        // CA serviría para hacerse pasar por él.
+        if (!insecureAllowed
+            && DnMatchDisabled.Any(value => dataSource.Contains(value, StringComparison.OrdinalIgnoreCase)))
+        {
+            throw TlsRequired(name, ConnectorProviders.Oracle, "SSL_SERVER_DN_MATCH=yes (or leave it out), so the server name is checked");
         }
 
         if (password is not null)

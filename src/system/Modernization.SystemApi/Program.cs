@@ -239,6 +239,9 @@ var connectorOptions = builder.Configuration.GetSection(ConnectorOptions.Section
     ?? new ConnectorOptions();
 var connectorProblems = ConnectorConfiguration.Validate(connectorOptions, SourceSchemaCatalog.Default).ToList();
 
+// Fuera de Development, una contraseña solo puede llegar desde un archivo de secretos.
+connectorProblems.AddRange(ConnectorSecretGuard.Validate(builder.Configuration, builder.Environment));
+
 if (connectorOptions.Enabled && provider == "Dummy")
 {
     connectorProblems.Add("Connectors need a data adapter that accepts uploads: set DataSource:Provider to File or Database.");

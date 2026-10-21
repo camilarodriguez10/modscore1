@@ -63,6 +63,10 @@ spec:
               value: "10.244.0.0/16"
             - name: DataProtection__KeysDirectory
               value: /keys
+            # Las llaves se cifran en reposo con un certificado del gestor de secretos; sin
+            # el, el proceso no arranca (auditoria del 2026-10-21).
+            - name: DataProtection__CertificateFile
+              value: /mnt/secrets/dataprotection.pfx
             - name: Secrets__Directory
               value: /mnt/secrets
           securityContext:

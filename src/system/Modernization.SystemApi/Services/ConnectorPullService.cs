@@ -77,7 +77,9 @@ public sealed class ConnectorPullService(
         }
         else
         {
-            SecurityAudit.SourcesPullRejected(audit, user, result.Outcome.Errors.Count + result.Sources.Count(s => s.Error is not null));
+            // Si fallaron fuentes, esas son los errores; el aviso que las resume no cuenta aparte.
+            var failedSources = result.Sources.Count(s => s.Error is not null);
+            SecurityAudit.SourcesPullRejected(audit, user, failedSources > 0 ? failedSources : result.Outcome.Errors.Count);
         }
 
         return result;

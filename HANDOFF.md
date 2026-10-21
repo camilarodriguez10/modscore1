@@ -282,7 +282,7 @@ en `DashboardAnalyzer`, hay que cambiar su texto.
 
 **Auditoría de seguridad y calidad (2026-10-21, [informe en inglés](docs/security/audit-2026-10.md)).**
 
-- **Resultado:** 10 hallazgos y ninguna Alta ni Crítica abierta.
+- **Resultado:** 12 hallazgos y ninguna Alta ni Crítica abierta. Los dos últimos aparecieron en el pipeline esa noche: `@vitest/mocker` vulnerable (vitest 5.0.3) y contraseñas inventadas de las pruebas que disparaban Gitleaks (lista de permitidos en `.gitleaks.toml`).
 - **Corregido:**
   - vite 7.3.7 en lugar de la 7.3.6 vulnerable;
   - `KeyRingProtection` cifra las llaves de Data Protection con un certificado

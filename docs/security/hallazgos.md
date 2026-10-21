@@ -273,7 +273,7 @@ borrado sin `Secure` era ignorado por el navegador.
 El informe completo, en inglés, está en [audit-2026-10.md](audit-2026-10.md). Abarcó todo el
 repositorio, incluidos los conectores a bases de datos del ADR 0037.
 
-**Resultado:** 10 hallazgos y ninguna Alta ni Crítica abierta.
+**Resultado:** 12 hallazgos y ninguna Alta ni Crítica abierta. Los dos últimos aparecieron el mismo día, en el pipeline.
 
 | Id | Hallazgo | Severidad | Estado |
 |---|---|---|---|
@@ -287,6 +287,8 @@ repositorio, incluidos los conectores a bases de datos del ADR 0037.
 | AUD-08 | Rangos `^` en `package.json` pese a `save-exact` | Informativa | Aceptado: manda el lock con `npm ci` |
 | AUD-09 | El bundle principal de la SPA pasa de 500 kB | Informativa | Pendiente: rendimiento |
 | AUD-10 | `Modernization.Insights` conserva el nombre sin la pantalla | Informativa | Aceptado |
+| AUD-11 | `@vitest/mocker` 5.0.0 vulnerable (avisos publicados el 2026-10-21; solo pruebas) | Baja | **Cerrado**: vitest 5.0.3 |
+| AUD-12 | Contraseñas inventadas de las pruebas disparaban Gitleaks | Informativa | **Cerrado**: lista de permitidos de `.gitleaks.toml` |
 
 ## Revisión de las fases 09 a 13 (2026-09-14)
 

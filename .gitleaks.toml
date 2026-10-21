@@ -3,13 +3,21 @@ title = "modernization-score"
 [extend]
 useDefault = true
 
-# Solo dos valores conocidos, y ambos inutiles fuera de su contexto: el token de
-# desarrollo lleva la marca "dev-only" y DeploymentGuards impide arrancar con el
-# fuera de Development; el de tests solo existe dentro del proceso de pruebas.
-# Cualquier otro secreto que aparezca en el repositorio rompe el pipeline.
+# Solo valores conocidos e inutiles fuera de su contexto: el token de desarrollo lleva
+# la marca "dev-only" y DeploymentGuards impide arrancar con el fuera de Development; los
+# de tests solo existen dentro del proceso de pruebas. Cualquier otro secreto que aparezca
+# en el repositorio rompe el pipeline.
 [allowlist]
 description = "Valores de desarrollo y de pruebas, marcados y rechazados fuera de Development."
 regexes = [
   '''dev-only-service-token-not-for-any-real-environment''',
   '''test-service-token-with-enough-length-1234567890''',
+  # Contraseñas inventadas de las pruebas de los conectores y de la auditoría (2026-10-21):
+  # se escriben en archivos temporales de cada prueba y nunca abren nada. Están en el
+  # historial desde 674401e, y el escaneo recorre todo el historial.
+  '''from-the-vault''',
+  '''hunter2''',
+  '''never-leaves-the-server''',
+  # Nombre de archivo de una prueba de cargas en varias partes (8ca7ad3), no un secreto.
+  '''apim_onboarded_eais\.part2\.csv''',
 ]

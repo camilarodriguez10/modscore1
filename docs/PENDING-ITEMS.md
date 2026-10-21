@@ -66,12 +66,14 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
   - the same calculation worked out with the data on screen.
 
   The Definitions screen shows the same.
-- **Security and code-quality audit** (2026-10-21, [security/audit-2026-10.md](security/audit-2026-10.md)): the whole repository was reviewed with dependency scans, the analyzers, pattern searches and a manual review. Result: 10 findings, none High or Critical open. Fixed:
+- **Security and code-quality audit** (2026-10-21, [security/audit-2026-10.md](security/audit-2026-10.md)): the whole repository was reviewed with dependency scans, the analyzers, pattern searches and a manual review. Result: 12 findings, none High or Critical open; the last two showed up in the pipeline the same day. Fixed:
   - vite 7.3.6, a vulnerable development dependency, now 7.3.7;
   - the session key ring is encrypted with a certificate, required outside Development when the keys are persisted;
   - a connector password can only come from the secrets directory outside Development;
   - PostgreSQL requires `VerifyFull`;
-  - Oracle cannot turn off the server name check.
+  - Oracle cannot turn off the server name check;
+  - vitest 5.0.3, after two advisories against `@vitest/mocker` were published that evening;
+  - the invented test passwords are allowlisted in `.gitleaks.toml`, because the secret scan covers the whole history.
 
   Open: base images by digest (with H-17) and splitting the SPA bundle.
 - **Sources read from databases** (2026-10-21, ADR 0037): the System layer can read the eight sources straight from SQL Server, PostgreSQL, Oracle or any ODBC driver instead of files. It is off by default and is configured only in the deployment (the `Connectors` section; secrets in mounted files). Verified TLS is enforced by the application on every engine; each statement runs read-only in a transaction that is always rolled back; the query is checked for shape. *Pull from databases* on the *Data* screen publishes a complete upload through the same validation as files, and nothing is published if one source fails. Connection methods: SQL login, Windows/Kerberos and Microsoft Entra (managed identity, workload identity, service principal, default) for SQL Server; password, client certificate and Kerberos for PostgreSQL; password over TCPS and wallet for Oracle; any ODBC driver. Guide: [database-connections.md](database-connections.md). What the organization must provide is PA-10.

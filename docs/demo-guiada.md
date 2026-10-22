@@ -1,128 +1,99 @@
-# Demo guiada — guion de 7 minutos
+# Demo guiada — guion de 4 minutos
 
-Guion en inglés para presentar el sitio con los datos dummy: qué hace cada pantalla y hacia
-dónde puede crecer. Unas 710 palabras habladas: a ritmo de presentación son unos 5 minutos y
-medio, y las pausas para los clics y los desplazamientos en la pantalla Code completan los 7. Lo que va entre corchetes es la acción en
-pantalla, no se lee.
+Guion en inglés para presentar el sitio con los datos dummy. Son unas 410 palabras habladas,
+poco más de 3 minutos a ritmo de presentación. Con las pausas para los clics, son unos 4
+minutos. Lo que va entre corchetes es la acción en pantalla y no se lee.
 
 ## Antes de empezar
 
-- **Cargar los cuatro trimestres de ejemplo antes de arrancar**, para que las pantallas
-  muestren la evolución en el tiempo desde el primer minuto. Desde la carpeta del proyecto,
-  en `cmd`: `xcopy /E /I /Y data\timeline data\local`; en PowerShell:
-  `New-Item -ItemType Directory -Force data\local | Out-Null` y luego
-  `Copy-Item -Recurse -Force data\timeline\* data\local`.
-- **Levantar las tres ventanas** con los comandos de «Levantar el stack» del
-  [README](../README.md) —System con carga de archivos, Channel y SPA— y entrar con
-  **Sign in** antes de que llegue el público. Sin Node ni Vite, son dos ventanas: «Sin Vite
-  ni Node» en el mismo README, con el sitio en el 5100.
-- Dejar abierto el **Dashboard**, sin filtros: <http://localhost:5173/> (o el 5100 si la
-  Channel sirve el sitio compilado).
-- Tener a mano la aplicación **14381**: <http://localhost:5173/applications/14381>.
-- Los números se leen de la pantalla: el guion no los fija, para que sirva con cualquier carga.
+- **Cargar los cuatro trimestres de ejemplo** antes de arrancar, para que las tendencias
+  tengan historia. Desde la carpeta del proyecto:
+  - en `cmd`: `xcopy /E /I /Y data\timeline data\local`;
+  - en PowerShell: `New-Item -ItemType Directory -Force data\local | Out-Null` y luego
+    `Copy-Item -Recurse -Force data\timeline\* data\local`.
+- **Levantar el sitio** con los comandos de «Levantar el stack» del [README](../README.md)
+  —System con carga de archivos, Channel y SPA— y entrar con **Sign in** antes de que llegue el
+  público. Sin Node ni Vite son dos ventanas, como explica «Sin Vite ni Node: el sitio ya
+  compilado», con el sitio en el puerto 5100.
+- **Dejar abierto el Dashboard**, sin filtros: <http://localhost:5173/> (o el puerto 5100 si
+  la Channel sirve el sitio compilado).
+- **Tener a mano la aplicación 14381**: <http://localhost:5173/applications/14381>.
+- **Los números se leen de la pantalla.** El guion no fija ninguno, para que sirva con
+  cualquier carga.
+- **Code y Roadmap están apagadas por defecto** y no forman parte de este recorrido. Para
+  mostrarlas al final, se encienden en la Channel con `Features__Code=true` y
+  `Features__PortfolioRoadmap=true`.
 
 ## Guion
 
 **[0:00 · Opening]**
 
-Good morning, everyone. Today I'll walk you through the Modernization Score platform.
-Everything you'll see runs on dummy data: two hundred and fifty generated applications,
-across four quarterly uploads, that behave like a real portfolio without exposing any real
-information.
+Good morning, everyone. This is the Modernization Score platform, running on dummy data: two
+hundred and fifty generated applications across four quarterly uploads, with no real
+information behind them.
 
-The idea is simple. The answer to "what should we modernize, and why" usually lives in
-spreadsheets and static reports. This platform puts it in one place, calculates it the same
-way every time, and explains every number.
+It answers one question: what should we modernize, and why. Instead of spreadsheets and static
+reports, the platform calculates it the same way every time and explains every number.
 
-**[0:30 · Dashboard]** *[Dashboard, the home page]*
+**[0:25 · Dashboard]** *[Dashboard, the home page]*
 
-This is the home page. The banner states the question it answers: where is the highest
-concentration of risk and modernization opportunity, why, and what decision does it require?
+The home page opens with five indicators: portfolio health, applications at risk,
+modernization candidates, currency exposure and resilience exposure.
 
-Below it, five indicators: portfolio health, applications at risk, modernization candidates,
-currency exposure — legacy platforms by the Currency Score from CMT — and resilience exposure.
+*[Click "Applications at risk"]* Every number opens the applications behind it.
+*[Close the panel]*
 
-*[Click "Applications at risk"]* Every number is clickable: this panel lists exactly the
-applications behind it. No black boxes.
+Below them, six panels, one per executive question. How healthy is the portfolio? What do we
+modernize first? Where is the complexity? Where does risk concentrate? What drives
+obsolescence? Where are the resilience gaps?
 
-*[Close the panel and scroll]* Then six panels, one per executive question: how healthy is
-the portfolio, what to modernize first, where to reduce complexity, where risk concentrates,
-what drives obsolescence, and where the resilience gaps are.
+*[Open "How this is calculated" under the risk panel]* Each panel explains itself. You see the
+formula, the source system and column behind every figure, and the same calculation worked out
+with the data on screen. Nothing is a black box.
 
-*[Open "How this is calculated" under a panel]* Each panel explains its own rule with the
-thresholds in force, and this chip shows how many definitions are still provisional.
+**[1:25 · One application]** *[Open application 14381, then "See how it was calculated"]*
 
-**[1:50 · Portfolio]** *[Portfolio tab]*
+For a single application, the calculation page shows the formula with its own values: which
+metrics count, their weights and the points each one adds. A metric without data leaves the
+formula, so a missing source never penalizes an application.
 
-Portfolio is the full inventory, with each application's score and its three pillars. The
-filters follow you across every tab, and anything here downloads as CSV.
+**[1:55 · Future plan]** *[Future plan]*
 
-**[2:10 · One application]** *[Open application 14381]*
+The future plan is generated automatically when the data is loaded. This is the action plan to
+reach ninety, step by step. For each step you see:
 
-Let's open one application: seventy-nine point six seven.
+- the metric it moves, and from what value to what value;
+- how many points it adds;
+- who owns it: security, development, operations;
+- the concrete actions, down to the vulnerable libraries and their CVEs.
 
-*[Calculation]* The calculation page shows the formula with this application's own values:
-the metrics included, their weights and the points each one contributes. A metric with no
-data leaves the formula entirely, so a missing source never penalizes an application. This is
-the worked example from the business requirements, matched to the second decimal.
+*[Open in What-If]* It is exactly the plan the what-if lab finds: same levers, same score.
 
-*[What-if]* The what-if lab turns that into action: each lever shows how much the score would
-rise, and you can set a target score to see what it takes.
+*[Set the target between today's score and 90, click "Find the minimum plan", then "See the
+detailed plan in Future plan"]* And if leadership asks for a different target, the detailed plan
+follows it.
 
-**[3:05 · Code]** *[Code tab]*
+**[3:00 · Data and rules]** *[Data tab]*
 
-The newest screen looks at the code itself. It reads what each application's repositories
-declare — runtimes, frameworks, databases and libraries — and checks them against published
-end-of-life dates. Today the repositories are sample data, and the screen says so, until
-GitHub Enterprise is connected.
+Data is where it all starts.
 
-*[Scroll to "How did score, currency and risk move across uploads?"]* First, the past: score,
-currency and risk, upload by upload.
+- Source files, in CSV or Excel, are validated before anything is published.
+- Every upload becomes a version you can compare.
+- When rows are rejected, the screen says exactly why.
 
-*[Scroll to "Where is obsolescence heading if nothing changes?"]* Then the future: today, and
-in one, two and three years with the same versions. This is how fast the stack ages if nobody
-acts.
+The platform can also read the sources straight from their databases, over encrypted,
+read-only connections.
 
-*[Scroll to "What should change first?"]* And the answer: an improvement plan. Upgrade this
-runtime to that supported release, replace that deprecated library — each action once, with
-how many applications it touches and how much risk it removes.
+*[Rules tab]* And the business owns the rules. Weights, levers and every threshold are editable
+without code. Every change is simulated before it is published and kept for audit.
 
-*[Open an application from the table]* Every application has its own list, its own
-projection and its own history.
+**[3:45 · Close]**
 
-**[4:35 · Insights, data and definitions]** *[Insights tab]*
+Next steps:
 
-Insights goes one level deeper into the six questions: duplicated capabilities, applications
-marked Eliminate that are still active, where risk concentrates.
+- connecting the live source systems;
+- enterprise sign-in through the API gateway;
+- agreeing the provisional definitions with their owners.
 
-*[Data tab]* Data is where it starts: you drop in the source files, the platform validates
-them and recalculates, and every upload becomes a version you can compare. Before uploading,
-you confirm which column of each file loads each field — only the header leaves your
-browser — and if rows are rejected, the screen says exactly why.
-
-*[Definitions tab]* Definitions is the dictionary: how each answer is built and what isn't
-measured yet.
-
-**[5:20 · Rules]** *[Rules tab]*
-
-What makes it sustainable: every rule is editable by an administrator, with no code changes
-and no redeployment — score weights, what-if levers, roadmap rules and every threshold behind
-the dashboard and the Code screen.
-
-*[Change a threshold, then Simulate]* Before publishing, you simulate the impact, and every
-published version is kept for audit.
-
-**[6:00 · What's next]**
-
-Where does it go next? Four directions. Live data: GitHub Enterprise for the code, and the
-source systems instead of file uploads. Enterprise sign-in through the API gateway, with
-views scoped by line of business — the permission model is already there. Anticipation:
-alerts when an application drops a band or a component nears its end of life. And closing
-the loop with the owners: agreeing the provisional definitions and tracking the improvement
-plan against the score.
-
-**[6:40 · Close]**
-
-So: one place, one calculation, every number explained, a view of where the stack is going,
-and rules the business can own. Thank you — I'm happy to take questions, or to open any
-application you'd like to see.
+So: one place, one calculation, every number explained, and a plan for every application.
+Thank you. I'm happy to take questions, or to open any application you'd like to see.

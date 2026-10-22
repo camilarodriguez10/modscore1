@@ -84,6 +84,7 @@ public sealed partial class PortfolioWarmup(
     private async Task WarmOnceAsync(CancellationToken stoppingToken)
     {
         var started = clock.GetTimestamp();
+        var readBefore = portfolio.VersionsRead;
 
         try
         {
@@ -91,6 +92,11 @@ public sealed partial class PortfolioWarmup(
 
             var elapsedMs = clock.GetElapsedTime(started).TotalMilliseconds;
             LogWarmed(logger, elapsedMs);
+
+            if (portfolio.VersionsRead != readBefore)
+            {
+                ReturnMemory();
+            }
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
@@ -105,6 +111,31 @@ public sealed partial class PortfolioWarmup(
             LogFailed(logger, ex);
         }
     }
+
+    /// <summary>
+    /// Devuelve al sistema operativo la memoria de las lecturas que acaban de terminar.
+    /// </summary>
+    /// <remarks>
+    /// Leer cargas enteras deja cientos de MB de filas que ya no sirven. Sin presión de memoria, el
+    /// GC no los recolecta ni los devuelve: la capa System se quedaba con 1 GB que no usaba,
+    /// y en un portátil eso empuja a disco al resto de los programas (revisión del 2026-10-22).
+    /// Una recolección agresiva, solo cuando se leyó alguna carga —al arrancar, tras publicar
+    /// una carga o unas reglas—, en segundo plano, la devuelve; las pasadas en caché no la hacen.
+    /// </remarks>
+    private void ReturnMemory()
+    {
+        var before = GC.GetTotalMemory(forceFullCollection: false);
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+
+        if (logger.IsEnabled(LogLevel.Debug))
+        {
+            var releasedMb = (before - GC.GetTotalMemory(forceFullCollection: false)) / (1024 * 1024);
+            LogMemoryReturned(logger, releasedMb);
+        }
+    }
+
+    [LoggerMessage(EventId = 5403, Level = LogLevel.Debug, Message = "Memoria de las cargas leidas devuelta: {ReleasedMb} MB.")]
+    private static partial void LogMemoryReturned(ILogger logger, long releasedMb);
 
     [LoggerMessage(EventId = 5401, Level = LogLevel.Debug, Message = "Scores e historia calientes en {ElapsedMs:0} ms.")]
     private static partial void LogWarmed(ILogger logger, double elapsedMs);

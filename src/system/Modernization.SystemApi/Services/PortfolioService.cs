@@ -38,13 +38,29 @@ namespace Modernization.SystemApi.Services;
 /// sobrecarga sin el: olvidarlo no compila (ADR 0012).
 /// </para>
 /// </remarks>
-public sealed class PortfolioService(IApplicationSnapshotProvider provider, RulesService rules) : IDisposable
+public sealed class PortfolioService(
+    IApplicationSnapshotProvider provider,
+    RulesService rules,
+    int maxParallelVersions = PortfolioService.DefaultMaxParallelVersions) : IDisposable
 {
     /// <summary>Tope de versiones con puntos en memoria. Mas alla se calcula sin cachear.</summary>
     private const int MaxCachedVersions = 256;
 
-    /// <summary>Cargas que se leen y puntuan a la vez cuando la historia esta fria.</summary>
-    private static readonly int MaxParallelVersions = Math.Clamp(Environment.ProcessorCount, 2, 8);
+    /// <summary>
+    /// Cargas que se leen y puntuan a la vez cuando la historia esta fria
+    /// (<c>Portfolio:MaxParallelVersions</c>).
+    /// </summary>
+    /// <remarks>
+    /// Cada carga real se lee entera para puntuarla: con el SCA de 350 mil filas son unos 300 MB
+    /// mientras dura la lectura. Antes eran tantas como nucleos, hasta 8, y con 8 cargas la capa
+    /// System llegaba a 2,6 GB en un portatil (revision del 2026-10-22). Con 2, la historia fria
+    /// tarda un poco mas, en segundo plano, y el pico baja a la mitad.
+    /// </remarks>
+    public const int DefaultMaxParallelVersions = 2;
+
+    private readonly int _maxParallelVersions = Math.Clamp(maxParallelVersions, 1, 8);
+
+    private long _versionsRead;
 
     private readonly SemaphoreSlim _gate = new(1, 1);
 
@@ -55,6 +71,12 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
     private long _generation;
 
     public void Dispose() => _gate.Dispose();
+
+    /// <summary>
+    /// Cuántas cargas se leyeron enteras desde que arrancó el proceso. Sube con la vigente y con
+    /// cada carga de la historia que se puntúa: así quien calienta sabe si hubo trabajo pesado.
+    /// </summary>
+    public long VersionsRead => Interlocked.Read(ref _versionsRead);
 
     /// <summary>Las reglas con que se esta puntuando ahora.</summary>
     public ValueTask<RulesModel> GetRulesAsync(CancellationToken cancellationToken = default)
@@ -420,6 +442,7 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
                 var generation = Interlocked.Read(ref _generation);
                 var loaded = new PortfolioState(
                     await provider.GetAllAsync(cancellationToken).ConfigureAwait(false));
+                Interlocked.Increment(ref _versionsRead);
 
                 // Una carga publicada mientras se leia deja esta lectura obsoleta: se
                 // descarta y se vuelve a leer, en lugar de fijarla como vigente.
@@ -493,7 +516,7 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
         {
             await Parallel.ForEachAsync(
                 missing,
-                new ParallelOptions { MaxDegreeOfParallelism = MaxParallelVersions, CancellationToken = cancellationToken },
+                new ParallelOptions { MaxDegreeOfParallelism = _maxParallelVersions, CancellationToken = cancellationToken },
                 async (index, token) => results[index] = await PointsOfAsync(model, versions[index], token).ConfigureAwait(false))
                 .ConfigureAwait(false);
         }
@@ -551,6 +574,7 @@ public sealed class PortfolioService(IApplicationSnapshotProvider provider, Rule
         // Sin el token del primer llamador: su cancelacion no puede envenenar un
         // calculo que comparten todos los que piden la misma version.
         var snapshot = await provider.GetAllAsync(versionId, CancellationToken.None).ConfigureAwait(false);
+        Interlocked.Increment(ref _versionsRead);
         var points = new List<VersionPoint>(snapshot.Applications.Count);
 
         foreach (var application in snapshot.Applications)

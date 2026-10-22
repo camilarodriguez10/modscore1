@@ -59,6 +59,11 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 - **Column mapping before uploading** (2026-09-28, ADR 0027): *Review column mapping* reads only the header row of each file in the browser and shows, for every field of the database, which column of the file will load it (same name, known alias, as in the last upload, or not in the file), its type and the metrics that use it. The person confirms or picks another column; the System validates it, stores the file with canonical column names and **records the mapping with the upload** (manifest in the file adapter, a `ColumnMaps` column in the database adapter), so the next review proposes it. *Data → Mapping* shows the same per source without choosing files.
 - **Why rows were rejected** (2026-09-28): the upload result groups rejected rows by problem —column, expected type, the first value, how many rows and the first row numbers— counting every bad column of a row, with a hint when the value gives the cause away (`N/A` placeholders, decimals in whole-number columns, dot thousands separators, shifted columns). Before, the screen only showed how many rows were left out. Also fixed: a number with both separators (`1.234,5`) was read as 1.2345 without warning; the last separator is now the decimal one.
 - **Reading tolerates real exports** (2026-10-02, ADR 0028), after the organization shared its EAI master header, exported from Power BI ("Suma de Kenna_Score", both "MFA" and "Does this Application Utilize MFA?", a Year/Quarter/Month/Day hierarchy, no APP_ID). An unreadable value in an **optional** field now leaves that field without data and keeps the row, reported as *Values loaded as empty*; before, it rejected the whole row, which in the EAI master is the whole application. No-value markers (`N/A`, `-`, `(En blanco)`…) read as empty; numbers in any regional format (an integer accepts zero decimals: "650,00" is 650, before it silently became 65000); `VERDADERO`/`FALSO`; identifiers normalized ("14,381" → "14381"); the exact field name wins over an alias and summary prefixes ("Suma de", "Sum of", "Promedio de"…) are recognized; a repeated EAI keeps the last row and reports the others; without APP_ID in the master, tech debt is linked by the EAI code, because the organization confirmed that its APP_ID is the same code as the EAI.
+- **Machine slow after closing the application** (2026-10-22, ADR 0038): a full review with real consoles and Ctrl+C found that the application leaves no process behind. What stayed alive was the .NET build servers (MSBuild and the compiler, 1 to 1.4 GB for 10 to 15 minutes after any build). The System also read up to 8 uploads at once when computing the history (2.6 GB peak with 8 real-size uploads) and kept about 1 GB afterwards.
+  - The history now reads 2 uploads at once (`Portfolio:MaxParallelVersions`).
+  - Memory is returned to the operating system after each heavy read.
+  - Local builds use `-nodeReuse:false -p:UseSharedCompilation=false`.
+  - Measured result: 1.1 GB peak and 179 MB retained.
 - **The What-If target carries over to the future plan** (2026-10-21): a target chosen in the What-If Lab, such as 80, now opens the future plan towards that target. It is the same plan *Find the minimum plan* gives. The target can also be changed on the future plan itself, and *Back to the catalog target* returns to 90.
 - **Dashboard explanations with formulas and sources** (2026-10-21): every dashboard panel's *How this is calculated*, and the indicators', now shows:
   - what the panel answers and its steps with the thresholds in force;
@@ -86,7 +91,7 @@ Source-of-truth rule agreed on 2026-09-14: **when documents disagree about how t
 - **Automatic plans to 90** (2026-10-07, ADR 0033): applications without a MAPS roadmap get a plan with the levers that take them to 90, so question 2 of the dashboard is filled with exports that lack the `Roadmap` column. Applications marked *Eliminate* get none.
 - **Fixed on 2026-09-18:** the Insights risk index counted Kenna **below 50** as weak vulnerability management. Kenna runs from 0 to 1000 and higher is worse, so it counted the best applications. It now counts Kenna ≥ 670 (the BRD's Critical/High band), and the threshold is a parameter.
 - **Tests**:
-  - 1,136 .NET tests: 346 engine, 414 contracts, 376 API.
+  - 1,138 .NET tests: 346 engine, 414 contracts, 378 API.
   - 105 SPA unit tests.
   - 62 end-to-end scenarios: 37 flows and 25 accessibility checks with axe, in light and dark. Microsoft Edge locally, Chromium in CI.
   - Zero vulnerable packages, and `npm audit` is clean.
@@ -1395,7 +1400,7 @@ Numbers are for comparing changes on the same machine, not for sizing production
 |---|---|---|
 | Engine (golden cases, mapping table, what-if, roadmap, rules editor, comparison, dashboard, insights, end-of-life catalog, code analyzer) | 346 | `dotnet test tests/Modernization.Scoring.Engine.Tests` |
 | Source contracts (Dummy, File, Database; rules stores; sample repositories; dummy timeline; column mapping; rejection reasons; regional values, Power BI and Veracode exports; memory per row; Excel workbooks and several files per source; renamed Product Strategy export; new Tech Debt source; database connectors) | 414 | `dotnet test tests/Modernization.Sources.ContractTests` |
-| API end-to-end through both layers and security | 376 | `dotnet test tests/Modernization.Api.Tests` |
+| API end-to-end through both layers and security | 378 | `dotnet test tests/Modernization.Api.Tests` |
 | SPA unit (Vitest) | 105 | `npm --prefix src/web test` |
 | SPA end-to-end (Playwright, Edge locally, Chromium in CI) | 37 | `npm --prefix src/web run test:e2e` |
 | SPA accessibility (axe, the daily screens, the Code detail and the column mapping, in light and dark) | 25 | Same command; `e2e/accessibility.spec.ts` |

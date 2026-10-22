@@ -49,6 +49,12 @@ cada una abierta mientras se usa la aplicación.
 - **La System primero, y la Channel cuando la System ya responda.** Compilar antes, aparte, evita
   que las dos ventanas compilen a la vez: la Channel referencia el proyecto de la System, y
   si compilan juntas se pisan el mismo `.dll` (`CS2012`, archivo en uso).
+- **Compilar sin dejar procesos vivos.** El `dotnet build` lleva
+  `-nodeReuse:false -p:UseSharedCompilation=false`. Sin esas dos opciones, .NET deja MSBuild y
+  el compilador esperando otro build entre 10 y 15 minutos después de compilar. Son procesos
+  `dotnet.exe` y `VBCSCompiler.exe`, unos 1,4 GB en un equipo de 16 núcleos, y no se cierran
+  con Ctrl + C ni al cerrar las ventanas (medido el 2026-10-22). Por eso las ventanas usan
+  `dotnet run --no-build`: un `dotnet run` que compila los deja igual.
 - **La primera vez, instalar las dependencias del sitio** (el paso «una sola vez» de cada
   consola, abajo). Sin ellas, la ventana 3 falla con `"vite" no se reconoce como un comando
   interno o externo`. Hace falta **Node.js 22.12 o superior** (o 20.19+): `node --version`.
@@ -76,7 +82,7 @@ carpeta (`cd /d` en cmd, `Set-Location` en PowerShell).
 
 ```bat
 cd /d "C:\modscore1"
-dotnet build src\channel\Modernization.ChannelApi
+dotnet build src\channel\Modernization.ChannelApi -nodeReuse:false -p:UseSharedCompilation=false
 npm --prefix src\web ci --ignore-scripts
 dir src\web\node_modules\.bin\vite.cmd
 ```
@@ -119,7 +125,7 @@ Abrir el sitio: `start http://localhost:5173/`.
 
 ```powershell
 Set-Location "C:\modscore1"
-dotnet build src\channel\Modernization.ChannelApi
+dotnet build src\channel\Modernization.ChannelApi -nodeReuse:false -p:UseSharedCompilation=false
 npm.cmd --prefix src\web ci --ignore-scripts
 Test-Path src\web\node_modules\.bin\vite.cmd
 ```
@@ -159,7 +165,7 @@ ejecución de scripts suele bloquear. Abrir el sitio: `Start-Process http://loca
 ### En Git Bash
 
 ```bash
-dotnet build src/channel/Modernization.ChannelApi
+dotnet build src/channel/Modernization.ChannelApi -nodeReuse:false -p:UseSharedCompilation=false
 npm --prefix src/web ci --ignore-scripts
 ```
 
@@ -196,7 +202,7 @@ Channel la sirve con `--webroot` y no hay ventana 3. Es el camino C de la
 
    ```bat
    cd /d "C:\modscore1"
-   dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false
+   dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false -nodeReuse:false -p:UseSharedCompilation=false
    ```
 
 3. Dos ventanas, en este orden, cada bloque con sus dos líneas. En PowerShell se entra a la
@@ -343,6 +349,7 @@ Se agregan o quitan argumentos al final de la línea de la ventana que correspon
 | **Datos generados, sin cargas** | En la ventana 1, quitar `--DataSource:Provider=File --DataSource:Directory=...`: 250 aplicaciones inventadas en memoria, listas al instante, que se pierden al detener. Data no acepta cargas. Es lo que usan las pruebas e2e |
 | **Otra carpeta de datos** | Cambiar la ruta de `--DataSource:Directory`. **Siempre absoluta**: `dotnet run --project` arranca en la carpeta del proyecto, y una ruta relativa terminaría dentro de `src\system\...`. Nunca una carpeta versionada como `data\history`: lo subido quedaría para el próximo commit |
 | **Otros puertos** | Cambiar el número en `--urls`; si cambia la System, la Channel necesita `--SystemApi:BaseUrl=http://localhost:<puerto>` |
+| **Equipo con poca memoria, o servidor con mucha** | En la ventana 1, `--Portfolio:MaxParallelVersions=1` lee una carga a la vez al calcular la historia: menos memoria y un primer cálculo más lento. El valor por defecto es 2. En un servidor con memoria de sobra, 4 calcula antes |
 
 Ejemplo de la ventana 2 con el sitio compilado y sin ejecutables propios (caminos B y C de la guía):
 
@@ -368,11 +375,19 @@ dotnet run --no-build --project src\channel\Modernization.ChannelApi -p:UseAppHo
 | Vite dice que la versión de Node no es compatible, o `crypto.hash is not a function` | Node anterior a 20.19 o a 22.12 | Instalar Node 22.12 o superior |
 | `'AllowedHosts' debe listar los hosts del servicio (entorno 'Production')` | Faltó `--environment Development` en la línea de esa capa, o se pegó un bloque con `set` en PowerShell | Copiar de nuevo la línea completa, con `-- --environment Development --urls ...` al final |
 | El EAI Master queda con 0 filas y todas rechazadas, y la carga se descarta | Desde el 2026-10-02 solo pasa si a todas les falta el EAI (o la columna EAI_Code está vacía); un valor ilegible en otro campo ya no rechaza la fila | Leer **Why rows were rejected**: dice la columna y el valor. Si el EAI viene en otra columna, elegirla con **Review column mapping** |
+| El equipo queda lento después de usar la aplicación, aun con las ventanas cerradas | Quedaron vivos los procesos de compilación de .NET: un `dotnet build` o un `dotnet run` sin `--no-build` los deja 10 a 15 minutos (≈1,4 GB), y no se cierran con Ctrl + C. Mientras corre, con datos reales, la System puede usar más de 1 GB al calcular la historia: en un equipo con poca memoria eso manda otros programas a disco | En cualquier ventana, `dotnet build-server shutdown`. Para comprobar que no queda nada: `tasklist /fi "imagename eq dotnet.exe"` y `tasklist /fi "imagename eq node.exe"` (en PowerShell, `Get-Process dotnet, node`). Compilar con las opciones de esta guía evita que queden. Con poca memoria, ver la variante `--Portfolio:MaxParallelVersions=1` |
 | Muchas filas en **Values loaded as empty** | Una columna con un formato que no es un número —un rango («100-500»), texto— o un campo cargado desde otra columna | Revisar la columna que nombra; si el campo sale de otra columna, elegirla con **Review column mapping** |
 
-**Detener:** `Ctrl + C` en cada ventana. Si un puerto queda ocupado:
-`netstat -ano | findstr :5101` da el número de proceso al final de la línea, y
-`taskkill /PID <número> /F` lo cierra (en PowerShell,
+**Detener:** `Ctrl + C` en cada ventana. En la de la SPA, a «¿Desea terminar el trabajo por
+lotes (S/N)?» se responde `S`. Con eso se cierran la aplicación y todo lo que levantó: cada capa
+con su `dotnet run`, y Vite con `node` y `esbuild` (medido el 2026-10-22). No queda ningún
+servicio instalado ni en segundo plano.
+
+Después, para no dejar nada de la compilación: `dotnet build-server shutdown`. Solo hace falta
+si se compiló sin `-nodeReuse:false -p:UseSharedCompilation=false`.
+
+Si un puerto queda ocupado: `netstat -ano | findstr :5101` da el número de proceso al final de
+la línea, y `taskkill /PID <número> /F` lo cierra (en PowerShell,
 `Get-NetTCPConnection -LocalPort 5101 -State Listen` y `Stop-Process -Id <número>`).
 
 La SPA se abre en <http://localhost:5173>. El botón de login usa el esquema de
@@ -386,7 +401,7 @@ proveedor OIDC levantado, y el proceso no arranca si se activa fuera del entorno
 dotnet test ModernizationScore.slnx
 ```
 
-1 136 pruebas .NET: 346 del motor, 414 de contratos y 376 de API. Las dos que importan más
+1 138 pruebas .NET: 346 del motor, 414 de contratos y 378 de API. Las dos que importan más
 reproducen los casos documentados:
 
 - **Captura del reporte v1.3 del 2026-10-07 = 66,12:** métrica por métrica, con OSS y Raw Tech

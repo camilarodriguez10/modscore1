@@ -206,6 +206,41 @@ public sealed class PortfolioServiceConsistencyTests
         Assert.Equal(readsAfterFirst, provider.Reads);
     }
 
+    /// <summary>
+    /// Revisión del 2026-10-22: quien calienta el portafolio sabe si leyó cargas enteras, para
+    /// devolver esa memoria solo entonces; una pasada en caché no lee nada.
+    /// </summary>
+    [Fact]
+    public async Task WarmingCountsTheUploadsItRead_AndACachedPassReadsNone()
+    {
+        using var service = new PortfolioService(new DummySnapshotProvider(DummyPortfolio.DefaultSeed, 20), Rules);
+        var versions = (await service.GetVersionsAsync()).Count;
+
+        await service.WarmAsync();
+        var afterFirst = service.VersionsRead;
+
+        await service.WarmAsync();
+
+        Assert.Equal(versions + 1, afterFirst);
+        Assert.Equal(afterFirst, service.VersionsRead);
+    }
+
+    /// <summary>
+    /// Leer las cargas de a una o de a varias cambia la memoria y el tiempo, no el resultado.
+    /// </summary>
+    [Fact]
+    public async Task TheHistoryIsTheSameWhateverTheReadsInParallel()
+    {
+        using var one = new PortfolioService(new DummySnapshotProvider(DummyPortfolio.DefaultSeed, 40), Rules, maxParallelVersions: 1);
+        using var eight = new PortfolioService(new DummySnapshotProvider(DummyPortfolio.DefaultSeed, 40), Rules, maxParallelVersions: 8);
+
+        var sequential = await one.GetPortfolioHistoryAsync(PortfolioScope.Full);
+        var parallel = await eight.GetPortfolioHistoryAsync(PortfolioScope.Full);
+
+        Assert.True(sequential.Count > 1);
+        Assert.Equal(sequential, parallel);
+    }
+
     [Fact]
     public async Task EveryReadHonoursTheScope()
     {

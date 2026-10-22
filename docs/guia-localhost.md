@@ -227,7 +227,13 @@ la evolución en el tiempo. Luego, cinco comprobaciones de treinta segundos:
 
 ### Paso 6 · para detenerlo
 
-En cada terminal, **Ctrl + C**. Ciérralas en el orden que quieras.
+En cada terminal, **Ctrl + C**; en la de la SPA, a «¿Desea terminar el trabajo por lotes
+(S/N)?» se responde `S`. Ciérralas en el orden que quieras.
+
+Después, en cualquier terminal: `dotnet build-server shutdown`. En este camino cada
+`dotnet run` compila antes de arrancar, y eso deja MSBuild y el compilador de .NET en memoria
+(≈1 GB) entre 10 y 15 minutos, aunque cierres las terminales. Ese comando los cierra al
+instante.
 
 ### Opcional · comprobar que todo el proyecto está sano
 
@@ -326,8 +332,11 @@ En **una** ventana (en PowerShell, la primera línea es `Set-Location "C:\modsco
 
 ```bat
 cd /d "C:\modscore1"
-dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false
+dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false -nodeReuse:false -p:UseSharedCompilation=false
 ```
+
+Las dos opciones del final hacen que, al terminar, no queden procesos de compilación en
+memoria.
 
 Compila las dos capas —la Channel usa los contratos de la System— y tarda uno o dos minutos
 la primera vez. **Tiene que terminar con `0 Errores`** (o `0 Error(s)` si Windows está en
@@ -475,7 +484,7 @@ de cada bloque es `Set-Location "C:\modscore1"`, y `$PWD` reemplaza a `%CD%`.
 
 ```bat
 cd /d "C:\modscore1"
-dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false
+dotnet build src\channel\Modernization.ChannelApi -p:UseAppHost=false -nodeReuse:false -p:UseSharedCompilation=false
 ```
 
 **Ventana 1 — capa System.** Antes de seguir, <http://localhost:5101/health> tiene que decir
@@ -652,6 +661,7 @@ permite ver.
 | Lo que ves | Qué pasa | Qué hacer |
 |---|---|---|
 | `dotnet` o `npm` «no se reconoce» | No están instalados o la terminal es anterior a la instalación | Cierra y abre la terminal; si sigue, reinicia el equipo |
+| El equipo queda lento después de usar la aplicación, aun con las terminales cerradas | Quedaron vivos los procesos de compilación de .NET (`dotnet.exe` con `MSBuild.dll`, `VBCSCompiler.exe`): compilar los deja entre 10 y 15 minutos, unos 1 a 1,4 GB, y no se cierran con Ctrl + C | `dotnet build-server shutdown`. Para ver qué queda: `tasklist /fi "imagename eq dotnet.exe"` y `tasklist /fi "imagename eq node.exe"`. La aplicación misma no deja nada: con Ctrl + C se cierran todos sus procesos |
 | En Data: `The active adapter is 'Dummy', which serves generated data. Uploading files requires the file or database adapter.` | La capa System arrancó sin carga de archivos | Detén la ventana de la System y copia de nuevo su línea completa, con los dos `--DataSource:...` |
 | «Este programa está bloqueado por una directiva de grupo», «el administrador del sistema bloqueó esta aplicación» o «acceso denegado» al arrancar una capa | La empresa no deja ejecutar programas sin firmar desde carpetas de usuario | Usa el **camino B**: solo corre `dotnet.exe` |
 | `Unhandled exception ... 'AllowedHosts' debe listar los hosts del servicio (entorno 'Production')`, a veces con `DeploymentGuards.cs:line 32` y `Program.cs:line 214` | La capa arrancó como producción: no recibió el entorno de desarrollo. Lo más común es haber pegado un bloque de `cmd` con `set "..."` en **PowerShell** (la Terminal de Windows 11 abre PowerShell): ahí `set` crea una variable de PowerShell que el programa no ve, sin dar error | Usa los comandos con argumentos: al final de la línea, `--environment Development --urls http://localhost:5101` (después de `--` si es un `dotnet run`). Funcionan igual en cmd y en PowerShell. No hace falta tocar `AllowedHosts` |
@@ -684,8 +694,9 @@ permite ver.
 ## Cómo dejar el equipo como estaba
 
 1. Detén la aplicación: Ctrl + C en cada ventana.
-2. Borra la carpeta donde clonaste el repositorio.
-3. Lo que hayas cargado se va con esa carpeta, en su `data\local` (si usaste otra ruta,
+2. Cierra los procesos de compilación de .NET, si quedaron: `dotnet build-server shutdown`.
+3. Borra la carpeta donde clonaste el repositorio.
+4. Lo que hayas cargado se va con esa carpeta, en su `data\local` (si usaste otra ruta,
    bórrala aparte).
 
 La aplicación no instala servicios ni toca el registro de Windows. Lo único instalado son el

@@ -210,7 +210,10 @@ builder.Services.AddSingleton(sp => new RulesService(
         (int)RulesService.DefaultRefreshInterval.TotalSeconds)),
     sp.GetRequiredService<ILogger<RulesService>>()));
 
-builder.Services.AddSingleton<PortfolioService>();
+builder.Services.AddSingleton(sp => new PortfolioService(
+    sp.GetRequiredService<IApplicationSnapshotProvider>(),
+    sp.GetRequiredService<RulesService>(),
+    builder.Configuration.GetValue("Portfolio:MaxParallelVersions", PortfolioService.DefaultMaxParallelVersions)));
 
 // Scores e historia calculados fuera de las peticiones: al arrancar, tras publicar y
 // periodicamente, que es como otra replica toma reglas nuevas ya calientes.
